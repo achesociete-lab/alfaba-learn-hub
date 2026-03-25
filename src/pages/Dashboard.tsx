@@ -192,10 +192,13 @@ const Dashboard = () => {
           </div>
 
           {/* Tabs */}
-          <Tabs defaultValue="devoirs" className="space-y-4">
+          <Tabs defaultValue="consignes" className="space-y-4">
             <TabsList className="bg-muted">
+              <TabsTrigger value="consignes" className="flex items-center gap-1.5">
+                <BookOpen className="h-4 w-4" /> Consignes
+              </TabsTrigger>
               <TabsTrigger value="devoirs" className="flex items-center gap-1.5">
-                <FileText className="h-4 w-4" /> Devoirs
+                <FileText className="h-4 w-4" /> Mes devoirs
               </TabsTrigger>
               <TabsTrigger value="emargement" className="flex items-center gap-1.5">
                 <ClipboardList className="h-4 w-4" /> Émargement
@@ -204,6 +207,39 @@ const Dashboard = () => {
                 <Upload className="h-4 w-4" /> Déposer
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="consignes">
+              {assignments.length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground rounded-xl border border-border bg-card">
+                  <BookOpen className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                  <p>Aucun devoir publié pour le moment.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {assignments.map((a) => (
+                    <div key={a.id} className="p-4 rounded-xl border border-border bg-card">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                          <BookOpen className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-sm font-semibold text-foreground">{a.title}</h3>
+                          <p className="text-xs text-muted-foreground">
+                            Publié le {new Date(a.created_at).toLocaleDateString("fr-FR")}
+                            {a.due_date && (
+                              <span className="text-destructive font-medium"> — À rendre avant le {new Date(a.due_date).toLocaleDateString("fr-FR")}</span>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                      {a.description && (
+                        <p className="text-sm text-muted-foreground ml-13 pl-[52px]">{a.description}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
 
             <TabsContent value="devoirs">
               {homework.length === 0 ? (
