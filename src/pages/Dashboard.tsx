@@ -51,7 +51,6 @@ const Dashboard = () => {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [uploading, setUploading] = useState(false);
   const [hwTitle, setHwTitle] = useState("");
-  const [hwTitle, setHwTitle] = useState("");
 
   useEffect(() => {
     if (!authLoading && !user) {
