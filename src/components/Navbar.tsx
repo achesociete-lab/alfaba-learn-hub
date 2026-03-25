@@ -42,6 +42,16 @@ const Navbar = () => {
               {link.label}
             </Link>
           ))}
+          {isAdmin && (
+            <Link
+              to="/admin"
+              className={`text-sm font-medium transition-colors hover:text-primary flex items-center gap-1 ${
+                location.pathname === "/admin" ? "text-primary" : "text-muted-foreground"
+              }`}
+            >
+              <Shield className="h-3.5 w-3.5" /> Admin
+            </Link>
+          )}
           {user ? (
             <Button size="sm" variant="outline" onClick={signOut} className="gap-2">
               <LogOut className="h-4 w-4" /> Déconnexion
