@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, BookOpen } from "lucide-react";
+import { Menu, X, BookOpen, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navLinks = [
   { to: "/", label: "Accueil" },
@@ -15,6 +16,7 @@ const navLinks = [
 const Navbar = () => {
   const [open, setOpen] = useState(false);
   const location = useLocation();
+  const { user, signOut } = useAuth();
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
@@ -26,33 +28,34 @@ const Navbar = () => {
           </span>
         </Link>
 
-        {/* Desktop */}
         <div className="hidden md:flex items-center gap-6">
           {navLinks.map((link) => (
             <Link
               key={link.to}
               to={link.to}
               className={`text-sm font-medium transition-colors hover:text-primary ${
-                location.pathname === link.to
-                  ? "text-primary"
-                  : "text-muted-foreground"
+                location.pathname === link.to ? "text-primary" : "text-muted-foreground"
               }`}
             >
               {link.label}
             </Link>
           ))}
-          <Button size="sm" className="gradient-emerald border-0 text-primary-foreground">
-            Se connecter
-          </Button>
+          {user ? (
+            <Button size="sm" variant="outline" onClick={signOut} className="gap-2">
+              <LogOut className="h-4 w-4" /> Déconnexion
+            </Button>
+          ) : (
+            <Button asChild size="sm" className="gradient-emerald border-0 text-primary-foreground">
+              <Link to="/auth">Se connecter</Link>
+            </Button>
+          )}
         </div>
 
-        {/* Mobile toggle */}
         <button className="md:hidden text-foreground" onClick={() => setOpen(!open)}>
           {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
       </div>
 
-      {/* Mobile menu */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -76,9 +79,15 @@ const Navbar = () => {
                   {link.label}
                 </Link>
               ))}
-              <Button size="sm" className="gradient-emerald border-0 text-primary-foreground mt-2">
-                Se connecter
-              </Button>
+              {user ? (
+                <Button size="sm" variant="outline" onClick={() => { signOut(); setOpen(false); }} className="gap-2 mt-2">
+                  <LogOut className="h-4 w-4" /> Déconnexion
+                </Button>
+              ) : (
+                <Button asChild size="sm" className="gradient-emerald border-0 text-primary-foreground mt-2">
+                  <Link to="/auth" onClick={() => setOpen(false)}>Se connecter</Link>
+                </Button>
+              )}
             </div>
           </motion.div>
         )}
