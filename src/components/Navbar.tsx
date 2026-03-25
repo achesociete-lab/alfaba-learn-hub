@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, BookOpen, LogOut } from "lucide-react";
+import { Menu, X, BookOpen, LogOut, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsAdmin } from "@/hooks/use-admin";
 
 const navLinks = [
   { to: "/", label: "Accueil" },
@@ -17,6 +18,7 @@ const Navbar = () => {
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const { user, signOut } = useAuth();
+  const { isAdmin } = useIsAdmin();
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
@@ -40,6 +42,16 @@ const Navbar = () => {
               {link.label}
             </Link>
           ))}
+          {isAdmin && (
+            <Link
+              to="/admin"
+              className={`text-sm font-medium transition-colors hover:text-primary flex items-center gap-1 ${
+                location.pathname === "/admin" ? "text-primary" : "text-muted-foreground"
+              }`}
+            >
+              <Shield className="h-3.5 w-3.5" /> Admin
+            </Link>
+          )}
           {user ? (
             <Button size="sm" variant="outline" onClick={signOut} className="gap-2">
               <LogOut className="h-4 w-4" /> Déconnexion
