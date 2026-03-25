@@ -48,7 +48,9 @@ const Dashboard = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [homework, setHomework] = useState<Homework[]>([]);
   const [attendance, setAttendance] = useState<Attendance[]>([]);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [hwTitle, setHwTitle] = useState("");
   const [hwTitle, setHwTitle] = useState("");
 
   useEffect(() => {
