@@ -33,6 +33,15 @@ interface Attendance {
   present: boolean;
 }
 
+interface Assignment {
+  id: string;
+  title: string;
+  description: string | null;
+  level: "niveau_1" | "niveau_2";
+  due_date: string | null;
+  created_at: string;
+}
+
 const Dashboard = () => {
   const { user, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
