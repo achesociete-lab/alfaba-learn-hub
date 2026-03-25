@@ -4,7 +4,7 @@ import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
 import {
   BookOpen, Upload, CheckCircle, ClipboardList, BarChart3,
-  FileText, PenTool, Calendar, LogOut, User
+  FileText, PenTool, Calendar, LogOut, User, Brain
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
