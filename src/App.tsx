@@ -11,6 +11,7 @@ import Niveau2 from "./pages/Niveau2.tsx";
 import Dashboard from "./pages/Dashboard.tsx";
 import Tarifs from "./pages/Tarifs.tsx";
 import Auth from "./pages/Auth.tsx";
+import Exercises from "./pages/Exercises.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/tarifs" element={<Tarifs />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/exercices" element={<Exercises />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
