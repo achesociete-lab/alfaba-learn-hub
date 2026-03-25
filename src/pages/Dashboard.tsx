@@ -62,15 +62,17 @@ const Dashboard = () => {
     if (!user) return;
 
     const fetchData = async () => {
-      const [profileRes, hwRes, attRes] = await Promise.all([
+      const [profileRes, hwRes, attRes, assignRes] = await Promise.all([
         supabase.from("profiles").select("first_name, last_name, level").eq("user_id", user.id).single(),
         supabase.from("homework_submissions").select("id, title, status, grade, submitted_at").eq("user_id", user.id).order("submitted_at", { ascending: false }),
         supabase.from("attendance").select("date, present").eq("user_id", user.id).order("date", { ascending: false }).limit(10),
+        supabase.from("homework_assignments").select("id, title, description, level, due_date, created_at").order("created_at", { ascending: false }),
       ]);
 
       if (profileRes.data) setProfile(profileRes.data);
       if (hwRes.data) setHomework(hwRes.data);
       if (attRes.data) setAttendance(attRes.data);
+      if (assignRes.data) setAssignments(assignRes.data.filter((a: Assignment) => !profileRes.data || a.level === profileRes.data.level));
     };
 
     fetchData();
