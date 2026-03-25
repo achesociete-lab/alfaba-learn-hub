@@ -206,6 +206,9 @@ const Dashboard = () => {
               <TabsTrigger value="deposer" className="flex items-center gap-1.5">
                 <Upload className="h-4 w-4" /> Déposer
               </TabsTrigger>
+              <TabsTrigger value="exercices" className="flex items-center gap-1.5" onClick={() => navigate("/exercices")}>
+                <Brain className="h-4 w-4" /> Exercices
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="consignes">
