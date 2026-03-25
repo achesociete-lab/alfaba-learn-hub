@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index.tsx";
 import Niveau1 from "./pages/Niveau1.tsx";
+import Admin from "./pages/Admin.tsx";
 import Niveau2 from "./pages/Niveau2.tsx";
 import Dashboard from "./pages/Dashboard.tsx";
 import Tarifs from "./pages/Tarifs.tsx";
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/tarifs" element={<Tarifs />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/admin" element={<Admin />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
