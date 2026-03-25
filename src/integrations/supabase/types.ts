@@ -41,6 +41,39 @@ export type Database = {
         }
         Relationships: []
       }
+      homework_assignments: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          due_date: string | null
+          file_url: string | null
+          id: string
+          level: Database["public"]["Enums"]["class_level"]
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          due_date?: string | null
+          file_url?: string | null
+          id?: string
+          level: Database["public"]["Enums"]["class_level"]
+          title: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          due_date?: string | null
+          file_url?: string | null
+          id?: string
+          level?: Database["public"]["Enums"]["class_level"]
+          title?: string
+        }
+        Relationships: []
+      }
       homework_submissions: {
         Row: {
           created_at: string
