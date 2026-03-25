@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, BookOpen, LogOut } from "lucide-react";
+import { Menu, X, BookOpen, LogOut, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsAdmin } from "@/hooks/use-admin";
 
 const navLinks = [
   { to: "/", label: "Accueil" },
