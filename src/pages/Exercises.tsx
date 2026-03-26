@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion, AnimatePresence } from "framer-motion";
@@ -9,15 +9,18 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import {
-  qcmNiveau1, qcmNiveau2,
-  comprehensionNiveau1, comprehensionNiveau2,
-  grammarNiveau1, grammarNiveau2,
+  qcmNiveau2,
+  comprehensionNiveau2,
+  grammarNiveau2,
   type QCMQuestion, type ComprehensionExercise, type GrammarExercise,
 } from "@/data/exercises";
+import { niveau1Lessons, type Lesson } from "@/data/niveau1-lessons";
+import LessonSelector from "@/components/exercises/LessonSelector";
+import LessonDetail from "@/components/exercises/LessonDetail";
 
 type Level = "niveau_1" | "niveau_2";
 
-// ─── QCM Component ───
+// ─── QCM Component (for Niveau 2) ───
 function QCMExercise({ questions }: { questions: QCMQuestion[] }) {
   const [current, setCurrent] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
@@ -42,10 +45,7 @@ function QCMExercise({ questions }: { questions: QCMQuestion[] }) {
   };
 
   const reset = () => {
-    setCurrent(0);
-    setSelected(null);
-    setScore(0);
-    setFinished(false);
+    setCurrent(0); setSelected(null); setScore(0); setFinished(false);
   };
 
   if (finished) {
@@ -111,7 +111,7 @@ function QCMExercise({ questions }: { questions: QCMQuestion[] }) {
   );
 }
 
-// ─── Comprehension Component ───
+// ─── Comprehension Component (for Niveau 2) ───
 function ComprehensionExerciseComp({ exercises }: { exercises: ComprehensionExercise[] }) {
   const [exIdx, setExIdx] = useState(0);
   const [qIdx, setQIdx] = useState(0);
@@ -130,16 +130,9 @@ function ComprehensionExerciseComp({ exercises }: { exercises: ComprehensionExer
   };
 
   const next = () => {
-    if (qIdx + 1 < ex.questions.length) {
-      setQIdx((i) => i + 1);
-      setSelected(null);
-    } else if (exIdx + 1 < exercises.length) {
-      setExIdx((i) => i + 1);
-      setQIdx(0);
-      setSelected(null);
-    } else {
-      setFinished(true);
-    }
+    if (qIdx + 1 < ex.questions.length) { setQIdx(i => i + 1); setSelected(null); }
+    else if (exIdx + 1 < exercises.length) { setExIdx(i => i + 1); setQIdx(0); setSelected(null); }
+    else { setFinished(true); }
   };
 
   const reset = () => { setExIdx(0); setQIdx(0); setSelected(null); setScore(0); setFinished(false); };
@@ -150,9 +143,7 @@ function ComprehensionExerciseComp({ exercises }: { exercises: ComprehensionExer
         <Trophy className="h-16 w-16 mx-auto mb-4 text-secondary" />
         <h3 className="text-2xl font-bold text-foreground mb-2">Compréhension terminée !</h3>
         <p className="text-lg text-muted-foreground mb-6">Score : <span className="font-bold text-primary">{score}</span> / {totalQ}</p>
-        <Button onClick={reset} className="gradient-emerald border-0 text-primary-foreground gap-2">
-          <RotateCcw className="h-4 w-4" /> Recommencer
-        </Button>
+        <Button onClick={reset} className="gradient-emerald border-0 text-primary-foreground gap-2"><RotateCcw className="h-4 w-4" /> Recommencer</Button>
       </motion.div>
     );
   }
@@ -176,9 +167,7 @@ function ComprehensionExerciseComp({ exercises }: { exercises: ComprehensionExer
               }
               return (
                 <button key={idx} onClick={() => handleSelect(idx)} disabled={selected !== null}
-                  className={`w-full p-3 rounded-lg text-sm font-medium text-left transition-all ${cls}`}>
-                  {opt}
-                </button>
+                  className={`w-full p-3 rounded-lg text-sm font-medium text-left transition-all ${cls}`}>{opt}</button>
               );
             })}
           </div>
@@ -193,7 +182,7 @@ function ComprehensionExerciseComp({ exercises }: { exercises: ComprehensionExer
   );
 }
 
-// ─── Grammar Component ───
+// ─── Grammar Component (for Niveau 2) ───
 function GrammarExerciseComp({ exercises }: { exercises: GrammarExercise[] }) {
   const [exIdx, setExIdx] = useState(0);
   const [qIdx, setQIdx] = useState(0);
@@ -212,16 +201,9 @@ function GrammarExerciseComp({ exercises }: { exercises: GrammarExercise[] }) {
   };
 
   const next = () => {
-    if (qIdx + 1 < ex.questions.length) {
-      setQIdx((i) => i + 1);
-      setSelected(null);
-    } else if (exIdx + 1 < exercises.length) {
-      setExIdx((i) => i + 1);
-      setQIdx(0);
-      setSelected(null);
-    } else {
-      setFinished(true);
-    }
+    if (qIdx + 1 < ex.questions.length) { setQIdx(i => i + 1); setSelected(null); }
+    else if (exIdx + 1 < exercises.length) { setExIdx(i => i + 1); setQIdx(0); setSelected(null); }
+    else { setFinished(true); }
   };
 
   const reset = () => { setExIdx(0); setQIdx(0); setSelected(null); setScore(0); setFinished(false); };
@@ -232,9 +214,7 @@ function GrammarExerciseComp({ exercises }: { exercises: GrammarExercise[] }) {
         <Trophy className="h-16 w-16 mx-auto mb-4 text-secondary" />
         <h3 className="text-2xl font-bold text-foreground mb-2">Grammaire terminée !</h3>
         <p className="text-lg text-muted-foreground mb-6">Score : <span className="font-bold text-primary">{score}</span> / {totalQ}</p>
-        <Button onClick={reset} className="gradient-emerald border-0 text-primary-foreground gap-2">
-          <RotateCcw className="h-4 w-4" /> Recommencer
-        </Button>
+        <Button onClick={reset} className="gradient-emerald border-0 text-primary-foreground gap-2"><RotateCcw className="h-4 w-4" /> Recommencer</Button>
       </motion.div>
     );
   }
@@ -262,9 +242,7 @@ function GrammarExerciseComp({ exercises }: { exercises: GrammarExercise[] }) {
               }
               return (
                 <button key={idx} onClick={() => handleSelect(idx)} disabled={selected !== null}
-                  className={`p-3 rounded-lg text-sm font-medium font-arabic transition-all ${cls}`}>
-                  {opt}
-                </button>
+                  className={`p-3 rounded-lg text-sm font-medium font-arabic transition-all ${cls}`}>{opt}</button>
               );
             })}
           </div>
@@ -284,6 +262,39 @@ function GrammarExerciseComp({ exercises }: { exercises: GrammarExercise[] }) {
   );
 }
 
+// ─── Niveau 1 Progressive Lessons ───
+function Niveau1Lessons() {
+  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const [completedLessons, setCompletedLessons] = useState<number[]>(() => {
+    const saved = localStorage.getItem("n1-completed-lessons");
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const handleComplete = (lessonId: number) => {
+    const updated = [...new Set([...completedLessons, lessonId])];
+    setCompletedLessons(updated);
+    localStorage.setItem("n1-completed-lessons", JSON.stringify(updated));
+  };
+
+  if (selectedLesson) {
+    return (
+      <LessonDetail
+        lesson={selectedLesson}
+        onBack={() => setSelectedLesson(null)}
+        onComplete={handleComplete}
+      />
+    );
+  }
+
+  return (
+    <LessonSelector
+      completedLessons={completedLessons}
+      currentLesson={null}
+      onSelectLesson={setSelectedLesson}
+    />
+  );
+}
+
 // ─── Main Page ───
 const Exercises = () => {
   const { user, loading: authLoading } = useAuth();
@@ -300,10 +311,6 @@ const Exercises = () => {
       .then(({ data }) => { if (data) setLevel(data.level as Level); });
   }, [user]);
 
-  const qcm = level === "niveau_1" ? qcmNiveau1 : qcmNiveau2;
-  const comp = level === "niveau_1" ? comprehensionNiveau1 : comprehensionNiveau2;
-  const gram = level === "niveau_1" ? grammarNiveau1 : grammarNiveau2;
-
   if (authLoading) {
     return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground">Chargement...</p></div>;
   }
@@ -317,35 +324,37 @@ const Exercises = () => {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8 text-center">
             <h1 className="text-3xl font-bold text-foreground mb-2">Exercices interactifs</h1>
             <p className="text-muted-foreground">
-              {level === "niveau_1" ? "Niveau 1" : "Niveau 2"} — Entraîne-toi à ton rythme
+              {level === "niveau_1" ? "Niveau 1 — L'alphabet arabe lettre par lettre" : "Niveau 2 — Approfondissement"}
             </p>
           </motion.div>
 
-          <Tabs defaultValue="qcm" className="space-y-6">
-            <TabsList className="bg-muted w-full grid grid-cols-3">
-              <TabsTrigger value="qcm" className="gap-1.5 text-xs sm:text-sm">
-                <BookOpen className="h-4 w-4" /> Lettres
-              </TabsTrigger>
-              <TabsTrigger value="comprehension" className="gap-1.5 text-xs sm:text-sm">
-                <Brain className="h-4 w-4" /> Compréhension
-              </TabsTrigger>
-              <TabsTrigger value="grammaire" className="gap-1.5 text-xs sm:text-sm">
-                <PenTool className="h-4 w-4" /> Grammaire
-              </TabsTrigger>
-            </TabsList>
+          {level === "niveau_1" ? (
+            <Niveau1Lessons />
+          ) : (
+            <Tabs defaultValue="qcm" className="space-y-6">
+              <TabsList className="bg-muted w-full grid grid-cols-3">
+                <TabsTrigger value="qcm" className="gap-1.5 text-xs sm:text-sm">
+                  <BookOpen className="h-4 w-4" /> Lettres
+                </TabsTrigger>
+                <TabsTrigger value="comprehension" className="gap-1.5 text-xs sm:text-sm">
+                  <Brain className="h-4 w-4" /> Compréhension
+                </TabsTrigger>
+                <TabsTrigger value="grammaire" className="gap-1.5 text-xs sm:text-sm">
+                  <PenTool className="h-4 w-4" /> Grammaire
+                </TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="qcm">
-              <QCMExercise questions={qcm} />
-            </TabsContent>
-
-            <TabsContent value="comprehension">
-              <ComprehensionExerciseComp exercises={comp} />
-            </TabsContent>
-
-            <TabsContent value="grammaire">
-              <GrammarExerciseComp exercises={gram} />
-            </TabsContent>
-          </Tabs>
+              <TabsContent value="qcm">
+                <QCMExercise questions={qcmNiveau2} />
+              </TabsContent>
+              <TabsContent value="comprehension">
+                <ComprehensionExerciseComp exercises={comprehensionNiveau2} />
+              </TabsContent>
+              <TabsContent value="grammaire">
+                <GrammarExerciseComp exercises={grammarNiveau2} />
+              </TabsContent>
+            </Tabs>
+          )}
         </div>
       </main>
       <Footer />
