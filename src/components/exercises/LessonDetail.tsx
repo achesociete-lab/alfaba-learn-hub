@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, ArrowRight, BookOpen, Brain, PenTool,
-  CheckCircle, XCircle, Trophy, RotateCcw,
+  CheckCircle, XCircle, Trophy, RotateCcw, Volume2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
