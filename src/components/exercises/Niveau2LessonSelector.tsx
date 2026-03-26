@@ -23,7 +23,7 @@ const Niveau2LessonSelector = ({ completedLessons, onSelectLesson }: Niveau2Less
       </div>
       <Progress value={progress} className="h-2" />
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3" dir="rtl">
         {niveau2Lessons.map((lesson, i) => {
           const unlocked = isUnlocked(lesson.id);
           const completed = completedLessons.includes(lesson.id);
