@@ -133,7 +133,7 @@ export const niveau1Lessons: Lesson[] = [
     vowelExamples: { withFatha: "ثَ", withDamma: "ثُ", withKasra: "ثِ" },
     examples: [
       { arabic: "ثَابِتٌ", transliteration: "thâbit", meaning: "ferme / stable" },
-      { arabic: "ثَلَاثَة", transliteration: "thalâtha", meaning: "trois" },
+      { arabic: "ثَلَاثَةٌ", transliteration: "thalâthatun", meaning: "trois" },
     ],
     qcm: [
       { question: "Combien de points a la lettre ث ?", options: ["Un", "Deux", "Trois", "Aucun"], correctIndex: 2, explanation: "Le Tha (ث) a trois points au-dessus." },
@@ -142,7 +142,7 @@ export const niveau1Lessons: Lesson[] = [
     ],
     dictation: [
       { word: "ثَابِتٌ", transliteration: "thâbit (ferme)", options: ["تَابِتٌ", "ثَابِتٌ", "ثَبِيتٌ", "بَاثِتٌ"], correctIndex: 1 },
-      { word: "ثَلَاثَة", transliteration: "thalâtha (trois)", options: ["تَلَاتَة", "ثَلَاثَة", "ثَلَاتَة", "تَلَاثَة"], correctIndex: 1 },
+      { word: "ثَلَاثَةٌ", transliteration: "thalâthatun (trois)", options: ["تَلَاثَةٌ", "ثَلَاثَةٌ", "ثَلَاتَةٌ", "تَلَاتَةٌ"], correctIndex: 1 },
     ],
   },
 
@@ -182,7 +182,7 @@ export const niveau1Lessons: Lesson[] = [
     description: "Le Ha pharyngal a la même forme que le Jim mais sans point. C'est un son guttural profond spécifique à l'arabe.",
     vowelExamples: { withFatha: "حَ", withDamma: "حُ", withKasra: "حِ" },
     examples: [
-      { arabic: "حَبٌّ", transliteration: "ḥabb", meaning: "amour / grain" },
+      { arabic: "حُبٌّ", transliteration: "ḥubb", meaning: "amour" },
       { arabic: "بَحْثٌ", transliteration: "baḥth", meaning: "recherche" },
     ],
     qcm: [
@@ -190,7 +190,7 @@ export const niveau1Lessons: Lesson[] = [
       { question: "Comment se prononce ح ?", options: ["Comme un 'h' aspiré doux", "Comme un souffle guttural profond", "Comme le 'k'", "Comme le 'g'"], correctIndex: 1, explanation: "Le Ha (ح) est un son pharyngal profond, plus fort qu'un simple 'h'." },
     ],
     dictation: [
-      { word: "حَبٌّ", transliteration: "ḥabb (amour/grain)", options: ["جَبٌّ", "حَبٌّ", "خَبٌّ", "حَتٌّ"], correctIndex: 1 },
+      { word: "حُبٌّ", transliteration: "ḥubb (amour)", options: ["جُبٌّ", "حُبٌّ", "خُبٌّ", "حُتٌّ"], correctIndex: 1 },
       { word: "بَحْثٌ", transliteration: "baḥth (recherche)", options: ["بَحْثٌ", "بَجْثٌ", "بَخْثٌ", "تَحْثٌ"], correctIndex: 0 },
     ],
   },
@@ -656,11 +656,11 @@ export const niveau1Lessons: Lesson[] = [
   // ─── Leçon 26 : Ha ───
   {
     id: 26,
-    letter: "هـ",
+    letter: "ه",
     name: "Ha",
     transliteration: "h",
     pronunciation: "Un 'h' aspiré léger, comme en anglais dans 'house'. Plus léger que le Ha pharyngal (ح).",
-    forms: { isolated: "هـ", initial: "هـ", medial: "ـهـ", final: "ـه" },
+    forms: { isolated: "ه", initial: "هـ", medial: "ـهـ", final: "ـه" },
     description: "Le Ha est un 'h' léger aspiré, très différent du Ha pharyngal (ح). Ne pas les confondre ! Le Ha change beaucoup de forme selon sa position.",
     vowelExamples: { withFatha: "هَ", withDamma: "هُ", withKasra: "هِ" },
     examples: [
