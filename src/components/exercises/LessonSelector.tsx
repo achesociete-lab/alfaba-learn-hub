@@ -23,7 +23,7 @@ const LessonSelector = ({ completedLessons, currentLesson, onSelectLesson }: Les
         </div>
       </div>
 
-      <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+      <div className="grid grid-cols-4 sm:grid-cols-7 gap-2" dir="rtl">
         {niveau1Lessons.map((lesson, idx) => {
           const isCompleted = completedLessons.includes(lesson.id);
           const isUnlocked = idx === 0 || completedLessons.includes(niveau1Lessons[idx - 1].id);
