@@ -76,25 +76,29 @@ const Niveau1 = () => (
           <h2 className="text-2xl font-bold text-foreground mb-6 text-center">Programme des leçons</h2>
           <div className="max-w-2xl mx-auto space-y-3">
             {lessons.map((lesson, i) => (
-              <motion.div
+              <Link
                 key={lesson.num}
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.05 }}
-                className="flex items-center gap-4 p-4 rounded-xl border border-border bg-card hover:border-primary/30 transition-colors"
+                to="/exercices"
               >
-                <div className="h-10 w-10 rounded-lg gradient-emerald flex items-center justify-center shrink-0">
-                  <lesson.icon className="h-5 w-5 text-primary-foreground" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-sm font-semibold text-foreground">
-                    Leçon {lesson.num} — {lesson.title}
-                  </h3>
-                  <p className="text-xs text-muted-foreground">{lesson.desc}</p>
-                </div>
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
-              </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.05 }}
+                  className="flex items-center gap-4 p-4 rounded-xl border border-border bg-card hover:border-primary/30 transition-colors"
+                >
+                  <div className="h-10 w-10 rounded-lg gradient-emerald flex items-center justify-center shrink-0">
+                    <lesson.icon className="h-5 w-5 text-primary-foreground" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-sm font-semibold text-foreground">
+                      Leçon {lesson.num} — {lesson.title}
+                    </h3>
+                    <p className="text-xs text-muted-foreground">{lesson.desc}</p>
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                </motion.div>
+              </Link>
             ))}
           </div>
         </section>

@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { CheckCircle, Lock } from "lucide-react";
 import { niveau1Lessons, type Lesson } from "@/data/niveau1-lessons";
+import { useIsAdmin } from "@/hooks/use-admin";
 
 interface LessonSelectorProps {
   completedLessons: number[];
