@@ -66,7 +66,7 @@ const illustrationMap: Record<string, string> = {
   "un livre": "📖",
   "une porte": "🚪",
   "une lumière": "💡",
-  "grand": "📏",
+  "grand(e)": "📏",
   "le livre": "📖",
   "la porte": "🚪",
   "le soleil": "☀️",
