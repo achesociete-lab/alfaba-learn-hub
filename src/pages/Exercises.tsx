@@ -12,6 +12,7 @@ import LessonDetail from "@/components/exercises/LessonDetail";
 import Niveau2LessonSelector from "@/components/exercises/Niveau2LessonSelector";
 import Niveau2LessonDetail from "@/components/exercises/Niveau2LessonDetail";
 import { useLessonProgress } from "@/hooks/use-lesson-progress";
+import { useNiveau1Lessons, useNiveau2Lessons } from "@/hooks/use-lessons";
 
 type Level = "niveau_1" | "niveau_2";
 
@@ -19,6 +20,7 @@ type Level = "niveau_1" | "niveau_2";
 function Niveau1Lessons() {
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const { completedLessons, completeLesson } = useLessonProgress();
+  const { lessons } = useNiveau1Lessons();
 
   if (selectedLesson) {
     return (
@@ -32,6 +34,7 @@ function Niveau1Lessons() {
 
   return (
     <LessonSelector
+      lessons={lessons}
       completedLessons={completedLessons}
       currentLesson={null}
       onSelectLesson={setSelectedLesson}
@@ -43,6 +46,7 @@ function Niveau1Lessons() {
 function Niveau2Lessons() {
   const [selectedLesson, setSelectedLesson] = useState<Niveau2Lesson | null>(null);
   const { completedN2Lessons, completeN2Lesson } = useLessonProgress();
+  const { lessons } = useNiveau2Lessons();
 
   if (selectedLesson) {
     return (
@@ -56,6 +60,7 @@ function Niveau2Lessons() {
 
   return (
     <Niveau2LessonSelector
+      lessons={lessons}
       completedLessons={completedN2Lessons}
       onSelectLesson={setSelectedLesson}
     />
