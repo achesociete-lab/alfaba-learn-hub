@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Niveau2Lesson } from "@/data/niveau2-lessons";
 import { useArabicSpeech } from "@/hooks/use-arabic-speech";
+import { getIllustration } from "@/utils/vocabulary-illustrations";
 
 interface Niveau2LessonDetailProps {
   lesson: Niveau2Lesson;

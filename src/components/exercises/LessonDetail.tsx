@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Lesson } from "@/data/niveau1-lessons";
 import { useArabicSpeech } from "@/hooks/use-arabic-speech";
+import { getIllustration } from "@/utils/vocabulary-illustrations";
 
 interface LessonDetailProps {
   lesson: Lesson;
@@ -86,18 +87,24 @@ function LessonTab({ lesson }: { lesson: Lesson }) {
       <div className="p-4 rounded-xl border border-border bg-card">
         <h4 className="font-semibold text-foreground mb-3">📝 Exemples de mots</h4>
         <div className="space-y-3">
-          {lesson.examples.map((ex, i) => (
-            <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => speak(ex.arabic)}>
-              <div className="flex items-center gap-2">
-                <Volume2 className="h-4 w-4 text-muted-foreground shrink-0" />
-                <div>
-                  <p className="font-arabic text-xl text-foreground">{ex.arabic}</p>
-                  <p className="text-xs text-muted-foreground">{ex.transliteration}</p>
+          {lesson.examples.map((ex, i) => {
+            const emoji = getIllustration(ex.meaning);
+            return (
+              <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => speak(ex.arabic)}>
+                <div className="flex items-center gap-2">
+                  <Volume2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <div>
+                    <p className="font-arabic text-xl text-foreground">{ex.arabic}</p>
+                    <p className="text-xs text-muted-foreground">{ex.transliteration}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm text-foreground font-medium">{ex.meaning}</p>
+                  {emoji && <span className="text-2xl" role="img">{emoji}</span>}
                 </div>
               </div>
-              <p className="text-sm text-foreground font-medium">{ex.meaning}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </motion.div>
