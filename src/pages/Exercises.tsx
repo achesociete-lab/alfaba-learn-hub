@@ -266,23 +266,14 @@ function GrammarExerciseComp({ exercises }: { exercises: GrammarExercise[] }) {
 // ─── Niveau 1 Progressive Lessons ───
 function Niveau1Lessons() {
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
-  const [completedLessons, setCompletedLessons] = useState<number[]>(() => {
-    const saved = localStorage.getItem("n1-completed-lessons");
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const handleComplete = (lessonId: number) => {
-    const updated = [...new Set([...completedLessons, lessonId])];
-    setCompletedLessons(updated);
-    localStorage.setItem("n1-completed-lessons", JSON.stringify(updated));
-  };
+  const { completedLessons, completeLesson } = useLessonProgress();
 
   if (selectedLesson) {
     return (
       <LessonDetail
         lesson={selectedLesson}
         onBack={() => setSelectedLesson(null)}
-        onComplete={handleComplete}
+        onComplete={completeLesson}
       />
     );
   }
