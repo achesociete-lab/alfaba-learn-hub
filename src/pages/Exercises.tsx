@@ -17,6 +17,7 @@ import {
 import { niveau1Lessons, type Lesson } from "@/data/niveau1-lessons";
 import LessonSelector from "@/components/exercises/LessonSelector";
 import LessonDetail from "@/components/exercises/LessonDetail";
+import { useLessonProgress } from "@/hooks/use-lesson-progress";
 
 type Level = "niveau_1" | "niveau_2";
 
