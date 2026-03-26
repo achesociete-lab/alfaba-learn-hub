@@ -1,71 +1,105 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef } from "react";
+
+// Simple in-memory cache for audio blobs to avoid re-fetching
+const audioCache = new Map<string, string>();
 
 export function useArabicSpeech() {
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const arabicVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
-  // Load voices (they load async in most browsers)
-  useEffect(() => {
-    if (!window.speechSynthesis) return;
+  const speak = useCallback(async (text: string, rate = 0.8) => {
+    if (!text?.trim()) return;
 
-    const loadVoices = () => {
-      const allVoices = window.speechSynthesis.getVoices();
-      setVoices(allVoices);
+    // Stop any current playback
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    if (abortRef.current) {
+      abortRef.current.abort();
+    }
 
-      // Priority: exact ar-SA, then any ar-*, then fallback
-      const arSA = allVoices.find((v) => v.lang === "ar-SA");
-      const arAny = allVoices.find((v) => v.lang.startsWith("ar"));
-      arabicVoiceRef.current = arSA || arAny || null;
-    };
+    const cacheKey = `${text}_${rate}`;
 
-    loadVoices();
-    window.speechSynthesis.onvoiceschanged = loadVoices;
+    // Check cache first
+    if (audioCache.has(cacheKey)) {
+      const audio = new Audio(audioCache.get(cacheKey)!);
+      audioRef.current = audio;
+      try {
+        await audio.play();
+      } catch (e) {
+        console.warn("Audio playback failed:", e);
+      }
+      return;
+    }
 
-    return () => {
-      window.speechSynthesis.onvoiceschanged = null;
-    };
-  }, []);
+    // Fetch from ElevenLabs edge function
+    const controller = new AbortController();
+    abortRef.current = controller;
 
-  const speak = useCallback((text: string, rate = 0.7) => {
-    if (!window.speechSynthesis || !text?.trim()) return;
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ text, rate }),
+          signal: controller.signal,
+        }
+      );
 
-    // Cancel any ongoing speech and wait a tick (fixes Chrome bug)
-    window.speechSynthesis.cancel();
-
-    // Small delay to let cancel take effect (Chrome needs this)
-    setTimeout(() => {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = "ar-SA";
-      utterance.rate = rate;
-      utterance.pitch = 1;
-      utterance.volume = 1;
-
-      if (arabicVoiceRef.current) {
-        utterance.voice = arabicVoiceRef.current;
+      if (!response.ok) {
+        // Fallback to Web Speech API
+        console.warn("ElevenLabs TTS failed, falling back to Web Speech API");
+        fallbackSpeak(text, rate);
+        return;
       }
 
-      // Chrome pauses after 15s — resume workaround
-      const resumeTimer = setInterval(() => {
-        if (window.speechSynthesis.speaking) {
-          window.speechSynthesis.pause();
-          window.speechSynthesis.resume();
-        } else {
-          clearInterval(resumeTimer);
-        }
-      }, 10000);
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
 
-      utterance.onend = () => clearInterval(resumeTimer);
-      utterance.onerror = () => clearInterval(resumeTimer);
+      // Cache the URL
+      audioCache.set(cacheKey, audioUrl);
 
-      window.speechSynthesis.speak(utterance);
-    }, 50);
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+      await audio.play();
+    } catch (e: unknown) {
+      if (e instanceof DOMException && e.name === "AbortError") return;
+      console.warn("ElevenLabs TTS error, falling back:", e);
+      fallbackSpeak(text, rate);
+    }
   }, []);
 
   const stop = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    if (abortRef.current) {
+      abortRef.current.abort();
+    }
     window.speechSynthesis?.cancel();
   }, []);
 
-  const isSupported = typeof window !== "undefined" && !!window.speechSynthesis;
+  const isSupported = true; // Always supported via edge function
 
   return { speak, stop, isSupported };
+}
+
+// Fallback using browser Web Speech API
+function fallbackSpeak(text: string, rate: number) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "ar-SA";
+  utterance.rate = rate;
+  const voices = window.speechSynthesis.getVoices();
+  const arVoice = voices.find((v) => v.lang === "ar-SA") || voices.find((v) => v.lang.startsWith("ar"));
+  if (arVoice) utterance.voice = arVoice;
+  window.speechSynthesis.speak(utterance);
 }
