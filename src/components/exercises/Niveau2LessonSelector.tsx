@@ -1,17 +1,18 @@
 import { motion } from "framer-motion";
 import { Lock, CheckCircle, GraduationCap } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { niveau2Lessons, type Niveau2Lesson } from "@/data/niveau2-lessons";
+import type { Niveau2Lesson } from "@/data/niveau2-lessons";
 import { useIsAdmin } from "@/hooks/use-admin";
 
 interface Niveau2LessonSelectorProps {
   completedLessons: number[];
   onSelectLesson: (lesson: Niveau2Lesson) => void;
+  lessons: Niveau2Lesson[];
 }
 
-const Niveau2LessonSelector = ({ completedLessons, onSelectLesson }: Niveau2LessonSelectorProps) => {
+const Niveau2LessonSelector = ({ completedLessons, onSelectLesson, lessons }: Niveau2LessonSelectorProps) => {
   const { isAdmin } = useIsAdmin();
-  const progress = (completedLessons.length / niveau2Lessons.length) * 100;
+  const progress = (completedLessons.length / lessons.length) * 100;
 
   const isUnlocked = (lessonId: number) => {
     if (isAdmin) return true;
@@ -22,12 +23,12 @@ const Niveau2LessonSelector = ({ completedLessons, onSelectLesson }: Niveau2Less
   return (
     <div className="space-y-6">
       <div className="text-center text-sm text-muted-foreground">
-        {completedLessons.length} / {niveau2Lessons.length} leçons terminées
+        {completedLessons.length} / {lessons.length} leçons terminées
       </div>
       <Progress value={progress} className="h-2" />
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3" dir="rtl">
-        {niveau2Lessons.map((lesson, i) => {
+        {lessons.map((lesson, i) => {
           const unlocked = isUnlocked(lesson.id);
           const completed = completedLessons.includes(lesson.id);
 
