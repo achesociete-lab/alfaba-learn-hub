@@ -10,6 +10,8 @@ interface LessonSelectorProps {
 }
 
 const LessonSelector = ({ completedLessons, currentLesson, onSelectLesson }: LessonSelectorProps) => {
+  const { isAdmin } = useIsAdmin();
+
   return (
     <div className="space-y-4">
       <div className="text-center mb-6">
@@ -27,7 +29,7 @@ const LessonSelector = ({ completedLessons, currentLesson, onSelectLesson }: Les
       <div className="grid grid-cols-4 sm:grid-cols-7 gap-2" dir="rtl">
         {niveau1Lessons.map((lesson, idx) => {
           const isCompleted = completedLessons.includes(lesson.id);
-          const isUnlocked = idx === 0 || completedLessons.includes(niveau1Lessons[idx - 1].id);
+          const isUnlocked = isAdmin || idx === 0 || completedLessons.includes(niveau1Lessons[idx - 1].id);
           const isActive = currentLesson === lesson.id;
 
           return (
