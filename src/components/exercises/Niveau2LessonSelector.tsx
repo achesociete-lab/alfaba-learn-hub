@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Lock, CheckCircle, GraduationCap } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { niveau2Lessons, type Niveau2Lesson } from "@/data/niveau2-lessons";
+import { useIsAdmin } from "@/hooks/use-admin";
 
 interface Niveau2LessonSelectorProps {
   completedLessons: number[];
@@ -9,9 +10,11 @@ interface Niveau2LessonSelectorProps {
 }
 
 const Niveau2LessonSelector = ({ completedLessons, onSelectLesson }: Niveau2LessonSelectorProps) => {
+  const { isAdmin } = useIsAdmin();
   const progress = (completedLessons.length / niveau2Lessons.length) * 100;
 
   const isUnlocked = (lessonId: number) => {
+    if (isAdmin) return true;
     if (lessonId === 1) return true;
     return completedLessons.includes(lessonId - 1);
   };
