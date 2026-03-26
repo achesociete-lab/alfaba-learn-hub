@@ -2,11 +2,12 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, ArrowRight, BookOpen, Brain, PenTool,
-  CheckCircle, XCircle, Trophy, RotateCcw,
+  CheckCircle, XCircle, Trophy, RotateCcw, Volume2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Lesson } from "@/data/niveau1-lessons";
+import { useArabicSpeech } from "@/hooks/use-arabic-speech";
 
 interface LessonDetailProps {
   lesson: Lesson;
@@ -16,11 +17,17 @@ interface LessonDetailProps {
 
 // ─── Lesson Tab ───
 function LessonTab({ lesson }: { lesson: Lesson }) {
+  const { speak } = useArabicSpeech();
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
       {/* Letter display */}
-      <div className="text-center p-8 rounded-xl border border-border bg-card">
-        <p className="font-arabic text-8xl text-foreground mb-4">{lesson.letter}</p>
+      <div className="text-center p-8 rounded-xl border border-border bg-card cursor-pointer group" onClick={() => speak(lesson.letter)}>
+        <p className="font-arabic text-8xl text-foreground mb-4 group-hover:text-primary transition-colors">{lesson.letter}</p>
+        <div className="flex items-center justify-center gap-2">
+          <Volume2 className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+          <span className="text-xs text-muted-foreground">Cliquez pour écouter</span>
+        </div>
         <h3 className="text-2xl font-bold text-foreground">{lesson.name}</h3>
         <p className="text-muted-foreground mt-1">{lesson.transliteration}</p>
       </div>
@@ -42,11 +49,12 @@ function LessonTab({ lesson }: { lesson: Lesson }) {
         <h4 className="font-semibold text-foreground mb-3">✍️ Les formes de la lettre</h4>
         <div className="grid grid-cols-4 gap-3">
           {(["isolated", "initial", "medial", "final"] as const).map((pos) => (
-            <div key={pos} className="text-center p-3 rounded-lg bg-muted">
+            <div key={pos} className="text-center p-3 rounded-lg bg-muted cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => speak(lesson.forms[pos])}>
               <p className="font-arabic text-3xl text-foreground">{lesson.forms[pos]}</p>
               <p className="text-[10px] text-muted-foreground mt-1">
                 {pos === "isolated" ? "Isolée" : pos === "initial" ? "Début" : pos === "medial" ? "Milieu" : "Fin"}
               </p>
+              <Volume2 className="h-3 w-3 text-muted-foreground mx-auto mt-1" />
             </div>
           ))}
         </div>
@@ -56,17 +64,20 @@ function LessonTab({ lesson }: { lesson: Lesson }) {
       <div className="p-4 rounded-xl border border-border bg-card">
         <h4 className="font-semibold text-foreground mb-3">🎵 Avec les voyelles courtes</h4>
         <div className="grid grid-cols-3 gap-3">
-          <div className="text-center p-3 rounded-lg bg-muted">
+          <div className="text-center p-3 rounded-lg bg-muted cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => speak(lesson.vowelExamples.withFatha)}>
             <p className="font-arabic text-3xl text-foreground">{lesson.vowelExamples.withFatha}</p>
             <p className="text-xs text-muted-foreground mt-1">Fatha (a)</p>
+            <Volume2 className="h-3 w-3 text-muted-foreground mx-auto mt-1" />
           </div>
-          <div className="text-center p-3 rounded-lg bg-muted">
+          <div className="text-center p-3 rounded-lg bg-muted cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => speak(lesson.vowelExamples.withDamma)}>
             <p className="font-arabic text-3xl text-foreground">{lesson.vowelExamples.withDamma}</p>
             <p className="text-xs text-muted-foreground mt-1">Damma (ou)</p>
+            <Volume2 className="h-3 w-3 text-muted-foreground mx-auto mt-1" />
           </div>
-          <div className="text-center p-3 rounded-lg bg-muted">
+          <div className="text-center p-3 rounded-lg bg-muted cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => speak(lesson.vowelExamples.withKasra)}>
             <p className="font-arabic text-3xl text-foreground">{lesson.vowelExamples.withKasra}</p>
             <p className="text-xs text-muted-foreground mt-1">Kasra (i)</p>
+            <Volume2 className="h-3 w-3 text-muted-foreground mx-auto mt-1" />
           </div>
         </div>
       </div>
@@ -76,10 +87,13 @@ function LessonTab({ lesson }: { lesson: Lesson }) {
         <h4 className="font-semibold text-foreground mb-3">📝 Exemples de mots</h4>
         <div className="space-y-3">
           {lesson.examples.map((ex, i) => (
-            <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted">
-              <div>
-                <p className="font-arabic text-xl text-foreground">{ex.arabic}</p>
-                <p className="text-xs text-muted-foreground">{ex.transliteration}</p>
+            <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => speak(ex.arabic)}>
+              <div className="flex items-center gap-2">
+                <Volume2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                <div>
+                  <p className="font-arabic text-xl text-foreground">{ex.arabic}</p>
+                  <p className="text-xs text-muted-foreground">{ex.transliteration}</p>
+                </div>
               </div>
               <p className="text-sm text-foreground font-medium">{ex.meaning}</p>
             </div>
