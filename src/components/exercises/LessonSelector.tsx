@@ -1,35 +1,36 @@
 import { motion } from "framer-motion";
 import { CheckCircle, Lock } from "lucide-react";
-import { niveau1Lessons, type Lesson } from "@/data/niveau1-lessons";
+import type { Lesson } from "@/data/niveau1-lessons";
 import { useIsAdmin } from "@/hooks/use-admin";
 
 interface LessonSelectorProps {
   completedLessons: number[];
   currentLesson: number | null;
   onSelectLesson: (lesson: Lesson) => void;
+  lessons: Lesson[];
 }
 
-const LessonSelector = ({ completedLessons, currentLesson, onSelectLesson }: LessonSelectorProps) => {
+const LessonSelector = ({ completedLessons, currentLesson, onSelectLesson, lessons }: LessonSelectorProps) => {
   const { isAdmin } = useIsAdmin();
 
   return (
     <div className="space-y-4">
       <div className="text-center mb-6">
         <p className="text-sm text-muted-foreground">
-          {completedLessons.length} / 28 leçons terminées
+          {completedLessons.length} / {lessons.length} leçons terminées
         </p>
         <div className="w-full bg-muted rounded-full h-2 mt-2">
           <div
             className="bg-primary h-2 rounded-full transition-all duration-500"
-            style={{ width: `${(completedLessons.length / 28) * 100}%` }}
+            style={{ width: `${(completedLessons.length / lessons.length) * 100}%` }}
           />
         </div>
       </div>
 
       <div className="grid grid-cols-4 sm:grid-cols-7 gap-2" dir="rtl">
-        {niveau1Lessons.map((lesson, idx) => {
+        {lessons.map((lesson, idx) => {
           const isCompleted = completedLessons.includes(lesson.id);
-          const isUnlocked = isAdmin || idx === 0 || completedLessons.includes(niveau1Lessons[idx - 1].id);
+          const isUnlocked = isAdmin || idx === 0 || completedLessons.includes(lessons[idx - 1].id);
           const isActive = currentLesson === lesson.id;
 
           return (
