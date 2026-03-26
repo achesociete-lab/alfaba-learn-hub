@@ -7,6 +7,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Lesson } from "@/data/niveau1-lessons";
+import { useArabicSpeech } from "@/hooks/use-arabic-speech";
 
 interface LessonDetailProps {
   lesson: Lesson;
