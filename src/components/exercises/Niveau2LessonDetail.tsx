@@ -32,22 +32,28 @@ function GrammarTab({ lesson }: { lesson: Niveau2Lesson }) {
           <h4 className="font-semibold text-foreground mb-2">📝 {rule.title}</h4>
           <p className="text-sm text-muted-foreground mb-3">{rule.explanation}</p>
           <div className="space-y-2">
-            {rule.examples.map((ex, i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between p-3 rounded-lg bg-muted cursor-pointer hover:bg-primary/10 transition-colors"
-                onClick={() => speak(ex.arabic)}
-              >
-                <div className="flex items-center gap-2">
-                  <Volume2 className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <div>
-                    <p className="font-arabic text-xl text-foreground">{ex.arabic}</p>
-                    <p className="text-xs text-muted-foreground">{ex.transliteration}</p>
+            {rule.examples.map((ex, i) => {
+              const emoji = getIllustration(ex.meaning);
+              return (
+                <div
+                  key={i}
+                  className="flex items-center justify-between p-3 rounded-lg bg-muted cursor-pointer hover:bg-primary/10 transition-colors"
+                  onClick={() => speak(ex.arabic)}
+                >
+                  <div className="flex items-center gap-2">
+                    <Volume2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div>
+                      <p className="font-arabic text-xl text-foreground">{ex.arabic}</p>
+                      <p className="text-xs text-muted-foreground">{ex.transliteration}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-foreground font-medium">{ex.meaning}</p>
+                    {emoji && <span className="text-2xl" role="img">{emoji}</span>}
                   </div>
                 </div>
-                <p className="text-sm text-foreground font-medium">{ex.meaning}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       ))}
