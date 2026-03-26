@@ -64,17 +64,20 @@ function LessonTab({ lesson }: { lesson: Lesson }) {
       <div className="p-4 rounded-xl border border-border bg-card">
         <h4 className="font-semibold text-foreground mb-3">🎵 Avec les voyelles courtes</h4>
         <div className="grid grid-cols-3 gap-3">
-          <div className="text-center p-3 rounded-lg bg-muted">
+          <div className="text-center p-3 rounded-lg bg-muted cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => speak(lesson.vowelExamples.withFatha)}>
             <p className="font-arabic text-3xl text-foreground">{lesson.vowelExamples.withFatha}</p>
             <p className="text-xs text-muted-foreground mt-1">Fatha (a)</p>
+            <Volume2 className="h-3 w-3 text-muted-foreground mx-auto mt-1" />
           </div>
-          <div className="text-center p-3 rounded-lg bg-muted">
+          <div className="text-center p-3 rounded-lg bg-muted cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => speak(lesson.vowelExamples.withDamma)}>
             <p className="font-arabic text-3xl text-foreground">{lesson.vowelExamples.withDamma}</p>
             <p className="text-xs text-muted-foreground mt-1">Damma (ou)</p>
+            <Volume2 className="h-3 w-3 text-muted-foreground mx-auto mt-1" />
           </div>
-          <div className="text-center p-3 rounded-lg bg-muted">
+          <div className="text-center p-3 rounded-lg bg-muted cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => speak(lesson.vowelExamples.withKasra)}>
             <p className="font-arabic text-3xl text-foreground">{lesson.vowelExamples.withKasra}</p>
             <p className="text-xs text-muted-foreground mt-1">Kasra (i)</p>
+            <Volume2 className="h-3 w-3 text-muted-foreground mx-auto mt-1" />
           </div>
         </div>
       </div>
