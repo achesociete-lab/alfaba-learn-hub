@@ -52,7 +52,7 @@ const Niveau1 = () => (
         {/* Alphabet grid */}
         <section className="mb-16">
           <h2 className="text-2xl font-bold text-foreground mb-6 text-center">L'Alphabet Arabe</h2>
-          <div className="grid grid-cols-4 sm:grid-cols-7 gap-3 max-w-3xl mx-auto">
+          <div className="grid grid-cols-4 sm:grid-cols-7 gap-3 max-w-3xl mx-auto" dir="rtl">
             {alphabet.map((a, i) => (
               <motion.div
                 key={a.name + i}
