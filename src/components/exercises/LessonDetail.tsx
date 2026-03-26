@@ -87,10 +87,13 @@ function LessonTab({ lesson }: { lesson: Lesson }) {
         <h4 className="font-semibold text-foreground mb-3">📝 Exemples de mots</h4>
         <div className="space-y-3">
           {lesson.examples.map((ex, i) => (
-            <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted">
-              <div>
-                <p className="font-arabic text-xl text-foreground">{ex.arabic}</p>
-                <p className="text-xs text-muted-foreground">{ex.transliteration}</p>
+            <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => speak(ex.arabic)}>
+              <div className="flex items-center gap-2">
+                <Volume2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                <div>
+                  <p className="font-arabic text-xl text-foreground">{ex.arabic}</p>
+                  <p className="text-xs text-muted-foreground">{ex.transliteration}</p>
+                </div>
               </div>
               <p className="text-sm text-foreground font-medium">{ex.meaning}</p>
             </div>
