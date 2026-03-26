@@ -8,9 +8,10 @@ import AdminOverview from "@/components/admin/AdminOverview";
 import AdminStudents from "@/components/admin/AdminStudents";
 import AdminHomework from "@/components/admin/AdminHomework";
 import AdminAttendance from "@/components/admin/AdminAttendance";
+import AdminCourses from "@/components/admin/AdminCourses";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion } from "framer-motion";
-import { Shield, Users, FileText, ClipboardList, BarChart3 } from "lucide-react";
+import { Shield, Users, FileText, ClipboardList, BarChart3, BookOpen } from "lucide-react";
 
 const Admin = () => {
   const { user, loading: authLoading } = useAuth();
@@ -39,32 +40,36 @@ const Admin = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       <main className="pt-24 pb-16">
-        <div className="container mx-auto px-4 max-w-5xl">
+        <div className="container mx-auto px-4 max-w-6xl">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
             <div className="flex items-center gap-3 mb-2">
               <Shield className="h-6 w-6 text-primary" />
               <h1 className="text-3xl font-bold text-foreground">Espace Professeur</h1>
             </div>
-            <p className="text-muted-foreground">Gérez vos élèves, corrigez les devoirs et gérez l'émargement.</p>
+            <p className="text-muted-foreground">Gérez vos cours, élèves, devoirs et émargement.</p>
           </motion.div>
 
           <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="bg-muted">
-              <TabsTrigger value="overview" className="flex items-center gap-1.5">
+            <TabsList className="bg-muted flex-wrap h-auto gap-1 p-1">
+              <TabsTrigger value="overview" className="flex items-center gap-1.5 text-xs sm:text-sm">
                 <BarChart3 className="h-4 w-4" /> Vue d'ensemble
               </TabsTrigger>
-              <TabsTrigger value="students" className="flex items-center gap-1.5">
+              <TabsTrigger value="courses" className="flex items-center gap-1.5 text-xs sm:text-sm">
+                <BookOpen className="h-4 w-4" /> Cours
+              </TabsTrigger>
+              <TabsTrigger value="students" className="flex items-center gap-1.5 text-xs sm:text-sm">
                 <Users className="h-4 w-4" /> Élèves
               </TabsTrigger>
-              <TabsTrigger value="homework" className="flex items-center gap-1.5">
+              <TabsTrigger value="homework" className="flex items-center gap-1.5 text-xs sm:text-sm">
                 <FileText className="h-4 w-4" /> Devoirs
               </TabsTrigger>
-              <TabsTrigger value="attendance" className="flex items-center gap-1.5">
+              <TabsTrigger value="attendance" className="flex items-center gap-1.5 text-xs sm:text-sm">
                 <ClipboardList className="h-4 w-4" /> Émargement
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview"><AdminOverview /></TabsContent>
+            <TabsContent value="courses"><AdminCourses /></TabsContent>
             <TabsContent value="students"><AdminStudents /></TabsContent>
             <TabsContent value="homework"><AdminHomework /></TabsContent>
             <TabsContent value="attendance"><AdminAttendance /></TabsContent>
