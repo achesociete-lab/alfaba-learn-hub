@@ -1,49 +1,222 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
-  BookOpen, ChevronRight, CheckCircle, XCircle, Volume2,
-  Search, Eye, PenTool, Brain, FileText, ArrowLeft
+  BookOpen, CheckCircle, Volume2,
+  Search, ArrowLeft, Edit, Save, X, Plus, Trash2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { niveau1Lessons, type Lesson } from "@/data/niveau1-lessons";
-import { niveau2Lessons, type Niveau2Lesson } from "@/data/niveau2-lessons";
+import type { Lesson, LessonQCM, DictationItem, LessonExample } from "@/data/niveau1-lessons";
+import type { Niveau2Lesson, Niveau2QCM, Niveau2Dictation, GrammarRule, ComprehensionText } from "@/data/niveau2-lessons";
 import { useArabicSpeech } from "@/hooks/use-arabic-speech";
 import { getIllustration } from "@/utils/vocabulary-illustrations";
+import { useNiveau1Lessons, useNiveau2Lessons, updateLessonContent } from "@/hooks/use-lessons";
+import { toast } from "sonner";
 
-// ─── Niveau 1 Lesson Viewer ───
-function N1LessonViewer({ lesson, onBack }: { lesson: Lesson; onBack: () => void }) {
+// ─── Editable field ───
+function EditField({ label, value, onChange, dir, multiline }: { label: string; value: string; onChange: (v: string) => void; dir?: string; multiline?: boolean }) {
+  return (
+    <div className="space-y-1">
+      <label className="text-xs font-medium text-muted-foreground">{label}</label>
+      {multiline ? (
+        <Textarea value={value} onChange={(e) => onChange(e.target.value)} dir={dir} className="text-sm" />
+      ) : (
+        <Input value={value} onChange={(e) => onChange(e.target.value)} dir={dir} className="text-sm" />
+      )}
+    </div>
+  );
+}
+
+// ─── QCM Editor ───
+function QCMEditor({ qcm, onChange }: { qcm: LessonQCM[]; onChange: (q: LessonQCM[]) => void }) {
+  const updateQ = (idx: number, field: string, val: any) => {
+    const updated = [...qcm];
+    (updated[idx] as any)[field] = val;
+    onChange(updated);
+  };
+  const updateOption = (qIdx: number, oIdx: number, val: string) => {
+    const updated = [...qcm];
+    updated[qIdx].options[oIdx] = val;
+    onChange(updated);
+  };
+  const removeQ = (idx: number) => onChange(qcm.filter((_, i) => i !== idx));
+  const addQ = () => onChange([...qcm, { question: "", options: ["", "", "", ""], correctIndex: 0, explanation: "" }]);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h4 className="font-semibold text-foreground">🧠 QCM ({qcm.length})</h4>
+        <Button size="sm" variant="outline" onClick={addQ} className="gap-1"><Plus className="h-3 w-3" /> Ajouter</Button>
+      </div>
+      {qcm.map((q, i) => (
+        <div key={i} className="p-3 rounded-lg border border-border space-y-2">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1"><EditField label={`Question ${i + 1}`} value={q.question} onChange={(v) => updateQ(i, "question", v)} /></div>
+            <Button size="icon" variant="ghost" onClick={() => removeQ(i)} className="mt-5 text-destructive"><Trash2 className="h-4 w-4" /></Button>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {q.options.map((opt, idx) => (
+              <div key={idx} className="flex items-center gap-1">
+                <input type="radio" name={`qcm-${i}`} checked={q.correctIndex === idx} onChange={() => updateQ(i, "correctIndex", idx)} className="shrink-0" />
+                <Input value={opt} onChange={(e) => updateOption(i, idx, e.target.value)} className="text-xs h-8" />
+              </div>
+            ))}
+          </div>
+          <EditField label="Explication" value={q.explanation} onChange={(v) => updateQ(i, "explanation", v)} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Examples Editor ───
+function ExamplesEditor({ examples, onChange }: { examples: LessonExample[]; onChange: (e: LessonExample[]) => void }) {
+  const update = (idx: number, field: keyof LessonExample, val: string) => {
+    const updated = [...examples];
+    updated[idx] = { ...updated[idx], [field]: val };
+    onChange(updated);
+  };
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h4 className="font-semibold text-foreground">📖 Exemples ({examples.length})</h4>
+        <Button size="sm" variant="outline" onClick={() => onChange([...examples, { arabic: "", transliteration: "", meaning: "" }])} className="gap-1"><Plus className="h-3 w-3" /> Ajouter</Button>
+      </div>
+      {examples.map((ex, i) => (
+        <div key={i} className="grid grid-cols-3 gap-2 items-end">
+          <EditField label="Arabe" value={ex.arabic} onChange={(v) => update(i, "arabic", v)} dir="rtl" />
+          <EditField label="Translittération" value={ex.transliteration} onChange={(v) => update(i, "transliteration", v)} />
+          <div className="flex gap-1 items-end">
+            <div className="flex-1"><EditField label="Sens" value={ex.meaning} onChange={(v) => update(i, "meaning", v)} /></div>
+            <Button size="icon" variant="ghost" onClick={() => onChange(examples.filter((_, j) => j !== i))} className="text-destructive h-10"><Trash2 className="h-4 w-4" /></Button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Dictation Editor ───
+function DictationEditor({ dictation, onChange, wordKey }: { dictation: DictationItem[]; onChange: (d: DictationItem[]) => void; wordKey: string }) {
+  const updateD = (idx: number, field: string, val: any) => {
+    const updated = [...dictation];
+    (updated[idx] as any)[field] = val;
+    onChange(updated);
+  };
+  const updateOption = (dIdx: number, oIdx: number, val: string) => {
+    const updated = [...dictation];
+    updated[dIdx].options[oIdx] = val;
+    onChange(updated);
+  };
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h4 className="font-semibold text-foreground">✍️ Dictée ({dictation.length})</h4>
+        <Button size="sm" variant="outline" onClick={() => onChange([...dictation, { [wordKey]: "", transliteration: "", options: ["", "", "", ""], correctIndex: 0 } as any])} className="gap-1"><Plus className="h-3 w-3" /> Ajouter</Button>
+      </div>
+      {dictation.map((d, i) => (
+        <div key={i} className="p-3 rounded-lg border border-border space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            <EditField label="Mot/Phrase" value={(d as any)[wordKey]} onChange={(v) => updateD(i, wordKey, v)} dir="rtl" />
+            <EditField label="Translittération" value={d.transliteration} onChange={(v) => updateD(i, "transliteration", v)} />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {d.options.map((opt, idx) => (
+              <div key={idx} className="flex items-center gap-1">
+                <input type="radio" name={`dict-${i}`} checked={d.correctIndex === idx} onChange={() => updateD(i, "correctIndex", idx)} className="shrink-0" />
+                <Input value={opt} onChange={(e) => updateOption(i, idx, e.target.value)} className="text-xs h-8" dir="rtl" />
+              </div>
+            ))}
+          </div>
+          <Button size="sm" variant="ghost" onClick={() => onChange(dictation.filter((_, j) => j !== i))} className="text-destructive gap-1"><Trash2 className="h-3 w-3" /> Supprimer</Button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Niveau 1 Lesson Editor ───
+function N1LessonEditor({ lesson: initialLesson, onBack, onSaved }: { lesson: Lesson; onBack: () => void; onSaved: () => void }) {
   const { speak } = useArabicSpeech();
+  const [lesson, setLesson] = useState<Lesson>({ ...initialLesson });
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const update = (field: keyof Lesson, val: any) => setLesson(prev => ({ ...prev, [field]: val }));
+  const updateForm = (form: string, val: string) => setLesson(prev => ({ ...prev, forms: { ...prev.forms, [form]: val } }));
+  const updateVowel = (key: string, val: string) => setLesson(prev => ({ ...prev, vowelExamples: { ...prev.vowelExamples, [key]: val } }));
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await updateLessonContent("niveau_1", lesson.id, lesson);
+      toast.success("Leçon sauvegardée !");
+      setEditing(false);
+      onSaved();
+    } catch (err: any) {
+      toast.error("Erreur : " + err.message);
+    }
+    setSaving(false);
+  };
 
   return (
     <div className="space-y-6">
-      <Button variant="ghost" onClick={onBack} className="gap-2 mb-2">
-        <ArrowLeft className="h-4 w-4" /> Retour aux leçons
-      </Button>
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" onClick={onBack} className="gap-2"><ArrowLeft className="h-4 w-4" /> Retour</Button>
+        <div className="flex gap-2">
+          {editing ? (
+            <>
+              <Button variant="outline" onClick={() => { setLesson({ ...initialLesson }); setEditing(false); }} className="gap-1"><X className="h-4 w-4" /> Annuler</Button>
+              <Button onClick={save} disabled={saving} className="gap-1"><Save className="h-4 w-4" /> {saving ? "..." : "Sauvegarder"}</Button>
+            </>
+          ) : (
+            <Button variant="outline" onClick={() => setEditing(true)} className="gap-1"><Edit className="h-4 w-4" /> Modifier</Button>
+          )}
+        </div>
+      </div>
 
+      {/* Header */}
       <div className="p-4 rounded-xl border border-border bg-card">
         <div className="flex items-center gap-3 mb-3">
-          <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center font-arabic text-2xl text-primary">
-            {lesson.letter}
-          </div>
-          <div>
-            <h3 className="font-bold text-foreground">Leçon {lesson.id} — {lesson.name} ({lesson.letter})</h3>
-            <p className="text-xs text-muted-foreground">{lesson.pronunciation}</p>
+          <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center font-arabic text-2xl text-primary">{lesson.letter}</div>
+          <div className="flex-1">
+            {editing ? (
+              <div className="grid grid-cols-2 gap-2">
+                <EditField label="Nom" value={lesson.name} onChange={(v) => update("name", v)} />
+                <EditField label="Lettre" value={lesson.letter} onChange={(v) => update("letter", v)} dir="rtl" />
+                <EditField label="Translittération" value={lesson.transliteration} onChange={(v) => update("transliteration", v)} />
+              </div>
+            ) : (
+              <>
+                <h3 className="font-bold text-foreground">Leçon {lesson.id} — {lesson.name} ({lesson.letter})</h3>
+                <p className="text-xs text-muted-foreground">{lesson.pronunciation}</p>
+              </>
+            )}
           </div>
         </div>
-        <p className="text-sm text-muted-foreground">{lesson.description}</p>
+        {editing ? (
+          <div className="space-y-2">
+            <EditField label="Prononciation" value={lesson.pronunciation} onChange={(v) => update("pronunciation", v)} />
+            <EditField label="Description" value={lesson.description} onChange={(v) => update("description", v)} multiline />
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">{lesson.description}</p>
+        )}
       </div>
 
       {/* Formes */}
       <div className="p-4 rounded-xl border border-border bg-card">
-        <h4 className="font-semibold text-foreground mb-3">📝 Formes de la lettre</h4>
+        <h4 className="font-semibold text-foreground mb-3">📝 Formes</h4>
         <div className="grid grid-cols-4 gap-3">
           {(["isolated", "initial", "medial", "final"] as const).map((form) => (
             <div key={form} className="text-center p-3 rounded-lg bg-muted">
-              <p className="font-arabic text-2xl text-foreground">{lesson.forms[form]}</p>
-              <p className="text-[10px] text-muted-foreground mt-1 capitalize">{form === "isolated" ? "Isolée" : form === "initial" ? "Début" : form === "medial" ? "Milieu" : "Fin"}</p>
+              {editing ? (
+                <Input value={lesson.forms[form]} onChange={(e) => updateForm(form, e.target.value)} className="text-center font-arabic text-xl h-10" dir="rtl" />
+              ) : (
+                <p className="font-arabic text-2xl text-foreground">{lesson.forms[form]}</p>
+              )}
+              <p className="text-[10px] text-muted-foreground mt-1">{form === "isolated" ? "Isolée" : form === "initial" ? "Début" : form === "medial" ? "Milieu" : "Fin"}</p>
             </div>
           ))}
         </div>
@@ -54,12 +227,12 @@ function N1LessonViewer({ lesson, onBack }: { lesson: Lesson; onBack: () => void
         <h4 className="font-semibold text-foreground mb-3">🔤 Voyelles</h4>
         <div className="grid grid-cols-3 gap-3">
           {(["withFatha", "withDamma", "withKasra"] as const).map((v) => (
-            <div
-              key={v}
-              className="text-center p-3 rounded-lg bg-muted cursor-pointer hover:bg-primary/10 transition-colors"
-              onClick={() => speak(lesson.vowelExamples[v])}
-            >
-              <p className="font-arabic text-2xl text-foreground">{lesson.vowelExamples[v]}</p>
+            <div key={v} className="text-center p-3 rounded-lg bg-muted cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => !editing && speak(lesson.vowelExamples[v])}>
+              {editing ? (
+                <Input value={lesson.vowelExamples[v]} onChange={(e) => updateVowel(v, e.target.value)} className="text-center font-arabic text-xl h-10" dir="rtl" />
+              ) : (
+                <p className="font-arabic text-2xl text-foreground">{lesson.vowelExamples[v]}</p>
+              )}
               <p className="text-[10px] text-muted-foreground mt-1">{v === "withFatha" ? "Fatha" : v === "withDamma" ? "Damma" : "Kasra"}</p>
             </div>
           ))}
@@ -68,180 +241,286 @@ function N1LessonViewer({ lesson, onBack }: { lesson: Lesson; onBack: () => void
 
       {/* Exemples */}
       <div className="p-4 rounded-xl border border-border bg-card">
-        <h4 className="font-semibold text-foreground mb-3">📖 Exemples ({lesson.examples.length})</h4>
-        <div className="space-y-2">
-          {lesson.examples.map((ex, i) => (
-            <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => speak(ex.arabic)}>
-              <div className="flex items-center gap-2">
-                <Volume2 className="h-4 w-4 text-muted-foreground shrink-0" />
-                <div>
-                  <p className="font-arabic text-lg text-foreground">{ex.arabic}</p>
-                  <p className="text-xs text-muted-foreground">{ex.transliteration}</p>
+        {editing ? (
+          <ExamplesEditor examples={lesson.examples} onChange={(e) => update("examples", e)} />
+        ) : (
+          <>
+            <h4 className="font-semibold text-foreground mb-3">📖 Exemples ({lesson.examples.length})</h4>
+            <div className="space-y-2">
+              {lesson.examples.map((ex, i) => (
+                <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => speak(ex.arabic)}>
+                  <div className="flex items-center gap-2">
+                    <Volume2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div>
+                      <p className="font-arabic text-lg text-foreground">{ex.arabic}</p>
+                      <p className="text-xs text-muted-foreground">{ex.transliteration}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-foreground font-medium">{ex.meaning}</p>
+                    {getIllustration(ex.meaning) && <span className="text-xl">{getIllustration(ex.meaning)}</span>}
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <p className="text-sm text-foreground font-medium">{ex.meaning}</p>
-                {getIllustration(ex.meaning) && <span className="text-xl">{getIllustration(ex.meaning)}</span>}
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </>
+        )}
       </div>
 
       {/* QCM */}
       <div className="p-4 rounded-xl border border-border bg-card">
-        <h4 className="font-semibold text-foreground mb-3">🧠 QCM ({lesson.qcm.length} questions)</h4>
-        <div className="space-y-4">
-          {lesson.qcm.map((q, i) => (
-            <div key={i} className="p-3 rounded-lg bg-muted">
-              <p className="text-sm font-medium text-foreground mb-2">Q{i + 1}. {q.question}</p>
-              <div className="grid grid-cols-2 gap-2">
-                {q.options.map((opt, idx) => (
-                  <div key={idx} className={`p-2 rounded text-xs ${idx === q.correctIndex ? "bg-primary/10 text-primary border border-primary/30 font-semibold" : "bg-background text-muted-foreground border border-border"}`}>
-                    {idx === q.correctIndex && <CheckCircle className="h-3 w-3 inline mr-1" />}
-                    {opt}
+        {editing ? (
+          <QCMEditor qcm={lesson.qcm} onChange={(q) => update("qcm", q)} />
+        ) : (
+          <>
+            <h4 className="font-semibold text-foreground mb-3">🧠 QCM ({lesson.qcm.length})</h4>
+            <div className="space-y-4">
+              {lesson.qcm.map((q, i) => (
+                <div key={i} className="p-3 rounded-lg bg-muted">
+                  <p className="text-sm font-medium text-foreground mb-2">Q{i + 1}. {q.question}</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {q.options.map((opt, idx) => (
+                      <div key={idx} className={`p-2 rounded text-xs ${idx === q.correctIndex ? "bg-primary/10 text-primary border border-primary/30 font-semibold" : "bg-background text-muted-foreground border border-border"}`}>
+                        {idx === q.correctIndex && <CheckCircle className="h-3 w-3 inline mr-1" />}{opt}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground mt-2 italic">💡 {q.explanation}</p>
+                  <p className="text-xs text-muted-foreground mt-2 italic">💡 {q.explanation}</p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </>
+        )}
       </div>
 
       {/* Dictée */}
       <div className="p-4 rounded-xl border border-border bg-card">
-        <h4 className="font-semibold text-foreground mb-3">✍️ Dictée ({lesson.dictation.length} items)</h4>
-        <div className="space-y-3">
-          {lesson.dictation.map((d, i) => (
-            <div key={i} className="p-3 rounded-lg bg-muted">
-              <p className="text-sm font-medium text-foreground mb-1">
-                <span className="font-arabic text-lg">{d.word}</span> — {d.transliteration}
-              </p>
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                {d.options.map((opt, idx) => (
-                  <div key={idx} className={`p-2 rounded font-arabic text-sm ${idx === d.correctIndex ? "bg-primary/10 text-primary border border-primary/30 font-semibold" : "bg-background text-muted-foreground border border-border"}`}>
-                    {idx === d.correctIndex && <CheckCircle className="h-3 w-3 inline mr-1" />}
-                    {opt}
+        {editing ? (
+          <DictationEditor dictation={lesson.dictation} onChange={(d) => update("dictation", d)} wordKey="word" />
+        ) : (
+          <>
+            <h4 className="font-semibold text-foreground mb-3">✍️ Dictée ({lesson.dictation.length})</h4>
+            <div className="space-y-3">
+              {lesson.dictation.map((d, i) => (
+                <div key={i} className="p-3 rounded-lg bg-muted">
+                  <p className="text-sm font-medium text-foreground mb-1"><span className="font-arabic text-lg">{d.word}</span> — {d.transliteration}</p>
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    {d.options.map((opt, idx) => (
+                      <div key={idx} className={`p-2 rounded font-arabic text-sm ${idx === d.correctIndex ? "bg-primary/10 text-primary border border-primary/30 font-semibold" : "bg-background text-muted-foreground border border-border"}`}>
+                        {idx === d.correctIndex && <CheckCircle className="h-3 w-3 inline mr-1" />}{opt}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </>
+        )}
       </div>
     </div>
   );
 }
 
-// ─── Niveau 2 Lesson Viewer ───
-function N2LessonViewer({ lesson, onBack }: { lesson: Niveau2Lesson; onBack: () => void }) {
+// ─── Niveau 2 Lesson Editor ───
+function N2LessonEditor({ lesson: initialLesson, onBack, onSaved }: { lesson: Niveau2Lesson; onBack: () => void; onSaved: () => void }) {
   const { speak } = useArabicSpeech();
+  const [lesson, setLesson] = useState<Niveau2Lesson>({ ...initialLesson });
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const update = (field: keyof Niveau2Lesson, val: any) => setLesson(prev => ({ ...prev, [field]: val }));
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await updateLessonContent("niveau_2", lesson.id, lesson);
+      toast.success("Leçon sauvegardée !");
+      setEditing(false);
+      onSaved();
+    } catch (err: any) {
+      toast.error("Erreur : " + err.message);
+    }
+    setSaving(false);
+  };
 
   return (
     <div className="space-y-6">
-      <Button variant="ghost" onClick={onBack} className="gap-2 mb-2">
-        <ArrowLeft className="h-4 w-4" /> Retour aux leçons
-      </Button>
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" onClick={onBack} className="gap-2"><ArrowLeft className="h-4 w-4" /> Retour</Button>
+        <div className="flex gap-2">
+          {editing ? (
+            <>
+              <Button variant="outline" onClick={() => { setLesson({ ...initialLesson }); setEditing(false); }} className="gap-1"><X className="h-4 w-4" /> Annuler</Button>
+              <Button onClick={save} disabled={saving} className="gap-1"><Save className="h-4 w-4" /> {saving ? "..." : "Sauvegarder"}</Button>
+            </>
+          ) : (
+            <Button variant="outline" onClick={() => setEditing(true)} className="gap-1"><Edit className="h-4 w-4" /> Modifier</Button>
+          )}
+        </div>
+      </div>
 
+      {/* Header */}
       <div className="p-4 rounded-xl border border-border bg-card">
-        <h3 className="font-bold text-foreground mb-1">Leçon {lesson.id} — {lesson.title}</h3>
-        <p className="text-xs text-muted-foreground mb-2">{lesson.subtitle}</p>
-        <p className="text-sm text-muted-foreground">{lesson.description}</p>
+        {editing ? (
+          <div className="space-y-2">
+            <EditField label="Titre" value={lesson.title} onChange={(v) => update("title", v)} />
+            <EditField label="Sous-titre" value={lesson.subtitle} onChange={(v) => update("subtitle", v)} />
+            <EditField label="Description" value={lesson.description} onChange={(v) => update("description", v)} multiline />
+          </div>
+        ) : (
+          <>
+            <h3 className="font-bold text-foreground mb-1">Leçon {lesson.id} — {lesson.title}</h3>
+            <p className="text-xs text-muted-foreground mb-2">{lesson.subtitle}</p>
+            <p className="text-sm text-muted-foreground">{lesson.description}</p>
+          </>
+        )}
       </div>
 
       {/* Grammaire */}
       {lesson.grammar.map((rule, idx) => (
         <div key={idx} className="p-4 rounded-xl border border-border bg-card">
-          <h4 className="font-semibold text-foreground mb-2">📝 {rule.title}</h4>
-          <p className="text-sm text-muted-foreground mb-3">{rule.explanation}</p>
-          <div className="space-y-2">
-            {rule.examples.map((ex, i) => (
-              <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => speak(ex.arabic)}>
-                <div className="flex items-center gap-2">
-                  <Volume2 className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <div>
-                    <p className="font-arabic text-lg text-foreground">{ex.arabic}</p>
-                    <p className="text-xs text-muted-foreground">{ex.transliteration}</p>
-                  </div>
+          {editing ? (
+            <div className="space-y-2">
+              <EditField label="Titre règle" value={rule.title} onChange={(v) => {
+                const g = [...lesson.grammar];
+                g[idx] = { ...g[idx], title: v };
+                update("grammar", g);
+              }} />
+              <EditField label="Explication" value={rule.explanation} onChange={(v) => {
+                const g = [...lesson.grammar];
+                g[idx] = { ...g[idx], explanation: v };
+                update("grammar", g);
+              }} multiline />
+              {rule.examples.map((ex, i) => (
+                <div key={i} className="grid grid-cols-3 gap-2">
+                  <Input value={ex.arabic} dir="rtl" onChange={(e) => {
+                    const g = [...lesson.grammar];
+                    g[idx].examples[i] = { ...g[idx].examples[i], arabic: e.target.value };
+                    update("grammar", g);
+                  }} className="text-sm font-arabic" />
+                  <Input value={ex.transliteration} onChange={(e) => {
+                    const g = [...lesson.grammar];
+                    g[idx].examples[i] = { ...g[idx].examples[i], transliteration: e.target.value };
+                    update("grammar", g);
+                  }} className="text-sm" />
+                  <Input value={ex.meaning} onChange={(e) => {
+                    const g = [...lesson.grammar];
+                    g[idx].examples[i] = { ...g[idx].examples[i], meaning: e.target.value };
+                    update("grammar", g);
+                  }} className="text-sm" />
                 </div>
-                <p className="text-sm text-foreground font-medium">{ex.meaning}</p>
+              ))}
+            </div>
+          ) : (
+            <>
+              <h4 className="font-semibold text-foreground mb-2">📝 {rule.title}</h4>
+              <p className="text-sm text-muted-foreground mb-3">{rule.explanation}</p>
+              <div className="space-y-2">
+                {rule.examples.map((ex, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => speak(ex.arabic)}>
+                    <div className="flex items-center gap-2">
+                      <Volume2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <div>
+                        <p className="font-arabic text-lg text-foreground">{ex.arabic}</p>
+                        <p className="text-xs text-muted-foreground">{ex.transliteration}</p>
+                      </div>
+                    </div>
+                    <p className="text-sm text-foreground font-medium">{ex.meaning}</p>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </>
+          )}
         </div>
       ))}
 
       {/* Compréhension */}
       <div className="p-4 rounded-xl border border-border bg-card">
-        <h4 className="font-semibold text-foreground mb-2">📚 {lesson.comprehension.title}</h4>
-        <div className="p-3 rounded-lg bg-muted cursor-pointer hover:bg-primary/10 transition-colors mb-3" onClick={() => speak(lesson.comprehension.arabic)}>
-          <div className="flex items-center gap-2 mb-1">
-            <Volume2 className="h-4 w-4 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">Cliquez pour écouter</span>
+        {editing ? (
+          <div className="space-y-2">
+            <EditField label="Titre compréhension" value={lesson.comprehension.title} onChange={(v) => update("comprehension", { ...lesson.comprehension, title: v })} />
+            <EditField label="Texte arabe" value={lesson.comprehension.arabic} onChange={(v) => update("comprehension", { ...lesson.comprehension, arabic: v })} dir="rtl" multiline />
+            <EditField label="Traduction" value={lesson.comprehension.translation} onChange={(v) => update("comprehension", { ...lesson.comprehension, translation: v })} multiline />
           </div>
-          <p className="font-arabic text-base leading-loose text-foreground">{lesson.comprehension.arabic}</p>
-        </div>
-        <p className="text-sm text-muted-foreground italic mb-3">{lesson.comprehension.translation}</p>
-        <div className="space-y-3">
-          {lesson.comprehension.questions.map((q, i) => (
-            <div key={i} className="p-3 rounded-lg bg-muted/50">
-              <p className="text-sm font-medium text-foreground mb-2">Q{i + 1}. {q.question}</p>
-              <div className="grid grid-cols-2 gap-2">
-                {q.options.map((opt, idx) => (
-                  <div key={idx} className={`p-2 rounded text-xs ${idx === q.correctIndex ? "bg-primary/10 text-primary border border-primary/30 font-semibold" : "bg-background text-muted-foreground border border-border"}`}>
-                    {idx === q.correctIndex && <CheckCircle className="h-3 w-3 inline mr-1" />}
-                    {opt}
-                  </div>
-                ))}
+        ) : (
+          <>
+            <h4 className="font-semibold text-foreground mb-2">📚 {lesson.comprehension.title}</h4>
+            <div className="p-3 rounded-lg bg-muted cursor-pointer hover:bg-primary/10 transition-colors mb-3" onClick={() => speak(lesson.comprehension.arabic)}>
+              <div className="flex items-center gap-2 mb-1">
+                <Volume2 className="h-4 w-4 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">Cliquez pour écouter</span>
               </div>
-              <p className="text-xs text-muted-foreground mt-2 italic">💡 {q.explanation}</p>
+              <p className="font-arabic text-base leading-loose text-foreground">{lesson.comprehension.arabic}</p>
             </div>
-          ))}
-        </div>
+            <p className="text-sm text-muted-foreground italic mb-3">{lesson.comprehension.translation}</p>
+            <div className="space-y-3">
+              {lesson.comprehension.questions.map((q, i) => (
+                <div key={i} className="p-3 rounded-lg bg-muted/50">
+                  <p className="text-sm font-medium text-foreground mb-2">Q{i + 1}. {q.question}</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {q.options.map((opt, idx) => (
+                      <div key={idx} className={`p-2 rounded text-xs ${idx === q.correctIndex ? "bg-primary/10 text-primary border border-primary/30 font-semibold" : "bg-background text-muted-foreground border border-border"}`}>
+                        {idx === q.correctIndex && <CheckCircle className="h-3 w-3 inline mr-1" />}{opt}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2 italic">💡 {q.explanation}</p>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {/* QCM */}
       <div className="p-4 rounded-xl border border-border bg-card">
-        <h4 className="font-semibold text-foreground mb-3">🧠 QCM ({lesson.qcm.length} questions)</h4>
-        <div className="space-y-4">
-          {lesson.qcm.map((q, i) => (
-            <div key={i} className="p-3 rounded-lg bg-muted">
-              <p className="text-sm font-medium text-foreground mb-2">Q{i + 1}. {q.question}</p>
-              <div className="grid grid-cols-2 gap-2">
-                {q.options.map((opt, idx) => (
-                  <div key={idx} className={`p-2 rounded text-xs ${idx === q.correctIndex ? "bg-primary/10 text-primary border border-primary/30 font-semibold" : "bg-background text-muted-foreground border border-border"}`}>
-                    {idx === q.correctIndex && <CheckCircle className="h-3 w-3 inline mr-1" />}
-                    {opt}
+        {editing ? (
+          <QCMEditor qcm={lesson.qcm} onChange={(q) => update("qcm", q)} />
+        ) : (
+          <>
+            <h4 className="font-semibold text-foreground mb-3">🧠 QCM ({lesson.qcm.length})</h4>
+            <div className="space-y-4">
+              {lesson.qcm.map((q, i) => (
+                <div key={i} className="p-3 rounded-lg bg-muted">
+                  <p className="text-sm font-medium text-foreground mb-2">Q{i + 1}. {q.question}</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {q.options.map((opt, idx) => (
+                      <div key={idx} className={`p-2 rounded text-xs ${idx === q.correctIndex ? "bg-primary/10 text-primary border border-primary/30 font-semibold" : "bg-background text-muted-foreground border border-border"}`}>
+                        {idx === q.correctIndex && <CheckCircle className="h-3 w-3 inline mr-1" />}{opt}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground mt-2 italic">💡 {q.explanation}</p>
+                  <p className="text-xs text-muted-foreground mt-2 italic">💡 {q.explanation}</p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </>
+        )}
       </div>
 
       {/* Dictée */}
       <div className="p-4 rounded-xl border border-border bg-card">
-        <h4 className="font-semibold text-foreground mb-3">✍️ Dictée ({lesson.dictation.length} items)</h4>
-        <div className="space-y-3">
-          {lesson.dictation.map((d, i) => (
-            <div key={i} className="p-3 rounded-lg bg-muted">
-              <p className="text-sm font-medium text-foreground mb-1">
-                <span className="font-arabic text-lg">{d.sentence}</span> — {d.transliteration}
-              </p>
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                {d.options.map((opt, idx) => (
-                  <div key={idx} className={`p-2 rounded font-arabic text-sm ${idx === d.correctIndex ? "bg-primary/10 text-primary border border-primary/30 font-semibold" : "bg-background text-muted-foreground border border-border"}`}>
-                    {idx === d.correctIndex && <CheckCircle className="h-3 w-3 inline mr-1" />}
-                    {opt}
+        {editing ? (
+          <DictationEditor dictation={lesson.dictation as any} onChange={(d) => update("dictation", d)} wordKey="sentence" />
+        ) : (
+          <>
+            <h4 className="font-semibold text-foreground mb-3">✍️ Dictée ({lesson.dictation.length})</h4>
+            <div className="space-y-3">
+              {lesson.dictation.map((d, i) => (
+                <div key={i} className="p-3 rounded-lg bg-muted">
+                  <p className="text-sm font-medium text-foreground mb-1"><span className="font-arabic text-lg">{d.sentence}</span> — {d.transliteration}</p>
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    {d.options.map((opt, idx) => (
+                      <div key={idx} className={`p-2 rounded font-arabic text-sm ${idx === d.correctIndex ? "bg-primary/10 text-primary border border-primary/30 font-semibold" : "bg-background text-muted-foreground border border-border"}`}>
+                        {idx === d.correctIndex && <CheckCircle className="h-3 w-3 inline mr-1" />}{opt}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -254,16 +533,18 @@ const AdminCourses = () => {
   const [selectedN1, setSelectedN1] = useState<Lesson | null>(null);
   const [selectedN2, setSelectedN2] = useState<Niveau2Lesson | null>(null);
 
-  const filteredN1 = niveau1Lessons.filter(
+  const { lessons: n1Lessons, refetch: refetchN1 } = useNiveau1Lessons();
+  const { lessons: n2Lessons, refetch: refetchN2 } = useNiveau2Lessons();
+
+  const filteredN1 = n1Lessons.filter(
     (l) => l.name.toLowerCase().includes(search.toLowerCase()) || l.letter.includes(search) || l.id.toString() === search
   );
-  const filteredN2 = niveau2Lessons.filter(
+  const filteredN2 = n2Lessons.filter(
     (l) => l.title.toLowerCase().includes(search.toLowerCase()) || l.id.toString() === search
   );
 
-  // If viewing a lesson detail
-  if (selectedN1) return <N1LessonViewer lesson={selectedN1} onBack={() => setSelectedN1(null)} />;
-  if (selectedN2) return <N2LessonViewer lesson={selectedN2} onBack={() => setSelectedN2(null)} />;
+  if (selectedN1) return <N1LessonEditor lesson={selectedN1} onBack={() => setSelectedN1(null)} onSaved={() => { refetchN1(); }} />;
+  if (selectedN2) return <N2LessonEditor lesson={selectedN2} onBack={() => setSelectedN2(null)} onSaved={() => { refetchN2(); }} />;
 
   return (
     <div>
@@ -275,70 +556,61 @@ const AdminCourses = () => {
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Rechercher une leçon..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
+          <Input placeholder="Rechercher une leçon..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => setLevel("niveau_1")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-              level === "niveau_1" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/30"
-            }`}
+            className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${level === "niveau_1" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/30"}`}
           >
-            Niveau 1 ({niveau1Lessons.length} leçons)
+            Niveau 1 ({n1Lessons.length})
           </button>
           <button
             onClick={() => setLevel("niveau_2")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-              level === "niveau_2" ? "border-gold bg-gold/10 text-gold" : "border-border text-muted-foreground hover:border-gold/30"
-            }`}
+            className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${level === "niveau_2" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/30"}`}
           >
-            Niveau 2 ({niveau2Lessons.length} leçons)
+            Niveau 2 ({n2Lessons.length})
           </button>
         </div>
       </div>
 
-      {/* Stats summary */}
+      {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         {level === "niveau_1" ? (
           <>
             <div className="p-3 rounded-lg border border-border bg-card text-center">
-              <p className="text-2xl font-bold text-foreground">{niveau1Lessons.length}</p>
+              <p className="text-2xl font-bold text-foreground">{n1Lessons.length}</p>
               <p className="text-xs text-muted-foreground">Leçons</p>
             </div>
             <div className="p-3 rounded-lg border border-border bg-card text-center">
-              <p className="text-2xl font-bold text-foreground">{niveau1Lessons.reduce((s, l) => s + l.qcm.length, 0)}</p>
+              <p className="text-2xl font-bold text-foreground">{n1Lessons.reduce((s, l) => s + l.qcm.length, 0)}</p>
               <p className="text-xs text-muted-foreground">Questions QCM</p>
             </div>
             <div className="p-3 rounded-lg border border-border bg-card text-center">
-              <p className="text-2xl font-bold text-foreground">{niveau1Lessons.reduce((s, l) => s + l.dictation.length, 0)}</p>
+              <p className="text-2xl font-bold text-foreground">{n1Lessons.reduce((s, l) => s + l.dictation.length, 0)}</p>
               <p className="text-xs text-muted-foreground">Items dictée</p>
             </div>
             <div className="p-3 rounded-lg border border-border bg-card text-center">
-              <p className="text-2xl font-bold text-foreground">{niveau1Lessons.reduce((s, l) => s + l.examples.length, 0)}</p>
+              <p className="text-2xl font-bold text-foreground">{n1Lessons.reduce((s, l) => s + l.examples.length, 0)}</p>
               <p className="text-xs text-muted-foreground">Exemples vocab</p>
             </div>
           </>
         ) : (
           <>
             <div className="p-3 rounded-lg border border-border bg-card text-center">
-              <p className="text-2xl font-bold text-foreground">{niveau2Lessons.length}</p>
+              <p className="text-2xl font-bold text-foreground">{n2Lessons.length}</p>
               <p className="text-xs text-muted-foreground">Leçons</p>
             </div>
             <div className="p-3 rounded-lg border border-border bg-card text-center">
-              <p className="text-2xl font-bold text-foreground">{niveau2Lessons.reduce((s, l) => s + l.qcm.length + l.comprehension.questions.length, 0)}</p>
+              <p className="text-2xl font-bold text-foreground">{n2Lessons.reduce((s, l) => s + l.qcm.length + l.comprehension.questions.length, 0)}</p>
               <p className="text-xs text-muted-foreground">Questions QCM</p>
             </div>
             <div className="p-3 rounded-lg border border-border bg-card text-center">
-              <p className="text-2xl font-bold text-foreground">{niveau2Lessons.reduce((s, l) => s + l.dictation.length, 0)}</p>
+              <p className="text-2xl font-bold text-foreground">{n2Lessons.reduce((s, l) => s + l.dictation.length, 0)}</p>
               <p className="text-xs text-muted-foreground">Items dictée</p>
             </div>
             <div className="p-3 rounded-lg border border-border bg-card text-center">
-              <p className="text-2xl font-bold text-foreground">{niveau2Lessons.reduce((s, l) => s + l.grammar.length, 0)}</p>
+              <p className="text-2xl font-bold text-foreground">{n2Lessons.reduce((s, l) => s + l.grammar.length, 0)}</p>
               <p className="text-xs text-muted-foreground">Règles grammaire</p>
             </div>
           </>
@@ -357,21 +629,15 @@ const AdminCourses = () => {
               onClick={() => setSelectedN1(lesson)}
               className="flex items-center gap-4 p-4 rounded-xl border border-border bg-card hover:border-primary/30 cursor-pointer transition-colors"
             >
-              <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center font-arabic text-2xl text-primary shrink-0">
-                {lesson.letter}
-              </div>
+              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center font-arabic text-xl text-primary shrink-0">{lesson.letter}</div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-semibold text-foreground">
-                  Leçon {lesson.id} — {lesson.name}
-                </h3>
+                <h3 className="text-sm font-semibold text-foreground">Leçon {lesson.id} — {lesson.name}</h3>
                 <p className="text-xs text-muted-foreground truncate">{lesson.pronunciation}</p>
               </div>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground shrink-0">
-                <span className="flex items-center gap-1"><Brain className="h-3 w-3" /> {lesson.qcm.length}</span>
-                <span className="flex items-center gap-1"><PenTool className="h-3 w-3" /> {lesson.dictation.length}</span>
-                <span className="flex items-center gap-1"><FileText className="h-3 w-3" /> {lesson.examples.length}</span>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-xs text-muted-foreground">{lesson.qcm.length} QCM</span>
+                <Edit className="h-4 w-4 text-muted-foreground" />
               </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
             </motion.div>
           ))
         ) : (
@@ -382,21 +648,17 @@ const AdminCourses = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.02 }}
               onClick={() => setSelectedN2(lesson)}
-              className="flex items-center gap-4 p-4 rounded-xl border border-border bg-card hover:border-gold/30 cursor-pointer transition-colors"
+              className="flex items-center gap-4 p-4 rounded-xl border border-border bg-card hover:border-primary/30 cursor-pointer transition-colors"
             >
-              <div className="h-12 w-12 rounded-xl bg-gold/10 flex items-center justify-center text-gold font-bold text-lg shrink-0">
-                {lesson.id}
-              </div>
+              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-sm font-bold shrink-0">{lesson.id}</div>
               <div className="flex-1 min-w-0">
                 <h3 className="text-sm font-semibold text-foreground">{lesson.title}</h3>
                 <p className="text-xs text-muted-foreground truncate">{lesson.subtitle}</p>
               </div>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground shrink-0">
-                <span className="flex items-center gap-1"><Brain className="h-3 w-3" /> {lesson.qcm.length + lesson.comprehension.questions.length}</span>
-                <span className="flex items-center gap-1"><PenTool className="h-3 w-3" /> {lesson.dictation.length}</span>
-                <span className="flex items-center gap-1"><BookOpen className="h-3 w-3" /> {lesson.grammar.length}</span>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-xs text-muted-foreground">{lesson.qcm.length + lesson.comprehension.questions.length} Q</span>
+                <Edit className="h-4 w-4 text-muted-foreground" />
               </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
             </motion.div>
           ))
         )}
