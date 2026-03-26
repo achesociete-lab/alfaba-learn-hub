@@ -17,11 +17,17 @@ interface LessonDetailProps {
 
 // ─── Lesson Tab ───
 function LessonTab({ lesson }: { lesson: Lesson }) {
+  const { speak } = useArabicSpeech();
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
       {/* Letter display */}
-      <div className="text-center p-8 rounded-xl border border-border bg-card">
-        <p className="font-arabic text-8xl text-foreground mb-4">{lesson.letter}</p>
+      <div className="text-center p-8 rounded-xl border border-border bg-card cursor-pointer group" onClick={() => speak(lesson.letter)}>
+        <p className="font-arabic text-8xl text-foreground mb-4 group-hover:text-primary transition-colors">{lesson.letter}</p>
+        <div className="flex items-center justify-center gap-2">
+          <Volume2 className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+          <span className="text-xs text-muted-foreground">Cliquez pour écouter</span>
+        </div>
         <h3 className="text-2xl font-bold text-foreground">{lesson.name}</h3>
         <p className="text-muted-foreground mt-1">{lesson.transliteration}</p>
       </div>
