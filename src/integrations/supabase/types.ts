@@ -143,6 +143,33 @@ export type Database = {
         }
         Relationships: []
       }
+      lessons: {
+        Row: {
+          content: Json
+          created_at: string
+          id: string
+          lesson_number: number
+          level: Database["public"]["Enums"]["class_level"]
+          updated_at: string
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          id?: string
+          lesson_number: number
+          level: Database["public"]["Enums"]["class_level"]
+          updated_at?: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          id?: string
+          lesson_number?: number
+          level?: Database["public"]["Enums"]["class_level"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
