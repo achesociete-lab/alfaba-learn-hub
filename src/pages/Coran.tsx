@@ -65,6 +65,8 @@ const Coran = () => {
 
   // Vocal profile
   const [hasVocalProfile, setHasVocalProfile] = useState(false);
+  const [userVoiceId, setUserVoiceId] = useState<string | null>(null);
+  const [cloningVoice, setCloningVoice] = useState(false);
   const [setupMode, setSetupMode] = useState(false);
   const setupRecorder = useAudioRecorder();
 
