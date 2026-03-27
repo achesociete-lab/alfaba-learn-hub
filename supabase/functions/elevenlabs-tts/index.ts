@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { text, rate } = await req.json();
+    const { text, rate, voiceId: customVoiceId } = await req.json();
 
     if (!text?.trim()) {
       return new Response(JSON.stringify({ error: 'Text is required' }), {
