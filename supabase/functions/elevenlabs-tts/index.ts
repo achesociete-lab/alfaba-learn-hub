@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { text, rate } = await req.json();
+    const { text, rate, voiceId: customVoiceId } = await req.json();
 
     if (!text?.trim()) {
       return new Response(JSON.stringify({ error: 'Text is required' }), {
@@ -25,8 +25,8 @@ serve(async (req) => {
       throw new Error('ELEVENLABS_API_KEY is not configured');
     }
 
-    // Use a voice good for Arabic - "River" is multilingual
-    const voiceId = 'SAz9YHcvj6GT2YYXdXww'; // River voice
+    // Use custom voice if provided, otherwise default to "River"
+    const voiceId = customVoiceId || 'SAz9YHcvj6GT2YYXdXww';
 
     const speed = rate ?? 0.8;
 

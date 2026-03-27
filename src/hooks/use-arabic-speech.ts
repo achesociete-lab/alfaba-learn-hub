@@ -7,7 +7,7 @@ export function useArabicSpeech() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  const speak = useCallback(async (text: string, rate = 0.8) => {
+  const speak = useCallback(async (text: string, rate = 0.8, voiceId?: string) => {
     if (!text?.trim()) return;
 
     // Stop any current playback
@@ -19,7 +19,7 @@ export function useArabicSpeech() {
       abortRef.current.abort();
     }
 
-    const cacheKey = `${text}_${rate}`;
+    const cacheKey = `${text}_${rate}_${voiceId || "default"}`;
 
     // Check cache first
     if (audioCache.has(cacheKey)) {
@@ -47,7 +47,7 @@ export function useArabicSpeech() {
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
-          body: JSON.stringify({ text, rate }),
+          body: JSON.stringify({ text, rate, voiceId }),
           signal: controller.signal,
         }
       );

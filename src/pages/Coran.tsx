@@ -65,6 +65,8 @@ const Coran = () => {
 
   // Vocal profile
   const [hasVocalProfile, setHasVocalProfile] = useState(false);
+  const [userVoiceId, setUserVoiceId] = useState<string | null>(null);
+  const [cloningVoice, setCloningVoice] = useState(false);
   const [setupMode, setSetupMode] = useState(false);
   const setupRecorder = useAudioRecorder();
 
@@ -107,8 +109,11 @@ const Coran = () => {
   // Load user data
   useEffect(() => {
     if (!user) return;
-    supabase.from("vocal_profiles").select("id").eq("user_id", user.id).single()
-      .then(({ data }) => setHasVocalProfile(!!data));
+    supabase.from("vocal_profiles").select("id, elevenlabs_voice_id").eq("user_id", user.id).single()
+      .then(({ data }) => {
+        setHasVocalProfile(!!data);
+        if (data?.elevenlabs_voice_id) setUserVoiceId(data.elevenlabs_voice_id);
+      });
     supabase.from("quran_recitations").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10)
       .then(({ data }) => { if (data) setHistory(data); });
   }, [user]);
@@ -171,7 +176,32 @@ const Coran = () => {
       await supabase.from("vocal_profiles").upsert({ user_id: user.id, reference_audio_url: path }, { onConflict: "user_id" });
       setHasVocalProfile(true);
       setSetupMode(false);
-      toast.success("Empreinte vocale enregistrée !");
+      toast.success("Empreinte vocale enregistrée ! Clonage de la voix en cours...");
+
+      // Clone voice via edge function
+      setCloningVoice(true);
+      try {
+        const cloneRes = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-clone-voice`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+            },
+          }
+        );
+        if (!cloneRes.ok) throw new Error("Voice cloning failed");
+        const { voiceId } = await cloneRes.json();
+        setUserVoiceId(voiceId);
+        toast.success("Votre voix a été clonée avec succès !");
+      } catch (cloneErr: any) {
+        console.error("Voice cloning error:", cloneErr);
+        toast.error("Le clonage vocal a échoué, la voix par défaut sera utilisée.");
+      } finally {
+        setCloningVoice(false);
+      }
     } catch (e: any) {
       toast.error(e.message || "Erreur lors de l'enregistrement");
     }
@@ -447,10 +477,32 @@ const Coran = () => {
           {!hasVocalProfile && !setupMode && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-5 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 mb-8 text-center">
               <User className="h-8 w-8 text-primary mx-auto mb-2" />
-              <h3 className="text-base font-semibold text-foreground mb-1">Empreinte vocale requise</h3>
-              <p className="text-xs text-muted-foreground mb-3">Enregistrez votre empreinte vocale en lisant la Fatiha.</p>
-              <Button onClick={() => setSetupMode(true)} size="sm" className="gradient-emerald border-0 text-primary-foreground">Configurer</Button>
+              <h3 className="text-base font-semibold text-foreground mb-1">Utiliser votre propre voix</h3>
+              <p className="text-xs text-muted-foreground mb-3">Enregistrez votre voix en lisant la Fatiha pour cloner votre voix et l'utiliser sur les versets.</p>
+              <Button onClick={() => setSetupMode(true)} size="sm" className="gradient-emerald border-0 text-primary-foreground">Configurer ma voix</Button>
             </motion.div>
+          )}
+
+          {/* Voice cloning in progress */}
+          {cloningVoice && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 rounded-xl border border-primary/30 bg-primary/5 mb-8 flex items-center justify-center gap-3">
+              <div className="h-5 w-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <span className="text-sm text-primary font-medium">Clonage de votre voix en cours...</span>
+            </motion.div>
+          )}
+
+          {/* Voice mode indicator */}
+          {hasVocalProfile && !setupMode && !cloningVoice && (
+            <div className="flex items-center justify-center gap-2 mb-6">
+              <span className={`text-xs px-3 py-1.5 rounded-full font-medium ${userVoiceId ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                {userVoiceId ? "🎙️ Votre voix" : "🔊 Voix par défaut"}
+              </span>
+              {!userVoiceId && (
+                <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setSetupMode(true)}>
+                  Configurer
+                </Button>
+              )}
+            </div>
           )}
 
           {/* Setup Recording */}
@@ -795,7 +847,7 @@ const Coran = () => {
                                         );
                                       })
                                     ) : (
-                                      <button onClick={() => speak(verse.arabic)} className="text-foreground hover:text-primary transition-colors cursor-pointer text-right w-full">
+                                      <button onClick={() => speak(verse.arabic, 0.8, userVoiceId || undefined)} className="text-foreground hover:text-primary transition-colors cursor-pointer text-right w-full">
                                         {verse.arabic}
                                       </button>
                                     )}
@@ -816,7 +868,7 @@ const Coran = () => {
                               </div>
 
                               {isRevealed && !isLiveReciting && (
-                                <button onClick={() => speak(verse.arabic)} className="text-muted-foreground hover:text-primary transition-colors shrink-0 mt-1">
+                              <button onClick={() => speak(verse.arabic, 0.8, userVoiceId || undefined)} className="text-muted-foreground hover:text-primary transition-colors shrink-0 mt-1">
                                   <Volume2 className="h-3.5 w-3.5" />
                                 </button>
                               )}
