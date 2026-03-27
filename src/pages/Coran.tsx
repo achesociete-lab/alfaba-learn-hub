@@ -109,8 +109,11 @@ const Coran = () => {
   // Load user data
   useEffect(() => {
     if (!user) return;
-    supabase.from("vocal_profiles").select("id").eq("user_id", user.id).single()
-      .then(({ data }) => setHasVocalProfile(!!data));
+    supabase.from("vocal_profiles").select("id, elevenlabs_voice_id").eq("user_id", user.id).single()
+      .then(({ data }) => {
+        setHasVocalProfile(!!data);
+        if (data?.elevenlabs_voice_id) setUserVoiceId(data.elevenlabs_voice_id);
+      });
     supabase.from("quran_recitations").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10)
       .then(({ data }) => { if (data) setHistory(data); });
   }, [user]);
