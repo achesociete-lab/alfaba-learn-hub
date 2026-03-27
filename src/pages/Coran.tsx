@@ -477,10 +477,32 @@ const Coran = () => {
           {!hasVocalProfile && !setupMode && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-5 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 mb-8 text-center">
               <User className="h-8 w-8 text-primary mx-auto mb-2" />
-              <h3 className="text-base font-semibold text-foreground mb-1">Empreinte vocale requise</h3>
-              <p className="text-xs text-muted-foreground mb-3">Enregistrez votre empreinte vocale en lisant la Fatiha.</p>
-              <Button onClick={() => setSetupMode(true)} size="sm" className="gradient-emerald border-0 text-primary-foreground">Configurer</Button>
+              <h3 className="text-base font-semibold text-foreground mb-1">Utiliser votre propre voix</h3>
+              <p className="text-xs text-muted-foreground mb-3">Enregistrez votre voix en lisant la Fatiha pour cloner votre voix et l'utiliser sur les versets.</p>
+              <Button onClick={() => setSetupMode(true)} size="sm" className="gradient-emerald border-0 text-primary-foreground">Configurer ma voix</Button>
             </motion.div>
+          )}
+
+          {/* Voice cloning in progress */}
+          {cloningVoice && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 rounded-xl border border-primary/30 bg-primary/5 mb-8 flex items-center justify-center gap-3">
+              <div className="h-5 w-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <span className="text-sm text-primary font-medium">Clonage de votre voix en cours...</span>
+            </motion.div>
+          )}
+
+          {/* Voice mode indicator */}
+          {hasVocalProfile && !setupMode && !cloningVoice && (
+            <div className="flex items-center justify-center gap-2 mb-6">
+              <span className={`text-xs px-3 py-1.5 rounded-full font-medium ${userVoiceId ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                {userVoiceId ? "🎙️ Votre voix" : "🔊 Voix par défaut"}
+              </span>
+              {!userVoiceId && (
+                <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setSetupMode(true)}>
+                  Configurer
+                </Button>
+              )}
+            </div>
           )}
 
           {/* Setup Recording */}
