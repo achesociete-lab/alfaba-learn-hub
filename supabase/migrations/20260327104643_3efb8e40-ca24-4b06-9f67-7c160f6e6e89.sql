@@ -1,0 +1,1 @@
+ALTER TABLE public.vocal_profiles ADD COLUMN elevenlabs_voice_id TEXT;
