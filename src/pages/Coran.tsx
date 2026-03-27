@@ -825,7 +825,7 @@ const Coran = () => {
                                         );
                                       })
                                     ) : (
-                                      <button onClick={() => speak(verse.arabic)} className="text-foreground hover:text-primary transition-colors cursor-pointer text-right w-full">
+                                      <button onClick={() => speak(verse.arabic, 0.8, userVoiceId || undefined)} className="text-foreground hover:text-primary transition-colors cursor-pointer text-right w-full">
                                         {verse.arabic}
                                       </button>
                                     )}
@@ -846,7 +846,7 @@ const Coran = () => {
                               </div>
 
                               {isRevealed && !isLiveReciting && (
-                                <button onClick={() => speak(verse.arabic)} className="text-muted-foreground hover:text-primary transition-colors shrink-0 mt-1">
+                              <button onClick={() => speak(verse.arabic, 0.8, userVoiceId || undefined)} className="text-muted-foreground hover:text-primary transition-colors shrink-0 mt-1">
                                   <Volume2 className="h-3.5 w-3.5" />
                                 </button>
                               )}
