@@ -13,6 +13,7 @@ import Tarifs from "./pages/Tarifs.tsx";
 import Auth from "./pages/Auth.tsx";
 import Exercises from "./pages/Exercises.tsx";
 import ClasseVirtuelle from "./pages/ClasseVirtuelle.tsx";
+import Coran from "./pages/Coran.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/exercices" element={<Exercises />} />
             <Route path="/classe-virtuelle" element={<ClasseVirtuelle />} />
+            <Route path="/coran" element={<Coran />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
