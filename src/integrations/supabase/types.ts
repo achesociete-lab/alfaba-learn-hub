@@ -203,6 +203,51 @@ export type Database = {
         }
         Relationships: []
       }
+      quran_recitations: {
+        Row: {
+          ai_feedback: Json | null
+          audio_url: string | null
+          ayah_end: number
+          ayah_start: number
+          created_at: string
+          id: string
+          score: number | null
+          surah_number: number
+          teacher_feedback: string | null
+          teacher_reviewed: boolean
+          transcription: string | null
+          user_id: string
+        }
+        Insert: {
+          ai_feedback?: Json | null
+          audio_url?: string | null
+          ayah_end?: number
+          ayah_start?: number
+          created_at?: string
+          id?: string
+          score?: number | null
+          surah_number: number
+          teacher_feedback?: string | null
+          teacher_reviewed?: boolean
+          transcription?: string | null
+          user_id: string
+        }
+        Update: {
+          ai_feedback?: Json | null
+          audio_url?: string | null
+          ayah_end?: number
+          ayah_start?: number
+          created_at?: string
+          id?: string
+          score?: number | null
+          surah_number?: number
+          teacher_feedback?: string | null
+          teacher_reviewed?: boolean
+          transcription?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -220,6 +265,30 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      vocal_profiles: {
+        Row: {
+          created_at: string
+          id: string
+          reference_audio_url: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reference_audio_url: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reference_audio_url?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
