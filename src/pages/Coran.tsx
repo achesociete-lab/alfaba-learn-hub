@@ -176,7 +176,32 @@ const Coran = () => {
       await supabase.from("vocal_profiles").upsert({ user_id: user.id, reference_audio_url: path }, { onConflict: "user_id" });
       setHasVocalProfile(true);
       setSetupMode(false);
-      toast.success("Empreinte vocale enregistrée !");
+      toast.success("Empreinte vocale enregistrée ! Clonage de la voix en cours...");
+
+      // Clone voice via edge function
+      setCloningVoice(true);
+      try {
+        const cloneRes = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-clone-voice`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+            },
+          }
+        );
+        if (!cloneRes.ok) throw new Error("Voice cloning failed");
+        const { voiceId } = await cloneRes.json();
+        setUserVoiceId(voiceId);
+        toast.success("Votre voix a été clonée avec succès !");
+      } catch (cloneErr: any) {
+        console.error("Voice cloning error:", cloneErr);
+        toast.error("Le clonage vocal a échoué, la voix par défaut sera utilisée.");
+      } finally {
+        setCloningVoice(false);
+      }
     } catch (e: any) {
       toast.error(e.message || "Erreur lors de l'enregistrement");
     }
