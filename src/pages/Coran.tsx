@@ -796,8 +796,9 @@ const Coran = () => {
               <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2"><Star className="h-5 w-5" /> Historique</h2>
               <div className="space-y-3">
                 {history.map((rec) => {
-                  const surah = allSurahs.find(s => s.number === rec.surah_number) || quranSurahs.find(s => s.number === rec.surah_number);
-                  const name = surah ? ("name" in surah ? surah.name : surah.name) : `Sourate ${rec.surah_number}`;
+                  const surahInfo = allSurahs.find(s => s.number === rec.surah_number);
+                  const surahLocal = quranSurahs.find(s => s.number === rec.surah_number);
+                  const name = surahInfo?.name || surahLocal?.name || `Sourate ${rec.surah_number}`;
                   return (
                     <div key={rec.id} className="flex items-center gap-4 p-4 rounded-xl border border-border bg-card">
                       <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${rec.score >= 80 ? "bg-primary/10" : rec.score >= 50 ? "bg-secondary/10" : "bg-destructive/10"}`}>
