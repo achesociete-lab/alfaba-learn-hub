@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, ArrowRight, BookOpen, Brain, PenTool, FileText,
@@ -187,8 +187,27 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Niveau2Lesson; onAllCo
   const [selected, setSelected] = useState<number | null>(null);
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   const d = lesson.dictation[current];
+  const correctArabic = d.options[d.correctIndex];
+
+  // Play the correct Arabic sentence via TTS
+  const playDictation = async () => {
+    setIsPlaying(true);
+    try {
+      await speak(correctArabic, 0.75);
+    } finally {
+      setTimeout(() => setIsPlaying(false), 1500);
+    }
+  };
+
+  // Auto-play when question changes
+  const currentRef = useRef(current);
+  if (currentRef.current !== current) {
+    currentRef.current = current;
+    setTimeout(() => playDictation(), 400);
+  }
 
   const handleSelect = (idx: number) => {
     if (selected !== null) return;
@@ -239,8 +258,19 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Niveau2Lesson; onAllCo
       </div>
       <AnimatePresence mode="wait">
         <motion.div key={current} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="p-6 rounded-xl border border-border bg-card">
-          <p className="text-center text-muted-foreground mb-2 text-sm">Quel est le texte correct pour :</p>
-          <p className="text-center text-xl font-semibold text-foreground mb-6">{d.transliteration}</p>
+          <p className="text-center text-muted-foreground mb-2 text-sm">Écoutez et choisissez le bon texte :</p>
+          <div className="flex justify-center mb-6">
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={playDictation}
+              disabled={isPlaying}
+              className="gap-3 rounded-full px-8 py-6 text-lg border-primary/30 hover:bg-primary/10"
+            >
+              <Volume2 className={`h-6 w-6 ${isPlaying ? "animate-pulse text-primary" : "text-muted-foreground"}`} />
+              {isPlaying ? "Lecture en cours..." : "🔊 Écouter la phrase"}
+            </Button>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             {d.options.map((opt, idx) => {
               let cls = "border border-border bg-background hover:bg-muted";
@@ -251,7 +281,6 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Niveau2Lesson; onAllCo
               return (
                 <button key={idx} onClick={() => handleSelect(idx)} disabled={selected !== null}
                   className={`p-4 rounded-lg font-arabic text-lg transition-all cursor-pointer hover:bg-primary/5 ${cls}`}
-                  onMouseEnter={() => speak(opt)}
                 >
                   {opt}
                   {selected !== null && idx === d.correctIndex && <CheckCircle className="h-4 w-4 inline ml-2" />}
