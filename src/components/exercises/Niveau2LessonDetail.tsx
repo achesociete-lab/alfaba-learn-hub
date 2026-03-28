@@ -188,11 +188,14 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Niveau2Lesson; onAllCo
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [mode, setMode] = useState<"qcm" | "keyboard">("qcm");
+  const [typedAnswer, setTypedAnswer] = useState("");
+  const [answerChecked, setAnswerChecked] = useState(false);
+  const [answerCorrect, setAnswerCorrect] = useState(false);
 
   const d = lesson.dictation[current];
   const correctArabic = d.options[d.correctIndex];
 
-  // Play the correct Arabic sentence via TTS
   const playDictation = async () => {
     setIsPlaying(true);
     try {
@@ -202,7 +205,6 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Niveau2Lesson; onAllCo
     }
   };
 
-  // Auto-play when question changes
   const currentRef = useRef(current);
   if (currentRef.current !== current) {
     currentRef.current = current;
@@ -221,18 +223,38 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Niveau2Lesson; onAllCo
     }
   };
 
+  const handleCheckTyped = () => {
+    if (answerChecked) return;
+    const isCorrect = typedAnswer.trim() === correctArabic.trim();
+    setAnswerChecked(true);
+    setAnswerCorrect(isCorrect);
+    const newScore = isCorrect ? score + 1 : score;
+    if (isCorrect) setScore(newScore);
+    if (current + 1 >= lesson.dictation.length) {
+      setTimeout(() => {
+        if (newScore === lesson.dictation.length) onAllCorrect();
+      }, 500);
+    }
+  };
+
   const next = () => {
     if (current + 1 >= lesson.dictation.length) {
       setFinished(true);
     } else {
       setCurrent((c) => c + 1);
       setSelected(null);
+      setTypedAnswer("");
+      setAnswerChecked(false);
+      setAnswerCorrect(false);
     }
   };
 
   const reset = () => {
     setCurrent(0); setSelected(null); setScore(0); setFinished(false);
+    setTypedAnswer(""); setAnswerChecked(false); setAnswerCorrect(false);
   };
+
+  const canAdvance = mode === "qcm" ? selected !== null : answerChecked;
 
   if (finished) {
     return (
@@ -256,9 +278,20 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Niveau2Lesson; onAllCo
         <span>Phrase {current + 1} / {lesson.dictation.length}</span>
         <span>Score : {score}</span>
       </div>
+
+      {/* Mode toggle */}
+      <div className="flex justify-center gap-2">
+        <Button variant={mode === "qcm" ? "default" : "outline"} size="sm" onClick={() => setMode("qcm")} className="gap-1.5 text-xs">
+          <Brain className="h-3.5 w-3.5" /> QCM
+        </Button>
+        <Button variant={mode === "keyboard" ? "default" : "outline"} size="sm" onClick={() => setMode("keyboard")} className="gap-1.5 text-xs">
+          <PenTool className="h-3.5 w-3.5" /> Écriture
+        </Button>
+      </div>
+
       <AnimatePresence mode="wait">
-        <motion.div key={current} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="p-6 rounded-xl border border-border bg-card">
-          <p className="text-center text-muted-foreground mb-2 text-sm">Écoutez et choisissez le bon texte :</p>
+        <motion.div key={`${current}-${mode}`} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="p-6 rounded-xl border border-border bg-card">
+          <p className="text-center text-muted-foreground mb-2 text-sm">Écoutez et {mode === "qcm" ? "choisissez" : "écrivez"} le bon texte :</p>
           <div className="flex justify-center mb-6">
             <Button
               variant="outline"
@@ -268,30 +301,63 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Niveau2Lesson; onAllCo
               className="gap-3 rounded-full px-8 py-6 text-lg border-primary/30 hover:bg-primary/10"
             >
               <Volume2 className={`h-6 w-6 ${isPlaying ? "animate-pulse text-primary" : "text-muted-foreground"}`} />
-              {isPlaying ? "Lecture en cours..." : "🔊 Écouter la phrase"}
+              {isPlaying ? "Lecture..." : "🔊 Écouter"}
             </Button>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            {d.options.map((opt, idx) => {
-              let cls = "border border-border bg-background hover:bg-muted";
-              if (selected !== null) {
-                if (idx === d.correctIndex) cls = "border-primary bg-primary/10 text-primary";
-                else if (idx === selected) cls = "border-destructive bg-destructive/10 text-destructive";
-              }
-              return (
-                <button key={idx} onClick={() => handleSelect(idx)} disabled={selected !== null}
-                  className={`p-4 rounded-lg font-arabic text-lg transition-all cursor-pointer hover:bg-primary/5 ${cls}`}
-                >
-                  {opt}
-                  {selected !== null && idx === d.correctIndex && <CheckCircle className="h-4 w-4 inline ml-2" />}
-                  {selected !== null && idx === selected && idx !== d.correctIndex && <XCircle className="h-4 w-4 inline ml-2" />}
-                </button>
-              );
-            })}
-          </div>
+
+          {mode === "qcm" ? (
+            <div className="grid grid-cols-2 gap-3">
+              {d.options.map((opt, idx) => {
+                let cls = "border border-border bg-background hover:bg-muted";
+                if (selected !== null) {
+                  if (idx === d.correctIndex) cls = "border-primary bg-primary/10 text-primary";
+                  else if (idx === selected) cls = "border-destructive bg-destructive/10 text-destructive";
+                }
+                return (
+                  <button key={idx} onClick={() => handleSelect(idx)} disabled={selected !== null}
+                    className={`p-4 rounded-lg font-arabic text-lg transition-all cursor-pointer hover:bg-primary/5 ${cls}`}>
+                    {opt}
+                    {selected !== null && idx === d.correctIndex && <CheckCircle className="h-4 w-4 inline ml-2" />}
+                    {selected !== null && idx === selected && idx !== d.correctIndex && <XCircle className="h-4 w-4 inline ml-2" />}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <input
+                type="text"
+                dir="rtl"
+                value={typedAnswer}
+                onChange={(e) => setTypedAnswer(e.target.value)}
+                disabled={answerChecked}
+                placeholder="اكتب الإجابة هنا..."
+                className="w-full p-4 rounded-lg border border-border bg-background font-arabic text-2xl text-center focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+                onKeyDown={(e) => { if (e.key === "Enter" && typedAnswer.trim()) handleCheckTyped(); }}
+              />
+              {!answerChecked && (
+                <Button onClick={handleCheckTyped} disabled={!typedAnswer.trim()} className="w-full gap-2">
+                  <CheckCircle className="h-4 w-4" /> Vérifier
+                </Button>
+              )}
+              {answerChecked && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                  className={`p-3 rounded-lg text-sm text-center ${answerCorrect ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"}`}>
+                  {answerCorrect ? (
+                    <span className="flex items-center justify-center gap-2"><CheckCircle className="h-4 w-4" /> Correct ! 🎉</span>
+                  ) : (
+                    <span className="flex flex-col items-center gap-1">
+                      <span className="flex items-center gap-2"><XCircle className="h-4 w-4" /> Incorrect</span>
+                      <span className="font-arabic text-lg">Réponse : {correctArabic}</span>
+                    </span>
+                  )}
+                </motion.div>
+              )}
+            </div>
+          )}
         </motion.div>
       </AnimatePresence>
-      {selected !== null && (
+      {canAdvance && (
         <div className="flex justify-end">
           <Button onClick={next} className="gap-2">
             {current + 1 >= lesson.dictation.length ? "Voir le résultat" : "Suivant"} <ArrowRight className="h-4 w-4" />
