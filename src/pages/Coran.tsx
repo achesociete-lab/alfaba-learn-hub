@@ -47,6 +47,7 @@ type VoiceSource = "reciter" | "teacher";
 
 const Coran = () => {
   const { user, loading: authLoading } = useAuth();
+  const { isAdmin } = useIsAdmin();
   const navigate = useNavigate();
 
   // Navigation
@@ -67,12 +68,14 @@ const Coran = () => {
   const [showMushafPage, setShowMushafPage] = useState(false);
   const [mushafImageLoaded, setMushafImageLoaded] = useState(false);
 
-  // Vocal profile
-  const [hasVocalProfile, setHasVocalProfile] = useState(false);
-  const [userVoiceId, setUserVoiceId] = useState<string | null>(null);
-  const [cloningVoice, setCloningVoice] = useState(false);
-  const [setupMode, setSetupMode] = useState(false);
-  const setupRecorder = useAudioRecorder();
+  // Teacher recording
+  const [teacherRecordingUrl, setTeacherRecordingUrl] = useState<string | null>(null);
+  const [isRecordingTeacher, setIsRecordingTeacher] = useState(false);
+  const [teacherRecordingBlob, setTeacherRecordingBlob] = useState<Blob | null>(null);
+  const [teacherRecordingPreview, setTeacherRecordingPreview] = useState<string | null>(null);
+  const [savingTeacherRecording, setSavingTeacherRecording] = useState(false);
+  const teacherMediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const teacherChunksRef = useRef<Blob[]>([]);
 
   // Recitation modes
   const [mode, setMode] = useState<RecitationMode>("read");
