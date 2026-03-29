@@ -77,6 +77,14 @@ const Coran = () => {
   const [mode, setMode] = useState<RecitationMode>("read");
   const [versesHidden, setVersesHidden] = useState(false);
 
+  // Voice source: professional reciter (default) or user's cloned voice
+  const [voiceSource, setVoiceSource] = useState<VoiceSource>("reciter");
+  const [selectedReciter, setSelectedReciter] = useState("mishary");
+  const [isPlayingSequence, setIsPlayingSequence] = useState(false);
+  const [playingAyah, setPlayingAyah] = useState<number | null>(null);
+  const sequenceRef = useRef<{ stop: () => void } | null>(null);
+  const singleAudioRef = useRef<HTMLAudioElement | null>(null);
+
   // Live recitation state
   const [isLiveReciting, setIsLiveReciting] = useState(false);
   const [liveTranscript, setLiveTranscript] = useState("");
