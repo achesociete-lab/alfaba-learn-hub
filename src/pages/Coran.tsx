@@ -5,12 +5,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   BookOpen, Mic, MicOff, Square, RotateCcw, ChevronRight, ChevronLeft,
   Star, Volume2, CheckCircle, AlertCircle, Sparkles, User,
-  Eye, EyeOff, AlertTriangle, Search, Layers, BookMarked,
+  Eye, EyeOff, AlertTriangle, Search, Layers, BookMarked, Play, Pause,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -29,6 +30,7 @@ import {
   type QuranVerse,
   type SurahInfo,
 } from "@/utils/quran-api";
+import { RECITERS, playAyahAudio, playAyahSequence } from "@/utils/quran-audio";
 
 interface AiFeedback {
   score: number;
