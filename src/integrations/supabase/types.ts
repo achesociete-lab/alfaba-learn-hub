@@ -248,6 +248,33 @@ export type Database = {
         }
         Relationships: []
       }
+      teacher_recordings: {
+        Row: {
+          audio_url: string
+          created_at: string
+          id: string
+          surah_number: number
+          teacher_id: string
+          updated_at: string
+        }
+        Insert: {
+          audio_url: string
+          created_at?: string
+          id?: string
+          surah_number: number
+          teacher_id: string
+          updated_at?: string
+        }
+        Update: {
+          audio_url?: string
+          created_at?: string
+          id?: string
+          surah_number?: number
+          teacher_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
