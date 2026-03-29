@@ -124,14 +124,22 @@ const Coran = () => {
   // Load user data
   useEffect(() => {
     if (!user) return;
-    supabase.from("vocal_profiles").select("id, elevenlabs_voice_id").eq("user_id", user.id).single()
-      .then(({ data }) => {
-        setHasVocalProfile(!!data);
-        if (data?.elevenlabs_voice_id) setUserVoiceId(data.elevenlabs_voice_id);
-      });
     supabase.from("quran_recitations").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10)
       .then(({ data }) => { if (data) setHistory(data); });
   }, [user]);
+
+  // Load teacher recording for selected surah
+  useEffect(() => {
+    if (!selectedSurahInfo) return;
+    setTeacherRecordingUrl(null);
+    supabase.from("teacher_recordings").select("audio_url").eq("surah_number", selectedSurahInfo.number).single()
+      .then(({ data }) => {
+        if (data?.audio_url) {
+          const { data: urlData } = supabase.storage.from("quran-recordings").getPublicUrl(data.audio_url);
+          setTeacherRecordingUrl(urlData.publicUrl);
+        }
+      });
+  }, [selectedSurahInfo]);
 
   // Select a surah and load its verses
   const selectSurah = useCallback(async (surah: SurahInfo) => {
