@@ -55,7 +55,26 @@ serve(async (req) => {
     if (!response.ok) {
       const errorBody = await response.text();
       console.error(`ElevenLabs API error [${response.status}]: ${errorBody}`);
-      throw new Error(`ElevenLabs API call failed [${response.status}]`);
+
+      if (response.status === 401) {
+        return new Response(JSON.stringify({
+          error: 'ElevenLabs authentication failed or the account is currently restricted',
+          code: 'provider_auth_error',
+          providerStatus: response.status,
+        }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      return new Response(JSON.stringify({
+        error: `ElevenLabs API call failed [${response.status}]`,
+        code: 'provider_unavailable',
+        providerStatus: response.status,
+      }), {
+        status: 502,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const audioBuffer = await response.arrayBuffer();

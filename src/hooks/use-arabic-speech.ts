@@ -2,6 +2,12 @@ import { useCallback, useRef } from "react";
 
 // Simple in-memory cache for audio blobs to avoid re-fetching
 const audioCache = new Map<string, string>();
+let isElevenLabsUnavailable = false;
+
+type TtsErrorPayload = {
+  error?: string;
+  code?: string;
+};
 
 export function useArabicSpeech() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -20,6 +26,11 @@ export function useArabicSpeech() {
     }
 
     const cacheKey = `${text}_${rate}_${voiceId || "default"}`;
+
+    if (isElevenLabsUnavailable) {
+      fallbackSpeak(text, rate);
+      return;
+    }
 
     // Check cache first
     if (audioCache.has(cacheKey)) {
@@ -53,8 +64,28 @@ export function useArabicSpeech() {
       );
 
       if (!response.ok) {
+        let errorPayload: TtsErrorPayload | null = null;
+
+        try {
+          errorPayload = (await response.json()) as TtsErrorPayload;
+        } catch {
+          errorPayload = null;
+        }
+
+        if (
+          response.status === 401 ||
+          errorPayload?.code === "provider_auth_error" ||
+          errorPayload?.code === "provider_unavailable"
+        ) {
+          isElevenLabsUnavailable = true;
+        }
+
         // Fallback to Web Speech API
-        console.warn("ElevenLabs TTS failed, falling back to Web Speech API");
+        console.warn("ElevenLabs TTS failed, falling back to Web Speech API", {
+          status: response.status,
+          error: errorPayload?.error,
+          code: errorPayload?.code,
+        });
         fallbackSpeak(text, rate);
         return;
       }
@@ -70,6 +101,7 @@ export function useArabicSpeech() {
       await audio.play();
     } catch (e: unknown) {
       if (e instanceof DOMException && e.name === "AbortError") return;
+      isElevenLabsUnavailable = true;
       console.warn("ElevenLabs TTS error, falling back:", e);
       fallbackSpeak(text, rate);
     }
