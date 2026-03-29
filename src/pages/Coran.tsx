@@ -527,7 +527,7 @@ const Coran = () => {
     }, 80);
   }, [verses, playErrorAlert]);
 
-  const playErrorAlert = useCallback(() => {
+  function playErrorAlert() {
     try {
       const ctx = new AudioContext();
       const osc = ctx.createOscillator();
@@ -539,7 +539,7 @@ const Coran = () => {
       osc.start();
       osc.stop(ctx.currentTime + 0.15);
     } catch {}
-  }, []);
+  }
 
   const stopLiveRecitation = useCallback(() => {
     if (wsRef.current) { wsRef.current.close(); wsRef.current = null; }
