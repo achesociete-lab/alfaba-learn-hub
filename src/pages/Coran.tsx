@@ -974,7 +974,7 @@ const Coran = () => {
                               </div>
 
                               {isRevealed && !isLiveReciting && (
-                              <button onClick={() => speak(verse.arabic, 0.8, userVoiceId || undefined)} className="text-muted-foreground hover:text-primary transition-colors shrink-0 mt-1">
+                              <button onClick={() => playVerse(verse)} className={`transition-colors shrink-0 mt-1 ${playingAyah === verse.number ? "text-primary" : "text-muted-foreground hover:text-primary"}`}>
                                   <Volume2 className="h-3.5 w-3.5" />
                                 </button>
                               )}
