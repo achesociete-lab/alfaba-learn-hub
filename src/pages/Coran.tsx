@@ -423,58 +423,76 @@ const Coran = () => {
   const processLiveTranscript = useCallback((transcript: string) => {
     if (verses.length === 0) return;
 
-    const spokenNorm = normalizeArabic(transcript);
-    const spokenWords = spokenNorm.split(" ").filter(Boolean);
+    const spokenWords = normalizeArabic(transcript).split(" ").filter(Boolean);
+    if (spokenWords.length === 0) return;
 
-    let wordOffset = 0;
+    // Build expected words list per verse
+    const verseWordsList: string[][] = verses.map(v =>
+      normalizeArabic(v.arabic).split(" ").filter(Boolean)
+    );
+
+    // Walk through spoken words, matching verse by verse
+    let spokenIdx = 0;
+    let activeVerse = 0;
     const newRevealed = new Set<number>();
     const newErrors = new Set<number>();
     const newWordStatuses = new Map<number, Array<"correct" | "wrong" | "pending">>();
-    let lastMatchedVerse = 0;
+    let lastActiveVerse = 0;
+    let lastWordInVerse = 0;
 
-    for (let vi = 0; vi < verses.length; vi++) {
-      const verseNorm = normalizeArabic(verses[vi].arabic);
-      const verseWords = verseNorm.split(" ").filter(Boolean);
+    for (let vi = 0; vi < verseWordsList.length; vi++) {
+      const expectedWords = verseWordsList[vi];
       const statuses: Array<"correct" | "wrong" | "pending"> = [];
-      let hasAnyMatch = false;
-      let hasError = false;
 
-      for (let wi = 0; wi < verseWords.length; wi++) {
-        const spokenIdx = wordOffset + wi;
+      for (let wi = 0; wi < expectedWords.length; wi++) {
         if (spokenIdx >= spokenWords.length) {
           statuses.push("pending");
         } else {
-          const expected = verseWords[wi];
+          const expected = expectedWords[wi];
           const spoken = spokenWords[spokenIdx];
           const similarity = levenshteinSimilarityCalc(expected, spoken);
-          if (similarity > 0.55) {
+
+          if (similarity > 0.5) {
             statuses.push("correct");
-            hasAnyMatch = true;
           } else {
             statuses.push("wrong");
-            hasError = true;
-            hasAnyMatch = true;
-          }
-        }
-      }
+            newErrors.add(vi);
 
-      if (hasAnyMatch) {
-        newRevealed.add(vi);
-        lastMatchedVerse = vi;
-        if (hasError) {
-          newErrors.add(vi);
-          playErrorAlert();
+            // Alert once per specific error
+            const errorKey = `${vi}-${wi}`;
+            if (!alertedErrorsRef.current.has(errorKey)) {
+              alertedErrorsRef.current.add(errorKey);
+              playErrorAlert();
+            }
+          }
+          newRevealed.add(vi);
+          lastActiveVerse = vi;
+          lastWordInVerse = wi;
+          spokenIdx++;
         }
       }
 
       newWordStatuses.set(vi, statuses);
-      wordOffset += verseWords.length;
+
+      // If we've used all spoken words, remaining verses stay pending
+      if (spokenIdx >= spokenWords.length) {
+        for (let rvi = vi + 1; rvi < verseWordsList.length; rvi++) {
+          newWordStatuses.set(rvi, verseWordsList[rvi].map(() => "pending"));
+        }
+        break;
+      }
     }
 
     setRevealedVerses(newRevealed);
     setErrorVerses(newErrors);
     setWordStatuses(newWordStatuses);
-    setCurrentVerseIndex(lastMatchedVerse);
+    setCurrentVerseIndex(lastActiveVerse);
+    setCurrentWordIndex(lastWordInVerse);
+
+    // Auto-scroll to current verse
+    setTimeout(() => {
+      currentVerseRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 100);
   }, [verses]);
 
   const playErrorAlert = useCallback(() => {
