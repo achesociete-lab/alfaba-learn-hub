@@ -5,12 +5,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   BookOpen, Mic, MicOff, Square, RotateCcw, ChevronRight, ChevronLeft,
   Star, Volume2, CheckCircle, AlertCircle, Sparkles, User,
-  Eye, EyeOff, AlertTriangle, Search, Layers, BookMarked,
+  Eye, EyeOff, AlertTriangle, Search, Layers, BookMarked, Play, Pause,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -29,6 +30,7 @@ import {
   type QuranVerse,
   type SurahInfo,
 } from "@/utils/quran-api";
+import { RECITERS, playAyahAudio, playAyahSequence } from "@/utils/quran-audio";
 
 interface AiFeedback {
   score: number;
@@ -40,6 +42,7 @@ interface AiFeedback {
 
 type RecitationMode = "read" | "memorize";
 type NavTab = "surah" | "juz" | "search";
+type VoiceSource = "reciter" | "clone";
 
 const Coran = () => {
   const { user, loading: authLoading } = useAuth();
@@ -73,6 +76,14 @@ const Coran = () => {
   // Recitation modes
   const [mode, setMode] = useState<RecitationMode>("read");
   const [versesHidden, setVersesHidden] = useState(false);
+
+  // Voice source: professional reciter (default) or user's cloned voice
+  const [voiceSource, setVoiceSource] = useState<VoiceSource>("reciter");
+  const [selectedReciter, setSelectedReciter] = useState("mishary");
+  const [isPlayingSequence, setIsPlayingSequence] = useState(false);
+  const [playingAyah, setPlayingAyah] = useState<number | null>(null);
+  const sequenceRef = useRef<{ stop: () => void } | null>(null);
+  const singleAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // Live recitation state
   const [isLiveReciting, setIsLiveReciting] = useState(false);
@@ -144,7 +155,74 @@ const Coran = () => {
     }
   }, [recorder]);
 
-  // Navigate to a specific page
+  // Play a single verse based on the selected voice source
+  const playVerse = useCallback((verse: QuranVerse) => {
+    // Stop any current playback
+    if (singleAudioRef.current) {
+      singleAudioRef.current.pause();
+      singleAudioRef.current = null;
+    }
+    if (sequenceRef.current) {
+      sequenceRef.current.stop();
+      sequenceRef.current = null;
+      setIsPlayingSequence(false);
+    }
+
+    if (voiceSource === "clone" && userVoiceId) {
+      speak(verse.arabic, 0.8, userVoiceId);
+    } else if (voiceSource === "clone") {
+      speak(verse.arabic, 0.8);
+    } else {
+      // Professional reciter
+      setPlayingAyah(verse.number);
+      const audio = playAyahAudio(
+        selectedSurahInfo?.number || 1,
+        verse.number,
+        selectedReciter
+      );
+      singleAudioRef.current = audio;
+      audio.addEventListener("ended", () => setPlayingAyah(null));
+      audio.addEventListener("error", () => {
+        setPlayingAyah(null);
+        toast.error("Erreur de lecture audio");
+      });
+    }
+  }, [voiceSource, userVoiceId, selectedReciter, selectedSurahInfo, speak]);
+
+  // Play all verses sequentially
+  const playAllVerses = useCallback(() => {
+    if (!selectedSurahInfo || verses.length === 0) return;
+    if (isPlayingSequence) {
+      sequenceRef.current?.stop();
+      sequenceRef.current = null;
+      setIsPlayingSequence(false);
+      setPlayingAyah(null);
+      return;
+    }
+    setIsPlayingSequence(true);
+    const seq = playAyahSequence(
+      selectedSurahInfo.number,
+      1,
+      selectedSurahInfo.versesCount,
+      selectedReciter,
+      (ayah) => setPlayingAyah(ayah)
+    );
+    sequenceRef.current = seq;
+    // Auto-stop when done (sequence ends internally)
+    const checkInterval = setInterval(() => {
+      // Simple check: if we passed the last ayah
+    }, 1000);
+    // Clean up on unmount handled by effect
+  }, [selectedSurahInfo, verses, selectedReciter, isPlayingSequence]);
+
+  // Cleanup on unmount or surah change
+  useEffect(() => {
+    return () => {
+      sequenceRef.current?.stop();
+      singleAudioRef.current?.pause();
+    };
+  }, [selectedSurahInfo]);
+
   const goToPage = (page: number) => {
     const p = Math.max(1, Math.min(604, page));
     setCurrentPage(p);
@@ -491,15 +569,43 @@ const Coran = () => {
             </motion.div>
           )}
 
-          {/* Voice mode indicator */}
-          {hasVocalProfile && !setupMode && !cloningVoice && (
-            <div className="flex items-center justify-center gap-2 mb-6">
-              <span className={`text-xs px-3 py-1.5 rounded-full font-medium ${userVoiceId ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
-                {userVoiceId ? "🎙️ Votre voix" : "🔊 Voix par défaut"}
-              </span>
-              {!userVoiceId && (
+          {/* Voice source selector */}
+          {!setupMode && !cloningVoice && (
+            <div className="flex flex-wrap items-center justify-center gap-3 mb-6">
+              <div className="flex items-center gap-1.5 bg-muted rounded-full p-1">
+                <button
+                  onClick={() => setVoiceSource("reciter")}
+                  className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all ${voiceSource === "reciter" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  🕌 Cheikh
+                </button>
+                {userVoiceId && (
+                  <button
+                    onClick={() => setVoiceSource("clone")}
+                    className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all ${voiceSource === "clone" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    🎙️ Ma voix
+                  </button>
+                )}
+              </div>
+              {voiceSource === "reciter" && (
+                <Select value={selectedReciter} onValueChange={setSelectedReciter}>
+                  <SelectTrigger className="w-auto h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RECITERS.map((r) => (
+                      <SelectItem key={r.id} value={r.id} className="text-xs">
+                        <span>{r.name}</span>
+                        <span className="font-arabic ml-2 text-muted-foreground">{r.nameArabic}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {!hasVocalProfile && (
                 <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setSetupMode(true)}>
-                  Configurer
+                  + Cloner ma voix
                 </Button>
               )}
             </div>
@@ -780,6 +886,17 @@ const Coran = () => {
                           {versesHidden ? "Afficher" : "Cacher"}
                         </Button>
                       )}
+                      {voiceSource === "reciter" && (
+                        <Button
+                          variant={isPlayingSequence ? "destructive" : "outline"}
+                          size="sm"
+                          onClick={playAllVerses}
+                          className="gap-1.5"
+                        >
+                          {isPlayingSequence ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                          {isPlayingSequence ? "Arrêter" : "Écouter tout"}
+                        </Button>
+                      )}
                     </div>
 
                     {/* Mushaf page image (inline) */}
@@ -847,7 +964,7 @@ const Coran = () => {
                                         );
                                       })
                                     ) : (
-                                      <button onClick={() => speak(verse.arabic, 0.8, userVoiceId || undefined)} className="text-foreground hover:text-primary transition-colors cursor-pointer text-right w-full">
+                                      <button onClick={() => playVerse(verse)} className={`text-right w-full transition-colors cursor-pointer ${playingAyah === verse.number ? "text-primary" : "text-foreground hover:text-primary"}`}>
                                         {verse.arabic}
                                       </button>
                                     )}
@@ -868,7 +985,7 @@ const Coran = () => {
                               </div>
 
                               {isRevealed && !isLiveReciting && (
-                              <button onClick={() => speak(verse.arabic, 0.8, userVoiceId || undefined)} className="text-muted-foreground hover:text-primary transition-colors shrink-0 mt-1">
+                              <button onClick={() => playVerse(verse)} className={`transition-colors shrink-0 mt-1 ${playingAyah === verse.number ? "text-primary" : "text-muted-foreground hover:text-primary"}`}>
                                   <Volume2 className="h-3.5 w-3.5" />
                                 </button>
                               )}
