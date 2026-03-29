@@ -96,6 +96,10 @@ const Coran = () => {
   const [revealedVerses, setRevealedVerses] = useState<Set<number>>(new Set());
   const [errorVerses, setErrorVerses] = useState<Set<number>>(new Set());
   const [wordStatuses, setWordStatuses] = useState<Map<number, Array<"correct" | "wrong" | "pending">>>(new Map());
+  const [currentWordIndex, setCurrentWordIndex] = useState(0);
+  const alertedErrorsRef = useRef<Set<string>>(new Set()); // track already-alerted errors
+  const verseContainerRef = useRef<HTMLDivElement | null>(null);
+  const currentVerseRef = useRef<HTMLDivElement | null>(null);
 
   // Post-recitation evaluation
   const [evaluating, setEvaluating] = useState(false);
@@ -334,11 +338,13 @@ const Coran = () => {
       const { token } = await tokenRes.json();
 
       setCurrentVerseIndex(0);
+      setCurrentWordIndex(0);
       setRevealedVerses(new Set());
       setErrorVerses(new Set());
       setWordStatuses(new Map());
       setLiveTranscript("");
       transcriptRef.current = "";
+      alertedErrorsRef.current = new Set();
 
       recorder.startRecording();
 
@@ -417,58 +423,76 @@ const Coran = () => {
   const processLiveTranscript = useCallback((transcript: string) => {
     if (verses.length === 0) return;
 
-    const spokenNorm = normalizeArabic(transcript);
-    const spokenWords = spokenNorm.split(" ").filter(Boolean);
+    const spokenWords = normalizeArabic(transcript).split(" ").filter(Boolean);
+    if (spokenWords.length === 0) return;
 
-    let wordOffset = 0;
+    // Build expected words list per verse
+    const verseWordsList: string[][] = verses.map(v =>
+      normalizeArabic(v.arabic).split(" ").filter(Boolean)
+    );
+
+    // Walk through spoken words, matching verse by verse
+    let spokenIdx = 0;
+    let activeVerse = 0;
     const newRevealed = new Set<number>();
     const newErrors = new Set<number>();
     const newWordStatuses = new Map<number, Array<"correct" | "wrong" | "pending">>();
-    let lastMatchedVerse = 0;
+    let lastActiveVerse = 0;
+    let lastWordInVerse = 0;
 
-    for (let vi = 0; vi < verses.length; vi++) {
-      const verseNorm = normalizeArabic(verses[vi].arabic);
-      const verseWords = verseNorm.split(" ").filter(Boolean);
+    for (let vi = 0; vi < verseWordsList.length; vi++) {
+      const expectedWords = verseWordsList[vi];
       const statuses: Array<"correct" | "wrong" | "pending"> = [];
-      let hasAnyMatch = false;
-      let hasError = false;
 
-      for (let wi = 0; wi < verseWords.length; wi++) {
-        const spokenIdx = wordOffset + wi;
+      for (let wi = 0; wi < expectedWords.length; wi++) {
         if (spokenIdx >= spokenWords.length) {
           statuses.push("pending");
         } else {
-          const expected = verseWords[wi];
+          const expected = expectedWords[wi];
           const spoken = spokenWords[spokenIdx];
           const similarity = levenshteinSimilarityCalc(expected, spoken);
-          if (similarity > 0.55) {
+
+          if (similarity > 0.5) {
             statuses.push("correct");
-            hasAnyMatch = true;
           } else {
             statuses.push("wrong");
-            hasError = true;
-            hasAnyMatch = true;
-          }
-        }
-      }
+            newErrors.add(vi);
 
-      if (hasAnyMatch) {
-        newRevealed.add(vi);
-        lastMatchedVerse = vi;
-        if (hasError) {
-          newErrors.add(vi);
-          playErrorAlert();
+            // Alert once per specific error
+            const errorKey = `${vi}-${wi}`;
+            if (!alertedErrorsRef.current.has(errorKey)) {
+              alertedErrorsRef.current.add(errorKey);
+              playErrorAlert();
+            }
+          }
+          newRevealed.add(vi);
+          lastActiveVerse = vi;
+          lastWordInVerse = wi;
+          spokenIdx++;
         }
       }
 
       newWordStatuses.set(vi, statuses);
-      wordOffset += verseWords.length;
+
+      // If we've used all spoken words, remaining verses stay pending
+      if (spokenIdx >= spokenWords.length) {
+        for (let rvi = vi + 1; rvi < verseWordsList.length; rvi++) {
+          newWordStatuses.set(rvi, verseWordsList[rvi].map(() => "pending"));
+        }
+        break;
+      }
     }
 
     setRevealedVerses(newRevealed);
     setErrorVerses(newErrors);
     setWordStatuses(newWordStatuses);
-    setCurrentVerseIndex(lastMatchedVerse);
+    setCurrentVerseIndex(lastActiveVerse);
+    setCurrentWordIndex(lastWordInVerse);
+
+    // Auto-scroll to current verse
+    setTimeout(() => {
+      currentVerseRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 100);
   }, [verses]);
 
   const playErrorAlert = useCallback(() => {
@@ -949,18 +973,24 @@ const Coran = () => {
                     )}
 
                     {/* Verses display */}
-                    <div className="p-4 rounded-lg bg-muted space-y-2 max-h-[50vh] overflow-y-auto">
+                    <div ref={verseContainerRef} className="p-4 rounded-lg bg-muted space-y-2 max-h-[50vh] overflow-y-auto">
                       {verses.map((verse, vi) => {
                         const isRevealed = !versesHidden || revealedVerses.has(vi);
                         const hasError = errorVerses.has(vi);
                         const statuses = wordStatuses.get(vi);
                         const isCurrent = isLiveReciting && vi === currentVerseIndex;
+                        // Split original Arabic (with tashkeel) into words for coloring
+                        const originalWords = verse.arabic.split(" ").filter(Boolean);
 
                         return (
-                          <div key={vi} className={`group rounded-lg p-2.5 transition-all ${
-                            isCurrent ? "bg-primary/10 border border-primary/30" :
-                            hasError ? "bg-destructive/10 border border-destructive/30" : ""
-                          }`}>
+                          <div
+                            key={vi}
+                            ref={isCurrent ? currentVerseRef : undefined}
+                            className={`group rounded-lg p-2.5 transition-all ${
+                              isCurrent ? "bg-primary/10 border border-primary/30 shadow-sm" :
+                              hasError && isLiveReciting ? "bg-destructive/5 border border-destructive/20" : ""
+                            }`}
+                          >
                             <div className="flex items-start gap-2">
                               <span className="text-xs font-bold text-muted-foreground bg-background rounded-full h-5 w-5 flex items-center justify-center shrink-0 mt-1">
                                 {verse.number}
@@ -969,13 +999,13 @@ const Coran = () => {
                                 {isRevealed ? (
                                   <div className="font-arabic text-lg leading-loose text-right" dir="rtl">
                                     {statuses && isLiveReciting ? (
-                                      normalizeArabic(verse.arabic).split(" ").map((word, wi) => {
+                                      originalWords.map((word, wi) => {
                                         const status = statuses[wi];
                                         return (
-                                          <span key={wi} className={`inline-block mx-0.5 ${
+                                          <span key={wi} className={`inline-block mx-0.5 transition-colors ${
                                             status === "correct" ? "text-primary" :
-                                            status === "wrong" ? "text-destructive font-bold underline decoration-wavy" :
-                                            "text-foreground"
+                                            status === "wrong" ? "text-destructive font-bold underline decoration-wavy decoration-destructive" :
+                                            "text-muted-foreground/40"
                                           }`}>{word}{" "}</span>
                                         );
                                       })
@@ -995,13 +1025,13 @@ const Coran = () => {
                                 {hasError && isLiveReciting && (
                                   <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-2 mt-1 text-destructive">
                                     <AlertTriangle className="h-3.5 w-3.5" />
-                                    <span className="text-xs font-semibold">Erreur détectée</span>
+                                    <span className="text-xs font-semibold">Erreur de prononciation</span>
                                   </motion.div>
                                 )}
                               </div>
 
                               {isRevealed && !isLiveReciting && (
-                              <button onClick={() => playVerse(verse)} className={`transition-colors shrink-0 mt-1 ${playingAyah === verse.number ? "text-primary" : "text-muted-foreground hover:text-primary"}`}>
+                                <button onClick={() => playVerse(verse)} className={`transition-colors shrink-0 mt-1 ${playingAyah === verse.number ? "text-primary" : "text-muted-foreground hover:text-primary"}`}>
                                   <Volume2 className="h-3.5 w-3.5" />
                                 </button>
                               )}
@@ -1061,7 +1091,7 @@ const Coran = () => {
                       <div className="space-y-3">
                         <audio src={recorder.audioUrl} controls className="w-full max-w-md mx-auto" />
                         <div className="flex justify-center gap-3">
-                          <Button onClick={() => { recorder.reset(); setLiveTranscript(""); setRevealedVerses(new Set()); setErrorVerses(new Set()); setWordStatuses(new Map()); }} variant="outline" className="gap-2">
+                          <Button onClick={() => { recorder.reset(); setLiveTranscript(""); setRevealedVerses(new Set()); setErrorVerses(new Set()); setWordStatuses(new Map()); setCurrentWordIndex(0); alertedErrorsRef.current = new Set(); }} variant="outline" className="gap-2">
                             <RotateCcw className="h-4 w-4" /> Réessayer
                           </Button>
                           <Button onClick={evaluateRecitation} disabled={evaluating} className="gradient-emerald border-0 text-primary-foreground gap-2">
