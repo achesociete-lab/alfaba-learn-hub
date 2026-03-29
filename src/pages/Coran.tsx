@@ -1091,7 +1091,7 @@ const Coran = () => {
                       <div className="space-y-3">
                         <audio src={recorder.audioUrl} controls className="w-full max-w-md mx-auto" />
                         <div className="flex justify-center gap-3">
-                          <Button onClick={() => { recorder.reset(); setLiveTranscript(""); setRevealedVerses(new Set()); setErrorVerses(new Set()); setWordStatuses(new Map()); }} variant="outline" className="gap-2">
+                          <Button onClick={() => { recorder.reset(); setLiveTranscript(""); setRevealedVerses(new Set()); setErrorVerses(new Set()); setWordStatuses(new Map()); setCurrentWordIndex(0); alertedErrorsRef.current = new Set(); }} variant="outline" className="gap-2">
                             <RotateCcw className="h-4 w-4" /> Réessayer
                           </Button>
                           <Button onClick={evaluateRecitation} disabled={evaluating} className="gradient-emerald border-0 text-primary-foreground gap-2">
