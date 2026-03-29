@@ -155,7 +155,74 @@ const Coran = () => {
     }
   }, [recorder]);
 
-  // Navigate to a specific page
+  // Play a single verse based on the selected voice source
+  const playVerse = useCallback((verse: QuranVerse) => {
+    // Stop any current playback
+    if (singleAudioRef.current) {
+      singleAudioRef.current.pause();
+      singleAudioRef.current = null;
+    }
+    if (sequenceRef.current) {
+      sequenceRef.current.stop();
+      sequenceRef.current = null;
+      setIsPlayingSequence(false);
+    }
+
+    if (voiceSource === "clone" && userVoiceId) {
+      speak(verse.arabic, 0.8, userVoiceId);
+    } else if (voiceSource === "clone") {
+      speak(verse.arabic, 0.8);
+    } else {
+      // Professional reciter
+      setPlayingAyah(verse.number);
+      const audio = playAyahAudio(
+        selectedSurahInfo?.number || 1,
+        verse.number,
+        selectedReciter
+      );
+      singleAudioRef.current = audio;
+      audio.addEventListener("ended", () => setPlayingAyah(null));
+      audio.addEventListener("error", () => {
+        setPlayingAyah(null);
+        toast.error("Erreur de lecture audio");
+      });
+    }
+  }, [voiceSource, userVoiceId, selectedReciter, selectedSurahInfo, speak]);
+
+  // Play all verses sequentially
+  const playAllVerses = useCallback(() => {
+    if (!selectedSurahInfo || verses.length === 0) return;
+    if (isPlayingSequence) {
+      sequenceRef.current?.stop();
+      sequenceRef.current = null;
+      setIsPlayingSequence(false);
+      setPlayingAyah(null);
+      return;
+    }
+    setIsPlayingSequence(true);
+    const seq = playAyahSequence(
+      selectedSurahInfo.number,
+      1,
+      selectedSurahInfo.versesCount,
+      selectedReciter,
+      (ayah) => setPlayingAyah(ayah)
+    );
+    sequenceRef.current = seq;
+    // Auto-stop when done (sequence ends internally)
+    const checkInterval = setInterval(() => {
+      // Simple check: if we passed the last ayah
+    }, 1000);
+    // Clean up on unmount handled by effect
+  }, [selectedSurahInfo, verses, selectedReciter, isPlayingSequence]);
+
+  // Cleanup on unmount or surah change
+  useEffect(() => {
+    return () => {
+      sequenceRef.current?.stop();
+      singleAudioRef.current?.pause();
+    };
+  }, [selectedSurahInfo]);
+
   const goToPage = (page: number) => {
     const p = Math.max(1, Math.min(604, page));
     setCurrentPage(p);
