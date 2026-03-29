@@ -579,9 +579,39 @@ const Coran = () => {
                 >
                   🕌 Cheikh
                 </button>
-                {userVoiceId && (
+                {hasVocalProfile && (
                   <button
-                    onClick={() => setVoiceSource("clone")}
+                    onClick={async () => {
+                      if (!userVoiceId && !cloningVoice) {
+                        // Trigger cloning automatically
+                        setCloningVoice(true);
+                        try {
+                          const session = await supabase.auth.getSession();
+                          const token = session.data.session?.access_token;
+                          const cloneRes = await fetch(
+                            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-clone-voice`,
+                            {
+                              method: "POST",
+                              headers: {
+                                "Content-Type": "application/json",
+                                Authorization: `Bearer ${token}`,
+                              },
+                            }
+                          );
+                          if (!cloneRes.ok) throw new Error("Voice cloning failed");
+                          const { voiceId } = await cloneRes.json();
+                          setUserVoiceId(voiceId);
+                          setVoiceSource("clone");
+                          toast.success("Voix clonée avec succès !");
+                        } catch {
+                          toast.error("Le clonage vocal a échoué.");
+                        } finally {
+                          setCloningVoice(false);
+                        }
+                      } else {
+                        setVoiceSource("clone");
+                      }
+                    }}
                     className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all ${voiceSource === "clone" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
                   >
                     🎙️ Ma voix
