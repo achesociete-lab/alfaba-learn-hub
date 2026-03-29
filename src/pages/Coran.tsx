@@ -973,18 +973,24 @@ const Coran = () => {
                     )}
 
                     {/* Verses display */}
-                    <div className="p-4 rounded-lg bg-muted space-y-2 max-h-[50vh] overflow-y-auto">
+                    <div ref={verseContainerRef} className="p-4 rounded-lg bg-muted space-y-2 max-h-[50vh] overflow-y-auto">
                       {verses.map((verse, vi) => {
                         const isRevealed = !versesHidden || revealedVerses.has(vi);
                         const hasError = errorVerses.has(vi);
                         const statuses = wordStatuses.get(vi);
                         const isCurrent = isLiveReciting && vi === currentVerseIndex;
+                        // Split original Arabic (with tashkeel) into words for coloring
+                        const originalWords = verse.arabic.split(" ").filter(Boolean);
 
                         return (
-                          <div key={vi} className={`group rounded-lg p-2.5 transition-all ${
-                            isCurrent ? "bg-primary/10 border border-primary/30" :
-                            hasError ? "bg-destructive/10 border border-destructive/30" : ""
-                          }`}>
+                          <div
+                            key={vi}
+                            ref={isCurrent ? currentVerseRef : undefined}
+                            className={`group rounded-lg p-2.5 transition-all ${
+                              isCurrent ? "bg-primary/10 border border-primary/30 shadow-sm" :
+                              hasError && isLiveReciting ? "bg-destructive/5 border border-destructive/20" : ""
+                            }`}
+                          >
                             <div className="flex items-start gap-2">
                               <span className="text-xs font-bold text-muted-foreground bg-background rounded-full h-5 w-5 flex items-center justify-center shrink-0 mt-1">
                                 {verse.number}
@@ -993,13 +999,13 @@ const Coran = () => {
                                 {isRevealed ? (
                                   <div className="font-arabic text-lg leading-loose text-right" dir="rtl">
                                     {statuses && isLiveReciting ? (
-                                      normalizeArabic(verse.arabic).split(" ").map((word, wi) => {
+                                      originalWords.map((word, wi) => {
                                         const status = statuses[wi];
                                         return (
-                                          <span key={wi} className={`inline-block mx-0.5 ${
+                                          <span key={wi} className={`inline-block mx-0.5 transition-colors ${
                                             status === "correct" ? "text-primary" :
-                                            status === "wrong" ? "text-destructive font-bold underline decoration-wavy" :
-                                            "text-foreground"
+                                            status === "wrong" ? "text-destructive font-bold underline decoration-wavy decoration-destructive" :
+                                            "text-muted-foreground/40"
                                           }`}>{word}{" "}</span>
                                         );
                                       })
@@ -1019,13 +1025,13 @@ const Coran = () => {
                                 {hasError && isLiveReciting && (
                                   <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-2 mt-1 text-destructive">
                                     <AlertTriangle className="h-3.5 w-3.5" />
-                                    <span className="text-xs font-semibold">Erreur détectée</span>
+                                    <span className="text-xs font-semibold">Erreur de prononciation</span>
                                   </motion.div>
                                 )}
                               </div>
 
                               {isRevealed && !isLiveReciting && (
-                              <button onClick={() => playVerse(verse)} className={`transition-colors shrink-0 mt-1 ${playingAyah === verse.number ? "text-primary" : "text-muted-foreground hover:text-primary"}`}>
+                                <button onClick={() => playVerse(verse)} className={`transition-colors shrink-0 mt-1 ${playingAyah === verse.number ? "text-primary" : "text-muted-foreground hover:text-primary"}`}>
                                   <Volume2 className="h-3.5 w-3.5" />
                                 </button>
                               )}
