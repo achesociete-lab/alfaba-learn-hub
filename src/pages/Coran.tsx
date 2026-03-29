@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   BookOpen, Mic, MicOff, Square, RotateCcw, ChevronRight, ChevronLeft,
   Star, Volume2, CheckCircle, AlertCircle, Sparkles, User,
-  Eye, EyeOff, AlertTriangle, Search, Layers, BookMarked, Play, Pause,
+  Eye, EyeOff, AlertTriangle, Search, Layers, BookMarked, Play, Pause, Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsAdmin } from "@/hooks/use-admin";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -42,10 +43,11 @@ interface AiFeedback {
 
 type RecitationMode = "read" | "memorize";
 type NavTab = "surah" | "juz" | "search";
-type VoiceSource = "reciter" | "clone";
+type VoiceSource = "reciter" | "teacher";
 
 const Coran = () => {
   const { user, loading: authLoading } = useAuth();
+  const { isAdmin } = useIsAdmin();
   const navigate = useNavigate();
 
   // Navigation
@@ -66,12 +68,14 @@ const Coran = () => {
   const [showMushafPage, setShowMushafPage] = useState(false);
   const [mushafImageLoaded, setMushafImageLoaded] = useState(false);
 
-  // Vocal profile
-  const [hasVocalProfile, setHasVocalProfile] = useState(false);
-  const [userVoiceId, setUserVoiceId] = useState<string | null>(null);
-  const [cloningVoice, setCloningVoice] = useState(false);
-  const [setupMode, setSetupMode] = useState(false);
-  const setupRecorder = useAudioRecorder();
+  // Teacher recording
+  const [teacherRecordingUrl, setTeacherRecordingUrl] = useState<string | null>(null);
+  const [isRecordingTeacher, setIsRecordingTeacher] = useState(false);
+  const [teacherRecordingBlob, setTeacherRecordingBlob] = useState<Blob | null>(null);
+  const [teacherRecordingPreview, setTeacherRecordingPreview] = useState<string | null>(null);
+  const [savingTeacherRecording, setSavingTeacherRecording] = useState(false);
+  const teacherMediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const teacherChunksRef = useRef<Blob[]>([]);
 
   // Recitation modes
   const [mode, setMode] = useState<RecitationMode>("read");
@@ -120,14 +124,22 @@ const Coran = () => {
   // Load user data
   useEffect(() => {
     if (!user) return;
-    supabase.from("vocal_profiles").select("id, elevenlabs_voice_id").eq("user_id", user.id).single()
-      .then(({ data }) => {
-        setHasVocalProfile(!!data);
-        if (data?.elevenlabs_voice_id) setUserVoiceId(data.elevenlabs_voice_id);
-      });
     supabase.from("quran_recitations").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10)
       .then(({ data }) => { if (data) setHistory(data); });
   }, [user]);
+
+  // Load teacher recording for selected surah
+  useEffect(() => {
+    if (!selectedSurahInfo) return;
+    setTeacherRecordingUrl(null);
+    supabase.from("teacher_recordings").select("audio_url").eq("surah_number", selectedSurahInfo.number).single()
+      .then(({ data }) => {
+        if (data?.audio_url) {
+          const { data: urlData } = supabase.storage.from("quran-recordings").getPublicUrl(data.audio_url);
+          setTeacherRecordingUrl(urlData.publicUrl);
+        }
+      });
+  }, [selectedSurahInfo]);
 
   // Select a surah and load its verses
   const selectSurah = useCallback(async (surah: SurahInfo) => {
@@ -168,10 +180,17 @@ const Coran = () => {
       setIsPlayingSequence(false);
     }
 
-    if (voiceSource === "clone" && userVoiceId) {
-      speak(verse.arabic, 0.8, userVoiceId);
-    } else if (voiceSource === "clone") {
-      speak(verse.arabic, 0.8);
+    if (voiceSource === "teacher" && teacherRecordingUrl) {
+      // Play teacher's raw recording (full surah audio)
+      setPlayingAyah(verse.number);
+      const audio = new Audio(teacherRecordingUrl);
+      singleAudioRef.current = audio;
+      audio.addEventListener("ended", () => setPlayingAyah(null));
+      audio.addEventListener("error", () => {
+        setPlayingAyah(null);
+        toast.error("Erreur de lecture audio");
+      });
+      audio.play().catch(() => toast.error("Erreur de lecture"));
     } else {
       // Professional reciter
       setPlayingAyah(verse.number);
@@ -187,7 +206,7 @@ const Coran = () => {
         toast.error("Erreur de lecture audio");
       });
     }
-  }, [voiceSource, userVoiceId, selectedReciter, selectedSurahInfo, speak]);
+  }, [voiceSource, teacherRecordingUrl, selectedReciter, selectedSurahInfo, speak]);
 
   // Play all verses sequentially
   const playAllVerses = useCallback(() => {
@@ -245,43 +264,52 @@ const Coran = () => {
     }
   }, [verseSearchQuery]);
 
-  const saveVocalProfile = async () => {
-    if (!setupRecorder.audioBlob || !user) return;
+  // Teacher recording functions
+  const startTeacherRecording = async () => {
     try {
-      const path = `${user.id}/vocal-profile-${Date.now()}.webm`;
-      const { error: upErr } = await supabase.storage.from("quran-recordings").upload(path, setupRecorder.audioBlob);
-      if (upErr) throw upErr;
-      await supabase.from("vocal_profiles").upsert({ user_id: user.id, reference_audio_url: path }, { onConflict: "user_id" });
-      setHasVocalProfile(true);
-      setSetupMode(false);
-      toast.success("Empreinte vocale enregistrée ! Clonage de la voix en cours...");
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      teacherChunksRef.current = [];
+      mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) teacherChunksRef.current.push(e.data); };
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(teacherChunksRef.current, { type: "audio/webm" });
+        setTeacherRecordingBlob(blob);
+        setTeacherRecordingPreview(URL.createObjectURL(blob));
+        stream.getTracks().forEach(t => t.stop());
+      };
+      teacherMediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.start();
+      setIsRecordingTeacher(true);
+    } catch {
+      toast.error("Impossible d'accéder au microphone");
+    }
+  };
 
-      // Clone voice via edge function
-      setCloningVoice(true);
-      try {
-        const cloneRes = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-clone-voice`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-              Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-            },
-          }
-        );
-        if (!cloneRes.ok) throw new Error("Voice cloning failed");
-        const { voiceId } = await cloneRes.json();
-        setUserVoiceId(voiceId);
-        toast.success("Votre voix a été clonée avec succès !");
-      } catch (cloneErr: any) {
-        console.error("Voice cloning error:", cloneErr);
-        toast.error("Le clonage vocal a échoué, la voix par défaut sera utilisée.");
-      } finally {
-        setCloningVoice(false);
-      }
+  const stopTeacherRecording = () => {
+    teacherMediaRecorderRef.current?.stop();
+    setIsRecordingTeacher(false);
+  };
+
+  const saveTeacherRecording = async () => {
+    if (!teacherRecordingBlob || !user || !selectedSurahInfo) return;
+    setSavingTeacherRecording(true);
+    try {
+      const path = `teacher/${user.id}/surah-${selectedSurahInfo.number}-${Date.now()}.webm`;
+      const { error: upErr } = await supabase.storage.from("quran-recordings").upload(path, teacherRecordingBlob);
+      if (upErr) throw upErr;
+      await supabase.from("teacher_recordings").upsert(
+        { surah_number: selectedSurahInfo.number, audio_url: path, teacher_id: user.id },
+        { onConflict: "surah_number" }
+      );
+      const { data: urlData } = supabase.storage.from("quran-recordings").getPublicUrl(path);
+      setTeacherRecordingUrl(urlData.publicUrl);
+      setTeacherRecordingBlob(null);
+      setTeacherRecordingPreview(null);
+      toast.success("Enregistrement sauvegardé !");
     } catch (e: any) {
-      toast.error(e.message || "Erreur lors de l'enregistrement");
+      toast.error(e.message || "Erreur lors de la sauvegarde");
+    } finally {
+      setSavingTeacherRecording(false);
     }
   };
 
@@ -551,126 +579,84 @@ const Coran = () => {
             <p className="text-muted-foreground text-sm">Mushaf de Médine — Récitation avec correction en direct</p>
           </motion.div>
 
-          {/* Vocal Profile Setup */}
-          {!hasVocalProfile && !setupMode && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-5 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 mb-8 text-center">
-              <User className="h-8 w-8 text-primary mx-auto mb-2" />
-              <h3 className="text-base font-semibold text-foreground mb-1">Utiliser votre propre voix</h3>
-              <p className="text-xs text-muted-foreground mb-3">Enregistrez votre voix en lisant la Fatiha pour cloner votre voix et l'utiliser sur les versets.</p>
-              <Button onClick={() => setSetupMode(true)} size="sm" className="gradient-emerald border-0 text-primary-foreground">Configurer ma voix</Button>
-            </motion.div>
-          )}
-
-          {/* Voice cloning in progress */}
-          {cloningVoice && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 rounded-xl border border-primary/30 bg-primary/5 mb-8 flex items-center justify-center gap-3">
-              <div className="h-5 w-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              <span className="text-sm text-primary font-medium">Clonage de votre voix en cours...</span>
-            </motion.div>
-          )}
-
           {/* Voice source selector */}
-          {!setupMode && !cloningVoice && (
-            <div className="flex flex-wrap items-center justify-center gap-3 mb-6">
-              <div className="flex items-center gap-1.5 bg-muted rounded-full p-1">
+          <div className="flex flex-wrap items-center justify-center gap-3 mb-6">
+            <div className="flex items-center gap-1.5 bg-muted rounded-full p-1">
+              <button
+                onClick={() => setVoiceSource("reciter")}
+                className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all ${voiceSource === "reciter" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                🕌 Cheikh
+              </button>
+              {teacherRecordingUrl && (
                 <button
-                  onClick={() => setVoiceSource("reciter")}
-                  className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all ${voiceSource === "reciter" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                  onClick={() => setVoiceSource("teacher")}
+                  className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all ${voiceSource === "teacher" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
                 >
-                  🕌 Cheikh
+                  🎙️ Professeur
                 </button>
-                {hasVocalProfile && (
-                  <button
-                    onClick={async () => {
-                      if (!userVoiceId && !cloningVoice) {
-                        // Trigger cloning automatically
-                        setCloningVoice(true);
-                        try {
-                          const session = await supabase.auth.getSession();
-                          const token = session.data.session?.access_token;
-                          const cloneRes = await fetch(
-                            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-clone-voice`,
-                            {
-                              method: "POST",
-                              headers: {
-                                "Content-Type": "application/json",
-                                Authorization: `Bearer ${token}`,
-                              },
-                            }
-                          );
-                          if (!cloneRes.ok) throw new Error("Voice cloning failed");
-                          const { voiceId } = await cloneRes.json();
-                          setUserVoiceId(voiceId);
-                          setVoiceSource("clone");
-                          toast.success("Voix clonée avec succès !");
-                        } catch {
-                          toast.error("Le clonage vocal a échoué.");
-                        } finally {
-                          setCloningVoice(false);
-                        }
-                      } else {
-                        setVoiceSource("clone");
-                      }
-                    }}
-                    className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all ${voiceSource === "clone" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-                  >
-                    🎙️ Ma voix
-                  </button>
-                )}
-              </div>
-              {voiceSource === "reciter" && (
-                <Select value={selectedReciter} onValueChange={setSelectedReciter}>
-                  <SelectTrigger className="w-auto h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {RECITERS.map((r) => (
-                      <SelectItem key={r.id} value={r.id} className="text-xs">
-                        <span>{r.name}</span>
-                        <span className="font-arabic ml-2 text-muted-foreground">{r.nameArabic}</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-              {!hasVocalProfile && (
-                <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setSetupMode(true)}>
-                  + Cloner ma voix
-                </Button>
               )}
             </div>
-          )}
-
-          {/* Setup Recording */}
-          <AnimatePresence>
-            {setupMode && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="p-5 rounded-xl border border-border bg-card mb-8">
-                <h3 className="text-base font-semibold text-foreground mb-2">🎤 Empreinte vocale</h3>
-                <p className="text-xs text-muted-foreground mb-3">Lisez la sourate Al-Fatiha lentement et clairement.</p>
-                <div className="p-3 rounded-lg bg-muted mb-3 font-arabic text-lg text-center leading-loose" dir="rtl">
-                  {quranSurahs[0].ayahs.map(a => a.arabic).join(" ۝ ")}
-                </div>
-                <div className="flex items-center justify-center gap-3">
-                  {!setupRecorder.isRecording && !setupRecorder.audioUrl && (
-                    <Button onClick={setupRecorder.startRecording} size="sm" className="gradient-emerald border-0 text-primary-foreground gap-2"><Mic className="h-4 w-4" /> Commencer</Button>
-                  )}
-                  {setupRecorder.isRecording && (
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2 text-destructive"><div className="h-3 w-3 rounded-full bg-destructive animate-pulse" /><span className="text-sm font-mono">{Math.floor(setupRecorder.duration / 60)}:{String(setupRecorder.duration % 60).padStart(2, '0')}</span></div>
-                      <Button onClick={setupRecorder.stopRecording} variant="destructive" size="sm" className="gap-2"><Square className="h-4 w-4" /> Arrêter</Button>
-                    </div>
-                  )}
-                  {setupRecorder.audioUrl && (
-                    <div className="flex items-center gap-3">
-                      <audio src={setupRecorder.audioUrl} controls className="h-10" />
-                      <Button onClick={setupRecorder.reset} variant="outline" size="sm"><RotateCcw className="h-4 w-4" /></Button>
-                      <Button onClick={saveVocalProfile} size="sm" className="gradient-emerald border-0 text-primary-foreground gap-2"><CheckCircle className="h-4 w-4" /> Valider</Button>
-                    </div>
-                  )}
-                </div>
-              </motion.div>
+            {voiceSource === "reciter" && (
+              <Select value={selectedReciter} onValueChange={setSelectedReciter}>
+                <SelectTrigger className="w-auto h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {RECITERS.map((r) => (
+                    <SelectItem key={r.id} value={r.id} className="text-xs">
+                      <span>{r.name}</span>
+                      <span className="font-arabic ml-2 text-muted-foreground">{r.nameArabic}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
-          </AnimatePresence>
+          </div>
+
+          {/* Teacher recording UI (admin/teacher only) */}
+          {isAdmin && selectedSurahInfo && (
+            <div className="p-4 rounded-xl border border-border bg-card mb-6">
+              <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                <Upload className="h-4 w-4" /> Enregistrer ma récitation pour cette sourate
+              </h3>
+              {teacherRecordingUrl && !teacherRecordingPreview && (
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xs text-muted-foreground">Enregistrement existant :</span>
+                  <audio src={teacherRecordingUrl} controls className="h-8 flex-1" />
+                </div>
+              )}
+              <div className="flex items-center justify-center gap-3">
+                {!isRecordingTeacher && !teacherRecordingPreview && (
+                  <Button onClick={startTeacherRecording} size="sm" className="gap-2">
+                    <Mic className="h-4 w-4" /> {teacherRecordingUrl ? "Ré-enregistrer" : "Enregistrer"}
+                  </Button>
+                )}
+                {isRecordingTeacher && (
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 text-destructive">
+                      <div className="h-3 w-3 rounded-full bg-destructive animate-pulse" />
+                      <span className="text-sm">Enregistrement...</span>
+                    </div>
+                    <Button onClick={stopTeacherRecording} variant="destructive" size="sm" className="gap-2">
+                      <Square className="h-4 w-4" /> Arrêter
+                    </Button>
+                  </div>
+                )}
+                {teacherRecordingPreview && (
+                  <div className="flex items-center gap-3">
+                    <audio src={teacherRecordingPreview} controls className="h-8" />
+                    <Button onClick={() => { setTeacherRecordingBlob(null); setTeacherRecordingPreview(null); }} variant="outline" size="sm">
+                      <RotateCcw className="h-4 w-4" />
+                    </Button>
+                    <Button onClick={saveTeacherRecording} disabled={savingTeacherRecording} size="sm" className="gap-2">
+                      <CheckCircle className="h-4 w-4" /> {savingTeacherRecording ? "..." : "Sauvegarder"}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* ========== MAIN CONTENT ========== */}
           {!selectedSurahInfo && !showMushafPage && (
