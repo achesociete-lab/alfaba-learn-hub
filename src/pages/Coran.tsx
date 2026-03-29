@@ -180,10 +180,17 @@ const Coran = () => {
       setIsPlayingSequence(false);
     }
 
-    if (voiceSource === "clone" && userVoiceId) {
-      speak(verse.arabic, 0.8, userVoiceId);
-    } else if (voiceSource === "clone") {
-      speak(verse.arabic, 0.8);
+    if (voiceSource === "teacher" && teacherRecordingUrl) {
+      // Play teacher's raw recording (full surah audio)
+      setPlayingAyah(verse.number);
+      const audio = new Audio(teacherRecordingUrl);
+      singleAudioRef.current = audio;
+      audio.addEventListener("ended", () => setPlayingAyah(null));
+      audio.addEventListener("error", () => {
+        setPlayingAyah(null);
+        toast.error("Erreur de lecture audio");
+      });
+      audio.play().catch(() => toast.error("Erreur de lecture"));
     } else {
       // Professional reciter
       setPlayingAyah(verse.number);
@@ -199,7 +206,7 @@ const Coran = () => {
         toast.error("Erreur de lecture audio");
       });
     }
-  }, [voiceSource, userVoiceId, selectedReciter, selectedSurahInfo, speak]);
+  }, [voiceSource, teacherRecordingUrl, selectedReciter, selectedSurahInfo, speak]);
 
   // Play all verses sequentially
   const playAllVerses = useCallback(() => {
@@ -257,43 +264,52 @@ const Coran = () => {
     }
   }, [verseSearchQuery]);
 
-  const saveVocalProfile = async () => {
-    if (!setupRecorder.audioBlob || !user) return;
+  // Teacher recording functions
+  const startTeacherRecording = async () => {
     try {
-      const path = `${user.id}/vocal-profile-${Date.now()}.webm`;
-      const { error: upErr } = await supabase.storage.from("quran-recordings").upload(path, setupRecorder.audioBlob);
-      if (upErr) throw upErr;
-      await supabase.from("vocal_profiles").upsert({ user_id: user.id, reference_audio_url: path }, { onConflict: "user_id" });
-      setHasVocalProfile(true);
-      setSetupMode(false);
-      toast.success("Empreinte vocale enregistrée ! Clonage de la voix en cours...");
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      teacherChunksRef.current = [];
+      mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) teacherChunksRef.current.push(e.data); };
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(teacherChunksRef.current, { type: "audio/webm" });
+        setTeacherRecordingBlob(blob);
+        setTeacherRecordingPreview(URL.createObjectURL(blob));
+        stream.getTracks().forEach(t => t.stop());
+      };
+      teacherMediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.start();
+      setIsRecordingTeacher(true);
+    } catch {
+      toast.error("Impossible d'accéder au microphone");
+    }
+  };
 
-      // Clone voice via edge function
-      setCloningVoice(true);
-      try {
-        const cloneRes = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-clone-voice`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-              Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-            },
-          }
-        );
-        if (!cloneRes.ok) throw new Error("Voice cloning failed");
-        const { voiceId } = await cloneRes.json();
-        setUserVoiceId(voiceId);
-        toast.success("Votre voix a été clonée avec succès !");
-      } catch (cloneErr: any) {
-        console.error("Voice cloning error:", cloneErr);
-        toast.error("Le clonage vocal a échoué, la voix par défaut sera utilisée.");
-      } finally {
-        setCloningVoice(false);
-      }
+  const stopTeacherRecording = () => {
+    teacherMediaRecorderRef.current?.stop();
+    setIsRecordingTeacher(false);
+  };
+
+  const saveTeacherRecording = async () => {
+    if (!teacherRecordingBlob || !user || !selectedSurahInfo) return;
+    setSavingTeacherRecording(true);
+    try {
+      const path = `teacher/${user.id}/surah-${selectedSurahInfo.number}-${Date.now()}.webm`;
+      const { error: upErr } = await supabase.storage.from("quran-recordings").upload(path, teacherRecordingBlob);
+      if (upErr) throw upErr;
+      await supabase.from("teacher_recordings").upsert(
+        { surah_number: selectedSurahInfo.number, audio_url: path, teacher_id: user.id },
+        { onConflict: "surah_number" }
+      );
+      const { data: urlData } = supabase.storage.from("quran-recordings").getPublicUrl(path);
+      setTeacherRecordingUrl(urlData.publicUrl);
+      setTeacherRecordingBlob(null);
+      setTeacherRecordingPreview(null);
+      toast.success("Enregistrement sauvegardé !");
     } catch (e: any) {
-      toast.error(e.message || "Erreur lors de l'enregistrement");
+      toast.error(e.message || "Erreur lors de la sauvegarde");
+    } finally {
+      setSavingTeacherRecording(false);
     }
   };
 
