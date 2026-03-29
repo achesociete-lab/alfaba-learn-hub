@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   BookOpen, Mic, MicOff, Square, RotateCcw, ChevronRight, ChevronLeft,
   Star, Volume2, CheckCircle, AlertCircle, Sparkles, User,
-  Eye, EyeOff, AlertTriangle, Search, Layers, BookMarked, Play, Pause,
+  Eye, EyeOff, AlertTriangle, Search, Layers, BookMarked, Play, Pause, Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsAdmin } from "@/hooks/use-admin";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -42,7 +43,7 @@ interface AiFeedback {
 
 type RecitationMode = "read" | "memorize";
 type NavTab = "surah" | "juz" | "search";
-type VoiceSource = "reciter" | "clone";
+type VoiceSource = "reciter" | "teacher";
 
 const Coran = () => {
   const { user, loading: authLoading } = useAuth();
