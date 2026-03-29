@@ -42,6 +42,7 @@ interface AiFeedback {
 
 type RecitationMode = "read" | "memorize";
 type NavTab = "surah" | "juz" | "search";
+type VoiceSource = "reciter" | "clone";
 
 const Coran = () => {
   const { user, loading: authLoading } = useAuth();
