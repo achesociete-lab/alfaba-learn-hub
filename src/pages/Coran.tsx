@@ -96,6 +96,10 @@ const Coran = () => {
   const [revealedVerses, setRevealedVerses] = useState<Set<number>>(new Set());
   const [errorVerses, setErrorVerses] = useState<Set<number>>(new Set());
   const [wordStatuses, setWordStatuses] = useState<Map<number, Array<"correct" | "wrong" | "pending">>>(new Map());
+  const [currentWordIndex, setCurrentWordIndex] = useState(0);
+  const alertedErrorsRef = useRef<Set<string>>(new Set()); // track already-alerted errors
+  const verseContainerRef = useRef<HTMLDivElement | null>(null);
+  const currentVerseRef = useRef<HTMLDivElement | null>(null);
 
   // Post-recitation evaluation
   const [evaluating, setEvaluating] = useState(false);
