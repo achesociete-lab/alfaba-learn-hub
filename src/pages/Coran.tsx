@@ -886,6 +886,17 @@ const Coran = () => {
                           {versesHidden ? "Afficher" : "Cacher"}
                         </Button>
                       )}
+                      {voiceSource === "reciter" && (
+                        <Button
+                          variant={isPlayingSequence ? "destructive" : "outline"}
+                          size="sm"
+                          onClick={playAllVerses}
+                          className="gap-1.5"
+                        >
+                          {isPlayingSequence ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                          {isPlayingSequence ? "Arrêter" : "Écouter tout"}
+                        </Button>
+                      )}
                     </div>
 
                     {/* Mushaf page image (inline) */}
