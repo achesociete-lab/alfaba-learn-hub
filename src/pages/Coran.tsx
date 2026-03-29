@@ -338,11 +338,13 @@ const Coran = () => {
       const { token } = await tokenRes.json();
 
       setCurrentVerseIndex(0);
+      setCurrentWordIndex(0);
       setRevealedVerses(new Set());
       setErrorVerses(new Set());
       setWordStatuses(new Map());
       setLiveTranscript("");
       transcriptRef.current = "";
+      alertedErrorsRef.current = new Set();
 
       recorder.startRecording();
 
