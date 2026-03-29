@@ -91,13 +91,14 @@ const Coran = () => {
 
   // Live recitation state
   const [isLiveReciting, setIsLiveReciting] = useState(false);
+  const [isRecitationPaused, setIsRecitationPaused] = useState(false);
   const [liveTranscript, setLiveTranscript] = useState("");
   const [currentVerseIndex, setCurrentVerseIndex] = useState(0);
   const [revealedVerses, setRevealedVerses] = useState<Set<number>>(new Set());
   const [errorVerses, setErrorVerses] = useState<Set<number>>(new Set());
   const [wordStatuses, setWordStatuses] = useState<Map<number, Array<"correct" | "wrong" | "pending">>>(new Map());
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
-  const alertedErrorsRef = useRef<Set<string>>(new Set()); // track already-alerted errors
+  const alertedErrorsRef = useRef<Set<string>>(new Set());
   const verseContainerRef = useRef<HTMLDivElement | null>(null);
   const currentVerseRef = useRef<HTMLDivElement | null>(null);
 
@@ -115,6 +116,7 @@ const Coran = () => {
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const silenceTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -150,10 +152,12 @@ const Coran = () => {
     setSelectedSurahInfo(surah);
     setFeedback(null);
     setCurrentVerseIndex(0);
+    setCurrentWordIndex(0);
     setRevealedVerses(new Set());
     setErrorVerses(new Set());
     setWordStatuses(new Map());
     setLiveTranscript("");
+    setIsRecitationPaused(false);
     setVersesHidden(false);
     setMode("read");
     setShowMushafPage(false);
@@ -231,11 +235,8 @@ const Coran = () => {
       (ayah) => setPlayingAyah(ayah)
     );
     sequenceRef.current = seq;
-    // Auto-stop when done (sequence ends internally)
     const checkInterval = setInterval(() => {
-      // Simple check: if we passed the last ayah
     }, 1000);
-    // Clean up on unmount handled by effect
   }, [selectedSurahInfo, verses, selectedReciter, isPlayingSequence]);
 
   // Cleanup on unmount or surah change
@@ -243,6 +244,7 @@ const Coran = () => {
     return () => {
       sequenceRef.current?.stop();
       singleAudioRef.current?.pause();
+      if (silenceTimeoutRef.current) window.clearTimeout(silenceTimeoutRef.current);
     };
   }, [selectedSurahInfo]);
 
@@ -317,7 +319,7 @@ const Coran = () => {
     }
   };
 
-  // ============ LIVE RECITATION with WebSocket STT ============
+  // ============ LIVE RECITATION with WebSocket STT ==========
   const startLiveRecitation = useCallback(async () => {
     if (!selectedSurahInfo || verses.length === 0) return;
 
@@ -339,12 +341,14 @@ const Coran = () => {
 
       setCurrentVerseIndex(0);
       setCurrentWordIndex(0);
-      setRevealedVerses(new Set());
+      setRevealedVerses(new Set([0]));
       setErrorVerses(new Set());
       setWordStatuses(new Map());
       setLiveTranscript("");
+      setIsRecitationPaused(false);
       transcriptRef.current = "";
       alertedErrorsRef.current = new Set();
+      if (silenceTimeoutRef.current) window.clearTimeout(silenceTimeoutRef.current);
 
       recorder.startRecording();
 
@@ -362,12 +366,24 @@ const Coran = () => {
         try {
           const data = JSON.parse(event.data);
           if (data.type === "partial_transcript" || data.type === "committed_transcript") {
-            const text = data.text || "";
+            const text = (data.text || "").trim();
+            if (!text) return;
+
+            setIsRecitationPaused(false);
+            if (silenceTimeoutRef.current) window.clearTimeout(silenceTimeoutRef.current);
+            silenceTimeoutRef.current = window.setTimeout(() => {
+              setIsRecitationPaused(true);
+            }, 1800);
+
             if (data.type === "committed_transcript") {
-              transcriptRef.current += " " + text;
-              setLiveTranscript(transcriptRef.current.trim());
+              transcriptRef.current = `${transcriptRef.current} ${text}`.trim();
+              setLiveTranscript(transcriptRef.current);
             }
-            const fullTranscript = (transcriptRef.current + " " + (data.type === "partial_transcript" ? text : "")).trim();
+
+            const fullTranscript = data.type === "partial_transcript"
+              ? `${transcriptRef.current} ${text}`.trim()
+              : transcriptRef.current;
+
             processLiveTranscript(fullTranscript);
           }
         } catch (e) {
@@ -379,7 +395,13 @@ const Coran = () => {
         toast.error("Erreur de connexion au service de transcription");
         stopLiveRecitation();
       };
-      ws.onclose = () => {};
+
+      ws.onclose = () => {
+        if (silenceTimeoutRef.current) {
+          window.clearTimeout(silenceTimeoutRef.current);
+          silenceTimeoutRef.current = null;
+        }
+      };
     } catch (e: any) {
       toast.error(e.message || "Erreur lors du démarrage");
     }
@@ -424,78 +446,88 @@ const Coran = () => {
     if (verses.length === 0) return;
 
     const spokenWords = normalizeArabic(transcript).split(" ").filter(Boolean);
-    if (spokenWords.length === 0) return;
-
-    // Build expected words list per verse
-    const verseWordsList: string[][] = verses.map(v =>
-      normalizeArabic(v.arabic).split(" ").filter(Boolean)
-    );
-
-    // Walk through spoken words, matching verse by verse
-    let spokenIdx = 0;
-    let activeVerse = 0;
-    const newRevealed = new Set<number>();
+    const verseWordsList = verses.map((verse) => normalizeArabic(verse.arabic).split(" ").filter(Boolean));
+    const newRevealed = new Set<number>([0]);
     const newErrors = new Set<number>();
     const newWordStatuses = new Map<number, Array<"correct" | "wrong" | "pending">>();
-    let lastActiveVerse = 0;
-    let lastWordInVerse = 0;
+
+    let spokenCursor = 0;
+    let activeVerseIndex = 0;
+    let activeWordIndex = 0;
 
     for (let vi = 0; vi < verseWordsList.length; vi++) {
       const expectedWords = verseWordsList[vi];
-      const statuses: Array<"correct" | "wrong" | "pending"> = [];
+      const statuses: Array<"correct" | "wrong" | "pending"> = expectedWords.map(() => "pending");
+      let matchedPrefix = 0;
+      let mismatchFound = false;
 
-      for (let wi = 0; wi < expectedWords.length; wi++) {
-        if (spokenIdx >= spokenWords.length) {
-          statuses.push("pending");
-        } else {
-          const expected = expectedWords[wi];
-          const spoken = spokenWords[spokenIdx];
-          const similarity = levenshteinSimilarityCalc(expected, spoken);
+      while (spokenCursor + matchedPrefix < spokenWords.length && matchedPrefix < expectedWords.length) {
+        const expected = expectedWords[matchedPrefix];
+        const spoken = spokenWords[spokenCursor + matchedPrefix];
+        const similarity = levenshteinSimilarityCalc(expected, spoken);
 
-          if (similarity > 0.5) {
-            statuses.push("correct");
-          } else {
-            statuses.push("wrong");
-            newErrors.add(vi);
-
-            // Alert once per specific error
-            const errorKey = `${vi}-${wi}`;
-            if (!alertedErrorsRef.current.has(errorKey)) {
-              alertedErrorsRef.current.add(errorKey);
-              playErrorAlert();
-            }
-          }
-          newRevealed.add(vi);
-          lastActiveVerse = vi;
-          lastWordInVerse = wi;
-          spokenIdx++;
+        if (similarity >= 0.72) {
+          statuses[matchedPrefix] = "correct";
+          matchedPrefix += 1;
+          continue;
         }
+
+        statuses[matchedPrefix] = "wrong";
+        newErrors.add(vi);
+        mismatchFound = true;
+
+        const errorKey = `${vi}-${matchedPrefix}-${spoken}`;
+        if (!alertedErrorsRef.current.has(errorKey)) {
+          alertedErrorsRef.current.add(errorKey);
+          playErrorAlert();
+        }
+        break;
+      }
+
+      if (matchedPrefix > 0 || mismatchFound || vi === 0) {
+        newRevealed.add(vi);
       }
 
       newWordStatuses.set(vi, statuses);
 
-      // If we've used all spoken words, remaining verses stay pending
-      if (spokenIdx >= spokenWords.length) {
-        for (let rvi = vi + 1; rvi < verseWordsList.length; rvi++) {
-          newWordStatuses.set(rvi, verseWordsList[rvi].map(() => "pending"));
-        }
+      if (mismatchFound) {
+        activeVerseIndex = vi;
+        activeWordIndex = matchedPrefix;
         break;
+      }
+
+      if (matchedPrefix < expectedWords.length) {
+        activeVerseIndex = vi;
+        activeWordIndex = matchedPrefix;
+        break;
+      }
+
+      spokenCursor += expectedWords.length;
+      activeVerseIndex = Math.min(vi + 1, verseWordsList.length - 1);
+      activeWordIndex = 0;
+      if (vi + 1 < verseWordsList.length) {
+        newRevealed.add(vi + 1);
+      }
+    }
+
+    for (let vi = 0; vi < verseWordsList.length; vi++) {
+      if (!newWordStatuses.has(vi)) {
+        newWordStatuses.set(vi, verseWordsList[vi].map(() => "pending"));
       }
     }
 
     setRevealedVerses(newRevealed);
     setErrorVerses(newErrors);
     setWordStatuses(newWordStatuses);
-    setCurrentVerseIndex(lastActiveVerse);
-    setCurrentWordIndex(lastWordInVerse);
+    setCurrentVerseIndex(activeVerseIndex);
+    setCurrentWordIndex(activeWordIndex);
 
-    // Auto-scroll to current verse
-    setTimeout(() => {
+    window.setTimeout(() => {
       currentVerseRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 100);
-  }, [verses]);
+    }, 80);
+  }, [verses, playErrorAlert]);
 
-  const playErrorAlert = useCallback(() => {
+  function playErrorAlert() {
     try {
       const ctx = new AudioContext();
       const osc = ctx.createOscillator();
@@ -507,7 +539,7 @@ const Coran = () => {
       osc.start();
       osc.stop(ctx.currentTime + 0.15);
     } catch {}
-  }, []);
+  }
 
   const stopLiveRecitation = useCallback(() => {
     if (wsRef.current) { wsRef.current.close(); wsRef.current = null; }
