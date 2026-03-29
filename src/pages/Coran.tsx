@@ -953,7 +953,7 @@ const Coran = () => {
                                         );
                                       })
                                     ) : (
-                                      <button onClick={() => speak(verse.arabic, 0.8, userVoiceId || undefined)} className="text-foreground hover:text-primary transition-colors cursor-pointer text-right w-full">
+                                      <button onClick={() => playVerse(verse)} className={`text-right w-full transition-colors cursor-pointer ${playingAyah === verse.number ? "text-primary" : "text-foreground hover:text-primary"}`}>
                                         {verse.arabic}
                                       </button>
                                     )}
