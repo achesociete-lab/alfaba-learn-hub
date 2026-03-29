@@ -569,15 +569,43 @@ const Coran = () => {
             </motion.div>
           )}
 
-          {/* Voice mode indicator */}
-          {hasVocalProfile && !setupMode && !cloningVoice && (
-            <div className="flex items-center justify-center gap-2 mb-6">
-              <span className={`text-xs px-3 py-1.5 rounded-full font-medium ${userVoiceId ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
-                {userVoiceId ? "🎙️ Votre voix" : "🔊 Voix par défaut"}
-              </span>
-              {!userVoiceId && (
+          {/* Voice source selector */}
+          {!setupMode && !cloningVoice && (
+            <div className="flex flex-wrap items-center justify-center gap-3 mb-6">
+              <div className="flex items-center gap-1.5 bg-muted rounded-full p-1">
+                <button
+                  onClick={() => setVoiceSource("reciter")}
+                  className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all ${voiceSource === "reciter" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  🕌 Cheikh
+                </button>
+                {userVoiceId && (
+                  <button
+                    onClick={() => setVoiceSource("clone")}
+                    className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all ${voiceSource === "clone" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    🎙️ Ma voix
+                  </button>
+                )}
+              </div>
+              {voiceSource === "reciter" && (
+                <Select value={selectedReciter} onValueChange={setSelectedReciter}>
+                  <SelectTrigger className="w-auto h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RECITERS.map((r) => (
+                      <SelectItem key={r.id} value={r.id} className="text-xs">
+                        <span>{r.name}</span>
+                        <span className="font-arabic ml-2 text-muted-foreground">{r.nameArabic}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {!hasVocalProfile && (
                 <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setSetupMode(true)}>
-                  Configurer
+                  + Cloner ma voix
                 </Button>
               )}
             </div>
