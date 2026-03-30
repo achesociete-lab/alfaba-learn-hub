@@ -130,8 +130,10 @@ const AdminRecitations = () => {
                   )}
                 </div>
 
-                {rec.audio_url && (
+                {rec.audio_url ? (
                   <audio src={rec.audio_url} controls className="w-full h-10" />
+                ) : (
+                  <p className="text-xs text-muted-foreground italic py-2">⚠️ Pas d'enregistrement audio (ancienne soumission)</p>
                 )}
 
                 {rec.teacher_reviewed ? (
