@@ -34,6 +34,7 @@ import {
 import { RECITERS, playAyahAudio, playAyahSequence } from "@/utils/quran-audio";
 import { evaluateRecitationLocally, type AiFeedback } from "@/utils/quran-recitation-evaluator";
 import { fetchQuranPageAyahs, type QuranPageAyah } from "@/utils/quran-pages";
+import { forceAlignTranscript } from "@/utils/quran-force-align";
 
 type RecitationMode = "read" | "memorize";
 type NavTab = "surah" | "juz" | "search";
@@ -454,87 +455,33 @@ const Coran = () => {
   const processLiveTranscript = useCallback((transcript: string) => {
     if (verses.length === 0) return;
 
-    const spokenWords = normalizeArabic(transcript).split(" ").filter(Boolean);
-    const verseWordsList = verses.map((verse) => normalizeArabic(verse.arabic).split(" ").filter(Boolean));
-    const newRevealed = new Set<number>([0]);
-    const newErrors = new Set<number>();
-    const newWordStatuses = new Map<number, Array<"correct" | "wrong" | "pending">>();
+    const result = forceAlignTranscript(verses, transcript);
 
-    let spokenCursor = 0;
-    let activeVerseIndex = 0;
-    let activeWordIndex = 0;
-
-    for (let vi = 0; vi < verseWordsList.length; vi++) {
-      const expectedWords = verseWordsList[vi];
-      const statuses: Array<"correct" | "wrong" | "pending"> = expectedWords.map(() => "pending");
-      let matchedPrefix = 0;
-      let mismatchFound = false;
-
-      while (spokenCursor + matchedPrefix < spokenWords.length && matchedPrefix < expectedWords.length) {
-        const expected = expectedWords[matchedPrefix];
-        const spoken = spokenWords[spokenCursor + matchedPrefix];
-        const similarity = levenshteinSimilarityCalc(expected, spoken);
-
-        if (similarity >= 0.72) {
-          statuses[matchedPrefix] = "correct";
-          matchedPrefix += 1;
-          continue;
+    // Only fire error alert for new errors
+    for (const vi of result.errorVerses) {
+      const statuses = result.verseStatuses.get(vi);
+      if (!statuses) continue;
+      statuses.forEach((st, wi) => {
+        if (st === "wrong") {
+          const key = `${vi}-${wi}`;
+          if (!alertedErrorsRef.current.has(key)) {
+            alertedErrorsRef.current.add(key);
+            playErrorAlert();
+          }
         }
-
-        statuses[matchedPrefix] = "wrong";
-        newErrors.add(vi);
-        mismatchFound = true;
-
-        const errorKey = `${vi}-${matchedPrefix}-${spoken}`;
-        if (!alertedErrorsRef.current.has(errorKey)) {
-          alertedErrorsRef.current.add(errorKey);
-          playErrorAlert();
-        }
-        break;
-      }
-
-      if (matchedPrefix > 0 || mismatchFound || vi === 0) {
-        newRevealed.add(vi);
-      }
-
-      newWordStatuses.set(vi, statuses);
-
-      if (mismatchFound) {
-        activeVerseIndex = vi;
-        activeWordIndex = matchedPrefix;
-        break;
-      }
-
-      if (matchedPrefix < expectedWords.length) {
-        activeVerseIndex = vi;
-        activeWordIndex = matchedPrefix;
-        break;
-      }
-
-      spokenCursor += expectedWords.length;
-      activeVerseIndex = Math.min(vi + 1, verseWordsList.length - 1);
-      activeWordIndex = 0;
-      if (vi + 1 < verseWordsList.length) {
-        newRevealed.add(vi + 1);
-      }
+      });
     }
 
-    for (let vi = 0; vi < verseWordsList.length; vi++) {
-      if (!newWordStatuses.has(vi)) {
-        newWordStatuses.set(vi, verseWordsList[vi].map(() => "pending"));
-      }
-    }
-
-    setRevealedVerses(newRevealed);
-    setErrorVerses(newErrors);
-    setWordStatuses(newWordStatuses);
-    setCurrentVerseIndex(activeVerseIndex);
-    setCurrentWordIndex(activeWordIndex);
+    setRevealedVerses(result.revealedVerses);
+    setErrorVerses(result.errorVerses);
+    setWordStatuses(result.verseStatuses);
+    setCurrentVerseIndex(result.activeVerseIndex);
+    setCurrentWordIndex(result.activeWordIndex);
 
     window.setTimeout(() => {
       currentVerseRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
     }, 80);
-  }, [verses, playErrorAlert]);
+  }, [verses]);
 
   useEffect(() => {
     if (!isLiveReciting) return;
