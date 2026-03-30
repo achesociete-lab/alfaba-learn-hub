@@ -9,9 +9,10 @@ import AdminStudents from "@/components/admin/AdminStudents";
 import AdminHomework from "@/components/admin/AdminHomework";
 import AdminAttendance from "@/components/admin/AdminAttendance";
 import AdminCourses from "@/components/admin/AdminCourses";
+import AdminRecitations from "@/components/admin/AdminRecitations";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion } from "framer-motion";
-import { Shield, Users, FileText, ClipboardList, BarChart3, BookOpen } from "lucide-react";
+import { Shield, Users, FileText, ClipboardList, BarChart3, BookOpen, Headphones } from "lucide-react";
 
 const Admin = () => {
   const { user, loading: authLoading } = useAuth();
