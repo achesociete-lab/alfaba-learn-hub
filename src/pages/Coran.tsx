@@ -2,14 +2,12 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion, AnimatePresence } from "framer-motion";
-import { CommitStrategy, useScribe } from "@elevenlabs/react";
 import {
   BookOpen, Mic, MicOff, Square, RotateCcw, ChevronRight, ChevronLeft,
-  Star, Volume2, CheckCircle, AlertCircle, Sparkles, User,
-  Eye, EyeOff, AlertTriangle, Search, Layers, BookMarked, Play, Pause, Upload,
+  Star, Volume2, CheckCircle, Send,
+  Eye, EyeOff, Search, Layers, BookMarked, Play, Pause, Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -24,7 +22,6 @@ import { useArabicSpeech } from "@/hooks/use-arabic-speech";
 import {
   fetchSurahList,
   fetchSurahVerses,
-  normalizeArabic,
   getSurahStartPage,
   searchVerse,
   JUZ_DATA,
@@ -32,9 +29,7 @@ import {
   type SurahInfo,
 } from "@/utils/quran-api";
 import { RECITERS, playAyahAudio, playAyahSequence } from "@/utils/quran-audio";
-import { evaluateRecitationLocally, type AiFeedback } from "@/utils/quran-recitation-evaluator";
 import { fetchQuranPageAyahs, type QuranPageAyah } from "@/utils/quran-pages";
-import { forceAlignTranscript } from "@/utils/quran-force-align";
 
 type RecitationMode = "read" | "memorize";
 type NavTab = "surah" | "juz" | "search";
@@ -78,7 +73,7 @@ const Coran = () => {
   const [mode, setMode] = useState<RecitationMode>("read");
   const [versesHidden, setVersesHidden] = useState(false);
 
-  // Voice source: professional reciter (default) or user's cloned voice
+  // Voice source
   const [voiceSource, setVoiceSource] = useState<VoiceSource>("reciter");
   const [selectedReciter, setSelectedReciter] = useState("mishary");
   const [isPlayingSequence, setIsPlayingSequence] = useState(false);
@@ -86,70 +81,21 @@ const Coran = () => {
   const sequenceRef = useRef<{ stop: () => void } | null>(null);
   const singleAudioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Live recitation state
-  const [isLiveReciting, setIsLiveReciting] = useState(false);
-  const [isRecitationPaused, setIsRecitationPaused] = useState(false);
-  const [liveTranscript, setLiveTranscript] = useState("");
-  const [liveElapsedSeconds, setLiveElapsedSeconds] = useState(0);
-  const [currentVerseIndex, setCurrentVerseIndex] = useState(0);
-  const [revealedVerses, setRevealedVerses] = useState<Set<number>>(new Set());
-  const [errorVerses, setErrorVerses] = useState<Set<number>>(new Set());
-  const [wordStatuses, setWordStatuses] = useState<Map<number, Array<"correct" | "wrong" | "pending">>>(new Map());
-  const [currentWordIndex, setCurrentWordIndex] = useState(0);
-  const alertedErrorsRef = useRef<Set<string>>(new Set());
-  const verseContainerRef = useRef<HTMLDivElement | null>(null);
-  const currentVerseRef = useRef<HTMLDivElement | null>(null);
-
-  // Post-recitation evaluation
-  const [evaluating, setEvaluating] = useState(false);
-  const [feedback, setFeedback] = useState<AiFeedback | null>(null);
+  // Student recording submission
+  const recorder = useAudioRecorder();
+  const [submitting, setSubmitting] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
 
-  const recorder = useAudioRecorder();
   const { speak } = useArabicSpeech();
-
-  // Refs for live comparison
-  const transcriptRef = useRef("");
-  const silenceTimeoutRef = useRef<number | null>(null);
-  const liveTimerRef = useRef<number | null>(null);
-
-  const scribe = useScribe({
-    modelId: "scribe_v2_realtime",
-    commitStrategy: CommitStrategy.VAD,
-    sampleRate: 16000,
-  });
-  const scribeRef = useRef(scribe);
-
-  const resetRecitationState = useCallback(() => {
-    setFeedback(null);
-    setCurrentVerseIndex(0);
-    setCurrentWordIndex(0);
-    setRevealedVerses(new Set());
-    setErrorVerses(new Set());
-    setWordStatuses(new Map());
-    setLiveTranscript("");
-    setIsRecitationPaused(false);
-    transcriptRef.current = "";
-    alertedErrorsRef.current = new Set();
-
-    if (liveTimerRef.current) {
-      window.clearInterval(liveTimerRef.current);
-      liveTimerRef.current = null;
-    }
-
-    setLiveElapsedSeconds(0);
-  }, []);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
   }, [user, authLoading, navigate]);
 
-  // Load surah list
   useEffect(() => {
     fetchSurahList().then(setAllSurahs).catch(console.error);
   }, []);
 
-  // Load user data
   useEffect(() => {
     if (!user) return;
     supabase.from("quran_recitations").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10)
@@ -157,40 +103,17 @@ const Coran = () => {
   }, [user]);
 
   useEffect(() => {
-    scribeRef.current = scribe;
-  }, [scribe]);
-
-  useEffect(() => {
     if (!showMushafPage) return;
-
     let cancelled = false;
     setLoadingMushafPage(true);
     setMushafPageError(null);
-
     fetchQuranPageAyahs(currentPage)
-      .then((data) => {
-        if (!cancelled) {
-          setMushafPageAyahs(data);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setMushafPageAyahs([]);
-          setMushafPageError("Impossible d'afficher cette page du Mushaf pour le moment.");
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setLoadingMushafPage(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
+      .then((data) => { if (!cancelled) setMushafPageAyahs(data); })
+      .catch(() => { if (!cancelled) { setMushafPageAyahs([]); setMushafPageError("Impossible d'afficher cette page."); } })
+      .finally(() => { if (!cancelled) setLoadingMushafPage(false); });
+    return () => { cancelled = true; };
   }, [currentPage, showMushafPage]);
 
-  // Load teacher recording for selected surah
   useEffect(() => {
     if (!selectedSurahInfo) return;
     setTeacherRecordingUrl(null);
@@ -203,14 +126,12 @@ const Coran = () => {
       });
   }, [selectedSurahInfo]);
 
-  // Select a surah and load its verses
   const selectSurah = useCallback(async (surah: SurahInfo) => {
     setSelectedSurahInfo(surah);
-    resetRecitationState();
     setVersesHidden(false);
     setMode("read");
     setShowMushafPage(false);
-    setMushafPageError(null);
+    recorder.reset();
 
     setLoadingVerses(true);
     try {
@@ -222,50 +143,26 @@ const Coran = () => {
     } finally {
       setLoadingVerses(false);
     }
-  }, [resetRecitationState]);
+  }, [recorder]);
 
-  // Play a single verse based on the selected voice source
   const playVerse = useCallback((verse: QuranVerse) => {
-    // Stop any current playback
-    if (singleAudioRef.current) {
-      singleAudioRef.current.pause();
-      singleAudioRef.current = null;
-    }
-    if (sequenceRef.current) {
-      sequenceRef.current.stop();
-      sequenceRef.current = null;
-      setIsPlayingSequence(false);
-    }
+    if (singleAudioRef.current) { singleAudioRef.current.pause(); singleAudioRef.current = null; }
+    if (sequenceRef.current) { sequenceRef.current.stop(); sequenceRef.current = null; setIsPlayingSequence(false); }
 
     if (voiceSource === "teacher" && teacherRecordingUrl) {
-      // Play teacher's raw recording (full surah audio)
       setPlayingAyah(verse.number);
       const audio = new Audio(teacherRecordingUrl);
       singleAudioRef.current = audio;
       audio.addEventListener("ended", () => setPlayingAyah(null));
-      audio.addEventListener("error", () => {
-        setPlayingAyah(null);
-        toast.error("Erreur de lecture audio");
-      });
       audio.play().catch(() => toast.error("Erreur de lecture"));
     } else {
-      // Professional reciter
       setPlayingAyah(verse.number);
-      const audio = playAyahAudio(
-        selectedSurahInfo?.number || 1,
-        verse.number,
-        selectedReciter
-      );
+      const audio = playAyahAudio(selectedSurahInfo?.number || 1, verse.number, selectedReciter);
       singleAudioRef.current = audio;
       audio.addEventListener("ended", () => setPlayingAyah(null));
-      audio.addEventListener("error", () => {
-        setPlayingAyah(null);
-        toast.error("Erreur de lecture audio");
-      });
     }
-  }, [voiceSource, teacherRecordingUrl, selectedReciter, selectedSurahInfo, speak]);
+  }, [voiceSource, teacherRecordingUrl, selectedReciter, selectedSurahInfo]);
 
-  // Play all verses sequentially
   const playAllVerses = useCallback(() => {
     if (!selectedSurahInfo || verses.length === 0) return;
     if (isPlayingSequence) {
@@ -276,23 +173,13 @@ const Coran = () => {
       return;
     }
     setIsPlayingSequence(true);
-    const seq = playAyahSequence(
-      selectedSurahInfo.number,
-      1,
-      selectedSurahInfo.versesCount,
-      selectedReciter,
-      (ayah) => setPlayingAyah(ayah)
-    );
+    const seq = playAyahSequence(selectedSurahInfo.number, 1, selectedSurahInfo.versesCount, selectedReciter, (ayah) => setPlayingAyah(ayah));
     sequenceRef.current = seq;
-    const checkInterval = setInterval(() => {
-    }, 1000);
   }, [selectedSurahInfo, verses, selectedReciter, isPlayingSequence]);
 
   useEffect(() => {
     sequenceRef.current?.stop();
-    sequenceRef.current = null;
     singleAudioRef.current?.pause();
-    singleAudioRef.current = null;
     setIsPlayingSequence(false);
     setPlayingAyah(null);
   }, [selectedSurahInfo?.number]);
@@ -301,9 +188,6 @@ const Coran = () => {
     return () => {
       sequenceRef.current?.stop();
       singleAudioRef.current?.pause();
-      scribeRef.current.disconnect();
-      if (silenceTimeoutRef.current) window.clearTimeout(silenceTimeoutRef.current);
-      if (liveTimerRef.current) window.clearInterval(liveTimerRef.current);
     };
   }, []);
 
@@ -311,10 +195,8 @@ const Coran = () => {
     const p = Math.max(1, Math.min(604, page));
     setCurrentPage(p);
     setShowMushafPage(true);
-    setMushafPageError(null);
   };
 
-  // Verse search
   const handleVerseSearch = useCallback(async () => {
     if (verseSearchQuery.trim().length < 2) return;
     setSearching(true);
@@ -322,11 +204,8 @@ const Coran = () => {
       const results = await searchVerse(verseSearchQuery.trim());
       setVerseSearchResults(results);
       if (results.length === 0) toast.info("Aucun résultat trouvé");
-    } catch {
-      toast.error("Erreur lors de la recherche");
-    } finally {
-      setSearching(false);
-    }
+    } catch { toast.error("Erreur lors de la recherche"); }
+    finally { setSearching(false); }
   }, [verseSearchQuery]);
 
   // Teacher recording functions
@@ -345,9 +224,7 @@ const Coran = () => {
       teacherMediaRecorderRef.current = mediaRecorder;
       mediaRecorder.start();
       setIsRecordingTeacher(true);
-    } catch {
-      toast.error("Impossible d'accéder au microphone");
-    }
+    } catch { toast.error("Impossible d'accéder au microphone"); }
   };
 
   const stopTeacherRecording = () => {
@@ -371,179 +248,45 @@ const Coran = () => {
       setTeacherRecordingBlob(null);
       setTeacherRecordingPreview(null);
       toast.success("Enregistrement sauvegardé !");
-    } catch (e: any) {
-      toast.error(e.message || "Erreur lors de la sauvegarde");
-    } finally {
-      setSavingTeacherRecording(false);
-    }
+    } catch (e: any) { toast.error(e.message || "Erreur"); }
+    finally { setSavingTeacherRecording(false); }
   };
 
-  const finalizeRecitation = useCallback(async () => {
-    if (!selectedSurahInfo || !user) return;
-
-    const transcription = liveTranscript.trim();
-    if (!normalizeArabic(transcription)) {
-      toast.error("Aucune transcription détectée pendant la récitation.");
-      return;
-    }
-
-    setEvaluating(true);
-
+  // Submit student recitation to teacher
+  const submitRecitation = async () => {
+    if (!recorder.audioBlob || !user || !selectedSurahInfo) return;
+    setSubmitting(true);
     try {
-      const expectedText = verses.map((v) => v.arabic).join(" ");
-      const evalData = evaluateRecitationLocally(expectedText, transcription);
-      setFeedback(evalData);
+      const path = `students/${user.id}/surah-${selectedSurahInfo.number}-${Date.now()}.webm`;
+      const { error: upErr } = await supabase.storage.from("quran-recordings").upload(path, recorder.audioBlob);
+      if (upErr) throw upErr;
 
-      const { error: insertError } = await supabase.from("quran_recitations").insert({
+      const { data: urlData } = supabase.storage.from("quran-recordings").getPublicUrl(path);
+
+      const { error: insertErr } = await supabase.from("quran_recitations").insert({
         user_id: user.id,
         surah_number: selectedSurahInfo.number,
         ayah_start: 1,
         ayah_end: selectedSurahInfo.versesCount,
-        audio_url: null,
-        transcription,
-        ai_feedback: evalData as any,
-        score: evalData.score,
+        audio_url: urlData.publicUrl,
+        score: null,
+        transcription: null,
+        ai_feedback: null,
       });
+      if (insertErr) throw insertErr;
 
-      if (insertError) throw insertError;
+      toast.success("Récitation soumise au professeur !");
+      recorder.reset();
 
       const { data: hist } = await supabase.from("quran_recitations").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10);
       if (hist) setHistory(hist);
     } catch (e: any) {
-      toast.error(e.message || "Erreur lors de la finalisation de la récitation");
+      toast.error(e.message || "Erreur lors de l'envoi");
     } finally {
-      setEvaluating(false);
+      setSubmitting(false);
     }
-  }, [liveTranscript, selectedSurahInfo, user, verses]);
+  };
 
-  // ============ LIVE RECITATION with WebSocket STT ==========
-  const startLiveRecitation = useCallback(async () => {
-    if (!selectedSurahInfo || verses.length === 0 || isLiveReciting) return;
-
-    try {
-      const { data, error } = await supabase.functions.invoke("elevenlabs-scribe-token", {
-        body: {},
-      });
-
-      if (error || !data?.token) {
-        throw new Error("Impossible d'obtenir le token de transcription");
-      }
-
-      scribe.clearTranscripts();
-      resetRecitationState();
-      setRevealedVerses(new Set([0]));
-      if (silenceTimeoutRef.current) window.clearTimeout(silenceTimeoutRef.current);
-
-      await scribe.connect({
-        token: data.token,
-        microphone: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        },
-      });
-
-      setIsLiveReciting(true);
-      liveTimerRef.current = window.setInterval(() => {
-        setLiveElapsedSeconds((prev) => prev + 1);
-      }, 1000);
-    } catch (e: any) {
-      toast.error(e.message || "Erreur lors du démarrage");
-    }
-  }, [isLiveReciting, resetRecitationState, scribe, selectedSurahInfo, verses]);
-
-  const processLiveTranscript = useCallback((transcript: string) => {
-    if (verses.length === 0) return;
-
-    const result = forceAlignTranscript(verses, transcript);
-
-    // Only fire error alert for new errors
-    for (const vi of result.errorVerses) {
-      const statuses = result.verseStatuses.get(vi);
-      if (!statuses) continue;
-      statuses.forEach((st, wi) => {
-        if (st === "wrong") {
-          const key = `${vi}-${wi}`;
-          if (!alertedErrorsRef.current.has(key)) {
-            alertedErrorsRef.current.add(key);
-            playErrorAlert();
-          }
-        }
-      });
-    }
-
-    setRevealedVerses(result.revealedVerses);
-    setErrorVerses(result.errorVerses);
-    setWordStatuses(result.verseStatuses);
-    setCurrentVerseIndex(result.activeVerseIndex);
-    setCurrentWordIndex(result.activeWordIndex);
-
-    window.setTimeout(() => {
-      currentVerseRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 80);
-  }, [verses]);
-
-  useEffect(() => {
-    if (!isLiveReciting) return;
-
-    const committedTranscript = scribe.committedTranscripts.map((item) => item.text).join(" ").trim();
-    const partialTranscript = (scribe.partialTranscript || "").trim();
-    const combinedTranscript = [committedTranscript, partialTranscript].filter(Boolean).join(" ").trim();
-
-    if (!combinedTranscript) return;
-
-    transcriptRef.current = committedTranscript;
-    setLiveTranscript(combinedTranscript);
-    setIsRecitationPaused(false);
-
-    if (silenceTimeoutRef.current) window.clearTimeout(silenceTimeoutRef.current);
-    silenceTimeoutRef.current = window.setTimeout(() => {
-      setIsRecitationPaused(true);
-    }, 1800);
-
-    processLiveTranscript(combinedTranscript);
-  }, [isLiveReciting, processLiveTranscript, scribe.committedTranscripts, scribe.partialTranscript]);
-
-  function playErrorAlert() {
-    try {
-      const ctx = new AudioContext();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = 400;
-      gain.gain.value = 0.3;
-      osc.start();
-      osc.stop(ctx.currentTime + 0.15);
-    } catch {}
-  }
-
-  const stopLiveRecitation = useCallback(async (shouldFinalize = true) => {
-    try {
-      scribe.commit();
-    } catch {}
-
-    scribe.disconnect();
-
-    if (liveTimerRef.current) {
-      window.clearInterval(liveTimerRef.current);
-      liveTimerRef.current = null;
-    }
-
-    if (silenceTimeoutRef.current) {
-      window.clearTimeout(silenceTimeoutRef.current);
-      silenceTimeoutRef.current = null;
-    }
-
-    setIsLiveReciting(false);
-    setIsRecitationPaused(false);
-
-    if (shouldFinalize) {
-      await finalizeRecitation();
-    }
-  }, [finalizeRecitation, scribe]);
-
-  // Filtered surah list
   const filteredSurahs = allSurahs.filter(s =>
     s.name.toLowerCase().includes(surahSearch.toLowerCase()) ||
     s.nameArabic.includes(surahSearch) ||
@@ -552,21 +295,13 @@ const Coran = () => {
 
   const mushafSections = mushafPageAyahs.reduce<Array<{ surahNumber: number; surahNameArabic: string; ayahs: QuranPageAyah[] }>>((sections, ayah) => {
     const currentSection = sections[sections.length - 1];
-
     if (!currentSection || currentSection.surahNumber !== ayah.surahNumber) {
-      sections.push({
-        surahNumber: ayah.surahNumber,
-        surahNameArabic: ayah.surahNameArabic,
-        ayahs: [ayah],
-      });
+      sections.push({ surahNumber: ayah.surahNumber, surahNameArabic: ayah.surahNameArabic, ayahs: [ayah] });
       return sections;
     }
-
     currentSection.ayahs.push(ayah);
     return sections;
   }, []);
-
-  const hasDetectedSpeech = normalizeArabic(liveTranscript).length > 0;
 
   const renderMushafPageContent = (compact = false) => {
     if (loadingMushafPage) {
@@ -576,11 +311,9 @@ const Coran = () => {
         </div>
       );
     }
-
     if (mushafPageError) {
       return <p className="text-sm text-destructive text-center py-10">{mushafPageError}</p>;
     }
-
     return (
       <div className={`rounded-xl border border-border bg-card ${compact ? "p-4" : "p-6"}`}>
         <div className="space-y-6">
@@ -591,7 +324,6 @@ const Coran = () => {
                 <span>•</span>
                 <span className="font-arabic text-base text-foreground">{section.surahNameArabic}</span>
               </div>
-
               <div className={`${compact ? "text-xl" : "text-2xl"} leading-loose text-right font-arabic text-foreground`} dir="rtl">
                 {section.ayahs.map((ayah) => (
                   <span key={ayah.id} className="inline">
@@ -624,32 +356,24 @@ const Coran = () => {
               <span className="text-sm font-semibold text-primary">القرآن الكريم</span>
             </div>
             <h1 className="text-3xl font-bold text-foreground mb-2 font-arabic">المصحف الشريف</h1>
-            <p className="text-muted-foreground text-sm">Mushaf de Médine — Récitation avec correction en direct</p>
+            <p className="text-muted-foreground text-sm">Lecture, écoute et soumission de récitation au professeur</p>
           </motion.div>
 
           {/* Voice source selector */}
           <div className="flex flex-wrap items-center justify-center gap-3 mb-6">
             <div className="flex items-center gap-1.5 bg-muted rounded-full p-1">
-              <button
-                onClick={() => setVoiceSource("reciter")}
-                className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all ${voiceSource === "reciter" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-              >
+              <button onClick={() => setVoiceSource("reciter")} className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all ${voiceSource === "reciter" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
                 🕌 Cheikh
               </button>
               {teacherRecordingUrl && (
-                <button
-                  onClick={() => setVoiceSource("teacher")}
-                  className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all ${voiceSource === "teacher" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-                >
+                <button onClick={() => setVoiceSource("teacher")} className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all ${voiceSource === "teacher" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
                   🎙️ Professeur
                 </button>
               )}
             </div>
             {voiceSource === "reciter" && (
               <Select value={selectedReciter} onValueChange={setSelectedReciter}>
-                <SelectTrigger className="w-auto h-8 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger className="w-auto h-8 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {RECITERS.map((r) => (
                     <SelectItem key={r.id} value={r.id} className="text-xs">
@@ -716,21 +440,14 @@ const Coran = () => {
                   <TabsTrigger value="search" className="gap-2"><Search className="h-4 w-4" /> Recherche</TabsTrigger>
                 </TabsList>
 
-                {/* ===== SOURATES TAB ===== */}
                 <TabsContent value="surah">
                   <div className="relative mb-4">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Rechercher une sourate..."
-                      value={surahSearch}
-                      onChange={(e) => setSurahSearch(e.target.value)}
-                      className="pl-10"
-                    />
+                    <Input placeholder="Rechercher une sourate..." value={surahSearch} onChange={(e) => setSurahSearch(e.target.value)} className="pl-10" />
                   </div>
                   <div className="grid sm:grid-cols-2 gap-2 max-h-[60vh] overflow-y-auto pr-1">
                     {filteredSurahs.map((surah) => (
-                      <motion.button key={surah.number}
-                        onClick={() => selectSurah(surah)}
+                      <motion.button key={surah.number} onClick={() => selectSurah(surah)}
                         className="p-3 rounded-xl border border-border bg-card hover:border-primary/30 transition-all text-left flex items-center gap-3 group">
                         <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
                           <span className="text-xs font-bold text-primary">{surah.number}</span>
@@ -746,18 +463,13 @@ const Coran = () => {
                   </div>
                 </TabsContent>
 
-                {/* ===== JUZ TAB ===== */}
                 <TabsContent value="juz">
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-[60vh] overflow-y-auto pr-1">
                     {JUZ_DATA.map((juz) => {
                       const startSurah = allSurahs.find(s => s.number === juz.startSurah);
                       const endSurah = allSurahs.find(s => s.number === juz.endSurah);
                       return (
-                        <motion.button key={juz.number}
-                          onClick={() => {
-                            // Navigate to the first surah of this juz
-                            if (startSurah) selectSurah(startSurah);
-                          }}
+                        <motion.button key={juz.number} onClick={() => { if (startSurah) selectSurah(startSurah); }}
                           className="p-4 rounded-xl border border-border bg-card hover:border-primary/30 transition-all text-left group">
                           <div className="flex items-center gap-3 mb-2">
                             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
@@ -777,53 +489,26 @@ const Coran = () => {
                   </div>
                 </TabsContent>
 
-                {/* ===== SEARCH TAB ===== */}
                 <TabsContent value="search">
                   <div className="space-y-4">
                     <div className="flex gap-2">
-                      <Input
-                        placeholder="Chercher un verset en arabe..."
-                        value={verseSearchQuery}
-                        onChange={(e) => setVerseSearchQuery(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && handleVerseSearch()}
-                        className="font-arabic text-right"
-                        dir="rtl"
-                      />
+                      <Input placeholder="Chercher un verset en arabe..." value={verseSearchQuery} onChange={(e) => setVerseSearchQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleVerseSearch()} className="font-arabic text-right" dir="rtl" />
                       <Button onClick={handleVerseSearch} disabled={searching} className="shrink-0 gap-2">
                         <Search className="h-4 w-4" /> {searching ? "..." : "Chercher"}
                       </Button>
                     </div>
-
-                    {/* Quick page jump */}
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-muted-foreground">Aller à la page :</span>
-                      <Input
-                        type="number"
-                        min={1}
-                        max={604}
-                        placeholder="1-604"
-                        className="w-24"
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            const val = parseInt((e.target as HTMLInputElement).value);
-                            if (val >= 1 && val <= 604) goToPage(val);
-                          }
-                        }}
-                      />
-                      <span className="text-xs text-muted-foreground">(1 à 604)</span>
+                      <Input type="number" min={1} max={604} placeholder="1-604" className="w-24"
+                        onKeyDown={(e) => { if (e.key === "Enter") { const val = parseInt((e.target as HTMLInputElement).value); if (val >= 1 && val <= 604) goToPage(val); } }} />
                     </div>
-
-                    {/* Search results */}
                     {verseSearchResults.length > 0 && (
                       <div className="space-y-2 max-h-[50vh] overflow-y-auto">
                         <p className="text-xs text-muted-foreground">{verseSearchResults.length} résultat(s)</p>
                         {verseSearchResults.map((result, i) => {
                           const surahInfo = allSurahs.find(s => s.number === result.surah);
                           return (
-                            <button key={i}
-                              onClick={() => {
-                                if (surahInfo) selectSurah(surahInfo);
-                              }}
+                            <button key={i} onClick={() => { if (surahInfo) selectSurah(surahInfo); }}
                               className="w-full p-3 rounded-xl border border-border bg-card hover:border-primary/30 transition-all text-right">
                               <div className="flex items-center justify-between mb-1">
                                 <span className="text-xs text-muted-foreground">{surahInfo?.name} • Verset {result.ayah} • p.{result.page}</span>
@@ -842,20 +527,37 @@ const Coran = () => {
               {/* History */}
               {history.length > 0 && (
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mt-10">
-                  <h2 className="text-base font-bold text-foreground mb-3 flex items-center gap-2"><Star className="h-4 w-4" /> Historique</h2>
+                  <h2 className="text-base font-bold text-foreground mb-3 flex items-center gap-2"><Star className="h-4 w-4" /> Mes récitations</h2>
                   <div className="space-y-2">
                     {history.map((rec) => {
                       const surahInfo = allSurahs.find(s => s.number === rec.surah_number);
                       return (
-                        <div key={rec.id} className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card">
-                          <div className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 ${rec.score >= 80 ? "bg-primary/10" : rec.score >= 50 ? "bg-secondary/10" : "bg-destructive/10"}`}>
-                            <span className={`text-xs font-bold ${rec.score >= 80 ? "text-primary" : rec.score >= 50 ? "text-secondary" : "text-destructive"}`}>{rec.score ?? "—"}</span>
+                        <div key={rec.id} className="p-3 rounded-xl border border-border bg-card">
+                          <div className="flex items-center gap-3">
+                            <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                              <BookOpen className="h-4 w-4 text-primary" />
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="text-sm font-semibold text-foreground">{surahInfo?.name || `Sourate ${rec.surah_number}`}</h3>
+                              <p className="text-xs text-muted-foreground">{new Date(rec.created_at).toLocaleDateString("fr-FR")}</p>
+                            </div>
+                            {rec.teacher_reviewed ? (
+                              <div className="text-right">
+                                <span className="text-xs font-semibold px-2 py-1 rounded-full bg-primary/10 text-primary">✓ Corrigé</span>
+                                {rec.score != null && <p className="text-xs font-bold text-primary mt-1">{rec.score}/100</p>}
+                              </div>
+                            ) : (
+                              <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">En attente</span>
+                            )}
                           </div>
-                          <div className="flex-1">
-                            <h3 className="text-sm font-semibold text-foreground">{surahInfo?.name || `Sourate ${rec.surah_number}`}</h3>
-                            <p className="text-xs text-muted-foreground">{new Date(rec.created_at).toLocaleDateString("fr-FR")}</p>
-                          </div>
-                          {rec.teacher_reviewed && <span className="text-xs font-semibold px-2 py-1 rounded-full bg-primary/10 text-primary">✓ Corrigé</span>}
+                          {rec.teacher_feedback && (
+                            <div className="mt-2 p-2 rounded-lg bg-muted">
+                              <p className="text-xs text-foreground"><span className="font-semibold">Commentaire :</span> {rec.teacher_feedback}</p>
+                            </div>
+                          )}
+                          {rec.audio_url && (
+                            <audio src={rec.audio_url} controls className="w-full h-8 mt-2" />
+                          )}
                         </div>
                       );
                     })}
@@ -869,27 +571,17 @@ const Coran = () => {
           {showMushafPage && !selectedSurahInfo && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <div className="flex items-center justify-between mb-4">
-                <Button variant="ghost" onClick={() => setShowMushafPage(false)} className="text-muted-foreground">
-                  ← Retour
-                </Button>
+                <Button variant="ghost" onClick={() => setShowMushafPage(false)} className="text-muted-foreground">← Retour</Button>
                 <span className="text-sm font-semibold text-foreground">Page {currentPage} / 604</span>
                 <div className="flex gap-1">
-                  <Button variant="outline" size="icon" onClick={() => goToPage(currentPage - 1)} disabled={currentPage <= 1}>
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="icon" onClick={() => goToPage(currentPage + 1)} disabled={currentPage >= 604}>
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
+                  <Button variant="outline" size="icon" onClick={() => goToPage(currentPage - 1)} disabled={currentPage <= 1}><ChevronLeft className="h-4 w-4" /></Button>
+                  <Button variant="outline" size="icon" onClick={() => goToPage(currentPage + 1)} disabled={currentPage >= 604}><ChevronRight className="h-4 w-4" /></Button>
                 </div>
               </div>
               <div className="mx-auto max-w-4xl">{renderMushafPageContent()}</div>
               <div className="flex items-center justify-center gap-2 mt-4">
-                <Button variant="outline" size="sm" onClick={() => goToPage(currentPage - 1)} disabled={currentPage <= 1}>
-                  <ChevronLeft className="h-4 w-4 mr-1" /> Page précédente
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => goToPage(currentPage + 1)} disabled={currentPage >= 604}>
-                  Page suivante <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
+                <Button variant="outline" size="sm" onClick={() => goToPage(currentPage - 1)} disabled={currentPage <= 1}><ChevronLeft className="h-4 w-4 mr-1" /> Précédente</Button>
+                <Button variant="outline" size="sm" onClick={() => goToPage(currentPage + 1)} disabled={currentPage >= 604}>Suivante <ChevronRight className="h-4 w-4 ml-1" /></Button>
               </div>
             </motion.div>
           )}
@@ -897,14 +589,13 @@ const Coran = () => {
           {/* ========== ACTIVE SURAH VIEW ========== */}
           {selectedSurahInfo && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <Button variant="ghost" onClick={() => { void stopLiveRecitation(false); resetRecitationState(); setSelectedSurahInfo(null); setShowMushafPage(false); }} className="mb-4 text-muted-foreground">
+              <Button variant="ghost" onClick={() => { recorder.reset(); setSelectedSurahInfo(null); setShowMushafPage(false); }} className="mb-4 text-muted-foreground">
                 ← Retour
               </Button>
 
               {loadingVerses ? (
                 <div className="flex items-center justify-center py-20">
                   <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                  <span className="ml-3 text-muted-foreground">Chargement...</span>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -918,7 +609,6 @@ const Coran = () => {
                       <span className="font-arabic text-xl text-foreground">{selectedSurahInfo.nameArabic}</span>
                     </div>
 
-                    {/* Mode toggle + Mushaf page button */}
                     <div className="flex flex-wrap gap-2 mb-3">
                       <Button variant={mode === "read" ? "default" : "outline"} size="sm" onClick={() => { setMode("read"); setVersesHidden(false); }} className="gap-1.5">
                         <Eye className="h-3.5 w-3.5" /> Lecture
@@ -936,30 +626,20 @@ const Coran = () => {
                         </Button>
                       )}
                       {voiceSource === "reciter" && (
-                        <Button
-                          variant={isPlayingSequence ? "destructive" : "outline"}
-                          size="sm"
-                          onClick={playAllVerses}
-                          className="gap-1.5"
-                        >
+                        <Button variant={isPlayingSequence ? "destructive" : "outline"} size="sm" onClick={playAllVerses} className="gap-1.5">
                           {isPlayingSequence ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
                           {isPlayingSequence ? "Arrêter" : "Écouter tout"}
                         </Button>
                       )}
                     </div>
 
-                    {/* Mushaf page image (inline) */}
                     {showMushafPage && (
                       <div className="mb-4">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-xs text-muted-foreground">Page {currentPage}</span>
                           <div className="flex gap-1">
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setCurrentPage(p => Math.max(1, p - 1)); setMushafPageError(null); }}>
-                              <ChevronLeft className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setCurrentPage(p => Math.min(604, p + 1)); setMushafPageError(null); }}>
-                              <ChevronRight className="h-3.5 w-3.5" />
-                            </Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCurrentPage(p => Math.max(1, p - 1))}><ChevronLeft className="h-3.5 w-3.5" /></Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCurrentPage(p => Math.min(604, p + 1))}><ChevronRight className="h-3.5 w-3.5" /></Button>
                             <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowMushafPage(false)}>Fermer</Button>
                           </div>
                         </div>
@@ -968,24 +648,11 @@ const Coran = () => {
                     )}
 
                     {/* Verses display */}
-                    <div ref={verseContainerRef} className="p-4 rounded-lg bg-muted space-y-2 max-h-[50vh] overflow-y-auto">
+                    <div className="p-4 rounded-lg bg-muted space-y-2 max-h-[50vh] overflow-y-auto">
                       {verses.map((verse, vi) => {
-                        const isRevealed = !versesHidden || revealedVerses.has(vi);
-                        const hasError = errorVerses.has(vi);
-                        const statuses = wordStatuses.get(vi);
-                        const isCurrent = isLiveReciting && vi === currentVerseIndex;
-                        // Split original Arabic (with tashkeel) into words for coloring
-                        const originalWords = verse.arabic.split(" ").filter(Boolean);
-
+                        const isRevealed = !versesHidden;
                         return (
-                          <div
-                            key={vi}
-                            ref={isCurrent ? currentVerseRef : undefined}
-                            className={`group rounded-lg p-2.5 transition-all ${
-                              isCurrent ? "bg-primary/10 border border-primary/30 shadow-sm" :
-                              hasError && isLiveReciting ? "bg-destructive/5 border border-destructive/20" : ""
-                            }`}
-                          >
+                          <div key={vi} className="group rounded-lg p-2.5">
                             <div className="flex items-start gap-2">
                               <span className="text-xs font-bold text-muted-foreground bg-background rounded-full h-5 w-5 flex items-center justify-center shrink-0 mt-1">
                                 {verse.number}
@@ -993,22 +660,9 @@ const Coran = () => {
                               <div className="flex-1">
                                 {isRevealed ? (
                                   <div className="font-arabic text-lg leading-loose text-right" dir="rtl">
-                                    {statuses && isLiveReciting ? (
-                                      originalWords.map((word, wi) => {
-                                        const status = statuses[wi];
-                                        return (
-                                          <span key={wi} className={`inline-block mx-0.5 transition-colors ${
-                                            status === "correct" ? "text-primary" :
-                                            status === "wrong" ? "text-destructive font-bold underline decoration-wavy decoration-destructive" :
-                                            "text-muted-foreground/40"
-                                          }`}>{word}{" "}</span>
-                                        );
-                                      })
-                                    ) : (
-                                      <button onClick={() => playVerse(verse)} className={`text-right w-full transition-colors cursor-pointer ${playingAyah === verse.number ? "text-primary" : "text-foreground hover:text-primary"}`}>
-                                        {verse.arabic}
-                                      </button>
-                                    )}
+                                    <button onClick={() => playVerse(verse)} className={`text-right w-full transition-colors cursor-pointer ${playingAyah === verse.number ? "text-primary" : "text-foreground hover:text-primary"}`}>
+                                      {verse.arabic}
+                                    </button>
                                   </div>
                                 ) : (
                                   <div className="flex items-center gap-2 py-2">
@@ -1016,16 +670,8 @@ const Coran = () => {
                                     <span className="text-xs text-muted-foreground italic">Verset caché</span>
                                   </div>
                                 )}
-
-                                {hasError && isLiveReciting && (
-                                  <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-2 mt-1 text-destructive">
-                                    <AlertTriangle className="h-3.5 w-3.5" />
-                                    <span className="text-xs font-semibold">Erreur de prononciation</span>
-                                  </motion.div>
-                                )}
                               </div>
-
-                              {isRevealed && !isLiveReciting && (
+                              {isRevealed && (
                                 <button onClick={() => playVerse(verse)} className={`transition-colors shrink-0 mt-1 ${playingAyah === verse.number ? "text-primary" : "text-muted-foreground hover:text-primary"}`}>
                                   <Volume2 className="h-3.5 w-3.5" />
                                 </button>
@@ -1037,116 +683,51 @@ const Coran = () => {
                     </div>
                   </div>
 
-                  {/* Live Recitation Controls */}
+                  {/* Student Recording & Submission */}
                   <div className="p-5 rounded-xl border border-border bg-card text-center">
-                    <h3 className="text-sm font-semibold text-foreground mb-3">
-                      🎤 {isLiveReciting ? "Récitation en cours — correction en direct" : "Récitation en direct"}
-                    </h3>
+                    <h3 className="text-sm font-semibold text-foreground mb-1">🎤 Enregistrer ma récitation</h3>
+                    <p className="text-xs text-muted-foreground mb-4">Enregistrez-vous puis soumettez au professeur pour correction</p>
 
-                    {!isLiveReciting && !recorder.audioUrl && (
-                      <Button onClick={startLiveRecitation} size="lg" className="gradient-emerald border-0 text-primary-foreground gap-2 px-8">
-                        <Mic className="h-5 w-5" /> Réciter
+                    {!recorder.isRecording && !recorder.audioUrl && (
+                      <Button onClick={recorder.startRecording} size="lg" className="gap-2 px-8">
+                        <Mic className="h-5 w-5" /> Commencer l'enregistrement
                       </Button>
                     )}
 
-                    {isLiveReciting && (
+                    {recorder.isRecording && (
                       <div className="space-y-3">
                         <div className="flex items-center justify-center gap-4">
                           <div className="flex items-center gap-2">
                             <div className="h-4 w-4 rounded-full bg-destructive animate-pulse" />
                             <span className="text-lg font-mono text-foreground">
-                              {Math.floor(liveElapsedSeconds / 60)}:{String(liveElapsedSeconds % 60).padStart(2, '0')}
+                              {Math.floor(recorder.duration / 60)}:{String(recorder.duration % 60).padStart(2, '0')}
                             </span>
                           </div>
-                          <Button onClick={() => void stopLiveRecitation()} variant="destructive" size="lg" className="gap-2">
+                          <Button onClick={recorder.stopRecording} variant="destructive" size="lg" className="gap-2">
                             <Square className="h-5 w-5" /> Arrêter
                           </Button>
                         </div>
-
-                        <div className="flex items-center justify-center gap-6 text-sm">
-                          <span className="text-primary flex items-center gap-1">
-                            <CheckCircle className="h-3.5 w-3.5" />
-                            {Array.from(revealedVerses).filter(v => !errorVerses.has(v)).length} corrects
-                          </span>
-                          <span className="text-destructive flex items-center gap-1">
-                            <AlertCircle className="h-3.5 w-3.5" />
-                            {errorVerses.size} erreurs
-                          </span>
-                        </div>
-
-                        {liveTranscript && (
-                          <div className="p-2 rounded-lg bg-muted text-right font-arabic text-xs text-muted-foreground max-h-16 overflow-y-auto" dir="rtl">
-                            {liveTranscript}
-                          </div>
-                        )}
+                        <p className="text-xs text-muted-foreground animate-pulse">Récitez les versets...</p>
                       </div>
                     )}
 
-                    {!isLiveReciting && (hasDetectedSpeech || evaluating || feedback) && (
-                      <div className="space-y-3">
-                        {liveTranscript && (
-                          <div className="p-2 rounded-lg bg-muted text-right font-arabic text-xs text-muted-foreground max-h-16 overflow-y-auto" dir="rtl">
-                            {liveTranscript}
-                          </div>
-                        )}
-                        {evaluating && <p className="text-sm text-muted-foreground">Correction automatique en cours...</p>}
-                        <div className="flex justify-center gap-3">
-                          <Button onClick={() => { resetRecitationState(); }} variant="outline" className="gap-2">
-                            <RotateCcw className="h-4 w-4" /> Réessayer
+                    {recorder.audioUrl && !recorder.isRecording && (
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-2">Réécouter votre récitation :</p>
+                          <audio src={recorder.audioUrl} controls className="w-full max-w-md mx-auto h-10" />
+                        </div>
+                        <div className="flex items-center justify-center gap-3">
+                          <Button onClick={recorder.reset} variant="outline" className="gap-2">
+                            <RotateCcw className="h-4 w-4" /> Recommencer
+                          </Button>
+                          <Button onClick={submitRecitation} disabled={submitting} className="gap-2">
+                            <Send className="h-4 w-4" /> {submitting ? "Envoi..." : "Soumettre au professeur"}
                           </Button>
                         </div>
                       </div>
                     )}
                   </div>
-
-                  {/* AI Feedback */}
-                  <AnimatePresence>
-                    {feedback && (
-                      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
-                        <div className="p-5 rounded-xl border border-border bg-card">
-                          <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-base font-semibold text-foreground flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /> Résultat</h3>
-                            <div className={`text-2xl font-bold ${feedback.score >= 80 ? "text-primary" : feedback.score >= 50 ? "text-secondary" : "text-destructive"}`}>
-                              {feedback.score}<span className="text-sm">/100</span>
-                            </div>
-                          </div>
-                          <Progress value={feedback.score} className="h-2 mb-3" />
-                          <p className="text-sm text-foreground">{feedback.overallFeedback}</p>
-                          <p className="text-sm text-primary mt-2 italic">💚 {feedback.encouragement}</p>
-                        </div>
-
-                        {feedback.errors.length > 0 && (
-                          <div className="p-5 rounded-xl border border-border bg-card">
-                            <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2"><AlertCircle className="h-4 w-4 text-destructive" /> Points à corriger</h3>
-                            <div className="space-y-2">
-                              {feedback.errors.map((err, i) => (
-                                <div key={i} className="flex items-start gap-2 p-2 rounded-lg bg-muted">
-                                  <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full shrink-0 mt-0.5 ${err.type === "mispronounced" ? "bg-secondary/20 text-secondary" : err.type === "missing" ? "bg-destructive/20 text-destructive" : "bg-primary/20 text-primary"}`}>
-                                    {err.type === "mispronounced" ? "Prononciation" : err.type === "missing" ? "Manquant" : "Tajwid"}
-                                  </span>
-                                  <div>
-                                    <span className="font-arabic text-foreground text-sm">{err.word}</span>
-                                    <p className="text-xs text-muted-foreground mt-0.5">{err.correction}</p>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {feedback.tajwidNotes.length > 0 && (
-                          <div className="p-5 rounded-xl border border-border bg-card">
-                            <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2"><BookOpen className="h-4 w-4 text-primary" /> Tajwid</h3>
-                            <ul className="space-y-1">
-                              {feedback.tajwidNotes.map((note, i) => (
-                                <li key={i} className="text-xs text-muted-foreground flex items-start gap-2"><Star className="h-3 w-3 text-secondary shrink-0 mt-0.5" />{note}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
                 </div>
               )}
             </motion.div>
@@ -1157,20 +738,5 @@ const Coran = () => {
     </div>
   );
 };
-
-// Helper
-function levenshteinSimilarityCalc(a: string, b: string): number {
-  const matrix: number[][] = [];
-  for (let i = 0; i <= a.length; i++) matrix[i] = [i];
-  for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
-  for (let i = 1; i <= a.length; i++) {
-    for (let j = 1; j <= b.length; j++) {
-      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-      matrix[i][j] = Math.min(matrix[i - 1][j] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j - 1] + cost);
-    }
-  }
-  const maxLen = Math.max(a.length, b.length);
-  return maxLen === 0 ? 1 : 1 - matrix[a.length][b.length] / maxLen;
-}
 
 export default Coran;

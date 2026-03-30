@@ -9,9 +9,10 @@ import AdminStudents from "@/components/admin/AdminStudents";
 import AdminHomework from "@/components/admin/AdminHomework";
 import AdminAttendance from "@/components/admin/AdminAttendance";
 import AdminCourses from "@/components/admin/AdminCourses";
+import AdminRecitations from "@/components/admin/AdminRecitations";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion } from "framer-motion";
-import { Shield, Users, FileText, ClipboardList, BarChart3, BookOpen } from "lucide-react";
+import { Shield, Users, FileText, ClipboardList, BarChart3, BookOpen, Headphones } from "lucide-react";
 
 const Admin = () => {
   const { user, loading: authLoading } = useAuth();
@@ -66,6 +67,9 @@ const Admin = () => {
               <TabsTrigger value="attendance" className="flex items-center gap-1.5 text-xs sm:text-sm">
                 <ClipboardList className="h-4 w-4" /> Émargement
               </TabsTrigger>
+              <TabsTrigger value="recitations" className="flex items-center gap-1.5 text-xs sm:text-sm">
+                <Headphones className="h-4 w-4" /> Récitations
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview"><AdminOverview /></TabsContent>
@@ -73,6 +77,7 @@ const Admin = () => {
             <TabsContent value="students"><AdminStudents /></TabsContent>
             <TabsContent value="homework"><AdminHomework /></TabsContent>
             <TabsContent value="attendance"><AdminAttendance /></TabsContent>
+            <TabsContent value="recitations"><AdminRecitations /></TabsContent>
           </Tabs>
         </div>
       </main>
