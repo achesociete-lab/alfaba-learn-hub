@@ -25,7 +25,6 @@ import {
   fetchSurahList,
   fetchSurahVerses,
   normalizeArabic,
-  getMedinaPageUrl,
   getSurahStartPage,
   searchVerse,
   JUZ_DATA,
@@ -34,6 +33,7 @@ import {
 } from "@/utils/quran-api";
 import { RECITERS, playAyahAudio, playAyahSequence } from "@/utils/quran-audio";
 import { evaluateRecitationLocally, type AiFeedback } from "@/utils/quran-recitation-evaluator";
+import { fetchQuranPageAyahs, type QuranPageAyah } from "@/utils/quran-pages";
 
 type RecitationMode = "read" | "memorize";
 type NavTab = "surah" | "juz" | "search";
@@ -60,7 +60,9 @@ const Coran = () => {
   // Mushaf page view
   const [currentPage, setCurrentPage] = useState(1);
   const [showMushafPage, setShowMushafPage] = useState(false);
-  const [mushafImageLoaded, setMushafImageLoaded] = useState(false);
+  const [loadingMushafPage, setLoadingMushafPage] = useState(false);
+  const [mushafPageError, setMushafPageError] = useState<string | null>(null);
+  const [mushafPageAyahs, setMushafPageAyahs] = useState<QuranPageAyah[]>([]);
 
   // Teacher recording
   const [teacherRecordingUrl, setTeacherRecordingUrl] = useState<string | null>(null);
@@ -87,6 +89,7 @@ const Coran = () => {
   const [isLiveReciting, setIsLiveReciting] = useState(false);
   const [isRecitationPaused, setIsRecitationPaused] = useState(false);
   const [liveTranscript, setLiveTranscript] = useState("");
+  const [liveElapsedSeconds, setLiveElapsedSeconds] = useState(0);
   const [currentVerseIndex, setCurrentVerseIndex] = useState(0);
   const [revealedVerses, setRevealedVerses] = useState<Set<number>>(new Set());
   const [errorVerses, setErrorVerses] = useState<Set<number>>(new Set());
@@ -107,12 +110,34 @@ const Coran = () => {
   // Refs for live comparison
   const transcriptRef = useRef("");
   const silenceTimeoutRef = useRef<number | null>(null);
+  const liveTimerRef = useRef<number | null>(null);
 
   const scribe = useScribe({
     modelId: "scribe_v2_realtime",
     commitStrategy: CommitStrategy.VAD,
     sampleRate: 16000,
   });
+  const scribeRef = useRef(scribe);
+
+  const resetRecitationState = useCallback(() => {
+    setFeedback(null);
+    setCurrentVerseIndex(0);
+    setCurrentWordIndex(0);
+    setRevealedVerses(new Set());
+    setErrorVerses(new Set());
+    setWordStatuses(new Map());
+    setLiveTranscript("");
+    setIsRecitationPaused(false);
+    transcriptRef.current = "";
+    alertedErrorsRef.current = new Set();
+
+    if (liveTimerRef.current) {
+      window.clearInterval(liveTimerRef.current);
+      liveTimerRef.current = null;
+    }
+
+    setLiveElapsedSeconds(0);
+  }, []);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -130,6 +155,40 @@ const Coran = () => {
       .then(({ data }) => { if (data) setHistory(data); });
   }, [user]);
 
+  useEffect(() => {
+    scribeRef.current = scribe;
+  }, [scribe]);
+
+  useEffect(() => {
+    if (!showMushafPage) return;
+
+    let cancelled = false;
+    setLoadingMushafPage(true);
+    setMushafPageError(null);
+
+    fetchQuranPageAyahs(currentPage)
+      .then((data) => {
+        if (!cancelled) {
+          setMushafPageAyahs(data);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setMushafPageAyahs([]);
+          setMushafPageError("Impossible d'afficher cette page du Mushaf pour le moment.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoadingMushafPage(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentPage, showMushafPage]);
+
   // Load teacher recording for selected surah
   useEffect(() => {
     if (!selectedSurahInfo) return;
@@ -146,18 +205,11 @@ const Coran = () => {
   // Select a surah and load its verses
   const selectSurah = useCallback(async (surah: SurahInfo) => {
     setSelectedSurahInfo(surah);
-    setFeedback(null);
-    setCurrentVerseIndex(0);
-    setCurrentWordIndex(0);
-    setRevealedVerses(new Set());
-    setErrorVerses(new Set());
-    setWordStatuses(new Map());
-    setLiveTranscript("");
-    setIsRecitationPaused(false);
+    resetRecitationState();
     setVersesHidden(false);
     setMode("read");
     setShowMushafPage(false);
-    recorder.reset();
+    setMushafPageError(null);
 
     setLoadingVerses(true);
     try {
@@ -169,7 +221,7 @@ const Coran = () => {
     } finally {
       setLoadingVerses(false);
     }
-  }, [recorder]);
+  }, [resetRecitationState]);
 
   // Play a single verse based on the selected voice source
   const playVerse = useCallback((verse: QuranVerse) => {
@@ -235,21 +287,30 @@ const Coran = () => {
     }, 1000);
   }, [selectedSurahInfo, verses, selectedReciter, isPlayingSequence]);
 
-  // Cleanup on unmount or surah change
+  useEffect(() => {
+    sequenceRef.current?.stop();
+    sequenceRef.current = null;
+    singleAudioRef.current?.pause();
+    singleAudioRef.current = null;
+    setIsPlayingSequence(false);
+    setPlayingAyah(null);
+  }, [selectedSurahInfo?.number]);
+
   useEffect(() => {
     return () => {
       sequenceRef.current?.stop();
       singleAudioRef.current?.pause();
-      scribe.disconnect();
+      scribeRef.current.disconnect();
       if (silenceTimeoutRef.current) window.clearTimeout(silenceTimeoutRef.current);
+      if (liveTimerRef.current) window.clearInterval(liveTimerRef.current);
     };
-  }, [selectedSurahInfo, scribe]);
+  }, []);
 
   const goToPage = (page: number) => {
     const p = Math.max(1, Math.min(604, page));
     setCurrentPage(p);
     setShowMushafPage(true);
-    setMushafImageLoaded(false);
+    setMushafPageError(null);
   };
 
   // Verse search
@@ -316,6 +377,44 @@ const Coran = () => {
     }
   };
 
+  const finalizeRecitation = useCallback(async () => {
+    if (!selectedSurahInfo || !user) return;
+
+    const transcription = liveTranscript.trim();
+    if (!normalizeArabic(transcription)) {
+      toast.error("Aucune transcription détectée pendant la récitation.");
+      return;
+    }
+
+    setEvaluating(true);
+
+    try {
+      const expectedText = verses.map((v) => v.arabic).join(" ");
+      const evalData = evaluateRecitationLocally(expectedText, transcription);
+      setFeedback(evalData);
+
+      const { error: insertError } = await supabase.from("quran_recitations").insert({
+        user_id: user.id,
+        surah_number: selectedSurahInfo.number,
+        ayah_start: 1,
+        ayah_end: selectedSurahInfo.versesCount,
+        audio_url: null,
+        transcription,
+        ai_feedback: evalData as any,
+        score: evalData.score,
+      });
+
+      if (insertError) throw insertError;
+
+      const { data: hist } = await supabase.from("quran_recitations").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10);
+      if (hist) setHistory(hist);
+    } catch (e: any) {
+      toast.error(e.message || "Erreur lors de la finalisation de la récitation");
+    } finally {
+      setEvaluating(false);
+    }
+  }, [liveTranscript, selectedSurahInfo, user, verses]);
+
   // ============ LIVE RECITATION with WebSocket STT ==========
   const startLiveRecitation = useCallback(async () => {
     if (!selectedSurahInfo || verses.length === 0 || isLiveReciting) return;
@@ -329,18 +428,11 @@ const Coran = () => {
         throw new Error("Impossible d'obtenir le token de transcription");
       }
 
-      setCurrentVerseIndex(0);
-      setCurrentWordIndex(0);
+      scribe.clearTranscripts();
+      resetRecitationState();
       setRevealedVerses(new Set([0]));
-      setErrorVerses(new Set());
-      setWordStatuses(new Map());
-      setLiveTranscript("");
-      setIsRecitationPaused(false);
-      transcriptRef.current = "";
-      alertedErrorsRef.current = new Set();
       if (silenceTimeoutRef.current) window.clearTimeout(silenceTimeoutRef.current);
 
-      await recorder.startRecording();
       await scribe.connect({
         token: data.token,
         microphone: {
@@ -351,11 +443,13 @@ const Coran = () => {
       });
 
       setIsLiveReciting(true);
+      liveTimerRef.current = window.setInterval(() => {
+        setLiveElapsedSeconds((prev) => prev + 1);
+      }, 1000);
     } catch (e: any) {
-      recorder.stopRecording();
       toast.error(e.message || "Erreur lors du démarrage");
     }
-  }, [isLiveReciting, recorder, scribe, selectedSurahInfo, verses]);
+  }, [isLiveReciting, resetRecitationState, scribe, selectedSurahInfo, verses]);
 
   const processLiveTranscript = useCallback((transcript: string) => {
     if (verses.length === 0) return;
@@ -477,62 +571,30 @@ const Coran = () => {
     } catch {}
   }
 
-  const stopLiveRecitation = useCallback(() => {
+  const stopLiveRecitation = useCallback(async (shouldFinalize = true) => {
+    try {
+      scribe.commit();
+    } catch {}
+
     scribe.disconnect();
+
+    if (liveTimerRef.current) {
+      window.clearInterval(liveTimerRef.current);
+      liveTimerRef.current = null;
+    }
+
     if (silenceTimeoutRef.current) {
       window.clearTimeout(silenceTimeoutRef.current);
       silenceTimeoutRef.current = null;
     }
-    recorder.stopRecording();
+
     setIsLiveReciting(false);
-  }, [recorder, scribe]);
+    setIsRecitationPaused(false);
 
-  // ============ POST-RECITATION EVALUATION ============
-  const evaluateRecitation = async () => {
-    if (!recorder.audioBlob || !selectedSurahInfo || !user) return;
-    setEvaluating(true);
-    setFeedback(null);
-
-    try {
-      const expectedText = verses.map(v => v.arabic).join(" ");
-      const transcription = liveTranscript.trim();
-
-      if (!normalizeArabic(transcription)) {
-        toast.error("Aucune transcription détectée : aucune analyse payante n'a été lancée.");
-        return;
-      }
-
-      const evalData = evaluateRecitationLocally(expectedText, transcription);
-      setFeedback(evalData);
-
-      try {
-        const path = `${user.id}/recitation-${selectedSurahInfo.number}-${Date.now()}.webm`;
-        const { error: uploadError } = await supabase.storage.from("quran-recordings").upload(path, recorder.audioBlob);
-        if (uploadError) throw uploadError;
-
-        const { error: insertError } = await supabase.from("quran_recitations").insert({
-          user_id: user.id,
-          surah_number: selectedSurahInfo.number,
-          ayah_start: 1,
-          ayah_end: selectedSurahInfo.versesCount,
-          audio_url: path,
-          transcription,
-          ai_feedback: evalData as any,
-          score: evalData.score,
-        });
-        if (insertError) throw insertError;
-
-        const { data: hist } = await supabase.from("quran_recitations").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10);
-        if (hist) setHistory(hist);
-      } catch {
-        toast.error("La correction est affichée, mais l'enregistrement n'a pas pu être sauvegardé.");
-      }
-    } catch (e: any) {
-      toast.error(e.message || "Erreur lors de l'évaluation");
-    } finally {
-      setEvaluating(false);
+    if (shouldFinalize) {
+      await finalizeRecitation();
     }
-  };
+  }, [finalizeRecitation, scribe]);
 
   // Filtered surah list
   const filteredSurahs = allSurahs.filter(s =>
@@ -540,7 +602,65 @@ const Coran = () => {
     s.nameArabic.includes(surahSearch) ||
     String(s.number).includes(surahSearch)
   );
+
+  const mushafSections = mushafPageAyahs.reduce<Array<{ surahNumber: number; surahNameArabic: string; ayahs: QuranPageAyah[] }>>((sections, ayah) => {
+    const currentSection = sections[sections.length - 1];
+
+    if (!currentSection || currentSection.surahNumber !== ayah.surahNumber) {
+      sections.push({
+        surahNumber: ayah.surahNumber,
+        surahNameArabic: ayah.surahNameArabic,
+        ayahs: [ayah],
+      });
+      return sections;
+    }
+
+    currentSection.ayahs.push(ayah);
+    return sections;
+  }, []);
+
   const hasDetectedSpeech = normalizeArabic(liveTranscript).length > 0;
+
+  const renderMushafPageContent = (compact = false) => {
+    if (loadingMushafPage) {
+      return (
+        <div className="flex items-center justify-center py-32">
+          <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      );
+    }
+
+    if (mushafPageError) {
+      return <p className="text-sm text-destructive text-center py-10">{mushafPageError}</p>;
+    }
+
+    return (
+      <div className={`rounded-xl border border-border bg-card ${compact ? "p-4" : "p-6"}`}>
+        <div className="space-y-6">
+          {mushafSections.map((section) => (
+            <div key={`${section.surahNumber}-${currentPage}`} className="space-y-3">
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <span>Sourate {section.surahNumber}</span>
+                <span>•</span>
+                <span className="font-arabic text-base text-foreground">{section.surahNameArabic}</span>
+              </div>
+
+              <div className={`${compact ? "text-xl" : "text-2xl"} leading-loose text-right font-arabic text-foreground`} dir="rtl">
+                {section.ayahs.map((ayah) => (
+                  <span key={ayah.id} className="inline">
+                    {ayah.text}
+                    <span className="mx-1 inline-flex min-w-6 items-center justify-center rounded-full border border-border bg-muted px-1.5 py-0.5 text-[11px] font-medium not-italic text-muted-foreground align-middle">
+                      {ayah.ayahNumber}
+                    </span>{" "}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   if (authLoading) return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground">Chargement...</p></div>;
   if (!user) return null;
@@ -815,22 +935,7 @@ const Coran = () => {
                   </Button>
                 </div>
               </div>
-              <div className="flex justify-center">
-                <div className="relative max-w-lg w-full">
-                  {!mushafImageLoaded && (
-                    <div className="flex items-center justify-center py-40">
-                      <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                    </div>
-                  )}
-                  <img
-                    src={getMedinaPageUrl(currentPage)}
-                    alt={`Page ${currentPage} du Mushaf`}
-                    className={`w-full rounded-lg shadow-lg ${mushafImageLoaded ? "" : "hidden"}`}
-                    onLoad={() => setMushafImageLoaded(true)}
-                    onError={() => toast.error("Erreur de chargement de la page")}
-                  />
-                </div>
-              </div>
+              <div className="mx-auto max-w-4xl">{renderMushafPageContent()}</div>
               <div className="flex items-center justify-center gap-2 mt-4">
                 <Button variant="outline" size="sm" onClick={() => goToPage(currentPage - 1)} disabled={currentPage <= 1}>
                   <ChevronLeft className="h-4 w-4 mr-1" /> Page précédente
@@ -845,7 +950,7 @@ const Coran = () => {
           {/* ========== ACTIVE SURAH VIEW ========== */}
           {selectedSurahInfo && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <Button variant="ghost" onClick={() => { setSelectedSurahInfo(null); setFeedback(null); recorder.reset(); setIsLiveReciting(false); stopLiveRecitation(); setShowMushafPage(false); }} className="mb-4 text-muted-foreground">
+              <Button variant="ghost" onClick={() => { void stopLiveRecitation(false); resetRecitationState(); setSelectedSurahInfo(null); setShowMushafPage(false); }} className="mb-4 text-muted-foreground">
                 ← Retour
               </Button>
 
@@ -902,30 +1007,16 @@ const Coran = () => {
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-xs text-muted-foreground">Page {currentPage}</span>
                           <div className="flex gap-1">
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setCurrentPage(p => Math.max(1, p - 1)); setMushafImageLoaded(false); }}>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setCurrentPage(p => Math.max(1, p - 1)); setMushafPageError(null); }}>
                               <ChevronLeft className="h-3.5 w-3.5" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setCurrentPage(p => Math.min(604, p + 1)); setMushafImageLoaded(false); }}>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setCurrentPage(p => Math.min(604, p + 1)); setMushafPageError(null); }}>
                               <ChevronRight className="h-3.5 w-3.5" />
                             </Button>
                             <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowMushafPage(false)}>Fermer</Button>
                           </div>
                         </div>
-                        <div className="flex justify-center">
-                          <div className="relative max-w-md w-full">
-                            {!mushafImageLoaded && (
-                              <div className="flex items-center justify-center py-32">
-                                <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                              </div>
-                            )}
-                            <img
-                              src={getMedinaPageUrl(currentPage)}
-                              alt={`Page ${currentPage}`}
-                              className={`w-full rounded-lg shadow-md ${mushafImageLoaded ? "" : "hidden"}`}
-                              onLoad={() => setMushafImageLoaded(true)}
-                            />
-                          </div>
-                        </div>
+                        {renderMushafPageContent(true)}
                       </div>
                     )}
 
@@ -1017,10 +1108,10 @@ const Coran = () => {
                           <div className="flex items-center gap-2">
                             <div className="h-4 w-4 rounded-full bg-destructive animate-pulse" />
                             <span className="text-lg font-mono text-foreground">
-                              {Math.floor(recorder.duration / 60)}:{String(recorder.duration % 60).padStart(2, '0')}
+                              {Math.floor(liveElapsedSeconds / 60)}:{String(liveElapsedSeconds % 60).padStart(2, '0')}
                             </span>
                           </div>
-                          <Button onClick={stopLiveRecitation} variant="destructive" size="lg" className="gap-2">
+                          <Button onClick={() => void stopLiveRecitation()} variant="destructive" size="lg" className="gap-2">
                             <Square className="h-5 w-5" /> Arrêter
                           </Button>
                         </div>
@@ -1044,22 +1135,19 @@ const Coran = () => {
                       </div>
                     )}
 
-                    {!isLiveReciting && recorder.audioUrl && (
+                    {!isLiveReciting && (hasDetectedSpeech || evaluating || feedback) && (
                       <div className="space-y-3">
-                        <audio src={recorder.audioUrl} controls className="w-full max-w-md mx-auto" />
+                        {liveTranscript && (
+                          <div className="p-2 rounded-lg bg-muted text-right font-arabic text-xs text-muted-foreground max-h-16 overflow-y-auto" dir="rtl">
+                            {liveTranscript}
+                          </div>
+                        )}
+                        {evaluating && <p className="text-sm text-muted-foreground">Correction automatique en cours...</p>}
                         <div className="flex justify-center gap-3">
-                          <Button onClick={() => { recorder.reset(); setLiveTranscript(""); setRevealedVerses(new Set()); setErrorVerses(new Set()); setWordStatuses(new Map()); setCurrentWordIndex(0); alertedErrorsRef.current = new Set(); }} variant="outline" className="gap-2">
+                          <Button onClick={() => { resetRecitationState(); }} variant="outline" className="gap-2">
                             <RotateCcw className="h-4 w-4" /> Réessayer
                           </Button>
-                          <Button onClick={evaluateRecitation} disabled={evaluating || !hasDetectedSpeech} className="gradient-emerald border-0 text-primary-foreground gap-2">
-                            <Sparkles className="h-4 w-4" /> {evaluating ? "Analyse..." : "Évaluation"}
-                          </Button>
                         </div>
-                        {!hasDetectedSpeech && (
-                          <p className="text-xs text-muted-foreground text-center">
-                            Aucune transcription détectée : aucun appel d'analyse ne sera lancé.
-                          </p>
-                        )}
                       </div>
                     )}
                   </div>
