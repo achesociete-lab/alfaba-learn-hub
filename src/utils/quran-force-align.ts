@@ -35,7 +35,7 @@ export function deepNormalizeArabic(text: string): string {
   s = s.replace(FORMATTING_RE, "");
   s = s.replace(TATWEEL_RE, "");
   for (const [from, to] of Object.entries(LETTER_MAP)) {
-    s = s.replaceAll(from, to);
+    s = s.split(from).join(to);
   }
   s = s.replace(/\s+/g, " ").trim();
   return s;
