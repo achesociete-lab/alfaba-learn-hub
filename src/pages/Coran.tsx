@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion, AnimatePresence } from "framer-motion";
-import { useScribe } from "@elevenlabs/react";
+import { CommitStrategy, useScribe } from "@elevenlabs/react";
 import {
   BookOpen, Mic, MicOff, Square, RotateCcw, ChevronRight, ChevronLeft,
   Star, Volume2, CheckCircle, AlertCircle, Sparkles, User,
@@ -110,7 +110,7 @@ const Coran = () => {
 
   const scribe = useScribe({
     modelId: "scribe_v2_realtime",
-    commitStrategy: "vad",
+    commitStrategy: CommitStrategy.VAD,
     sampleRate: 16000,
   });
 
@@ -244,27 +244,6 @@ const Coran = () => {
       if (silenceTimeoutRef.current) window.clearTimeout(silenceTimeoutRef.current);
     };
   }, [selectedSurahInfo, scribe]);
-
-  useEffect(() => {
-    if (!isLiveReciting) return;
-
-    const committedTranscript = scribe.committedTranscripts.map((item) => item.text).join(" ").trim();
-    const partialTranscript = (scribe.partialTranscript || "").trim();
-    const combinedTranscript = [committedTranscript, partialTranscript].filter(Boolean).join(" ").trim();
-
-    if (!combinedTranscript) return;
-
-    transcriptRef.current = committedTranscript;
-    setLiveTranscript(combinedTranscript);
-    setIsRecitationPaused(false);
-
-    if (silenceTimeoutRef.current) window.clearTimeout(silenceTimeoutRef.current);
-    silenceTimeoutRef.current = window.setTimeout(() => {
-      setIsRecitationPaused(true);
-    }, 1800);
-
-    processLiveTranscript(combinedTranscript);
-  }, [isLiveReciting, processLiveTranscript, scribe.committedTranscripts, scribe.partialTranscript]);
 
   const goToPage = (page: number) => {
     const p = Math.max(1, Math.min(604, page));
@@ -462,6 +441,27 @@ const Coran = () => {
       currentVerseRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
     }, 80);
   }, [verses, playErrorAlert]);
+
+  useEffect(() => {
+    if (!isLiveReciting) return;
+
+    const committedTranscript = scribe.committedTranscripts.map((item) => item.text).join(" ").trim();
+    const partialTranscript = (scribe.partialTranscript || "").trim();
+    const combinedTranscript = [committedTranscript, partialTranscript].filter(Boolean).join(" ").trim();
+
+    if (!combinedTranscript) return;
+
+    transcriptRef.current = committedTranscript;
+    setLiveTranscript(combinedTranscript);
+    setIsRecitationPaused(false);
+
+    if (silenceTimeoutRef.current) window.clearTimeout(silenceTimeoutRef.current);
+    silenceTimeoutRef.current = window.setTimeout(() => {
+      setIsRecitationPaused(true);
+    }, 1800);
+
+    processLiveTranscript(combinedTranscript);
+  }, [isLiveReciting, processLiveTranscript, scribe.committedTranscripts, scribe.partialTranscript]);
 
   function playErrorAlert() {
     try {
