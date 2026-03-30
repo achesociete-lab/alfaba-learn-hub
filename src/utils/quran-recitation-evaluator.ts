@@ -1,4 +1,4 @@
-import { normalizeArabic } from "@/utils/quran-api";
+import { deepNormalizeArabic } from "@/utils/quran-force-align";
 
 export interface AiFeedback {
   score: number;
@@ -8,12 +8,12 @@ export interface AiFeedback {
   encouragement: string;
 }
 
-const EXACT_MATCH_THRESHOLD = 0.88;
-const NEAR_MATCH_THRESHOLD = 0.62;
+const EXACT_MATCH_THRESHOLD = 0.80;
+const NEAR_MATCH_THRESHOLD = 0.55;
 
 export function evaluateRecitationLocally(expectedText: string, transcription: string): AiFeedback {
-  const expectedWords = normalizeArabic(expectedText).split(" ").filter(Boolean);
-  const spokenWords = normalizeArabic(transcription).split(" ").filter(Boolean);
+  const expectedWords = deepNormalizeArabic(expectedText).split(" ").filter(Boolean);
+  const spokenWords = deepNormalizeArabic(transcription).split(" ").filter(Boolean);
 
   if (expectedWords.length === 0 || spokenWords.length === 0) {
     return {
@@ -50,7 +50,7 @@ export function evaluateRecitationLocally(expectedText: string, transcription: s
         continue;
       }
 
-      const nextSpokenMatches = spokenWords[spokenIndex + 1]
+  const nextSpokenMatches = spokenWords[spokenIndex + 1]
         ? levenshteinSimilarity(expectedWord, spokenWords[spokenIndex + 1]) >= EXACT_MATCH_THRESHOLD
         : false;
       const nextExpectedMatches = expectedWords[expectedIndex + 1]
