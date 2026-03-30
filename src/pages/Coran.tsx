@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion, AnimatePresence } from "framer-motion";
+import { CommitStrategy, useScribe } from "@elevenlabs/react";
 import {
   BookOpen, Mic, MicOff, Square, RotateCcw, ChevronRight, ChevronLeft,
   Star, Volume2, CheckCircle, AlertCircle, Sparkles, User,
@@ -32,14 +33,7 @@ import {
   type SurahInfo,
 } from "@/utils/quran-api";
 import { RECITERS, playAyahAudio, playAyahSequence } from "@/utils/quran-audio";
-
-interface AiFeedback {
-  score: number;
-  overallFeedback: string;
-  errors: { word: string; type: string; correction: string }[];
-  tajwidNotes: string[];
-  encouragement: string;
-}
+import { evaluateRecitationLocally, type AiFeedback } from "@/utils/quran-recitation-evaluator";
 
 type RecitationMode = "read" | "memorize";
 type NavTab = "surah" | "juz" | "search";
@@ -112,11 +106,13 @@ const Coran = () => {
 
   // Refs for live comparison
   const transcriptRef = useRef("");
-  const wsRef = useRef<WebSocket | null>(null);
-  const mediaStreamRef = useRef<MediaStream | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const processorRef = useRef<ScriptProcessorNode | null>(null);
   const silenceTimeoutRef = useRef<number | null>(null);
+
+  const scribe = useScribe({
+    modelId: "scribe_v2_realtime",
+    commitStrategy: CommitStrategy.VAD,
+    sampleRate: 16000,
+  });
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -244,9 +240,10 @@ const Coran = () => {
     return () => {
       sequenceRef.current?.stop();
       singleAudioRef.current?.pause();
+      scribe.disconnect();
       if (silenceTimeoutRef.current) window.clearTimeout(silenceTimeoutRef.current);
     };
-  }, [selectedSurahInfo]);
+  }, [selectedSurahInfo, scribe]);
 
   const goToPage = (page: number) => {
     const p = Math.max(1, Math.min(604, page));
@@ -321,23 +318,16 @@ const Coran = () => {
 
   // ============ LIVE RECITATION with WebSocket STT ==========
   const startLiveRecitation = useCallback(async () => {
-    if (!selectedSurahInfo || verses.length === 0) return;
+    if (!selectedSurahInfo || verses.length === 0 || isLiveReciting) return;
 
     try {
-      const tokenRes = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-scribe-token`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-        }
-      );
+      const { data, error } = await supabase.functions.invoke("elevenlabs-scribe-token", {
+        body: {},
+      });
 
-      if (!tokenRes.ok) throw new Error("Impossible d'obtenir le token de transcription");
-      const { token } = await tokenRes.json();
+      if (error || !data?.token) {
+        throw new Error("Impossible d'obtenir le token de transcription");
+      }
 
       setCurrentVerseIndex(0);
       setCurrentWordIndex(0);
@@ -350,97 +340,22 @@ const Coran = () => {
       alertedErrorsRef.current = new Set();
       if (silenceTimeoutRef.current) window.clearTimeout(silenceTimeoutRef.current);
 
-      recorder.startRecording();
+      await recorder.startRecording();
+      await scribe.connect({
+        token: data.token,
+        microphone: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
 
-      const ws = new WebSocket(
-        `wss://api.elevenlabs.io/v1/speech-to-text/realtime?model_id=scribe_v2_realtime&language_code=ara&token=${token}`
-      );
-      wsRef.current = ws;
-
-      ws.onopen = () => {
-        setIsLiveReciting(true);
-        startAudioCapture(ws);
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.type === "partial_transcript" || data.type === "committed_transcript") {
-            const text = (data.text || "").trim();
-            if (!text) return;
-
-            setIsRecitationPaused(false);
-            if (silenceTimeoutRef.current) window.clearTimeout(silenceTimeoutRef.current);
-            silenceTimeoutRef.current = window.setTimeout(() => {
-              setIsRecitationPaused(true);
-            }, 1800);
-
-            if (data.type === "committed_transcript") {
-              transcriptRef.current = `${transcriptRef.current} ${text}`.trim();
-              setLiveTranscript(transcriptRef.current);
-            }
-
-            const fullTranscript = data.type === "partial_transcript"
-              ? `${transcriptRef.current} ${text}`.trim()
-              : transcriptRef.current;
-
-            processLiveTranscript(fullTranscript);
-          }
-        } catch (e) {
-          console.error("WS message parse error:", e);
-        }
-      };
-
-      ws.onerror = () => {
-        toast.error("Erreur de connexion au service de transcription");
-        stopLiveRecitation();
-      };
-
-      ws.onclose = () => {
-        if (silenceTimeoutRef.current) {
-          window.clearTimeout(silenceTimeoutRef.current);
-          silenceTimeoutRef.current = null;
-        }
-      };
+      setIsLiveReciting(true);
     } catch (e: any) {
+      recorder.stopRecording();
       toast.error(e.message || "Erreur lors du démarrage");
     }
-  }, [selectedSurahInfo, verses, recorder]);
-
-  const startAudioCapture = useCallback((ws: WebSocket) => {
-    navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 16000 },
-    }).then((stream) => {
-      mediaStreamRef.current = stream;
-      const audioContext = new AudioContext({ sampleRate: 16000 });
-      audioContextRef.current = audioContext;
-
-      const source = audioContext.createMediaStreamSource(stream);
-      const processor = audioContext.createScriptProcessor(4096, 1, 1);
-      processorRef.current = processor;
-
-      processor.onaudioprocess = (e) => {
-        if (ws.readyState !== WebSocket.OPEN) return;
-        const inputData = e.inputBuffer.getChannelData(0);
-        const int16 = new Int16Array(inputData.length);
-        for (let i = 0; i < inputData.length; i++) {
-          const s = Math.max(-1, Math.min(1, inputData[i]));
-          int16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-        }
-        const uint8 = new Uint8Array(int16.buffer);
-        let binary = "";
-        for (let i = 0; i < uint8.length; i++) {
-          binary += String.fromCharCode(uint8[i]);
-        }
-        ws.send(JSON.stringify({ type: "audio", data: btoa(binary) }));
-      };
-
-      source.connect(processor);
-      processor.connect(audioContext.destination);
-    }).catch(() => {
-      toast.error("Accès au microphone refusé");
-    });
-  }, []);
+  }, [isLiveReciting, recorder, scribe, selectedSurahInfo, verses]);
 
   const processLiveTranscript = useCallback((transcript: string) => {
     if (verses.length === 0) return;
@@ -527,6 +442,27 @@ const Coran = () => {
     }, 80);
   }, [verses, playErrorAlert]);
 
+  useEffect(() => {
+    if (!isLiveReciting) return;
+
+    const committedTranscript = scribe.committedTranscripts.map((item) => item.text).join(" ").trim();
+    const partialTranscript = (scribe.partialTranscript || "").trim();
+    const combinedTranscript = [committedTranscript, partialTranscript].filter(Boolean).join(" ").trim();
+
+    if (!combinedTranscript) return;
+
+    transcriptRef.current = committedTranscript;
+    setLiveTranscript(combinedTranscript);
+    setIsRecitationPaused(false);
+
+    if (silenceTimeoutRef.current) window.clearTimeout(silenceTimeoutRef.current);
+    silenceTimeoutRef.current = window.setTimeout(() => {
+      setIsRecitationPaused(true);
+    }, 1800);
+
+    processLiveTranscript(combinedTranscript);
+  }, [isLiveReciting, processLiveTranscript, scribe.committedTranscripts, scribe.partialTranscript]);
+
   function playErrorAlert() {
     try {
       const ctx = new AudioContext();
@@ -542,13 +478,14 @@ const Coran = () => {
   }
 
   const stopLiveRecitation = useCallback(() => {
-    if (wsRef.current) { wsRef.current.close(); wsRef.current = null; }
-    if (processorRef.current) { processorRef.current.disconnect(); processorRef.current = null; }
-    if (audioContextRef.current) { audioContextRef.current.close(); audioContextRef.current = null; }
-    if (mediaStreamRef.current) { mediaStreamRef.current.getTracks().forEach(t => t.stop()); mediaStreamRef.current = null; }
+    scribe.disconnect();
+    if (silenceTimeoutRef.current) {
+      window.clearTimeout(silenceTimeoutRef.current);
+      silenceTimeoutRef.current = null;
+    }
     recorder.stopRecording();
     setIsLiveReciting(false);
-  }, [recorder]);
+  }, [recorder, scribe]);
 
   // ============ POST-RECITATION EVALUATION ============
   const evaluateRecitation = async () => {
@@ -557,52 +494,39 @@ const Coran = () => {
     setFeedback(null);
 
     try {
-      const path = `${user.id}/recitation-${selectedSurahInfo.number}-${Date.now()}.webm`;
-      await supabase.storage.from("quran-recordings").upload(path, recorder.audioBlob);
-
       const expectedText = verses.map(v => v.arabic).join(" ");
-      const transcription = liveTranscript || expectedText;
+      const transcription = liveTranscript.trim();
 
-      const evalRes = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/quran-evaluate`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({
-            transcription,
-            expectedText,
-            surahNumber: selectedSurahInfo.number,
-            ayahStart: 1,
-            ayahEnd: selectedSurahInfo.versesCount,
-          }),
-        }
-      );
-
-      if (!evalRes.ok) {
-        const errData = await evalRes.json();
-        throw new Error(errData.error || "Erreur d'évaluation");
+      if (!normalizeArabic(transcription)) {
+        toast.error("Aucune transcription détectée : aucune analyse payante n'a été lancée.");
+        return;
       }
 
-      const evalData: AiFeedback = await evalRes.json();
+      const evalData = evaluateRecitationLocally(expectedText, transcription);
       setFeedback(evalData);
 
-      await supabase.from("quran_recitations").insert({
-        user_id: user.id,
-        surah_number: selectedSurahInfo.number,
-        ayah_start: 1,
-        ayah_end: selectedSurahInfo.versesCount,
-        audio_url: path,
-        transcription,
-        ai_feedback: evalData as any,
-        score: evalData.score,
-      });
+      try {
+        const path = `${user.id}/recitation-${selectedSurahInfo.number}-${Date.now()}.webm`;
+        const { error: uploadError } = await supabase.storage.from("quran-recordings").upload(path, recorder.audioBlob);
+        if (uploadError) throw uploadError;
 
-      const { data: hist } = await supabase.from("quran_recitations").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10);
-      if (hist) setHistory(hist);
+        const { error: insertError } = await supabase.from("quran_recitations").insert({
+          user_id: user.id,
+          surah_number: selectedSurahInfo.number,
+          ayah_start: 1,
+          ayah_end: selectedSurahInfo.versesCount,
+          audio_url: path,
+          transcription,
+          ai_feedback: evalData as any,
+          score: evalData.score,
+        });
+        if (insertError) throw insertError;
+
+        const { data: hist } = await supabase.from("quran_recitations").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10);
+        if (hist) setHistory(hist);
+      } catch {
+        toast.error("La correction est affichée, mais l'enregistrement n'a pas pu être sauvegardé.");
+      }
     } catch (e: any) {
       toast.error(e.message || "Erreur lors de l'évaluation");
     } finally {
@@ -616,6 +540,7 @@ const Coran = () => {
     s.nameArabic.includes(surahSearch) ||
     String(s.number).includes(surahSearch)
   );
+  const hasDetectedSpeech = normalizeArabic(liveTranscript).length > 0;
 
   if (authLoading) return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground">Chargement...</p></div>;
   if (!user) return null;
@@ -1126,10 +1051,15 @@ const Coran = () => {
                           <Button onClick={() => { recorder.reset(); setLiveTranscript(""); setRevealedVerses(new Set()); setErrorVerses(new Set()); setWordStatuses(new Map()); setCurrentWordIndex(0); alertedErrorsRef.current = new Set(); }} variant="outline" className="gap-2">
                             <RotateCcw className="h-4 w-4" /> Réessayer
                           </Button>
-                          <Button onClick={evaluateRecitation} disabled={evaluating} className="gradient-emerald border-0 text-primary-foreground gap-2">
+                          <Button onClick={evaluateRecitation} disabled={evaluating || !hasDetectedSpeech} className="gradient-emerald border-0 text-primary-foreground gap-2">
                             <Sparkles className="h-4 w-4" /> {evaluating ? "Analyse..." : "Évaluation"}
                           </Button>
                         </div>
+                        {!hasDetectedSpeech && (
+                          <p className="text-xs text-muted-foreground text-center">
+                            Aucune transcription détectée : aucun appel d'analyse ne sera lancé.
+                          </p>
+                        )}
                       </div>
                     )}
                   </div>
