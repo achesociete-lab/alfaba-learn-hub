@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { CheckCircle, Headphones, MessageSquare, Star } from "lucide-react";
+import { CheckCircle, Headphones, MessageSquare, Star, Mic, Square, RotateCcw } from "lucide-react";
 
 interface Recitation {
   id: string;
@@ -15,6 +16,7 @@ interface Recitation {
   audio_url: string | null;
   score: number | null;
   teacher_feedback: string | null;
+  teacher_audio_url: string | null;
   teacher_reviewed: boolean;
   created_at: string;
 }
@@ -26,6 +28,7 @@ interface Profile {
 }
 
 const AdminRecitations = () => {
+  const { user } = useAuth();
   const [recitations, setRecitations] = useState<Recitation[]>([]);
   const [profiles, setProfiles] = useState<Map<string, Profile>>(new Map());
   const [loading, setLoading] = useState(true);
@@ -33,6 +36,12 @@ const AdminRecitations = () => {
   const [feedbackMap, setFeedbackMap] = useState<Map<string, string>>(new Map());
   const [scoreMap, setScoreMap] = useState<Map<string, string>>(new Map());
   const [savingId, setSavingId] = useState<string | null>(null);
+
+  // Audio recording state per recitation
+  const [recordingForId, setRecordingForId] = useState<string | null>(null);
+  const [audioPreviewMap, setAudioPreviewMap] = useState<Map<string, { blob: Blob; url: string }>>(new Map());
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
 
   const loadRecitations = async () => {
     setLoading(true);
@@ -43,9 +52,8 @@ const AdminRecitations = () => {
     const { data, error } = await query;
     if (error) { toast.error("Erreur de chargement"); setLoading(false); return; }
 
-    setRecitations(data || []);
+    setRecitations((data as Recitation[]) || []);
 
-    // Load profiles for all user_ids
     const userIds = [...new Set((data || []).map(r => r.user_id))];
     if (userIds.length > 0) {
       const { data: profs } = await supabase.from("profiles").select("user_id, first_name, last_name").in("user_id", userIds);
@@ -59,6 +67,37 @@ const AdminRecitations = () => {
 
   useEffect(() => { loadRecitations(); }, [filter]);
 
+  const startRecordingFeedback = async (recId: string) => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      chunksRef.current = [];
+      mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        const url = URL.createObjectURL(blob);
+        setAudioPreviewMap(prev => new Map(prev).set(recId, { blob, url }));
+        stream.getTracks().forEach(t => t.stop());
+        setRecordingForId(null);
+      };
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.start();
+      setRecordingForId(recId);
+    } catch {
+      toast.error("Impossible d'accéder au microphone");
+    }
+  };
+
+  const stopRecordingFeedback = () => {
+    mediaRecorderRef.current?.stop();
+  };
+
+  const clearAudioPreview = (recId: string) => {
+    const preview = audioPreviewMap.get(recId);
+    if (preview) URL.revokeObjectURL(preview.url);
+    setAudioPreviewMap(prev => { const m = new Map(prev); m.delete(recId); return m; });
+  };
+
   const saveReview = async (recId: string) => {
     const feedback = feedbackMap.get(recId) || "";
     const scoreStr = scoreMap.get(recId) || "";
@@ -70,16 +109,34 @@ const AdminRecitations = () => {
     }
 
     setSavingId(recId);
-    const { error } = await supabase.from("quran_recitations").update({
-      teacher_feedback: feedback || null,
-      score,
-      teacher_reviewed: true,
-    }).eq("id", recId);
 
-    if (error) { toast.error("Erreur lors de la sauvegarde"); }
-    else {
+    try {
+      let teacherAudioUrl: string | null = null;
+
+      // Upload audio feedback if exists
+      const audioPreview = audioPreviewMap.get(recId);
+      if (audioPreview && user) {
+        const path = `teacher-feedback/${user.id}/${recId}-${Date.now()}.webm`;
+        const { error: upErr } = await supabase.storage.from("quran-recordings").upload(path, audioPreview.blob);
+        if (upErr) throw upErr;
+        const { data: urlData } = supabase.storage.from("quran-recordings").getPublicUrl(path);
+        teacherAudioUrl = urlData.publicUrl;
+      }
+
+      const { error } = await supabase.from("quran_recitations").update({
+        teacher_feedback: feedback || null,
+        score,
+        teacher_reviewed: true,
+        teacher_audio_url: teacherAudioUrl,
+      } as any).eq("id", recId);
+
+      if (error) throw error;
+
       toast.success("Correction enregistrée !");
+      clearAudioPreview(recId);
       loadRecitations();
+    } catch (e: any) {
+      toast.error(e.message || "Erreur lors de la sauvegarde");
     }
     setSavingId(null);
   };
@@ -113,6 +170,7 @@ const AdminRecitations = () => {
           {recitations.map((rec) => {
             const profile = profiles.get(rec.user_id);
             const studentName = profile ? `${profile.first_name} ${profile.last_name}`.trim() : "Élève inconnu";
+            const audioPreview = audioPreviewMap.get(rec.id);
 
             return (
               <div key={rec.id} className="p-4 rounded-xl border border-border bg-card space-y-3">
@@ -130,8 +188,12 @@ const AdminRecitations = () => {
                   )}
                 </div>
 
+                {/* Student audio */}
                 {rec.audio_url ? (
-                  <audio src={rec.audio_url} controls className="w-full h-10" />
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">🎧 Récitation de l'élève :</p>
+                    <audio src={rec.audio_url} controls className="w-full h-10" />
+                  </div>
                 ) : (
                   <p className="text-xs text-muted-foreground italic py-2">⚠️ Pas d'enregistrement audio (ancienne soumission)</p>
                 )}
@@ -140,12 +202,19 @@ const AdminRecitations = () => {
                   <div className="space-y-2">
                     {rec.teacher_feedback && (
                       <div className="p-2 rounded-lg bg-muted">
-                        <p className="text-xs text-foreground"><span className="font-semibold">Votre commentaire :</span> {rec.teacher_feedback}</p>
+                        <p className="text-xs text-foreground"><span className="font-semibold">Commentaire :</span> {rec.teacher_feedback}</p>
+                      </div>
+                    )}
+                    {rec.teacher_audio_url && (
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">🎙️ Correction audio :</p>
+                        <audio src={rec.teacher_audio_url} controls className="w-full h-10" />
                       </div>
                     )}
                   </div>
                 ) : (
                   <div className="space-y-3 pt-2 border-t border-border">
+                    {/* Note */}
                     <div className="flex items-center gap-3">
                       <div className="flex items-center gap-1.5">
                         <Star className="h-4 w-4 text-muted-foreground" />
@@ -156,15 +225,52 @@ const AdminRecitations = () => {
                         />
                       </div>
                     </div>
+
+                    {/* Written feedback */}
                     <div className="flex items-start gap-1.5">
                       <MessageSquare className="h-4 w-4 text-muted-foreground mt-2" />
                       <Textarea
-                        placeholder="Commentaire pour l'élève (optionnel)..."
+                        placeholder="Commentaire écrit (optionnel)..."
                         className="text-sm min-h-[60px]"
                         value={feedbackMap.get(rec.id) || ""}
                         onChange={(e) => setFeedbackMap(new Map(feedbackMap).set(rec.id, e.target.value))}
                       />
                     </div>
+
+                    {/* Audio feedback */}
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                        <Mic className="h-3.5 w-3.5" /> Correction audio (optionnel) :
+                      </p>
+
+                      {!audioPreview && recordingForId !== rec.id && (
+                        <Button onClick={() => startRecordingFeedback(rec.id)} variant="outline" size="sm" className="gap-2">
+                          <Mic className="h-4 w-4" /> Enregistrer une correction audio
+                        </Button>
+                      )}
+
+                      {recordingForId === rec.id && (
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2 text-destructive">
+                            <div className="h-3 w-3 rounded-full bg-destructive animate-pulse" />
+                            <span className="text-sm">Enregistrement...</span>
+                          </div>
+                          <Button onClick={stopRecordingFeedback} variant="destructive" size="sm" className="gap-2">
+                            <Square className="h-4 w-4" /> Arrêter
+                          </Button>
+                        </div>
+                      )}
+
+                      {audioPreview && (
+                        <div className="flex items-center gap-3">
+                          <audio src={audioPreview.url} controls className="h-8 flex-1" />
+                          <Button onClick={() => clearAudioPreview(rec.id)} variant="outline" size="icon" className="h-8 w-8 shrink-0">
+                            <RotateCcw className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+
                     <Button onClick={() => saveReview(rec.id)} disabled={savingId === rec.id} size="sm" className="gap-2">
                       <CheckCircle className="h-4 w-4" /> {savingId === rec.id ? "Enregistrement..." : "Valider la correction"}
                     </Button>

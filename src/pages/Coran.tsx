@@ -555,6 +555,12 @@ const Coran = () => {
                               <p className="text-xs text-foreground"><span className="font-semibold">Commentaire :</span> {rec.teacher_feedback}</p>
                             </div>
                           )}
+                          {rec.teacher_audio_url && (
+                            <div className="mt-2">
+                              <p className="text-xs text-muted-foreground mb-1">🎙️ Correction audio du professeur :</p>
+                              <audio src={rec.teacher_audio_url} controls className="w-full h-8" />
+                            </div>
+                          )}
                           {rec.audio_url && (
                             <audio src={rec.audio_url} controls className="w-full h-8 mt-2" />
                           )}

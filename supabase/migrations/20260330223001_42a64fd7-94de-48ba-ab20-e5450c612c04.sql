@@ -1,0 +1,1 @@
+ALTER TABLE public.quran_recitations ADD COLUMN teacher_audio_url text DEFAULT NULL;
