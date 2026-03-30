@@ -213,6 +213,7 @@ export type Database = {
           id: string
           score: number | null
           surah_number: number
+          teacher_audio_url: string | null
           teacher_feedback: string | null
           teacher_reviewed: boolean
           transcription: string | null
@@ -227,6 +228,7 @@ export type Database = {
           id?: string
           score?: number | null
           surah_number: number
+          teacher_audio_url?: string | null
           teacher_feedback?: string | null
           teacher_reviewed?: boolean
           transcription?: string | null
@@ -241,6 +243,7 @@ export type Database = {
           id?: string
           score?: number | null
           surah_number?: number
+          teacher_audio_url?: string | null
           teacher_feedback?: string | null
           teacher_reviewed?: boolean
           transcription?: string | null
