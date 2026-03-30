@@ -50,12 +50,11 @@ function LessonTab({ lesson }: { lesson: Lesson }) {
         <h4 className="font-semibold text-foreground mb-3">✍️ Les formes de la lettre</h4>
         <div className="grid grid-cols-4 gap-3">
           {(["isolated", "initial", "medial", "final"] as const).map((pos) => (
-            <div key={pos} className="text-center p-3 rounded-lg bg-muted cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => speak(lesson.forms[pos])}>
+            <div key={pos} className="text-center p-3 rounded-lg bg-muted">
               <p className="font-arabic text-3xl text-foreground">{lesson.forms[pos]}</p>
               <p className="text-[10px] text-muted-foreground mt-1">
                 {pos === "isolated" ? "Isolée" : pos === "initial" ? "Début" : pos === "medial" ? "Milieu" : "Fin"}
               </p>
-              <Volume2 className="h-3 w-3 text-muted-foreground mx-auto mt-1" />
             </div>
           ))}
         </div>
