@@ -2,11 +2,11 @@ import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, ArrowRight, BookOpen, Brain, PenTool,
-  CheckCircle, XCircle, Trophy, RotateCcw, Volume2,
+  CheckCircle, XCircle, Trophy, RotateCcw, Volume2, Play,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { Lesson } from "@/data/niveau1-lessons";
+import type { Lesson, TheorySection } from "@/data/niveau1-lessons";
 import { useArabicSpeech } from "@/hooks/use-arabic-speech";
 import { getIllustration } from "@/utils/vocabulary-illustrations";
 
@@ -16,80 +16,92 @@ interface LessonDetailProps {
   onComplete: (lessonId: number) => void;
 }
 
-// ─── Lesson Tab ───
-function LessonTab({ lesson }: { lesson: Lesson }) {
+// ─── Theory Section Renderer ───
+function TheorySectionView({ section }: { section: TheorySection }) {
   const { speak } = useArabicSpeech();
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      {/* Letter display */}
-      <div className="text-center p-8 rounded-xl border border-border bg-card cursor-pointer group" onClick={() => speak(lesson.letter)}>
-        <p className="font-arabic text-8xl text-foreground mb-4 group-hover:text-primary transition-colors">{lesson.letter}</p>
-        <div className="flex items-center justify-center gap-2">
-          <Volume2 className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-          <span className="text-xs text-muted-foreground">Cliquez pour écouter</span>
+    <div className="p-4 rounded-xl border border-border bg-card space-y-4">
+      <h4 className="font-semibold text-foreground text-lg">{section.title}</h4>
+      
+      {/* Content with basic markdown-like rendering */}
+      <div className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
+        {section.content.split(/(\*\*[^*]+\*\*)/).map((part, i) => {
+          if (part.startsWith("**") && part.endsWith("**")) {
+            return <strong key={i} className="text-foreground font-arabic">{part.slice(2, -2)}</strong>;
+          }
+          return <span key={i}>{part}</span>;
+        })}
+      </div>
+
+      {/* Tip */}
+      {section.tip && (
+        <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+          <p className="text-sm text-primary">💡 {section.tip}</p>
         </div>
-        <h3 className="text-2xl font-bold text-foreground">{lesson.name}</h3>
-        <p className="text-muted-foreground mt-1">{lesson.transliteration}</p>
-      </div>
+      )}
 
-      {/* Pronunciation */}
-      <div className="p-4 rounded-xl border border-border bg-card">
-        <h4 className="font-semibold text-foreground mb-2">🔊 Prononciation</h4>
-        <p className="text-sm text-muted-foreground">{lesson.pronunciation}</p>
-      </div>
-
-      {/* Description */}
-      <div className="p-4 rounded-xl border border-border bg-card">
-        <h4 className="font-semibold text-foreground mb-2">📖 Description</h4>
-        <p className="text-sm text-muted-foreground">{lesson.description}</p>
-      </div>
-
-      {/* Forms */}
-      <div className="p-4 rounded-xl border border-border bg-card">
-        <h4 className="font-semibold text-foreground mb-3">✍️ Les formes de la lettre</h4>
-        <div className="grid grid-cols-4 gap-3">
-          {(["isolated", "initial", "medial", "final"] as const).map((pos) => (
-            <div key={pos} className="text-center p-3 rounded-lg bg-muted">
-              <p className="font-arabic text-3xl text-foreground">{lesson.forms[pos]}</p>
-              <p className="text-[10px] text-muted-foreground mt-1">
-                {pos === "isolated" ? "Isolée" : pos === "initial" ? "Début" : pos === "medial" ? "Milieu" : "Fin"}
-              </p>
-            </div>
+      {/* Letter Grid */}
+      {section.letterGrid && (
+        <div className="grid grid-cols-4 sm:grid-cols-7 gap-2" dir="rtl">
+          {section.letterGrid.map((l, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: i * 0.02 }}
+              onClick={() => speak(l.letter)}
+              className="flex flex-col items-center justify-center p-3 rounded-xl border border-border bg-muted hover:border-primary/40 hover:bg-primary/5 transition-all cursor-pointer group"
+            >
+              <span className="font-arabic text-2xl sm:text-3xl text-foreground group-hover:text-primary transition-colors">
+                {l.letter}
+              </span>
+              <span className="text-[10px] text-muted-foreground mt-1">{l.name}</span>
+              <Volume2 className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity mt-0.5" />
+            </motion.div>
           ))}
         </div>
-      </div>
+      )}
 
-      {/* Vowels */}
-      <div className="p-4 rounded-xl border border-border bg-card">
-        <h4 className="font-semibold text-foreground mb-3">🎵 Avec les voyelles courtes</h4>
-        <div className="grid grid-cols-3 gap-3">
-          <div className="text-center p-3 rounded-lg bg-muted cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => speak(lesson.vowelExamples.withFatha)}>
-            <p className="font-arabic text-3xl text-foreground">{lesson.vowelExamples.withFatha}</p>
-            <p className="text-xs text-muted-foreground mt-1">Fatha (a)</p>
-            <Volume2 className="h-3 w-3 text-muted-foreground mx-auto mt-1" />
-          </div>
-          <div className="text-center p-3 rounded-lg bg-muted cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => speak(lesson.vowelExamples.withDamma)}>
-            <p className="font-arabic text-3xl text-foreground">{lesson.vowelExamples.withDamma}</p>
-            <p className="text-xs text-muted-foreground mt-1">Damma (ou)</p>
-            <Volume2 className="h-3 w-3 text-muted-foreground mx-auto mt-1" />
-          </div>
-          <div className="text-center p-3 rounded-lg bg-muted cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => speak(lesson.vowelExamples.withKasra)}>
-            <p className="font-arabic text-3xl text-foreground">{lesson.vowelExamples.withKasra}</p>
-            <p className="text-xs text-muted-foreground mt-1">Kasra (i)</p>
-            <Volume2 className="h-3 w-3 text-muted-foreground mx-auto mt-1" />
-          </div>
+      {/* Forms Table */}
+      {section.formsTable && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-center">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="py-2 text-xs text-muted-foreground">Lettre</th>
+                <th className="py-2 text-xs text-muted-foreground">Isolée</th>
+                <th className="py-2 text-xs text-muted-foreground">Début</th>
+                <th className="py-2 text-xs text-muted-foreground">Milieu</th>
+                <th className="py-2 text-xs text-muted-foreground">Fin</th>
+              </tr>
+            </thead>
+            <tbody>
+              {section.formsTable.map((row, i) => (
+                <tr key={i} className="border-b border-border/50 hover:bg-muted/50">
+                  <td className="py-2 text-xs text-muted-foreground">{row.name}</td>
+                  <td className="py-2 font-arabic text-xl text-foreground">{row.isolated}</td>
+                  <td className="py-2 font-arabic text-xl text-foreground">{row.initial}</td>
+                  <td className="py-2 font-arabic text-xl text-foreground">{row.medial}</td>
+                  <td className="py-2 font-arabic text-xl text-foreground">{row.final}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      </div>
+      )}
 
-      {/* Examples */}
-      <div className="p-4 rounded-xl border border-border bg-card">
-        <h4 className="font-semibold text-foreground mb-3">📝 Exemples de mots</h4>
-        <div className="space-y-3">
-          {lesson.examples.map((ex, i) => {
+      {/* Arabic Examples */}
+      {section.arabicExamples && (
+        <div className="space-y-2">
+          {section.arabicExamples.map((ex, i) => {
             const emoji = getIllustration(ex.meaning);
             return (
-              <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => speak(ex.arabic)}>
+              <div
+                key={i}
+                onClick={() => speak(ex.arabic)}
+                className="flex items-center justify-between p-3 rounded-lg bg-muted cursor-pointer hover:bg-primary/10 transition-colors"
+              >
                 <div className="flex items-center gap-2">
                   <Volume2 className="h-4 w-4 text-muted-foreground shrink-0" />
                   <div>
@@ -105,7 +117,37 @@ function LessonTab({ lesson }: { lesson: Lesson }) {
             );
           })}
         </div>
-      </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Lesson Tab ───
+function LessonTab({ lesson }: { lesson: Lesson }) {
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+      {/* Video */}
+      {lesson.videoUrl && (
+        <div className="rounded-xl overflow-hidden border border-border bg-card">
+          <div className="aspect-video">
+            {lesson.videoUrl.includes("youtube.com") || lesson.videoUrl.includes("youtu.be") ? (
+              <iframe
+                src={lesson.videoUrl.replace("watch?v=", "embed/").replace("youtu.be/", "youtube.com/embed/")}
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            ) : (
+              <video src={lesson.videoUrl} controls className="w-full h-full object-cover" />
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Theory sections */}
+      {lesson.theory.map((section, i) => (
+        <TheorySectionView key={i} section={section} />
+      ))}
     </motion.div>
   );
 }
@@ -124,7 +166,6 @@ function QCMTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: () => 
     setSelected(idx);
     const newScore = idx === q.correctIndex ? score + 1 : score;
     if (idx === q.correctIndex) setScore(newScore);
-    // Check completion
     if (current + 1 >= lesson.qcm.length) {
       setTimeout(() => {
         if (newScore === lesson.qcm.length) onAllCorrect();
@@ -304,7 +345,6 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
         <span>Score : {score}</span>
       </div>
 
-      {/* Mode toggle */}
       <div className="flex justify-center gap-2">
         <Button variant={mode === "qcm" ? "default" : "outline"} size="sm" onClick={() => setMode("qcm")} className="gap-1.5 text-xs">
           <Brain className="h-3.5 w-3.5" /> QCM
@@ -413,8 +453,9 @@ const LessonDetail = ({ lesson, onBack, onComplete }: LessonDetailProps) => {
         </Button>
         <div className="text-right">
           <h2 className="text-lg font-bold text-foreground">
-            Leçon {lesson.id} : {lesson.name} ({lesson.letter})
+            {lesson.icon} Leçon {lesson.id} : {lesson.title}
           </h2>
+          <p className="text-xs text-muted-foreground">{lesson.subtitle}</p>
         </div>
       </div>
 

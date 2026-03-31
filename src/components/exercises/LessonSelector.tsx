@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { CheckCircle, Lock } from "lucide-react";
+import { CheckCircle, Lock, ArrowRight } from "lucide-react";
 import type { Lesson } from "@/data/niveau1-lessons";
 import { useIsAdmin } from "@/hooks/use-admin";
 
@@ -27,7 +27,7 @@ const LessonSelector = ({ completedLessons, currentLesson, onSelectLesson, lesso
         </div>
       </div>
 
-      <div className="grid grid-cols-4 sm:grid-cols-7 gap-2" dir="rtl">
+      <div className="space-y-2">
         {lessons.map((lesson, idx) => {
           const isCompleted = completedLessons.includes(lesson.id);
           const isUnlocked = isAdmin || idx === 0 || completedLessons.includes(lessons[idx - 1].id);
@@ -36,11 +36,15 @@ const LessonSelector = ({ completedLessons, currentLesson, onSelectLesson, lesso
           return (
             <motion.button
               key={lesson.id}
-              whileHover={isUnlocked ? { scale: 1.05 } : {}}
-              whileTap={isUnlocked ? { scale: 0.95 } : {}}
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: idx * 0.05 }}
+              whileHover={isUnlocked ? { scale: 1.01 } : {}}
+              whileTap={isUnlocked ? { scale: 0.99 } : {}}
               onClick={() => isUnlocked && onSelectLesson(lesson)}
               disabled={!isUnlocked}
-              className={`relative flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${
+              className={`w-full flex items-center gap-4 p-4 rounded-xl border text-left transition-all ${
                 isActive
                   ? "border-primary bg-primary/10 ring-2 ring-primary"
                   : isCompleted
@@ -50,14 +54,22 @@ const LessonSelector = ({ completedLessons, currentLesson, onSelectLesson, lesso
                   : "border-border/50 bg-muted/30 opacity-50 cursor-not-allowed"
               }`}
             >
-              <span className="font-arabic text-2xl text-foreground">{lesson.letter}</span>
-              <span className="text-[10px] text-muted-foreground mt-1">{lesson.name}</span>
-              {isCompleted && (
-                <CheckCircle className="absolute -top-1 -right-1 h-4 w-4 text-primary fill-primary/20" />
-              )}
-              {!isUnlocked && (
-                <Lock className="absolute -top-1 -right-1 h-3 w-3 text-muted-foreground" />
-              )}
+              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 text-lg">
+                {isCompleted ? (
+                  <CheckCircle className="h-5 w-5 text-primary" />
+                ) : !isUnlocked ? (
+                  <Lock className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <span>{lesson.icon}</span>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-semibold text-foreground">
+                  Leçon {lesson.id} — {lesson.title}
+                </h3>
+                <p className="text-xs text-muted-foreground truncate">{lesson.subtitle}</p>
+              </div>
+              {isUnlocked && <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />}
             </motion.button>
           );
         })}
