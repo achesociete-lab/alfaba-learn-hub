@@ -225,9 +225,23 @@ const PlacementTest = ({ onComplete, onBack }: PlacementTestProps) => {
           exit={{ opacity: 0, x: -30 }}
           transition={{ duration: 0.2 }}
         >
-          <h3 className="text-base font-semibold text-foreground mb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full ${
+              q.type === "reading" ? "bg-blue-500/10 text-blue-500" :
+              q.type === "dictation" ? "bg-amber-500/10 text-amber-500" :
+              "bg-muted text-muted-foreground"
+            }`}>
+              {q.type === "reading" ? "📖 Lecture" : q.type === "dictation" ? "✍️ Dictée" : "💬 Question"}
+            </span>
+          </div>
+          <h3 className="text-base font-semibold text-foreground mb-2">
             {q.question}
           </h3>
+          {q.arabic && (
+            <div className="text-center py-3 px-4 mb-3 rounded-lg bg-muted/50 border border-border">
+              <span className="text-2xl font-arabic leading-relaxed" dir="rtl">{q.arabic}</span>
+            </div>
+          )}
 
           <div className="space-y-2.5">
             {q.options.map((opt, i) => (
