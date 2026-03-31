@@ -320,7 +320,7 @@ function N2LessonEditor({ lesson: initialLesson, onBack, onSaved }: { lesson: Ni
           <div className="space-y-2">
             <EditField label="Titre" value={lesson.title} onChange={(v) => update("title", v)} />
             <EditField label="Sous-titre" value={lesson.subtitle} onChange={(v) => update("subtitle", v)} />
-            <EditField label="Objectifs" value={lesson.objectives} onChange={(v) => update("objectives", v)} multiline />
+            <EditField label="Description" value={lesson.description} onChange={(v) => update("description", v)} multiline />
           </div>
         ) : (
           <>
