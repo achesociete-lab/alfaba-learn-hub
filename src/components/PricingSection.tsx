@@ -88,29 +88,9 @@ const plans = [
   },
 ];
 
-const testimonials = [
-  {
-    name: "Fatima B.",
-    text: "J'ai appris à lire l'arabe en 3 mois grâce aux exercices progressifs. La méthode est incroyable !",
-    rating: 5,
-  },
-  {
-    name: "Ahmed K.",
-    text: "Le module Coran avec l'IA qui corrige ma récitation est un vrai game-changer.",
-    rating: 5,
-  },
-  {
-    name: "Sarah M.",
-    text: "Les cours en présentiel combinés à la plateforme en ligne, c'est le combo parfait.",
-    rating: 5,
-  },
-];
-
 const stats = [
-  { icon: Users, value: "500+", label: "Élèves actifs" },
   { icon: BookOpen, value: "24", label: "Leçons complètes" },
   { icon: Headphones, value: "100+", label: "Exercices audio" },
-  { icon: Award, value: "95%", label: "Taux de satisfaction" },
 ];
 
 const faqs = [
