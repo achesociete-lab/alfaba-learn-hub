@@ -249,9 +249,9 @@ const PlacementTest = ({ onComplete, onBack }: PlacementTestProps) => {
               <button
                 key={i}
                 type="button"
-                onClick={() => setSelected(opt.score)}
+                onClick={() => setSelected(i)}
                 className={`w-full text-left p-3.5 rounded-xl border text-sm transition-all ${
-                  selected === opt.score
+                  selected === i
                     ? "border-primary bg-primary/10 text-primary font-medium ring-1 ring-primary/30"
                     : "border-border text-foreground hover:border-primary/30 hover:bg-muted/50"
                 }`}
