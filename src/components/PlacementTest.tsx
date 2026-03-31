@@ -109,7 +109,7 @@ const questions: Question[] = [
 const PlacementTest = ({ onComplete, onBack }: PlacementTestProps) => {
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<number[]>([]);
-  const [selected, setSelected] = useState<number | null>(null);
+  const [selected, setSelected] = useState<number | null>(null); // index of selected option
   const [showResult, setShowResult] = useState(false);
 
   const totalScore = answers.reduce((sum, s) => sum + s, 0);
