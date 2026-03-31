@@ -21,6 +21,7 @@ interface Niveau2LessonDetailProps {
 // ─── Grammar Tab ───
 function GrammarTab({ lesson }: { lesson: Niveau2Lesson }) {
   const { speak, stop } = useArabicSpeech();
+  const { isAdmin } = useIsAdmin();
   const [isReading, setIsReading] = useState(false);
 
   const readLesson = async () => {
