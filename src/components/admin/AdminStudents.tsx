@@ -1,9 +1,22 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
-import { Users, Search, Filter } from "lucide-react";
+import { Users, Search, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 interface StudentProfile {
   user_id: string;
@@ -17,17 +30,41 @@ const AdminStudents = () => {
   const [students, setStudents] = useState<StudentProfile[]>([]);
   const [search, setSearch] = useState("");
   const [filterLevel, setFilterLevel] = useState<string>("all");
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  const fetchStudents = async () => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("user_id, first_name, last_name, level, created_at")
+      .order("created_at", { ascending: false });
+    if (data) setStudents(data);
+  };
 
   useEffect(() => {
-    const fetch = async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("user_id, first_name, last_name, level, created_at")
-        .order("created_at", { ascending: false });
-      if (data) setStudents(data);
-    };
-    fetch();
+    fetchStudents();
   }, []);
+
+  const handleDelete = async (userId: string, name: string) => {
+    setDeleting(userId);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+
+      const res = await supabase.functions.invoke("delete-user", {
+        body: { user_id: userId },
+      });
+
+      if (res.error) throw new Error(res.error.message);
+      if (res.data?.error) throw new Error(res.data.error);
+
+      toast.success(`${name} a été supprimé(e)`);
+      setStudents((prev) => prev.filter((s) => s.user_id !== userId));
+    } catch (err: any) {
+      toast.error(err.message || "Erreur lors de la suppression");
+    } finally {
+      setDeleting(null);
+    }
+  };
 
   const filtered = students.filter((s) => {
     const matchSearch =
@@ -79,10 +116,10 @@ const AdminStudents = () => {
             transition={{ delay: i * 0.03 }}
             className="flex items-center gap-4 p-4 rounded-xl border border-border bg-card"
           >
-            <div className="h-10 w-10 rounded-full gradient-emerald flex items-center justify-center text-primary-foreground font-bold text-sm">
+            <div className="h-10 w-10 rounded-full gradient-emerald flex items-center justify-center text-primary-foreground font-bold text-sm shrink-0">
               {s.first_name[0]}{s.last_name[0]}
             </div>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-foreground">{s.first_name} {s.last_name}</p>
               <p className="text-xs text-muted-foreground">
                 Inscrit le {new Date(s.created_at).toLocaleDateString("fr-FR")}
@@ -93,6 +130,36 @@ const AdminStudents = () => {
             }>
               {s.level === "niveau_1" ? "Niveau 1" : "Niveau 2"}
             </Badge>
+
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                  disabled={deleting === s.user_id}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Supprimer cet élève ?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Vous êtes sur le point de supprimer <strong>{s.first_name} {s.last_name}</strong> et toutes ses données (progression, devoirs, récitations…). Cette action est irréversible.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => handleDelete(s.user_id, `${s.first_name} ${s.last_name}`)}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {deleting === s.user_id ? "Suppression…" : "Supprimer définitivement"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </motion.div>
         ))}
         {filtered.length === 0 && (
