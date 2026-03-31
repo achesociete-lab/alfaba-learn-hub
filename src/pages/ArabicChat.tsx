@@ -1,14 +1,16 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Bot, User, Loader2, Volume2, Trash2 } from "lucide-react";
+import { Send, Bot, User, Loader2, Volume2, Trash2, Mic, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useArabicSpeech } from "@/hooks/use-arabic-speech";
+import { useAudioRecorder } from "@/hooks/use-audio-recorder";
 import { toast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
