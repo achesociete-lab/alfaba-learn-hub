@@ -14,6 +14,7 @@ import Auth from "./pages/Auth.tsx";
 import Exercises from "./pages/Exercises.tsx";
 import ClasseVirtuelle from "./pages/ClasseVirtuelle.tsx";
 import Coran from "./pages/Coran.tsx";
+import ArabicChat from "./pages/ArabicChat.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="/exercices" element={<Exercises />} />
             <Route path="/classe-virtuelle" element={<ClasseVirtuelle />} />
             <Route path="/coran" element={<Coran />} />
+            <Route path="/conversation" element={<ArabicChat />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
