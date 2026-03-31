@@ -6,6 +6,7 @@ import {
   BookOpen, Mic, MicOff, Square, RotateCcw, ChevronRight, ChevronLeft,
   Star, Volume2, CheckCircle, Send,
   Eye, EyeOff, Search, Layers, BookMarked, Play, Pause, Upload,
+  Repeat, Gauge, Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,9 +31,11 @@ import {
 } from "@/utils/quran-api";
 import { RECITERS, playAyahAudio, playAyahSequence } from "@/utils/quran-audio";
 import { fetchQuranPageAyahs, type QuranPageAyah } from "@/utils/quran-pages";
+import { Slider } from "@/components/ui/slider";
+import SurahMeritSection from "@/components/quran/SurahMeritSection";
 
 type RecitationMode = "read" | "memorize";
-type NavTab = "surah" | "juz" | "search";
+type NavTab = "surah" | "juz" | "search" | "merits";
 type VoiceSource = "reciter" | "teacher";
 
 const Coran = () => {
@@ -85,6 +88,10 @@ const Coran = () => {
   const recorder = useAudioRecorder();
   const [submitting, setSubmitting] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
+
+  // Playback controls
+  const [repeatCount, setRepeatCount] = useState(1);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
 
   const { speak } = useArabicSpeech();
 
@@ -149,19 +156,30 @@ const Coran = () => {
     if (singleAudioRef.current) { singleAudioRef.current.pause(); singleAudioRef.current = null; }
     if (sequenceRef.current) { sequenceRef.current.stop(); sequenceRef.current = null; setIsPlayingSequence(false); }
 
-    if (voiceSource === "teacher" && teacherRecordingUrl) {
-      setPlayingAyah(verse.number);
-      const audio = new Audio(teacherRecordingUrl);
-      singleAudioRef.current = audio;
-      audio.addEventListener("ended", () => setPlayingAyah(null));
-      audio.play().catch(() => toast.error("Erreur de lecture"));
-    } else {
-      setPlayingAyah(verse.number);
-      const audio = playAyahAudio(selectedSurahInfo?.number || 1, verse.number, selectedReciter);
-      singleAudioRef.current = audio;
-      audio.addEventListener("ended", () => setPlayingAyah(null));
-    }
-  }, [voiceSource, teacherRecordingUrl, selectedReciter, selectedSurahInfo]);
+    let remaining = repeatCount;
+
+    const playOnce = () => {
+      if (remaining <= 0) { setPlayingAyah(null); return; }
+      remaining--;
+
+      if (voiceSource === "teacher" && teacherRecordingUrl) {
+        setPlayingAyah(verse.number);
+        const audio = new Audio(teacherRecordingUrl);
+        audio.playbackRate = playbackSpeed;
+        singleAudioRef.current = audio;
+        audio.addEventListener("ended", playOnce);
+        audio.play().catch(() => toast.error("Erreur de lecture"));
+      } else {
+        setPlayingAyah(verse.number);
+        const audio = playAyahAudio(selectedSurahInfo?.number || 1, verse.number, selectedReciter);
+        audio.playbackRate = playbackSpeed;
+        singleAudioRef.current = audio;
+        audio.addEventListener("ended", playOnce);
+      }
+    };
+
+    playOnce();
+  }, [voiceSource, teacherRecordingUrl, selectedReciter, selectedSurahInfo, repeatCount, playbackSpeed]);
 
   const playAllVerses = useCallback(() => {
     if (!selectedSurahInfo || verses.length === 0) return;
@@ -434,10 +452,11 @@ const Coran = () => {
           {!selectedSurahInfo && !showMushafPage && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
               <Tabs value={navTab} onValueChange={(v) => setNavTab(v as NavTab)} className="w-full">
-                <TabsList className="w-full grid grid-cols-3 mb-6">
-                  <TabsTrigger value="surah" className="gap-2"><BookOpen className="h-4 w-4" /> Sourates</TabsTrigger>
-                  <TabsTrigger value="juz" className="gap-2"><Layers className="h-4 w-4" /> Juz</TabsTrigger>
-                  <TabsTrigger value="search" className="gap-2"><Search className="h-4 w-4" /> Recherche</TabsTrigger>
+                <TabsList className="w-full grid grid-cols-4 mb-6">
+                  <TabsTrigger value="surah" className="gap-1.5 text-xs"><BookOpen className="h-3.5 w-3.5" /> Sourates</TabsTrigger>
+                  <TabsTrigger value="merits" className="gap-1.5 text-xs"><Sparkles className="h-3.5 w-3.5" /> Mérites</TabsTrigger>
+                  <TabsTrigger value="juz" className="gap-1.5 text-xs"><Layers className="h-3.5 w-3.5" /> Juz</TabsTrigger>
+                  <TabsTrigger value="search" className="gap-1.5 text-xs"><Search className="h-3.5 w-3.5" /> Recherche</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="surah">
@@ -521,6 +540,13 @@ const Coran = () => {
                       </div>
                     )}
                   </div>
+                </TabsContent>
+
+                <TabsContent value="merits">
+                  <SurahMeritSection onSelectSurah={(surahNumber) => {
+                    const surah = allSurahs.find(s => s.number === surahNumber);
+                    if (surah) selectSurah(surah);
+                  }} />
                 </TabsContent>
               </Tabs>
 
@@ -637,6 +663,42 @@ const Coran = () => {
                           {isPlayingSequence ? "Arrêter" : "Écouter tout"}
                         </Button>
                       )}
+                    </div>
+
+                    {/* Playback controls: repeat & speed */}
+                    <div className="flex flex-wrap items-center gap-4 p-3 rounded-lg bg-muted/50 mb-3">
+                      <div className="flex items-center gap-2">
+                        <Repeat className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">Répéter :</span>
+                        <div className="flex gap-1">
+                          {[1, 2, 3, 4, 5].map((n) => (
+                            <button
+                              key={n}
+                              onClick={() => setRepeatCount(n)}
+                              className={`h-7 w-7 rounded-full text-xs font-bold transition-all ${
+                                repeatCount === n
+                                  ? "bg-primary text-primary-foreground shadow-sm"
+                                  : "bg-background text-muted-foreground hover:text-foreground border border-border"
+                              }`}
+                            >
+                              {n}×
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-1 min-w-[160px]">
+                        <Gauge className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">Vitesse :</span>
+                        <Slider
+                          value={[playbackSpeed]}
+                          onValueChange={([v]) => setPlaybackSpeed(v)}
+                          min={0.5}
+                          max={1.5}
+                          step={0.1}
+                          className="flex-1"
+                        />
+                        <span className="text-xs font-mono font-bold text-foreground w-10 text-right">{playbackSpeed.toFixed(1)}×</span>
+                      </div>
                     </div>
 
                     {showMushafPage && (
