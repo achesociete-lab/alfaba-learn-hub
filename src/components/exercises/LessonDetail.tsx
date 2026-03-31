@@ -286,9 +286,9 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
     setSelected(idx);
     const newScore = idx === d.correctIndex ? score + 1 : score;
     if (idx === d.correctIndex) setScore(newScore);
-    if (current + 1 >= lesson.dictation.length) {
+    if (current + 1 >= dictList.length) {
       setTimeout(() => {
-        if (newScore === lesson.dictation.length) onAllCorrect();
+        if (newScore === dictList.length) onAllCorrect();
       }, 500);
     }
   };
@@ -300,15 +300,15 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
     setAnswerCorrect(isCorrect);
     const newScore = isCorrect ? score + 1 : score;
     if (isCorrect) setScore(newScore);
-    if (current + 1 >= lesson.dictation.length) {
+    if (current + 1 >= dictList.length) {
       setTimeout(() => {
-        if (newScore === lesson.dictation.length) onAllCorrect();
+        if (newScore === dictList.length) onAllCorrect();
       }, 500);
     }
   };
 
   const next = () => {
-    if (current + 1 >= lesson.dictation.length) {
+    if (current + 1 >= dictList.length) {
       setFinished(true);
     } else {
       setCurrent(c => c + 1);
@@ -332,10 +332,10 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
         <Trophy className="h-16 w-16 mx-auto mb-4 text-secondary" />
         <h3 className="text-2xl font-bold text-foreground mb-2">Dictée terminée !</h3>
         <p className="text-lg text-muted-foreground mb-1">
-          Score : <span className="font-bold text-primary">{score}</span> / {lesson.dictation.length}
+          Score : <span className="font-bold text-primary">{score}</span> / {dictList.length}
         </p>
         <p className="text-sm text-muted-foreground mb-6">
-          {score === lesson.dictation.length ? "Excellent ! 🎉" : "Continue à t'entraîner 💪"}
+          {score === dictList.length ? "Excellent ! 🎉" : "Continue à t'entraîner 💪"}
         </p>
         <Button onClick={reset} className="gap-2"><RotateCcw className="h-4 w-4" /> Recommencer</Button>
       </motion.div>
@@ -345,7 +345,7 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <span>Mot {current + 1} / {lesson.dictation.length}</span>
+        <span>Mot {current + 1} / {dictList.length}</span>
         <span>Score : {score}</span>
       </div>
 
@@ -429,7 +429,7 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
       {canAdvance && (
         <div className="flex justify-end">
           <Button onClick={next} className="gap-2">
-            {current + 1 >= lesson.dictation.length ? "Voir le résultat" : "Suivant"} <ArrowRight className="h-4 w-4" />
+            {current + 1 >= dictList.length ? "Voir le résultat" : "Suivant"} <ArrowRight className="h-4 w-4" />
           </Button>
         </div>
       )}
