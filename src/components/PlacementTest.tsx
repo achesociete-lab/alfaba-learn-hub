@@ -113,8 +113,9 @@ const PlacementTest = ({ onComplete, onBack }: PlacementTestProps) => {
   const [showResult, setShowResult] = useState(false);
 
   const totalScore = answers.reduce((sum, s) => sum + s, 0);
-  // Threshold: 5+ out of 10 → niveau 2
-  const determinedLevel: "niveau_1" | "niveau_2" = totalScore >= 5 ? "niveau_2" : "niveau_1";
+  const maxScore = questions.reduce((sum, q) => sum + Math.max(...q.options.map(o => o.score)), 0);
+  // Threshold: 50%+ → niveau 2
+  const determinedLevel: "niveau_1" | "niveau_2" = totalScore >= maxScore * 0.5 ? "niveau_2" : "niveau_1";
 
   const handleNext = () => {
     if (selected === null) return;
