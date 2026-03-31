@@ -132,14 +132,18 @@ export function useArabicSpeech() {
 }
 
 // Fallback using browser Web Speech API
-function fallbackSpeak(text: string, rate: number) {
-  if (!window.speechSynthesis) return;
-  window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = "ar-SA";
-  utterance.rate = rate;
-  const voices = window.speechSynthesis.getVoices();
-  const arVoice = voices.find((v) => v.lang === "ar-SA") || voices.find((v) => v.lang.startsWith("ar"));
-  if (arVoice) utterance.voice = arVoice;
-  window.speechSynthesis.speak(utterance);
+function fallbackSpeak(text: string, rate: number): Promise<void> {
+  return new Promise((resolve) => {
+    if (!window.speechSynthesis) { resolve(); return; }
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "ar-SA";
+    utterance.rate = rate;
+    const voices = window.speechSynthesis.getVoices();
+    const arVoice = voices.find((v) => v.lang === "ar-SA") || voices.find((v) => v.lang.startsWith("ar"));
+    if (arVoice) utterance.voice = arVoice;
+    utterance.onend = () => resolve();
+    utterance.onerror = () => resolve();
+    window.speechSynthesis.speak(utterance);
+  });
 }
