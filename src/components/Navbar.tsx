@@ -1,25 +1,51 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X, BookOpen, LogOut, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/use-admin";
+import { supabase } from "@/integrations/supabase/client";
 
-const navLinks = [
+const publicNavLinks = [
   { to: "/", label: "Accueil" },
   { to: "/niveau-1", label: "Niveau 1" },
   { to: "/niveau-2", label: "Niveau 2" },
   { to: "/coran", label: "Coran" },
-  { to: "/dashboard", label: "Espace Élève" },
   { to: "/tarifs", label: "Tarifs" },
 ];
+
+const getAuthNavLinks = (level: string | null) => {
+  const links: { to: string; label: string }[] = [
+    { to: "/", label: "Accueil" },
+  ];
+
+  if (level === "niveau_1") {
+    links.push({ to: "/niveau-1", label: "Niveau 1" });
+  } else if (level === "niveau_2") {
+    links.push({ to: "/niveau-2", label: "Niveau 2" });
+  }
+
+  links.push({ to: "/coran", label: "Coran" });
+  links.push({ to: "/dashboard", label: "Espace Élève" });
+
+  return links;
+};
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const { user, signOut } = useAuth();
   const { isAdmin } = useIsAdmin();
+  const [userLevel, setUserLevel] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) { setUserLevel(null); return; }
+    supabase.from("profiles").select("level").eq("user_id", user.id).single()
+      .then(({ data }) => { if (data) setUserLevel(data.level); });
+  }, [user]);
+
+  const navLinks = user ? getAuthNavLinks(userLevel) : publicNavLinks;
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
