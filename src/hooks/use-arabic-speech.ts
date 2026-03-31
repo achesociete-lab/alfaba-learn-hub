@@ -111,7 +111,7 @@ export function useArabicSpeech() {
       if (e instanceof DOMException && e.name === "AbortError") return;
       isElevenLabsUnavailable = true;
       console.warn("ElevenLabs TTS error, falling back:", e);
-      fallbackSpeak(text, rate);
+      await fallbackSpeak(text, rate);
     }
   }, []);
 
