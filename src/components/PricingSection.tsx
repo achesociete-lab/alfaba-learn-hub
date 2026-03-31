@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Check, Star, Zap, Crown, Users, BookOpen, Headphones, MessageSquare, Award, Clock } from "lucide-react";
+import { Check, Zap, Crown, Users, BookOpen, Headphones, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
@@ -88,29 +88,9 @@ const plans = [
   },
 ];
 
-const testimonials = [
-  {
-    name: "Fatima B.",
-    text: "J'ai appris à lire l'arabe en 3 mois grâce aux exercices progressifs. La méthode est incroyable !",
-    rating: 5,
-  },
-  {
-    name: "Ahmed K.",
-    text: "Le module Coran avec l'IA qui corrige ma récitation est un vrai game-changer.",
-    rating: 5,
-  },
-  {
-    name: "Sarah M.",
-    text: "Les cours en présentiel combinés à la plateforme en ligne, c'est le combo parfait.",
-    rating: 5,
-  },
-];
-
 const stats = [
-  { icon: Users, value: "500+", label: "Élèves actifs" },
   { icon: BookOpen, value: "24", label: "Leçons complètes" },
   { icon: Headphones, value: "100+", label: "Exercices audio" },
-  { icon: Award, value: "95%", label: "Taux de satisfaction" },
 ];
 
 const faqs = [
@@ -252,34 +232,6 @@ const PricingSection = () => (
         })}
       </div>
 
-      {/* Social proof */}
-      <div className="max-w-4xl mx-auto mb-20">
-        <h3 className="text-center text-xl font-bold text-foreground mb-8">
-          Ce que disent nos <span className="text-gradient-gold">élèves</span>
-        </h3>
-        <div className="grid md:grid-cols-3 gap-6">
-          {testimonials.map((t, i) => (
-            <motion.div
-              key={t.name}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="bg-card border border-border rounded-xl p-6"
-            >
-              <div className="flex gap-0.5 mb-3">
-                {Array.from({ length: t.rating }).map((_, j) => (
-                  <Star key={j} className="h-4 w-4 fill-accent text-accent" />
-                ))}
-              </div>
-              <p className="text-sm text-foreground mb-4 italic">"{t.text}"</p>
-              <p className="text-sm font-semibold text-foreground">{t.name}</p>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-
-      {/* FAQ */}
       <div className="max-w-2xl mx-auto mb-16">
         <h3 className="text-center text-xl font-bold text-foreground mb-8">
           Questions <span className="text-gradient-gold">fréquentes</span>
