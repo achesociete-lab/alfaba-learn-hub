@@ -19,16 +19,16 @@ const alphabet = [
 ];
 
 const lessons = [
-  { num: 1, title: "Les lettres isolées", desc: "Découverte des 28 lettres de l'alphabet arabe", icon: BookOpen },
-  { num: 2, title: "Les formes des lettres", desc: "Début, milieu et fin de mot", icon: PenTool },
-  { num: 3, title: "Les voyelles courtes", desc: "Fatha, Damma, Kasra et Soukoun", icon: Volume2 },
-  { num: 4, title: "Lecture de syllabes", desc: "Combinaison lettres + voyelles", icon: FileText },
-  { num: 5, title: "Les voyelles longues", desc: "Alif, Waw et Ya comme prolongation", icon: Volume2 },
-  { num: 6, title: "Lecture de mots simples", desc: "Premiers mots arabes", icon: BookOpen },
-  { num: 7, title: "Le Tanwin", desc: "Les doubles voyelles", icon: PenTool },
-  { num: 8, title: "La Shadda", desc: "Le redoublement des lettres", icon: Volume2 },
-  { num: 9, title: "Lecture de phrases", desc: "Construire et lire des phrases complètes", icon: FileText },
-  { num: 10, title: "Dictée finale", desc: "Évaluation écrite du niveau 1", icon: PenTool },
+  { num: 1, title: "Les lettres isolées", desc: "Découverte des 28 lettres de l'alphabet arabe", icon: "📖" },
+  { num: 2, title: "Les formes des lettres", desc: "Début, milieu et fin de mot", icon: "✍️" },
+  { num: 3, title: "Les voyelles courtes", desc: "Fatha, Damma, Kasra et Soukoun", icon: "🎵" },
+  { num: 4, title: "Lecture de syllabes", desc: "Combinaison lettres + voyelles", icon: "🔤" },
+  { num: 5, title: "Les voyelles longues", desc: "Alif, Waw et Ya comme prolongation", icon: "🔊" },
+  { num: 6, title: "Lecture de mots simples", desc: "Premiers mots arabes", icon: "📝" },
+  { num: 7, title: "Le Tanwîn", desc: "Les doubles voyelles", icon: "✨" },
+  { num: 8, title: "La Shadda", desc: "Le redoublement des lettres", icon: "💪" },
+  { num: 9, title: "Lecture de phrases", desc: "Construire et lire des phrases complètes", icon: "💬" },
+  { num: 10, title: "Dictée finale", desc: "Évaluation écrite du niveau 1", icon: "🏆" },
 ];
 
 const Niveau1 = () => (
@@ -87,8 +87,8 @@ const Niveau1 = () => (
                   transition={{ delay: i * 0.05 }}
                   className="flex items-center gap-4 p-4 rounded-xl border border-border bg-card hover:border-primary/30 transition-colors"
                 >
-                  <div className="h-10 w-10 rounded-lg gradient-emerald flex items-center justify-center shrink-0">
-                    <lesson.icon className="h-5 w-5 text-primary-foreground" />
+                  <div className="h-10 w-10 rounded-lg gradient-emerald flex items-center justify-center shrink-0 text-lg">
+                    {lesson.icon}
                   </div>
                   <div className="flex-1">
                     <h3 className="text-sm font-semibold text-foreground">
