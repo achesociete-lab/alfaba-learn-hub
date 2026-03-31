@@ -127,6 +127,7 @@ function TheorySectionView({ section }: { section: TheorySection }) {
 // ─── Lesson Tab ───
 function LessonTab({ lesson }: { lesson: Lesson }) {
   const { speak, stop } = useArabicSpeech();
+  const { isAdmin } = useIsAdmin();
   const [isReading, setIsReading] = useState(false);
 
   const readLesson = async () => {
