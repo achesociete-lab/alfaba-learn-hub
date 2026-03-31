@@ -20,7 +20,12 @@ export function useNiveau1Lessons() {
       .order("lesson_number");
 
     if (!error && data && data.length > 0) {
-      setLessons(data.map((row: any) => row.content as unknown as Lesson));
+      const parsed = data.map((row: any) => row.content as unknown as Lesson);
+      // Only use DB data if it matches the expected structure
+      const isValid = parsed.every(
+        (l) => l && Array.isArray(l.theory) && Array.isArray(l.qcm) && Array.isArray(l.dictation)
+      );
+      if (isValid) setLessons(parsed);
     }
     setLoading(false);
   }, []);

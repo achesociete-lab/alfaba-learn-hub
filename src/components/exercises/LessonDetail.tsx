@@ -145,7 +145,7 @@ function LessonTab({ lesson }: { lesson: Lesson }) {
       )}
 
       {/* Theory sections */}
-      {lesson.theory.map((section, i) => (
+      {(lesson.theory || []).map((section, i) => (
         <TheorySectionView key={i} section={section} />
       ))}
     </motion.div>
