@@ -8,8 +8,17 @@ interface PlacementTestProps {
   onBack: () => void;
 }
 
-const questions = [
+type Question = {
+  question: string;
+  arabic?: string;
+  type: "mcq" | "reading" | "dictation";
+  options: { label: string; score: number }[];
+};
+
+const questions: Question[] = [
+  // --- Questions générales (MCQ) ---
   {
+    type: "mcq",
     question: "Connaissez-vous les lettres de l'alphabet arabe ?",
     options: [
       { label: "Non, pas du tout", score: 0 },
@@ -18,22 +27,7 @@ const questions = [
     ],
   },
   {
-    question: "Pouvez-vous lire un mot simple en arabe (ex : كِتَابٌ) ?",
-    options: [
-      { label: "Non, je ne sais pas lire l'arabe", score: 0 },
-      { label: "Difficilement, avec beaucoup d'hésitation", score: 1 },
-      { label: "Oui, je peux lire avec les voyelles", score: 2 },
-    ],
-  },
-  {
-    question: "Savez-vous ce qu'est une chadda (شَدَّة) ou un tanwine (تَنْوِين) ?",
-    options: [
-      { label: "Non, je ne connais pas ces termes", score: 0 },
-      { label: "J'en ai entendu parler mais je ne maîtrise pas", score: 1 },
-      { label: "Oui, je sais les lire et les utiliser", score: 2 },
-    ],
-  },
-  {
+    type: "mcq",
     question: "Avez-vous déjà étudié des règles de grammaire arabe (نحو) ?",
     options: [
       { label: "Non, jamais", score: 0 },
@@ -41,12 +35,73 @@ const questions = [
       { label: "Oui, je connais les bases (sujet, verbe, complément)", score: 2 },
     ],
   },
+  // --- Tests de lecture ---
   {
-    question: "Pouvez-vous lire une phrase complète en arabe de manière fluide ?",
+    type: "reading",
+    question: "Que signifie ce mot ?",
+    arabic: "كِتَابٌ",
     options: [
-      { label: "Non, pas encore", score: 0 },
-      { label: "Lentement, mot par mot", score: 1 },
-      { label: "Oui, assez couramment", score: 2 },
+      { label: "Stylo", score: 0 },
+      { label: "Livre", score: 2 },
+      { label: "Table", score: 0 },
+    ],
+  },
+  {
+    type: "reading",
+    question: "Lisez ce mot et choisissez la bonne translittération :",
+    arabic: "مَدْرَسَةٌ",
+    options: [
+      { label: "Masjid", score: 0 },
+      { label: "Maktaba", score: 0 },
+      { label: "Madrasa", score: 2 },
+    ],
+  },
+  {
+    type: "reading",
+    question: "Que signifie cette phrase ?",
+    arabic: "ذَهَبَ الوَلَدُ إِلَى المَدْرَسَةِ",
+    options: [
+      { label: "Le garçon est allé à l'école", score: 2 },
+      { label: "La fille est allée au marché", score: 0 },
+      { label: "Je ne sais pas lire cette phrase", score: 0 },
+    ],
+  },
+  {
+    type: "reading",
+    question: "Quel est le son de cette lettre avec la voyelle ?",
+    arabic: "بُ",
+    options: [
+      { label: "Ba", score: 0 },
+      { label: "Bi", score: 0 },
+      { label: "Bou", score: 2 },
+    ],
+  },
+  // --- Tests de dictée (identification) ---
+  {
+    type: "dictation",
+    question: "Le mot « Qalam » (stylo) s'écrit :",
+    options: [
+      { label: "كَلَمٌ", score: 0 },
+      { label: "قَلَمٌ", score: 2 },
+      { label: "قَلْبٌ", score: 0 },
+    ],
+  },
+  {
+    type: "dictation",
+    question: "Le mot « Bayt » (maison) s'écrit :",
+    options: [
+      { label: "بَيْتٌ", score: 2 },
+      { label: "بِنْتٌ", score: 0 },
+      { label: "بَابٌ", score: 0 },
+    ],
+  },
+  {
+    type: "dictation",
+    question: "Le mot « Shams » (soleil) s'écrit :",
+    options: [
+      { label: "سَمَاءٌ", score: 0 },
+      { label: "شَمْسٌ", score: 2 },
+      { label: "شَجَرَةٌ", score: 0 },
     ],
   },
 ];
