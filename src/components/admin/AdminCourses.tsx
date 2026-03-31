@@ -326,7 +326,7 @@ function N2LessonEditor({ lesson: initialLesson, onBack, onSaved }: { lesson: Ni
           <>
             <h3 className="font-bold text-foreground">{lesson.title}</h3>
             <p className="text-xs text-muted-foreground">{lesson.subtitle}</p>
-            <p className="text-sm text-muted-foreground mt-2">{lesson.objectives}</p>
+            <p className="text-sm text-muted-foreground mt-2">{lesson.description}</p>
           </>
         )}
       </div>
