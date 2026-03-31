@@ -338,9 +338,9 @@ function N2LessonEditor({ lesson: initialLesson, onBack, onSaved }: { lesson: Ni
           <div key={i} className="p-3 rounded-lg bg-muted mb-2">
             {editing ? (
               <div className="space-y-2">
-                <EditField label="Règle" value={rule.rule} onChange={(v) => {
+                <EditField label="Titre" value={rule.title} onChange={(v) => {
                   const updated = [...lesson.grammar];
-                  updated[i] = { ...updated[i], rule: v };
+                  updated[i] = { ...updated[i], title: v };
                   update("grammar", updated);
                 }} />
                 <EditField label="Explication" value={rule.explanation} onChange={(v) => {
