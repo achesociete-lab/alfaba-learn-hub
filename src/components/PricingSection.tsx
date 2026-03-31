@@ -268,7 +268,7 @@ const PricingSection = () => (
           Prêt à commencer votre apprentissage ?
         </h3>
         <p className="text-muted-foreground mb-6">
-          Rejoignez des centaines d'apprenants. Commencez gratuitement, sans engagement.
+          Commencez gratuitement, sans engagement.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Button asChild className="gradient-emerald border-0 text-primary-foreground h-12 px-8 text-base font-semibold">
