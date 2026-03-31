@@ -561,6 +561,7 @@ const AdminCourses = () => {
                 <p className="text-xs text-muted-foreground truncate">{lesson.subtitle}</p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
+                {(lesson as any).videoUrl && <Video className="h-4 w-4 text-primary" />}
                 <span className="text-xs text-muted-foreground">{lesson.qcm.length + lesson.comprehension.questions.length} Q</span>
                 <Edit className="h-4 w-4 text-muted-foreground" />
               </div>

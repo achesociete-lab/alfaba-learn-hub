@@ -18,10 +18,58 @@ interface Niveau2LessonDetailProps {
 
 // ─── Grammar Tab ───
 function GrammarTab({ lesson }: { lesson: Niveau2Lesson }) {
-  const { speak } = useArabicSpeech();
+  const { speak, stop } = useArabicSpeech();
+  const [isReading, setIsReading] = useState(false);
+
+  const readLesson = async () => {
+    if (isReading) { stop(); setIsReading(false); return; }
+    setIsReading(true);
+    // Read grammar examples
+    for (const rule of (lesson.grammar || [])) {
+      for (const ex of rule.examples) {
+        await speak(ex.arabic, 0.75);
+        await new Promise(r => setTimeout(r, 800));
+      }
+    }
+    // Read comprehension text
+    if (lesson.comprehension?.arabic) {
+      await speak(lesson.comprehension.arabic, 0.7);
+    }
+    setIsReading(false);
+  };
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+      {/* Listen to lesson */}
+      <div className="flex justify-center">
+        <Button
+          variant="outline"
+          onClick={readLesson}
+          className={`gap-2 rounded-full px-6 ${isReading ? "border-primary bg-primary/10" : ""}`}
+        >
+          <Volume2 className={`h-4 w-4 ${isReading ? "animate-pulse text-primary" : ""}`} />
+          {isReading ? "⏹ Arrêter la lecture" : "🔊 Écouter la leçon"}
+        </Button>
+      </div>
+
+      {/* Video */}
+      {lesson.videoUrl && (
+        <div className="rounded-xl overflow-hidden border border-border bg-card">
+          <div className="aspect-video">
+            {lesson.videoUrl.includes("youtube.com") || lesson.videoUrl.includes("youtu.be") ? (
+              <iframe
+                src={lesson.videoUrl.replace("watch?v=", "embed/").replace("youtu.be/", "youtube.com/embed/")}
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            ) : (
+              <video src={lesson.videoUrl} controls className="w-full h-full object-cover" />
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="p-4 rounded-xl border border-border bg-card">
         <h4 className="font-semibold text-foreground mb-2">📖 Description</h4>
         <p className="text-sm text-muted-foreground">{lesson.description}</p>

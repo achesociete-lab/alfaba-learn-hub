@@ -124,8 +124,43 @@ function TheorySectionView({ section }: { section: TheorySection }) {
 
 // ─── Lesson Tab ───
 function LessonTab({ lesson }: { lesson: Lesson }) {
+  const { speak, stop } = useArabicSpeech();
+  const [isReading, setIsReading] = useState(false);
+
+  const readLesson = async () => {
+    if (isReading) { stop(); setIsReading(false); return; }
+    setIsReading(true);
+    for (const section of (lesson.theory || [])) {
+      if (section.arabicExamples) {
+        for (const ex of section.arabicExamples) {
+          await speak(ex.arabic, 0.75);
+          await new Promise(r => setTimeout(r, 800));
+        }
+      }
+      if (section.letterGrid) {
+        for (const l of section.letterGrid.slice(0, 10)) {
+          await speak(l.letter, 0.8);
+          await new Promise(r => setTimeout(r, 500));
+        }
+      }
+    }
+    setIsReading(false);
+  };
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+      {/* Listen to lesson */}
+      <div className="flex justify-center">
+        <Button
+          variant="outline"
+          onClick={readLesson}
+          className={`gap-2 rounded-full px-6 ${isReading ? "border-primary bg-primary/10" : ""}`}
+        >
+          <Volume2 className={`h-4 w-4 ${isReading ? "animate-pulse text-primary" : ""}`} />
+          {isReading ? "⏹ Arrêter la lecture" : "🔊 Écouter la leçon"}
+        </Button>
+      </div>
+
       {/* Video */}
       {lesson.videoUrl && (
         <div className="rounded-xl overflow-hidden border border-border bg-card">
