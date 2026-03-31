@@ -154,12 +154,14 @@ function LessonTab({ lesson }: { lesson: Lesson }) {
 
 // ─── QCM Tab ───
 function QCMTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: () => void }) {
+  const qcmList = lesson.qcm || [];
   const [current, setCurrent] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
 
-  const q = lesson.qcm[current];
+  if (qcmList.length === 0) return <p className="text-center text-muted-foreground p-4">Aucun exercice disponible.</p>;
+  const q = qcmList[current];
 
   const handleSelect = (idx: number) => {
     if (selected !== null) return;
