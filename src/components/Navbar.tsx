@@ -37,6 +37,15 @@ const Navbar = () => {
   const location = useLocation();
   const { user, signOut } = useAuth();
   const { isAdmin } = useIsAdmin();
+  const [userLevel, setUserLevel] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) { setUserLevel(null); return; }
+    supabase.from("profiles").select("level").eq("user_id", user.id).single()
+      .then(({ data }) => { if (data) setUserLevel(data.level); });
+  }, [user]);
+
+  const navLinks = user ? getAuthNavLinks(userLevel) : publicNavLinks;
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
