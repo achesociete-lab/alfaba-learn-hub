@@ -119,7 +119,8 @@ const PlacementTest = ({ onComplete, onBack }: PlacementTestProps) => {
 
   const handleNext = () => {
     if (selected === null) return;
-    const newAnswers = [...answers, selected];
+    const score = questions[currentQ].options[selected].score;
+    const newAnswers = [...answers, score];
     setAnswers(newAnswers);
     setSelected(null);
 
