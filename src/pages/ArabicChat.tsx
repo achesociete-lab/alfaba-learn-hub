@@ -279,6 +279,21 @@ const ArabicChat = () => {
               <Trash2 className="h-4 w-4" />
             </Button>
           )}
+
+          {/* Mic button */}
+          {recorder.isRecording ? (
+            <Button variant="destructive" size="icon" className="shrink-0" onClick={transcribeAndSend} disabled={isTranscribing}>
+              <Square className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button variant="outline" size="icon" className="shrink-0" onClick={() => recorder.startRecording()} disabled={isLoading || isTranscribing}>
+              {isTranscribing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mic className="h-4 w-4" />}
+            </Button>
+          )}
+          {recorder.isRecording && (
+            <span className="text-xs text-destructive animate-pulse">🔴 {recorder.duration}s</span>
+          )}
+
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -286,7 +301,7 @@ const ArabicChat = () => {
             placeholder="اكتب رسالتك هنا... / Écrivez votre message..."
             className="flex-1 text-base"
             dir="auto"
-            disabled={isLoading}
+            disabled={isLoading || recorder.isRecording}
           />
           <Button onClick={sendMessage} disabled={!input.trim() || isLoading} size="icon" className="shrink-0 gradient-emerald border-0">
             <Send className="h-4 w-4 text-primary-foreground" />
