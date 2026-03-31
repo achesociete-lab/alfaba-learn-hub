@@ -251,6 +251,7 @@ function QCMTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: () => 
 // ─── Dictation Tab ───
 function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: () => void }) {
   const { speak } = useArabicSpeech();
+  const dictList = lesson.dictation || [];
   const [current, setCurrent] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [score, setScore] = useState(0);
@@ -261,7 +262,8 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
   const [answerChecked, setAnswerChecked] = useState(false);
   const [answerCorrect, setAnswerCorrect] = useState(false);
 
-  const d = lesson.dictation[current];
+  if (dictList.length === 0) return <p className="text-center text-muted-foreground p-4">Aucune dictée disponible.</p>;
+  const d = dictList[current];
   const correctArabic = d.options[d.correctIndex];
 
   const playDictation = async () => {
