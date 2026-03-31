@@ -38,6 +38,10 @@ export function useArabicSpeech() {
       audioRef.current = audio;
       try {
         await audio.play();
+        await new Promise<void>((resolve) => {
+          audio.addEventListener("ended", () => resolve(), { once: true });
+          audio.addEventListener("error", () => resolve(), { once: true });
+        });
       } catch (e) {
         console.warn("Audio playback failed:", e);
       }
