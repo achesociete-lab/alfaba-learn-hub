@@ -9,6 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Lesson, TheorySection } from "@/data/niveau1-lessons";
 import { useArabicSpeech } from "@/hooks/use-arabic-speech";
 import { getIllustration } from "@/utils/vocabulary-illustrations";
+import { useIsAdmin } from "@/hooks/use-admin";
+import LessonAudioPlayer from "./LessonAudioPlayer";
 
 interface LessonDetailProps {
   lesson: Lesson;
