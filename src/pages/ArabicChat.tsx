@@ -87,6 +87,53 @@ const ArabicChat = () => {
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { speak } = useArabicSpeech();
+  const recorder = useAudioRecorder();
+  const [isTranscribing, setIsTranscribing] = useState(false);
+
+  const transcribeAndSend = useCallback(async () => {
+    // Stop recording first, then wait for blob
+    recorder.stopRecording();
+  }, [recorder]);
+
+  // When recorder produces a blob after stopping, transcribe it
+  useEffect(() => {
+    if (!recorder.audioBlob || isTranscribing) return;
+    const run = async () => {
+      setIsTranscribing(true);
+      try {
+        const formData = new FormData();
+        formData.append("file", recorder.audioBlob!, "voice.webm");
+        formData.append("language_code", "ara");
+
+        const resp = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-stt`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            },
+            body: formData,
+          }
+        );
+        if (!resp.ok) throw new Error("Transcription échouée");
+        const data = await resp.json();
+        const text = data.text?.trim();
+        if (text) {
+          setInput(text);
+        } else {
+          toast({ title: "Aucun texte détecté", variant: "destructive" });
+        }
+      } catch (e: any) {
+        console.error(e);
+        toast({ title: "Erreur de transcription", description: e.message, variant: "destructive" });
+      } finally {
+        setIsTranscribing(false);
+        recorder.reset();
+      }
+    };
+    run();
+  }, [recorder.audioBlob]);
 
   useEffect(() => {
     if (!loading && !user) navigate("/auth");
