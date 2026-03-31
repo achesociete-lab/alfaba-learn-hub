@@ -331,6 +331,23 @@ function N2LessonEditor({ lesson: initialLesson, onBack, onSaved }: { lesson: Ni
         )}
       </div>
 
+      {/* Video URL */}
+      <div className="p-4 rounded-xl border border-border bg-card">
+        <div className="flex items-center gap-2 mb-2">
+          <Video className="h-4 w-4 text-primary" />
+          <h4 className="font-semibold text-foreground">Vidéo de la leçon</h4>
+        </div>
+        {editing ? (
+          <EditField label="URL de la vidéo (YouTube ou fichier)" value={(lesson as any).videoUrl || ""} onChange={(v) => update("videoUrl" as any, v || undefined)} />
+        ) : (
+          (lesson as any).videoUrl ? (
+            <p className="text-sm text-muted-foreground break-all">{(lesson as any).videoUrl}</p>
+          ) : (
+            <p className="text-sm text-muted-foreground italic">Aucune vidéo configurée. Modifiez pour ajouter un lien.</p>
+          )
+        )}
+      </div>
+
       {/* Grammar rules */}
       <div className="p-4 rounded-xl border border-border bg-card">
         <h4 className="font-semibold text-foreground mb-3">📐 Grammaire ({lesson.grammar.length})</h4>
