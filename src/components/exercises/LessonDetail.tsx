@@ -261,6 +261,7 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
   const [typedAnswer, setTypedAnswer] = useState("");
   const [answerChecked, setAnswerChecked] = useState(false);
   const [answerCorrect, setAnswerCorrect] = useState(false);
+  const currentRef = useRef(current);
 
   if (dictList.length === 0) return <p className="text-center text-muted-foreground p-4">Aucune dictée disponible.</p>;
   const d = dictList[current];
