@@ -90,7 +90,7 @@ export function useArabicSpeech() {
           error: errorPayload?.error,
           code: errorPayload?.code,
         });
-        fallbackSpeak(text, rate);
+        await fallbackSpeak(text, rate);
         return;
       }
 
