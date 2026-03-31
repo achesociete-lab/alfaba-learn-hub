@@ -14,6 +14,7 @@ import Auth from "./pages/Auth.tsx";
 import Exercises from "./pages/Exercises.tsx";
 import ClasseVirtuelle from "./pages/ClasseVirtuelle.tsx";
 import Coran from "./pages/Coran.tsx";
+import ArabicChat from "./pages/ArabicChat.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
