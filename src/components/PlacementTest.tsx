@@ -8,8 +8,17 @@ interface PlacementTestProps {
   onBack: () => void;
 }
 
-const questions = [
+type Question = {
+  question: string;
+  arabic?: string;
+  type: "mcq" | "reading" | "dictation";
+  options: { label: string; score: number }[];
+};
+
+const questions: Question[] = [
+  // --- Questions générales (MCQ) ---
   {
+    type: "mcq",
     question: "Connaissez-vous les lettres de l'alphabet arabe ?",
     options: [
       { label: "Non, pas du tout", score: 0 },
@@ -18,22 +27,7 @@ const questions = [
     ],
   },
   {
-    question: "Pouvez-vous lire un mot simple en arabe (ex : كِتَابٌ) ?",
-    options: [
-      { label: "Non, je ne sais pas lire l'arabe", score: 0 },
-      { label: "Difficilement, avec beaucoup d'hésitation", score: 1 },
-      { label: "Oui, je peux lire avec les voyelles", score: 2 },
-    ],
-  },
-  {
-    question: "Savez-vous ce qu'est une chadda (شَدَّة) ou un tanwine (تَنْوِين) ?",
-    options: [
-      { label: "Non, je ne connais pas ces termes", score: 0 },
-      { label: "J'en ai entendu parler mais je ne maîtrise pas", score: 1 },
-      { label: "Oui, je sais les lire et les utiliser", score: 2 },
-    ],
-  },
-  {
+    type: "mcq",
     question: "Avez-vous déjà étudié des règles de grammaire arabe (نحو) ?",
     options: [
       { label: "Non, jamais", score: 0 },
@@ -41,12 +35,73 @@ const questions = [
       { label: "Oui, je connais les bases (sujet, verbe, complément)", score: 2 },
     ],
   },
+  // --- Tests de lecture ---
   {
-    question: "Pouvez-vous lire une phrase complète en arabe de manière fluide ?",
+    type: "reading",
+    question: "Que signifie ce mot ?",
+    arabic: "كِتَابٌ",
     options: [
-      { label: "Non, pas encore", score: 0 },
-      { label: "Lentement, mot par mot", score: 1 },
-      { label: "Oui, assez couramment", score: 2 },
+      { label: "Stylo", score: 0 },
+      { label: "Livre", score: 2 },
+      { label: "Table", score: 0 },
+    ],
+  },
+  {
+    type: "reading",
+    question: "Lisez ce mot et choisissez la bonne translittération :",
+    arabic: "مَدْرَسَةٌ",
+    options: [
+      { label: "Masjid", score: 0 },
+      { label: "Maktaba", score: 0 },
+      { label: "Madrasa", score: 2 },
+    ],
+  },
+  {
+    type: "reading",
+    question: "Que signifie cette phrase ?",
+    arabic: "ذَهَبَ الوَلَدُ إِلَى المَدْرَسَةِ",
+    options: [
+      { label: "Le garçon est allé à l'école", score: 2 },
+      { label: "La fille est allée au marché", score: 0 },
+      { label: "Je ne sais pas lire cette phrase", score: 0 },
+    ],
+  },
+  {
+    type: "reading",
+    question: "Quel est le son de cette lettre avec la voyelle ?",
+    arabic: "بُ",
+    options: [
+      { label: "Ba", score: 0 },
+      { label: "Bi", score: 0 },
+      { label: "Bou", score: 2 },
+    ],
+  },
+  // --- Tests de dictée (identification) ---
+  {
+    type: "dictation",
+    question: "Le mot « Qalam » (stylo) s'écrit :",
+    options: [
+      { label: "كَلَمٌ", score: 0 },
+      { label: "قَلَمٌ", score: 2 },
+      { label: "قَلْبٌ", score: 0 },
+    ],
+  },
+  {
+    type: "dictation",
+    question: "Le mot « Bayt » (maison) s'écrit :",
+    options: [
+      { label: "بَيْتٌ", score: 2 },
+      { label: "بِنْتٌ", score: 0 },
+      { label: "بَابٌ", score: 0 },
+    ],
+  },
+  {
+    type: "dictation",
+    question: "Le mot « Shams » (soleil) s'écrit :",
+    options: [
+      { label: "سَمَاءٌ", score: 0 },
+      { label: "شَمْسٌ", score: 2 },
+      { label: "شَجَرَةٌ", score: 0 },
     ],
   },
 ];
@@ -54,16 +109,18 @@ const questions = [
 const PlacementTest = ({ onComplete, onBack }: PlacementTestProps) => {
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<number[]>([]);
-  const [selected, setSelected] = useState<number | null>(null);
+  const [selected, setSelected] = useState<number | null>(null); // index of selected option
   const [showResult, setShowResult] = useState(false);
 
   const totalScore = answers.reduce((sum, s) => sum + s, 0);
-  // Threshold: 5+ out of 10 → niveau 2
-  const determinedLevel: "niveau_1" | "niveau_2" = totalScore >= 5 ? "niveau_2" : "niveau_1";
+  const maxScore = questions.reduce((sum, q) => sum + Math.max(...q.options.map(o => o.score)), 0);
+  // Threshold: 50%+ → niveau 2
+  const determinedLevel: "niveau_1" | "niveau_2" = totalScore >= maxScore * 0.5 ? "niveau_2" : "niveau_1";
 
   const handleNext = () => {
     if (selected === null) return;
-    const newAnswers = [...answers, selected];
+    const score = questions[currentQ].options[selected].score;
+    const newAnswers = [...answers, score];
     setAnswers(newAnswers);
     setSelected(null);
 
@@ -105,7 +162,7 @@ const PlacementTest = ({ onComplete, onBack }: PlacementTestProps) => {
             {determinedLevel === "niveau_1" ? "Niveau 1 — Fondamentaux" : "Niveau 2 — Grammaire & Compréhension"}
           </div>
           <p className="text-xs text-muted-foreground mt-3">
-            Score : {totalScore}/{questions.length * 2}
+            Score : {totalScore}/{maxScore}
           </p>
         </div>
         <div className="flex flex-col gap-2">
@@ -169,18 +226,32 @@ const PlacementTest = ({ onComplete, onBack }: PlacementTestProps) => {
           exit={{ opacity: 0, x: -30 }}
           transition={{ duration: 0.2 }}
         >
-          <h3 className="text-base font-semibold text-foreground mb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full ${
+              q.type === "reading" ? "bg-blue-500/10 text-blue-500" :
+              q.type === "dictation" ? "bg-amber-500/10 text-amber-500" :
+              "bg-muted text-muted-foreground"
+            }`}>
+              {q.type === "reading" ? "📖 Lecture" : q.type === "dictation" ? "✍️ Dictée" : "💬 Question"}
+            </span>
+          </div>
+          <h3 className="text-base font-semibold text-foreground mb-2">
             {q.question}
           </h3>
+          {q.arabic && (
+            <div className="text-center py-3 px-4 mb-3 rounded-lg bg-muted/50 border border-border">
+              <span className="text-2xl font-arabic leading-relaxed" dir="rtl">{q.arabic}</span>
+            </div>
+          )}
 
           <div className="space-y-2.5">
             {q.options.map((opt, i) => (
               <button
                 key={i}
                 type="button"
-                onClick={() => setSelected(opt.score)}
+                onClick={() => setSelected(i)}
                 className={`w-full text-left p-3.5 rounded-xl border text-sm transition-all ${
-                  selected === opt.score
+                  selected === i
                     ? "border-primary bg-primary/10 text-primary font-medium ring-1 ring-primary/30"
                     : "border-border text-foreground hover:border-primary/30 hover:bg-muted/50"
                 }`}
