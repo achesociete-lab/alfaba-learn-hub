@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Check, Star, Zap, Crown, Users, BookOpen, Headphones, MessageSquare, Award, Clock } from "lucide-react";
+import { Check, Zap, Crown, Users, BookOpen, Headphones, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
