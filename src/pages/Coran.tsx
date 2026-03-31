@@ -31,9 +31,11 @@ import {
 } from "@/utils/quran-api";
 import { RECITERS, playAyahAudio, playAyahSequence } from "@/utils/quran-audio";
 import { fetchQuranPageAyahs, type QuranPageAyah } from "@/utils/quran-pages";
+import { Slider } from "@/components/ui/slider";
+import SurahMeritSection from "@/components/quran/SurahMeritSection";
 
 type RecitationMode = "read" | "memorize";
-type NavTab = "surah" | "juz" | "search";
+type NavTab = "surah" | "juz" | "search" | "merits";
 type VoiceSource = "reciter" | "teacher";
 
 const Coran = () => {
