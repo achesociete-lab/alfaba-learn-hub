@@ -176,7 +176,7 @@ function QCMTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: () => 
   };
 
   const next = () => {
-    if (current + 1 >= lesson.qcm.length) {
+    if (current + 1 >= qcmList.length) {
       setFinished(true);
     } else {
       setCurrent(c => c + 1);
@@ -194,10 +194,10 @@ function QCMTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: () => 
         <Trophy className="h-16 w-16 mx-auto mb-4 text-secondary" />
         <h3 className="text-2xl font-bold text-foreground mb-2">Exercices terminés !</h3>
         <p className="text-lg text-muted-foreground mb-1">
-          Score : <span className="font-bold text-primary">{score}</span> / {lesson.qcm.length}
+          Score : <span className="font-bold text-primary">{score}</span> / {qcmList.length}
         </p>
         <p className="text-sm text-muted-foreground mb-6">
-          {score === lesson.qcm.length ? "Parfait ! 🎉" : score >= lesson.qcm.length * 0.7 ? "Très bien ! 👏" : "Continue à t'entraîner 💪"}
+          {score === qcmList.length ? "Parfait ! 🎉" : score >= qcmList.length * 0.7 ? "Très bien ! 👏" : "Continue à t'entraîner 💪"}
         </p>
         <Button onClick={reset} className="gap-2"><RotateCcw className="h-4 w-4" /> Recommencer</Button>
       </motion.div>
@@ -207,7 +207,7 @@ function QCMTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: () => 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <span>Question {current + 1} / {lesson.qcm.length}</span>
+        <span>Question {current + 1} / {qcmList.length}</span>
         <span>Score : {score}</span>
       </div>
       <AnimatePresence mode="wait">
@@ -240,7 +240,7 @@ function QCMTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: () => 
       {selected !== null && (
         <div className="flex justify-end">
           <Button onClick={next} className="gap-2">
-            {current + 1 >= lesson.qcm.length ? "Voir le résultat" : "Suivant"} <ArrowRight className="h-4 w-4" />
+            {current + 1 >= qcmList.length ? "Voir le résultat" : "Suivant"} <ArrowRight className="h-4 w-4" />
           </Button>
         </div>
       )}
