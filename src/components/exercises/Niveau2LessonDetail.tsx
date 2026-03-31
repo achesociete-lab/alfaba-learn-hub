@@ -9,6 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Niveau2Lesson } from "@/data/niveau2-lessons";
 import { useArabicSpeech } from "@/hooks/use-arabic-speech";
 import { getIllustration } from "@/utils/vocabulary-illustrations";
+import { useIsAdmin } from "@/hooks/use-admin";
+import LessonAudioPlayer from "./LessonAudioPlayer";
 
 interface Niveau2LessonDetailProps {
   lesson: Niveau2Lesson;
@@ -19,6 +21,7 @@ interface Niveau2LessonDetailProps {
 // ─── Grammar Tab ───
 function GrammarTab({ lesson }: { lesson: Niveau2Lesson }) {
   const { speak, stop } = useArabicSpeech();
+  const { isAdmin } = useIsAdmin();
   const [isReading, setIsReading] = useState(false);
 
   const readLesson = async () => {
@@ -40,7 +43,10 @@ function GrammarTab({ lesson }: { lesson: Niveau2Lesson }) {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      {/* Listen to lesson */}
+      {/* Teacher recording */}
+      <LessonAudioPlayer level="niveau_2" lessonNumber={lesson.id} isTeacher={isAdmin} />
+
+      {/* TTS Listen to lesson */}
       <div className="flex justify-center">
         <Button
           variant="outline"
@@ -48,7 +54,7 @@ function GrammarTab({ lesson }: { lesson: Niveau2Lesson }) {
           className={`gap-2 rounded-full px-6 ${isReading ? "border-primary bg-primary/10" : ""}`}
         >
           <Volume2 className={`h-4 w-4 ${isReading ? "animate-pulse text-primary" : ""}`} />
-          {isReading ? "⏹ Arrêter la lecture" : "🔊 Écouter la leçon"}
+          {isReading ? "⏹ Arrêter la lecture" : "🔊 Écouter via synthèse vocale"}
         </Button>
       </div>
 

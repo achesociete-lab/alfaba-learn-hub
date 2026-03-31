@@ -38,6 +38,10 @@ export function useArabicSpeech() {
       audioRef.current = audio;
       try {
         await audio.play();
+        await new Promise<void>((resolve) => {
+          audio.addEventListener("ended", () => resolve(), { once: true });
+          audio.addEventListener("error", () => resolve(), { once: true });
+        });
       } catch (e) {
         console.warn("Audio playback failed:", e);
       }
@@ -86,7 +90,7 @@ export function useArabicSpeech() {
           error: errorPayload?.error,
           code: errorPayload?.code,
         });
-        fallbackSpeak(text, rate);
+        await fallbackSpeak(text, rate);
         return;
       }
 
@@ -99,11 +103,15 @@ export function useArabicSpeech() {
       const audio = new Audio(audioUrl);
       audioRef.current = audio;
       await audio.play();
+      await new Promise<void>((resolve) => {
+        audio.addEventListener("ended", () => resolve(), { once: true });
+        audio.addEventListener("error", () => resolve(), { once: true });
+      });
     } catch (e: unknown) {
       if (e instanceof DOMException && e.name === "AbortError") return;
       isElevenLabsUnavailable = true;
       console.warn("ElevenLabs TTS error, falling back:", e);
-      fallbackSpeak(text, rate);
+      await fallbackSpeak(text, rate);
     }
   }, []);
 
@@ -124,14 +132,18 @@ export function useArabicSpeech() {
 }
 
 // Fallback using browser Web Speech API
-function fallbackSpeak(text: string, rate: number) {
-  if (!window.speechSynthesis) return;
-  window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = "ar-SA";
-  utterance.rate = rate;
-  const voices = window.speechSynthesis.getVoices();
-  const arVoice = voices.find((v) => v.lang === "ar-SA") || voices.find((v) => v.lang.startsWith("ar"));
-  if (arVoice) utterance.voice = arVoice;
-  window.speechSynthesis.speak(utterance);
+function fallbackSpeak(text: string, rate: number): Promise<void> {
+  return new Promise((resolve) => {
+    if (!window.speechSynthesis) { resolve(); return; }
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "ar-SA";
+    utterance.rate = rate;
+    const voices = window.speechSynthesis.getVoices();
+    const arVoice = voices.find((v) => v.lang === "ar-SA") || voices.find((v) => v.lang.startsWith("ar"));
+    if (arVoice) utterance.voice = arVoice;
+    utterance.onend = () => resolve();
+    utterance.onerror = () => resolve();
+    window.speechSynthesis.speak(utterance);
+  });
 }
