@@ -642,21 +642,12 @@ const Coran = () => {
                     </div>
 
                     <div className="flex flex-wrap gap-2 mb-3">
-                      <Button variant={mode === "read" ? "default" : "outline"} size="sm" onClick={() => { setMode("read"); setVersesHidden(false); }} className="gap-1.5">
+                      <Button variant="default" size="sm" className="gap-1.5">
                         <Eye className="h-3.5 w-3.5" /> Lecture
-                      </Button>
-                      <Button variant={mode === "memorize" ? "default" : "outline"} size="sm" onClick={() => { setMode("memorize"); setVersesHidden(true); }} className="gap-1.5">
-                        <EyeOff className="h-3.5 w-3.5" /> Mémorisation
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => goToPage(currentPage)} className="gap-1.5 ml-auto">
                         <BookMarked className="h-3.5 w-3.5" /> Page Mushaf
                       </Button>
-                      {mode === "memorize" && (
-                        <Button variant="ghost" size="sm" onClick={() => setVersesHidden(!versesHidden)} className="gap-1.5">
-                          {versesHidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-                          {versesHidden ? "Afficher" : "Cacher"}
-                        </Button>
-                      )}
                       {voiceSource === "reciter" && (
                         <Button variant={isPlayingSequence ? "destructive" : "outline"} size="sm" onClick={playAllVerses} className="gap-1.5">
                           {isPlayingSequence ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
