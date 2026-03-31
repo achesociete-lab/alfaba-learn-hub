@@ -351,7 +351,7 @@ function N2LessonEditor({ lesson: initialLesson, onBack, onSaved }: { lesson: Ni
               </div>
             ) : (
               <>
-                <p className="text-sm font-medium text-foreground">{rule.rule}</p>
+                <p className="text-sm font-medium text-foreground">{rule.title}</p>
                 <p className="text-xs text-muted-foreground">{rule.explanation}</p>
                 <div className="flex gap-2 mt-1 flex-wrap">
                   {rule.examples.map((ex, j) => (
