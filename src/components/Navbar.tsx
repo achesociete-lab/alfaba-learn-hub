@@ -12,7 +12,6 @@ const publicNavLinks = [
   { to: "/niveau-1", label: "Niveau 1" },
   { to: "/niveau-2", label: "Niveau 2" },
   { to: "/coran", label: "Coran" },
-  { to: "/tarifs", label: "Tarifs" },
 ];
 
 const getAuthNavLinks = (level: string | null) => {
