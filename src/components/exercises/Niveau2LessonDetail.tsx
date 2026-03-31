@@ -9,6 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Niveau2Lesson } from "@/data/niveau2-lessons";
 import { useArabicSpeech } from "@/hooks/use-arabic-speech";
 import { getIllustration } from "@/utils/vocabulary-illustrations";
+import { useIsAdmin } from "@/hooks/use-admin";
+import LessonAudioPlayer from "./LessonAudioPlayer";
 
 interface Niveau2LessonDetailProps {
   lesson: Niveau2Lesson;
