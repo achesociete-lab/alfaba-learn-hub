@@ -103,6 +103,10 @@ export function useArabicSpeech() {
       const audio = new Audio(audioUrl);
       audioRef.current = audio;
       await audio.play();
+      await new Promise<void>((resolve) => {
+        audio.addEventListener("ended", () => resolve(), { once: true });
+        audio.addEventListener("error", () => resolve(), { once: true });
+      });
     } catch (e: unknown) {
       if (e instanceof DOMException && e.name === "AbortError") return;
       isElevenLabsUnavailable = true;
