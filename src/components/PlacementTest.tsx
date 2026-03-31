@@ -161,7 +161,7 @@ const PlacementTest = ({ onComplete, onBack }: PlacementTestProps) => {
             {determinedLevel === "niveau_1" ? "Niveau 1 — Fondamentaux" : "Niveau 2 — Grammaire & Compréhension"}
           </div>
           <p className="text-xs text-muted-foreground mt-3">
-            Score : {totalScore}/{questions.length * 2}
+            Score : {totalScore}/{maxScore}
           </p>
         </div>
         <div className="flex flex-col gap-2">
