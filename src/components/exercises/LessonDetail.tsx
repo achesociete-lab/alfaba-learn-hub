@@ -168,9 +168,9 @@ function QCMTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: () => 
     setSelected(idx);
     const newScore = idx === q.correctIndex ? score + 1 : score;
     if (idx === q.correctIndex) setScore(newScore);
-    if (current + 1 >= lesson.qcm.length) {
+    if (current + 1 >= qcmList.length) {
       setTimeout(() => {
-        if (newScore === lesson.qcm.length) onAllCorrect();
+        if (newScore === qcmList.length) onAllCorrect();
       }, 500);
     }
   };
