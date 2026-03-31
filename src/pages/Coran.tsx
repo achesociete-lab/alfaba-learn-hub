@@ -156,19 +156,30 @@ const Coran = () => {
     if (singleAudioRef.current) { singleAudioRef.current.pause(); singleAudioRef.current = null; }
     if (sequenceRef.current) { sequenceRef.current.stop(); sequenceRef.current = null; setIsPlayingSequence(false); }
 
-    if (voiceSource === "teacher" && teacherRecordingUrl) {
-      setPlayingAyah(verse.number);
-      const audio = new Audio(teacherRecordingUrl);
-      singleAudioRef.current = audio;
-      audio.addEventListener("ended", () => setPlayingAyah(null));
-      audio.play().catch(() => toast.error("Erreur de lecture"));
-    } else {
-      setPlayingAyah(verse.number);
-      const audio = playAyahAudio(selectedSurahInfo?.number || 1, verse.number, selectedReciter);
-      singleAudioRef.current = audio;
-      audio.addEventListener("ended", () => setPlayingAyah(null));
-    }
-  }, [voiceSource, teacherRecordingUrl, selectedReciter, selectedSurahInfo]);
+    let remaining = repeatCount;
+
+    const playOnce = () => {
+      if (remaining <= 0) { setPlayingAyah(null); return; }
+      remaining--;
+
+      if (voiceSource === "teacher" && teacherRecordingUrl) {
+        setPlayingAyah(verse.number);
+        const audio = new Audio(teacherRecordingUrl);
+        audio.playbackRate = playbackSpeed;
+        singleAudioRef.current = audio;
+        audio.addEventListener("ended", playOnce);
+        audio.play().catch(() => toast.error("Erreur de lecture"));
+      } else {
+        setPlayingAyah(verse.number);
+        const audio = playAyahAudio(selectedSurahInfo?.number || 1, verse.number, selectedReciter);
+        audio.playbackRate = playbackSpeed;
+        singleAudioRef.current = audio;
+        audio.addEventListener("ended", playOnce);
+      }
+    };
+
+    playOnce();
+  }, [voiceSource, teacherRecordingUrl, selectedReciter, selectedSurahInfo, repeatCount, playbackSpeed]);
 
   const playAllVerses = useCallback(() => {
     if (!selectedSurahInfo || verses.length === 0) return;
