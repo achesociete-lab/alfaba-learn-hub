@@ -378,7 +378,7 @@ function N2LessonEditor({ lesson: initialLesson, onBack, onSaved }: { lesson: Ni
         ) : (
           <>
             <p className="text-sm font-medium text-foreground mb-2">{lesson.comprehension.title}</p>
-            <p className="font-arabic text-lg text-foreground mb-2 cursor-pointer" dir="rtl" onClick={() => speak(lesson.comprehension.arabicText)}>{lesson.comprehension.arabicText}</p>
+            <p className="font-arabic text-lg text-foreground mb-2 cursor-pointer" dir="rtl" onClick={() => speak(lesson.comprehension.arabic)}>{lesson.comprehension.arabic}</p>
             <p className="text-sm text-muted-foreground italic">{lesson.comprehension.translation}</p>
           </>
         )}
