@@ -665,6 +665,42 @@ const Coran = () => {
                       )}
                     </div>
 
+                    {/* Playback controls: repeat & speed */}
+                    <div className="flex flex-wrap items-center gap-4 p-3 rounded-lg bg-muted/50 mb-3">
+                      <div className="flex items-center gap-2">
+                        <Repeat className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">Répéter :</span>
+                        <div className="flex gap-1">
+                          {[1, 2, 3, 4, 5].map((n) => (
+                            <button
+                              key={n}
+                              onClick={() => setRepeatCount(n)}
+                              className={`h-7 w-7 rounded-full text-xs font-bold transition-all ${
+                                repeatCount === n
+                                  ? "bg-primary text-primary-foreground shadow-sm"
+                                  : "bg-background text-muted-foreground hover:text-foreground border border-border"
+                              }`}
+                            >
+                              {n}×
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-1 min-w-[160px]">
+                        <Gauge className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">Vitesse :</span>
+                        <Slider
+                          value={[playbackSpeed]}
+                          onValueChange={([v]) => setPlaybackSpeed(v)}
+                          min={0.5}
+                          max={1.5}
+                          step={0.1}
+                          className="flex-1"
+                        />
+                        <span className="text-xs font-mono font-bold text-foreground w-10 text-right">{playbackSpeed.toFixed(1)}×</span>
+                      </div>
+                    </div>
+
                     {showMushafPage && (
                       <div className="mb-4">
                         <div className="flex items-center justify-between mb-2">
