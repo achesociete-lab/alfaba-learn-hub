@@ -541,6 +541,13 @@ const Coran = () => {
                     )}
                   </div>
                 </TabsContent>
+
+                <TabsContent value="merits">
+                  <SurahMeritSection onSelectSurah={(surahNumber) => {
+                    const surah = allSurahs.find(s => s.number === surahNumber);
+                    if (surah) selectSurah(surah);
+                  }} />
+                </TabsContent>
               </Tabs>
 
               {/* History */}
