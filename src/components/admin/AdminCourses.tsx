@@ -372,7 +372,7 @@ function N2LessonEditor({ lesson: initialLesson, onBack, onSaved }: { lesson: Ni
         {editing ? (
           <div className="space-y-2">
             <EditField label="Titre" value={lesson.comprehension.title} onChange={(v) => update("comprehension", { ...lesson.comprehension, title: v })} />
-            <EditField label="Texte arabe" value={lesson.comprehension.arabicText} onChange={(v) => update("comprehension", { ...lesson.comprehension, arabicText: v })} dir="rtl" multiline />
+            <EditField label="Texte arabe" value={lesson.comprehension.arabic} onChange={(v) => update("comprehension", { ...lesson.comprehension, arabic: v })} dir="rtl" multiline />
             <EditField label="Traduction" value={lesson.comprehension.translation} onChange={(v) => update("comprehension", { ...lesson.comprehension, translation: v })} multiline />
           </div>
         ) : (
