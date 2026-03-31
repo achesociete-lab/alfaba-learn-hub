@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BookOpen, ArrowLeft } from "lucide-react";
+import { BookOpen, ArrowLeft, Mail, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 
 const Auth = () => {
@@ -15,6 +15,8 @@ const Auth = () => {
   const [lastName, setLastName] = useState("");
   const [level, setLevel] = useState<"niveau_1" | "niveau_2">("niveau_1");
   const [loading, setLoading] = useState(false);
+  const [showVerification, setShowVerification] = useState(false);
+  const [resending, setResending] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -24,20 +26,34 @@ const Auth = () => {
     try {
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        if (error) {
+          if (error.message.includes("Email not confirmed")) {
+            setShowVerification(true);
+            return;
+          }
+          throw error;
+        }
         toast.success("Connexion réussie !");
         navigate("/dashboard");
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: { first_name: firstName, last_name: lastName, level },
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: `${window.location.origin}/auth`,
           },
         });
         if (error) throw error;
-        toast.success("Inscription réussie ! Vérifiez votre email.");
+
+        // If identities array is empty, user already exists
+        if (data.user && data.user.identities && data.user.identities.length === 0) {
+          toast.error("Un compte existe déjà avec cet email. Connectez-vous.");
+          setIsLogin(true);
+          return;
+        }
+
+        setShowVerification(true);
       }
     } catch (err: any) {
       toast.error(err.message || "Une erreur est survenue");
@@ -45,6 +61,69 @@ const Auth = () => {
       setLoading(false);
     }
   };
+
+  const handleResendEmail = async () => {
+    setResending(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email,
+        options: { emailRedirectTo: `${window.location.origin}/auth` },
+      });
+      if (error) throw error;
+      toast.success("Email de vérification renvoyé !");
+    } catch (err: any) {
+      toast.error(err.message || "Impossible de renvoyer l'email");
+    } finally {
+      setResending(false);
+    }
+  };
+
+  if (showVerification) {
+    return (
+      <div className="min-h-screen bg-background geometric-pattern flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary mb-8 transition-colors">
+            <ArrowLeft className="h-4 w-4" /> Retour à l'accueil
+          </Link>
+
+          <div className="bg-card border border-border rounded-xl p-8 shadow-lg text-center">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+              <Mail className="h-8 w-8 text-primary" />
+            </div>
+            <h1 className="text-2xl font-bold text-foreground mb-2">Vérifiez votre email</h1>
+            <p className="text-muted-foreground mb-2">
+              Un email de vérification a été envoyé à :
+            </p>
+            <p className="font-semibold text-foreground mb-6">{email}</p>
+            <p className="text-sm text-muted-foreground mb-6">
+              Cliquez sur le lien dans l'email pour activer votre compte. Vérifiez aussi vos spams.
+            </p>
+
+            <div className="space-y-3">
+              <Button
+                onClick={handleResendEmail}
+                disabled={resending}
+                variant="outline"
+                className="w-full"
+              >
+                {resending ? "Envoi en cours…" : "Renvoyer l'email"}
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowVerification(false);
+                  setIsLogin(true);
+                }}
+                className="w-full gradient-emerald border-0 text-primary-foreground"
+              >
+                <CheckCircle className="h-4 w-4 mr-2" /> J'ai confirmé, me connecter
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background geometric-pattern flex items-center justify-center p-4">
@@ -73,23 +152,11 @@ const Auth = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label htmlFor="firstName">Prénom</Label>
-                  <Input
-                    id="firstName"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    required={!isLogin}
-                    placeholder="Prénom"
-                  />
+                  <Input id="firstName" value={firstName} onChange={(e) => setFirstName(e.target.value)} required={!isLogin} placeholder="Prénom" />
                 </div>
                 <div>
                   <Label htmlFor="lastName">Nom</Label>
-                  <Input
-                    id="lastName"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    required={!isLogin}
-                    placeholder="Nom"
-                  />
+                  <Input id="lastName" value={lastName} onChange={(e) => setLastName(e.target.value)} required={!isLogin} placeholder="Nom" />
                 </div>
               </div>
             )}
@@ -114,8 +181,8 @@ const Auth = () => {
                     onClick={() => setLevel("niveau_2")}
                     className={`p-3 rounded-lg border text-sm font-medium transition-colors ${
                       level === "niveau_2"
-                        ? "border-gold bg-gold/10 text-gold"
-                        : "border-border text-muted-foreground hover:border-gold/30"
+                        ? "border-accent bg-accent/10 text-accent"
+                        : "border-border text-muted-foreground hover:border-accent/30"
                     }`}
                   >
                     Niveau 2
@@ -126,44 +193,22 @@ const Auth = () => {
 
             <div>
               <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                placeholder="votre@email.fr"
-              />
+              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="votre@email.fr" />
             </div>
 
             <div>
               <Label htmlFor="password">Mot de passe</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-                placeholder="••••••••"
-              />
+              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} placeholder="••••••••" />
             </div>
 
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full gradient-emerald border-0 text-primary-foreground"
-            >
+            <Button type="submit" disabled={loading} className="w-full gradient-emerald border-0 text-primary-foreground">
               {loading ? "Chargement..." : isLogin ? "Se connecter" : "S'inscrire"}
             </Button>
           </form>
 
           <p className="text-sm text-muted-foreground text-center mt-6">
             {isLogin ? "Pas encore de compte ?" : "Déjà inscrit ?"}{" "}
-            <button
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-primary font-medium hover:underline"
-            >
+            <button onClick={() => setIsLogin(!isLogin)} className="text-primary font-medium hover:underline">
               {isLogin ? "S'inscrire" : "Se connecter"}
             </button>
           </p>
