@@ -89,6 +89,10 @@ const Coran = () => {
   const [submitting, setSubmitting] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
 
+  // Playback controls
+  const [repeatCount, setRepeatCount] = useState(1);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
+
   const { speak } = useArabicSpeech();
 
   useEffect(() => {
