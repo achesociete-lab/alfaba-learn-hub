@@ -7,7 +7,7 @@ const levels = [
   {
     level: 1,
     title: "Niveau 1 — Les Fondations",
-    subtitle: "Madrassa Niveau 1",
+    subtitle: "ALFASL — Niveau 1",
     description: "Découvrez l'alphabet arabe, apprenez à lire et à écrire. Chaque leçon se termine par une dictée pour consolider vos acquis.",
     features: [
       { icon: BookOpen, label: "Alphabet arabe complet" },
