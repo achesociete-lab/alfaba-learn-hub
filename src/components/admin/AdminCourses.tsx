@@ -295,7 +295,10 @@ function N1LessonEditor({ lesson: initialLesson, onBack, onSaved }: { lesson: Le
             <div className="space-y-3">
               {lesson.dictation.map((d, i) => (
                 <div key={i} className="p-3 rounded-lg bg-muted">
-                  <p className="text-sm font-medium text-foreground mb-1"><span className="font-arabic text-lg">{d.word}</span> — {d.transliteration}</p>
+                 <p className="text-sm font-medium text-foreground mb-1">
+                    <span className="font-arabic text-lg">{d.word}</span> — {d.transliteration}
+                    {renderRecorder(d.word)}
+                  </p>
                   <div className="grid grid-cols-2 gap-2 mt-2">
                     {d.options.map((opt, idx) => (
                       <div key={idx} className={`p-2 rounded font-arabic text-sm ${idx === d.correctIndex ? "bg-primary/10 text-primary border border-primary/30 font-semibold" : "bg-background text-muted-foreground border border-border"}`}>
