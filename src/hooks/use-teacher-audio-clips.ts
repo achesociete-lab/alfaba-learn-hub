@@ -26,7 +26,7 @@ export function useTeacherAudioClips(level?: ClassLevel, lessonNumber?: number) 
     const { data } = await supabase
       .from("teacher_audio_clips")
       .select("id, level, lesson_number, audio_key, audio_url")
-      .eq("level", level)
+      .eq("level", level as ClassLevel)
       .eq("lesson_number", lessonNumber);
     if (data) {
       setClips(data as TeacherAudioClip[]);
