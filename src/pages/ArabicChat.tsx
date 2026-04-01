@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Bot, User, Loader2, Volume2, Trash2, Mic, Square } from "lucide-react";
+import { Send, Bot, User, Loader2, Volume2, VolumeX, Trash2, Mic, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -86,9 +86,11 @@ const ArabicChat = () => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { speak } = useArabicSpeech();
+  const { speak, stop: stopSpeech } = useArabicSpeech();
   const recorder = useAudioRecorder();
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [autoSpeak, setAutoSpeak] = useState(true);
+  const lastSpokenIndexRef = useRef(-1);
 
   const transcribeAndSend = useCallback(async () => {
     // Stop recording first, then wait for blob
@@ -144,6 +146,18 @@ const ArabicChat = () => {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Auto-speak assistant messages when streaming is done
+  useEffect(() => {
+    if (isLoading || !autoSpeak || messages.length === 0) return;
+    const lastIndex = messages.length - 1;
+    const lastMsg = messages[lastIndex];
+    if (lastMsg.role === "assistant" && lastIndex > lastSpokenIndexRef.current) {
+      lastSpokenIndexRef.current = lastIndex;
+      const ar = extractArabic(lastMsg.content);
+      if (ar) speak(ar);
+    }
+  }, [messages, isLoading, autoSpeak, speak]);
 
   const sendMessage = useCallback(async () => {
     const text = input.trim();
@@ -201,6 +215,15 @@ const ArabicChat = () => {
           <p className="text-sm text-muted-foreground mt-1">
             Pratiquez l'arabe en discutant avec votre assistant IA
           </p>
+          <Button
+            variant={autoSpeak ? "default" : "outline"}
+            size="sm"
+            className="mt-2 gap-1.5 text-xs"
+            onClick={() => { setAutoSpeak(!autoSpeak); if (autoSpeak) stopSpeech(); }}
+          >
+            {autoSpeak ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
+            {autoSpeak ? "Lecture auto activée" : "Lecture auto désactivée"}
+          </Button>
         </div>
 
         {/* Messages */}
@@ -275,7 +298,7 @@ const ArabicChat = () => {
         <div className="flex gap-2 items-center border-t border-border pt-3">
           {messages.length > 0 && (
             <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground"
-              onClick={() => setMessages([])}>
+              onClick={() => { setMessages([]); lastSpokenIndexRef.current = -1; stopSpeech(); }}>
               <Trash2 className="h-4 w-4" />
             </Button>
           )}
