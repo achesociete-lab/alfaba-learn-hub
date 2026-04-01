@@ -79,7 +79,7 @@ const questions: Question[] = [
   // --- Tests de dictée (identification) ---
   {
     type: "dictation",
-    question: "Le mot « Qalam » (stylo) s'écrit :",
+    question: "Quel est le mot qui signifie « stylo » ?",
     options: [
       { label: "كَلَمٌ", score: 0 },
       { label: "قَلَمٌ", score: 2 },
@@ -88,7 +88,7 @@ const questions: Question[] = [
   },
   {
     type: "dictation",
-    question: "Le mot « Bayt » (maison) s'écrit :",
+    question: "Quel est le mot qui signifie « maison » ?",
     options: [
       { label: "بَيْتٌ", score: 2 },
       { label: "بِنْتٌ", score: 0 },
@@ -97,7 +97,7 @@ const questions: Question[] = [
   },
   {
     type: "dictation",
-    question: "Le mot « Shams » (soleil) s'écrit :",
+    question: "Quel est le mot qui signifie « soleil » ?",
     options: [
       { label: "سَمَاءٌ", score: 0 },
       { label: "شَمْسٌ", score: 2 },
