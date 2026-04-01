@@ -133,20 +133,31 @@ function LessonTab({ lesson }: { lesson: Lesson }) {
   const readLesson = async () => {
     if (isReading) { stop(); setIsReading(false); return; }
     setIsReading(true);
-    for (const section of (lesson.theory || [])) {
-      if (section.arabicExamples) {
-        for (const ex of section.arabicExamples) {
-          await speak(ex.arabic, 0.75);
-          await new Promise(r => setTimeout(r, 800));
+    try {
+      for (const section of (lesson.theory || [])) {
+        // Read letter grid
+        if (section.letterGrid) {
+          for (const l of section.letterGrid) {
+            await speak(l.letter, 0.8);
+            await new Promise(r => setTimeout(r, 500));
+          }
+        }
+        // Read forms table (isolated forms)
+        if (section.formsTable) {
+          for (const row of section.formsTable) {
+            await speak(row.isolated, 0.8);
+            await new Promise(r => setTimeout(r, 600));
+          }
+        }
+        // Read arabic examples
+        if (section.arabicExamples) {
+          for (const ex of section.arabicExamples) {
+            await speak(ex.arabic, 0.75);
+            await new Promise(r => setTimeout(r, 800));
+          }
         }
       }
-      if (section.letterGrid) {
-        for (const l of section.letterGrid.slice(0, 10)) {
-          await speak(l.letter, 0.8);
-          await new Promise(r => setTimeout(r, 500));
-        }
-      }
-    }
+    } catch { /* stopped */ }
     setIsReading(false);
   };
 

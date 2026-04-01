@@ -27,17 +27,26 @@ function GrammarTab({ lesson }: { lesson: Niveau2Lesson }) {
   const readLesson = async () => {
     if (isReading) { stop(); setIsReading(false); return; }
     setIsReading(true);
-    // Read grammar examples
-    for (const rule of (lesson.grammar || [])) {
-      for (const ex of rule.examples) {
-        await speak(ex.arabic, 0.75);
-        await new Promise(r => setTimeout(r, 800));
+    try {
+      // Read all grammar examples
+      for (const rule of (lesson.grammar || [])) {
+        for (const ex of rule.examples) {
+          await speak(ex.arabic, 0.75);
+          await new Promise(r => setTimeout(r, 800));
+        }
       }
-    }
-    // Read comprehension text
-    if (lesson.comprehension?.arabic) {
-      await speak(lesson.comprehension.arabic, 0.7);
-    }
+      // Read comprehension text
+      if (lesson.comprehension?.arabic) {
+        await speak(lesson.comprehension.arabic, 0.7);
+        await new Promise(r => setTimeout(r, 1000));
+      }
+      // Read dictation words
+      for (const d of (lesson.dictation || [])) {
+        const word = d.options[d.correctIndex];
+        await speak(word, 0.75);
+        await new Promise(r => setTimeout(r, 600));
+      }
+    } catch { /* stopped */ }
     setIsReading(false);
   };
 
