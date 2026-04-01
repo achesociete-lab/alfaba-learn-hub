@@ -298,7 +298,7 @@ const ArabicChat = () => {
         <div className="flex gap-2 items-center border-t border-border pt-3">
           {messages.length > 0 && (
             <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground"
-              onClick={() => setMessages([])}>
+              onClick={() => { setMessages([]); lastSpokenIndexRef.current = -1; stopSpeech(); }}>
               <Trash2 className="h-4 w-4" />
             </Button>
           )}
