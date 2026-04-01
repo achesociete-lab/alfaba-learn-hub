@@ -20,7 +20,7 @@ const levels = [
   {
     level: 2,
     title: "Niveau 2 — Approfondissement",
-    subtitle: "Madrassa Niveau 2",
+    subtitle: "ALFASL — Niveau 2",
     description: "Textes avancés, règles de grammaire, compréhension de texte et dictées pour perfectionner votre maîtrise de la langue.",
     features: [
       { icon: FileText, label: "Textes avancés" },
