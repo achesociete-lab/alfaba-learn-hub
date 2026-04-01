@@ -65,7 +65,7 @@ export function useTeacherAudioClips(level?: ClassLevel, lessonNumber?: number) 
     await supabase
       .from("teacher_audio_clips")
       .delete()
-      .eq("level", level!)
+      .eq("level", level! as ClassLevel)
       .eq("lesson_number", lessonNumber!)
       .eq("audio_key", audioKey);
     clipCache.delete(audioKey);
