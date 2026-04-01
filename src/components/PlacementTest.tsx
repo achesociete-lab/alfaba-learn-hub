@@ -48,12 +48,12 @@ const questions: Question[] = [
   },
   {
     type: "reading",
-    question: "Lisez ce mot et choisissez la bonne translittération :",
+    question: "Lisez ce mot et choisissez sa signification :",
     arabic: "مَدْرَسَةٌ",
     options: [
-      { label: "Masjid", score: 0 },
-      { label: "Maktaba", score: 0 },
-      { label: "Madrasa", score: 2 },
+      { label: "Mosquée", score: 0 },
+      { label: "Bibliothèque", score: 0 },
+      { label: "École", score: 2 },
     ],
   },
   {
@@ -68,18 +68,18 @@ const questions: Question[] = [
   },
   {
     type: "reading",
-    question: "Quel est le son de cette lettre avec la voyelle ?",
+    question: "Quelle voyelle porte cette lettre ?",
     arabic: "بُ",
     options: [
-      { label: "Ba", score: 0 },
-      { label: "Bi", score: 0 },
-      { label: "Bou", score: 2 },
+      { label: "Fatha (a)", score: 0 },
+      { label: "Kasra (i)", score: 0 },
+      { label: "Damma (ou)", score: 2 },
     ],
   },
   // --- Tests de dictée (identification) ---
   {
     type: "dictation",
-    question: "Le mot « Qalam » (stylo) s'écrit :",
+    question: "Quel est le mot qui signifie « stylo » ?",
     options: [
       { label: "كَلَمٌ", score: 0 },
       { label: "قَلَمٌ", score: 2 },
@@ -88,7 +88,7 @@ const questions: Question[] = [
   },
   {
     type: "dictation",
-    question: "Le mot « Bayt » (maison) s'écrit :",
+    question: "Quel est le mot qui signifie « maison » ?",
     options: [
       { label: "بَيْتٌ", score: 2 },
       { label: "بِنْتٌ", score: 0 },
@@ -97,7 +97,7 @@ const questions: Question[] = [
   },
   {
     type: "dictation",
-    question: "Le mot « Shams » (soleil) s'écrit :",
+    question: "Quel est le mot qui signifie « soleil » ?",
     options: [
       { label: "سَمَاءٌ", score: 0 },
       { label: "شَمْسٌ", score: 2 },

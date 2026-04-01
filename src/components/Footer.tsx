@@ -9,11 +9,11 @@ const Footer = () => (
           <div className="flex items-center gap-2 mb-4">
             <BookOpen className="h-6 w-6 text-gold" />
             <span className="font-display text-lg font-bold text-cream">
-              Madrassa Online
+              ALFASL <span className="font-arabic">الفصل</span>
             </span>
           </div>
           <p className="text-sm text-cream/60">
-            Apprenez l'arabe avec une méthode éprouvée, basée sur les ouvrages Madrassa.
+            Apprenez l'arabe avec une méthode éprouvée et progressive.
           </p>
         </div>
         <div>
@@ -27,8 +27,8 @@ const Footer = () => (
         </div>
         <div>
           <h4 className="font-display text-sm font-semibold text-gold mb-4">Contact</h4>
-          <p className="text-sm">contact@madrassa-online.fr</p>
-          <p className="text-sm mt-1">© {new Date().getFullYear()} Madrassa Online</p>
+          <p className="text-sm">contact@alifba.net</p>
+          <p className="text-sm mt-1">© {new Date().getFullYear()} ALFASL</p>
         </div>
       </div>
     </div>

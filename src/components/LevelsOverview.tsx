@@ -7,7 +7,7 @@ const levels = [
   {
     level: 1,
     title: "Niveau 1 — Les Fondations",
-    subtitle: "Madrassa Niveau 1",
+    subtitle: "ALFASL — Niveau 1",
     description: "Découvrez l'alphabet arabe, apprenez à lire et à écrire. Chaque leçon se termine par une dictée pour consolider vos acquis.",
     features: [
       { icon: BookOpen, label: "Alphabet arabe complet" },
@@ -20,7 +20,7 @@ const levels = [
   {
     level: 2,
     title: "Niveau 2 — Approfondissement",
-    subtitle: "Madrassa Niveau 2",
+    subtitle: "ALFASL — Niveau 2",
     description: "Textes avancés, règles de grammaire, compréhension de texte et dictées pour perfectionner votre maîtrise de la langue.",
     features: [
       { icon: FileText, label: "Textes avancés" },
@@ -40,7 +40,7 @@ const LevelsOverview = () => (
           Deux niveaux, une <span className="text-gradient-gold">progression complète</span>
         </h2>
         <p className="text-muted-foreground max-w-lg mx-auto">
-          Basé sur les ouvrages Madrassa, notre programme couvre du débutant absolu au niveau intermédiaire.
+          Notre programme couvre du débutant absolu au niveau intermédiaire.
         </p>
       </div>
 

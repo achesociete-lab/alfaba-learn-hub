@@ -23,14 +23,15 @@ const Auth = () => {
   const [signupStep, setSignupStep] = useState<SignupStep>("info");
   const navigate = useNavigate();
 
-  const handleSignup = async () => {
+  const handleSignup = async (signupLevel?: "niveau_1" | "niveau_2") => {
+    const finalLevel = signupLevel || level;
     setLoading(true);
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: { first_name: firstName, last_name: lastName, level },
+          data: { first_name: firstName, last_name: lastName, level: finalLevel },
           emailRedirectTo: `${window.location.origin}/auth`,
         },
       });
@@ -84,7 +85,7 @@ const Auth = () => {
 
   const handleTestComplete = (determinedLevel: "niveau_1" | "niveau_2") => {
     setLevel(determinedLevel);
-    handleSignup();
+    handleSignup(determinedLevel);
   };
 
   const handleResendEmail = async () => {
@@ -182,7 +183,7 @@ const Auth = () => {
           <div className="flex items-center gap-2 mb-6 justify-center">
             <BookOpen className="h-7 w-7 text-primary" />
             <span className="font-display text-xl font-bold text-foreground">
-              Madrassa <span className="text-gradient-gold">Online</span>
+              ALFASL <span className="text-gradient-gold font-arabic">الفصل</span>
             </span>
           </div>
 

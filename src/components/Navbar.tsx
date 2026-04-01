@@ -16,7 +16,7 @@ const publicNavLinks = [
 
 const getAuthNavLinks = (level: string | null) => {
   const links: { to: string; label: string }[] = [
-    { to: "/", label: "Accueil" },
+    { to: "/dashboard", label: "Accueil" },
   ];
 
   if (level === "niveau_1") {
@@ -50,10 +50,10 @@ const Navbar = () => {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
       <div className="container mx-auto flex items-center justify-between h-16 px-4">
-        <Link to="/" className="flex items-center gap-2">
+        <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-2">
           <BookOpen className="h-7 w-7 text-primary" />
           <span className="font-display text-xl font-bold text-foreground">
-            Madrassa <span className="text-gradient-gold">Online</span>
+            ALFASL <span className="text-gradient-gold font-arabic">الفصل</span>
           </span>
         </Link>
 

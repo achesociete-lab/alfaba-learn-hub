@@ -43,7 +43,7 @@ const Niveau2 = () => (
             Approfondissement — <span className="text-gradient-gold">Grammaire & Compréhension</span>
           </h1>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            Basé sur l'ouvrage Madrassa Niveau 2. Textes avancés, règles de grammaire et compréhension écrite.
+            Textes avancés, règles de grammaire et compréhension écrite.
           </p>
         </motion.div>
 
