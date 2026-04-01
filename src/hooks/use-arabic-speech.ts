@@ -46,18 +46,6 @@ export function useArabicSpeech() {
     }
 
     const cacheKey = `${text}_${rate}_${voiceId || "default"}`;
-    if (!text?.trim()) return;
-
-    // Stop any current playback
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-    }
-    if (abortRef.current) {
-      abortRef.current.abort();
-    }
-
-    const cacheKey = `${text}_${rate}_${voiceId || "default"}`;
 
     if (isElevenLabsUnavailable) {
       fallbackSpeak(text, rate);
