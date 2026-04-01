@@ -26,6 +26,7 @@ interface Homework {
   title: string;
   status: string;
   grade: number | null;
+  feedback: string | null;
   submitted_at: string;
 }
 
