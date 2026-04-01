@@ -48,12 +48,12 @@ const questions: Question[] = [
   },
   {
     type: "reading",
-    question: "Lisez ce mot et choisissez la bonne translittération :",
+    question: "Lisez ce mot et choisissez sa signification :",
     arabic: "مَدْرَسَةٌ",
     options: [
-      { label: "Masjid", score: 0 },
-      { label: "Maktaba", score: 0 },
-      { label: "Madrasa", score: 2 },
+      { label: "Mosquée", score: 0 },
+      { label: "Bibliothèque", score: 0 },
+      { label: "École", score: 2 },
     ],
   },
   {
