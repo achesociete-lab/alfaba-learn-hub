@@ -147,6 +147,18 @@ const ArabicChat = () => {
     }
   }, [messages]);
 
+  // Auto-speak assistant messages when streaming is done
+  useEffect(() => {
+    if (isLoading || !autoSpeak || messages.length === 0) return;
+    const lastIndex = messages.length - 1;
+    const lastMsg = messages[lastIndex];
+    if (lastMsg.role === "assistant" && lastIndex > lastSpokenIndexRef.current) {
+      lastSpokenIndexRef.current = lastIndex;
+      const ar = extractArabic(lastMsg.content);
+      if (ar) speak(ar);
+    }
+  }, [messages, isLoading, autoSpeak, speak]);
+
   const sendMessage = useCallback(async () => {
     const text = input.trim();
     if (!text || isLoading) return;
