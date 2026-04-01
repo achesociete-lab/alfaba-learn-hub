@@ -225,14 +225,36 @@ function N1LessonEditor({ lesson: initialLesson, onBack, onSaved }: { lesson: Le
         )}
       </div>
 
-      {/* Theory sections count */}
+      {/* Theory sections with audio recorders */}
       <div className="p-4 rounded-xl border border-border bg-card">
-        <h4 className="font-semibold text-foreground mb-2">📚 Contenu théorique</h4>
-        <p className="text-sm text-muted-foreground">{lesson.theory.length} section(s) de cours</p>
+        <div className="flex items-center gap-2 mb-2">
+          <Mic className="h-4 w-4 text-primary" />
+          <h4 className="font-semibold text-foreground">📚 Contenu théorique — Enregistrement audio</h4>
+        </div>
+        <p className="text-xs text-muted-foreground mb-3">Cliquez sur 🎙 pour enregistrer votre voix sur chaque lettre, mot ou exemple.</p>
         {lesson.theory.map((section, i) => (
-          <div key={i} className="mt-2 p-2 rounded-lg bg-muted">
+          <div key={i} className="mt-3 p-3 rounded-lg bg-muted space-y-2">
             <p className="text-sm font-medium text-foreground">{section.title}</p>
-            <p className="text-xs text-muted-foreground truncate">{section.content.substring(0, 100)}...</p>
+            {/* Letter grid */}
+            {section.letterGrid && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {section.letterGrid.map((l, j) => (
+                  <div key={j} className="flex items-center gap-1 p-2 rounded bg-background border border-border">
+                    <span className="font-arabic text-xl">{l.letter}</span>
+                    <span className="text-xs text-muted-foreground flex-1">{l.name}</span>
+                    {renderRecorder(l.letter)}
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* Arabic examples */}
+            {section.arabicExamples && section.arabicExamples.map((ex, j) => (
+              <div key={j} className="flex items-center gap-2 p-2 rounded bg-background border border-border">
+                <span className="font-arabic text-lg">{ex.arabic}</span>
+                <span className="text-xs text-muted-foreground flex-1">{ex.transliteration} — {ex.meaning}</span>
+                {renderRecorder(ex.arabic)}
+              </div>
+            ))}
           </div>
         ))}
       </div>
