@@ -21,7 +21,7 @@ const HeroSection = () => (
         >
           <div className="inline-flex items-center gap-2 bg-primary/10 px-4 py-1.5 rounded-full mb-6">
             <Star className="h-4 w-4 text-gold" />
-            <span className="text-sm font-medium text-primary">Méthode Madrassa</span>
+            <span className="text-sm font-medium text-primary">Méthode ALFASL</span>
           </div>
 
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-6 text-foreground">

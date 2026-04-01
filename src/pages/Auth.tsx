@@ -182,7 +182,7 @@ const Auth = () => {
           <div className="flex items-center gap-2 mb-6 justify-center">
             <BookOpen className="h-7 w-7 text-primary" />
             <span className="font-display text-xl font-bold text-foreground">
-              Madrassa <span className="text-gradient-gold">Online</span>
+              ALFASL <span className="text-gradient-gold font-arabic">الفصل</span>
             </span>
           </div>
 

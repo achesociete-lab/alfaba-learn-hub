@@ -27,8 +27,8 @@ const Footer = () => (
         </div>
         <div>
           <h4 className="font-display text-sm font-semibold text-gold mb-4">Contact</h4>
-          <p className="text-sm">contact@madrassa-online.fr</p>
-          <p className="text-sm mt-1">© {new Date().getFullYear()} Madrassa Online</p>
+          <p className="text-sm">contact@alifba.net</p>
+          <p className="text-sm mt-1">© {new Date().getFullYear()} ALFASL</p>
         </div>
       </div>
     </div>

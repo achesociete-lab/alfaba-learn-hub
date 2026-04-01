@@ -40,7 +40,7 @@ const LevelsOverview = () => (
           Deux niveaux, une <span className="text-gradient-gold">progression complète</span>
         </h2>
         <p className="text-muted-foreground max-w-lg mx-auto">
-          Basé sur les ouvrages Madrassa, notre programme couvre du débutant absolu au niveau intermédiaire.
+          Notre programme couvre du débutant absolu au niveau intermédiaire.
         </p>
       </div>
 

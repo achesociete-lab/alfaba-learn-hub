@@ -45,7 +45,7 @@ const Niveau1 = () => (
             Les Fondations — <span className="text-gradient-gold">L'Alphabet Arabe</span>
           </h1>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            Basé sur l'ouvrage Madrassa Niveau 1. Apprenez l'alphabet, lisez vos premiers mots et validez par la dictée.
+            Apprenez l'alphabet, lisez vos premiers mots et validez par la dictée.
           </p>
         </motion.div>
 
