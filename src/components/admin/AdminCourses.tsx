@@ -322,6 +322,18 @@ function N2LessonEditor({ lesson: initialLesson, onBack, onSaved }: { lesson: Ni
   const [lesson, setLesson] = useState<Niveau2Lesson>({ ...initialLesson });
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const { user } = useAuth();
+  const { clips, uploadClip, deleteClip } = useTeacherAudioClips("niveau_2", lesson.id);
+  const clipMap = new Map(clips.map(c => [c.audio_key, c.audio_url]));
+
+  const renderRecorder = (audioKey: string) => (
+    <AudioClipRecorder
+      audioKey={audioKey}
+      existingUrl={clipMap.get(audioKey)}
+      onSave={async (key, blob) => { if (user) await uploadClip(key, blob, user.id); }}
+      onDelete={deleteClip}
+    />
+  );
 
   const update = (field: keyof Niveau2Lesson, val: any) => setLesson(prev => ({ ...prev, [field]: val }));
 
