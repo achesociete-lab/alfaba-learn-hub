@@ -86,9 +86,11 @@ const ArabicChat = () => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { speak } = useArabicSpeech();
+  const { speak, stop: stopSpeech } = useArabicSpeech();
   const recorder = useAudioRecorder();
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [autoSpeak, setAutoSpeak] = useState(true);
+  const lastSpokenIndexRef = useRef(-1);
 
   const transcribeAndSend = useCallback(async () => {
     // Stop recording first, then wait for blob
