@@ -16,7 +16,7 @@ const publicNavLinks = [
 
 const getAuthNavLinks = (level: string | null) => {
   const links: { to: string; label: string }[] = [
-    { to: "/", label: "Accueil" },
+    { to: "/dashboard", label: "Accueil" },
   ];
 
   if (level === "niveau_1") {
