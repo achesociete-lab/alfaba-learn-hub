@@ -23,14 +23,15 @@ const Auth = () => {
   const [signupStep, setSignupStep] = useState<SignupStep>("info");
   const navigate = useNavigate();
 
-  const handleSignup = async () => {
+  const handleSignup = async (signupLevel?: "niveau_1" | "niveau_2") => {
+    const finalLevel = signupLevel || level;
     setLoading(true);
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: { first_name: firstName, last_name: lastName, level },
+          data: { first_name: firstName, last_name: lastName, level: finalLevel },
           emailRedirectTo: `${window.location.origin}/auth`,
         },
       });
