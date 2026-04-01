@@ -495,7 +495,10 @@ function N2LessonEditor({ lesson: initialLesson, onBack, onSaved }: { lesson: Ni
             <div className="space-y-3">
               {lesson.dictation.map((d, i) => (
                 <div key={i} className="p-3 rounded-lg bg-muted">
-                  <p className="text-sm font-medium text-foreground mb-1"><span className="font-arabic text-lg">{d.sentence || (d as any).word}</span></p>
+                  <p className="text-sm font-medium text-foreground mb-1">
+                    <span className="font-arabic text-lg">{d.sentence || (d as any).word}</span>
+                    {renderRecorder(d.sentence || (d as any).word)}
+                  </p>
                   <p className="text-xs text-muted-foreground">{d.transliteration}</p>
                 </div>
               ))}
