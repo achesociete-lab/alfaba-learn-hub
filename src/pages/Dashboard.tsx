@@ -26,6 +26,7 @@ interface Homework {
   title: string;
   status: string;
   grade: number | null;
+  feedback: string | null;
   submitted_at: string;
 }
 
@@ -63,7 +64,7 @@ const Dashboard = () => {
     const fetchData = async () => {
       const [profileRes, hwRes, attRes, assignRes] = await Promise.all([
         supabase.from("profiles").select("first_name, last_name, level").eq("user_id", user.id).single(),
-        supabase.from("homework_submissions").select("id, title, status, grade, submitted_at").eq("user_id", user.id).order("submitted_at", { ascending: false }),
+        supabase.from("homework_submissions").select("id, title, status, grade, feedback, submitted_at").eq("user_id", user.id).order("submitted_at", { ascending: false }),
         supabase.from("attendance").select("date, present").eq("user_id", user.id).order("date", { ascending: false }).limit(10),
         supabase.from("homework_assignments").select("id, title, description, level, due_date, created_at").order("created_at", { ascending: false }),
       ]);
@@ -89,7 +90,7 @@ const Dashboard = () => {
       if (insertError) throw insertError;
       toast.success("Devoir déposé avec succès !");
       setHwTitle("");
-      const { data } = await supabase.from("homework_submissions").select("id, title, status, grade, submitted_at").eq("user_id", user.id).order("submitted_at", { ascending: false });
+      const { data } = await supabase.from("homework_submissions").select("id, title, status, grade, feedback, submitted_at").eq("user_id", user.id).order("submitted_at", { ascending: false });
       if (data) setHomework(data);
     } catch (err: any) {
       toast.error(err.message || "Erreur lors du dépôt");
@@ -213,18 +214,26 @@ const Dashboard = () => {
               ) : (
                 <div className="space-y-3">
                   {homework.map((hw) => (
-                    <div key={hw.id} className="flex items-center gap-4 p-4 rounded-xl border border-border bg-card">
-                      <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${hw.status === "corrigé" ? "bg-primary/10" : "bg-gold/10"}`}>
-                        {hw.status === "corrigé" ? <CheckCircle className="h-5 w-5 text-primary" /> : <PenTool className="h-5 w-5 text-gold" />}
+                    <div key={hw.id} className="p-4 rounded-xl border border-border bg-card">
+                      <div className="flex items-center gap-4">
+                        <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${hw.status === "corrigé" ? "bg-primary/10" : "bg-gold/10"}`}>
+                          {hw.status === "corrigé" ? <CheckCircle className="h-5 w-5 text-primary" /> : <PenTool className="h-5 w-5 text-gold" />}
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-sm font-semibold text-foreground">{hw.title}</h3>
+                          <p className="text-xs text-muted-foreground">{new Date(hw.submitted_at).toLocaleDateString("fr-FR")}</p>
+                        </div>
+                        <div className="text-right">
+                          <span className={`text-sm font-bold ${hw.status === "corrigé" ? "text-primary" : "text-muted-foreground"}`}>{hw.grade !== null ? `${hw.grade}/20` : "—"}</span>
+                          <p className={`text-xs ${hw.status === "corrigé" ? "text-primary/70" : "text-gold"}`}>{hw.status}</p>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <h3 className="text-sm font-semibold text-foreground">{hw.title}</h3>
-                        <p className="text-xs text-muted-foreground">{new Date(hw.submitted_at).toLocaleDateString("fr-FR")}</p>
-                      </div>
-                      <div className="text-right">
-                        <span className={`text-sm font-bold ${hw.status === "corrigé" ? "text-primary" : "text-muted-foreground"}`}>{hw.grade !== null ? `${hw.grade}/20` : "—"}</span>
-                        <p className={`text-xs ${hw.status === "corrigé" ? "text-primary/70" : "text-gold"}`}>{hw.status}</p>
-                      </div>
+                      {hw.feedback && (
+                        <div className="mt-3 ml-14 p-3 rounded-lg bg-primary/5 border border-primary/10">
+                          <p className="text-xs font-semibold text-primary mb-1">💬 Commentaire du professeur :</p>
+                          <p className="text-sm text-foreground">{hw.feedback}</p>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
