@@ -215,6 +215,15 @@ const ArabicChat = () => {
           <p className="text-sm text-muted-foreground mt-1">
             Pratiquez l'arabe en discutant avec votre assistant IA
           </p>
+          <Button
+            variant={autoSpeak ? "default" : "outline"}
+            size="sm"
+            className="mt-2 gap-1.5 text-xs"
+            onClick={() => { setAutoSpeak(!autoSpeak); if (autoSpeak) stopSpeech(); }}
+          >
+            {autoSpeak ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
+            {autoSpeak ? "Lecture auto activée" : "Lecture auto désactivée"}
+          </Button>
         </div>
 
         {/* Messages */}
