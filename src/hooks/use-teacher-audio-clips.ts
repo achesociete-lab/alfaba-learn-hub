@@ -16,7 +16,7 @@ export interface TeacherAudioClip {
 const clipCache = new Map<string, string>();
 let clipCacheLoaded = false;
 
-export function useTeacherAudioClips(level?: string, lessonNumber?: number) {
+export function useTeacherAudioClips(level?: ClassLevel, lessonNumber?: number) {
   const [clips, setClips] = useState<TeacherAudioClip[]>([]);
   const [loading, setLoading] = useState(true);
 
