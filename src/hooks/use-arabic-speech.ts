@@ -13,7 +13,39 @@ export function useArabicSpeech() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
+  // Preload teacher clips once
+  useEffect(() => { preloadTeacherClips(); }, []);
+
   const speak = useCallback(async (text: string, rate = 0.8, voiceId?: string) => {
+    if (!text?.trim()) return;
+
+    // Stop any current playback
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    if (abortRef.current) {
+      abortRef.current.abort();
+    }
+
+    // Check for teacher recording first
+    const teacherUrl = getTeacherClipUrl(text);
+    if (teacherUrl) {
+      const audio = new Audio(teacherUrl);
+      audioRef.current = audio;
+      try {
+        await audio.play();
+        await new Promise<void>((resolve) => {
+          audio.addEventListener("ended", () => resolve(), { once: true });
+          audio.addEventListener("error", () => resolve(), { once: true });
+        });
+      } catch (e) {
+        console.warn("Teacher clip playback failed:", e);
+      }
+      return;
+    }
+
+    const cacheKey = `${text}_${rate}_${voiceId || "default"}`;
     if (!text?.trim()) return;
 
     // Stop any current playback
