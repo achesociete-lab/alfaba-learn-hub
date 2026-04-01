@@ -1,5 +1,5 @@
-import { useCallback, useRef } from "react";
-
+import { useCallback, useRef, useEffect } from "react";
+import { getTeacherClipUrl, preloadTeacherClips } from "./use-teacher-audio-clips";
 // Simple in-memory cache for audio blobs to avoid re-fetching
 const audioCache = new Map<string, string>();
 let isElevenLabsUnavailable = false;
