@@ -49,12 +49,12 @@ export function useTeacherAudioClips(level?: ClassLevel, lessonNumber?: number) 
     const { error } = await supabase
       .from("teacher_audio_clips")
       .upsert({
-        level: level!,
+        level: level! as ClassLevel,
         lesson_number: lessonNumber!,
         audio_key: audioKey,
         audio_url: urlData.publicUrl,
         recorded_by: recordedBy,
-      }, { onConflict: "level,lesson_number,audio_key" });
+      } as any, { onConflict: "level,lesson_number,audio_key" });
     if (error) throw error;
 
     clipCache.set(audioKey, urlData.publicUrl);
