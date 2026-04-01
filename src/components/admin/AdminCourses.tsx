@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import {
-  BookOpen, CheckCircle, Volume2,
+  BookOpen, CheckCircle, Volume2, Mic,
   Search, ArrowLeft, Edit, Save, X, Plus, Trash2, Video
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,9 @@ import type { Niveau2Lesson, Niveau2QCM, Niveau2Dictation, GrammarRule, Comprehe
 import { useArabicSpeech } from "@/hooks/use-arabic-speech";
 import { getIllustration } from "@/utils/vocabulary-illustrations";
 import { useNiveau1Lessons, useNiveau2Lessons, updateLessonContent } from "@/hooks/use-lessons";
+import { useTeacherAudioClips } from "@/hooks/use-teacher-audio-clips";
+import { useAuth } from "@/contexts/AuthContext";
+import AudioClipRecorder from "@/components/admin/AudioClipRecorder";
 import { toast } from "sonner";
 
 // ─── Editable field ───
@@ -141,6 +144,18 @@ function N1LessonEditor({ lesson: initialLesson, onBack, onSaved }: { lesson: Le
   const [lesson, setLesson] = useState<Lesson>({ ...initialLesson });
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const { user } = useAuth();
+  const { clips, uploadClip, deleteClip } = useTeacherAudioClips("niveau_1", lesson.id);
+  const clipMap = new Map(clips.map(c => [c.audio_key, c.audio_url]));
+
+  const renderRecorder = (audioKey: string) => (
+    <AudioClipRecorder
+      audioKey={audioKey}
+      existingUrl={clipMap.get(audioKey)}
+      onSave={async (key, blob) => { if (user) await uploadClip(key, blob, user.id); }}
+      onDelete={deleteClip}
+    />
+  );
 
   const update = (field: keyof Lesson, val: any) => setLesson(prev => ({ ...prev, [field]: val }));
 
@@ -210,14 +225,36 @@ function N1LessonEditor({ lesson: initialLesson, onBack, onSaved }: { lesson: Le
         )}
       </div>
 
-      {/* Theory sections count */}
+      {/* Theory sections with audio recorders */}
       <div className="p-4 rounded-xl border border-border bg-card">
-        <h4 className="font-semibold text-foreground mb-2">📚 Contenu théorique</h4>
-        <p className="text-sm text-muted-foreground">{lesson.theory.length} section(s) de cours</p>
+        <div className="flex items-center gap-2 mb-2">
+          <Mic className="h-4 w-4 text-primary" />
+          <h4 className="font-semibold text-foreground">📚 Contenu théorique — Enregistrement audio</h4>
+        </div>
+        <p className="text-xs text-muted-foreground mb-3">Cliquez sur 🎙 pour enregistrer votre voix sur chaque lettre, mot ou exemple.</p>
         {lesson.theory.map((section, i) => (
-          <div key={i} className="mt-2 p-2 rounded-lg bg-muted">
+          <div key={i} className="mt-3 p-3 rounded-lg bg-muted space-y-2">
             <p className="text-sm font-medium text-foreground">{section.title}</p>
-            <p className="text-xs text-muted-foreground truncate">{section.content.substring(0, 100)}...</p>
+            {/* Letter grid */}
+            {section.letterGrid && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {section.letterGrid.map((l, j) => (
+                  <div key={j} className="flex items-center gap-1 p-2 rounded bg-background border border-border">
+                    <span className="font-arabic text-xl">{l.letter}</span>
+                    <span className="text-xs text-muted-foreground flex-1">{l.name}</span>
+                    {renderRecorder(l.letter)}
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* Arabic examples */}
+            {section.arabicExamples && section.arabicExamples.map((ex, j) => (
+              <div key={j} className="flex items-center gap-2 p-2 rounded bg-background border border-border">
+                <span className="font-arabic text-lg">{ex.arabic}</span>
+                <span className="text-xs text-muted-foreground flex-1">{ex.transliteration} — {ex.meaning}</span>
+                {renderRecorder(ex.arabic)}
+              </div>
+            ))}
           </div>
         ))}
       </div>
@@ -258,7 +295,10 @@ function N1LessonEditor({ lesson: initialLesson, onBack, onSaved }: { lesson: Le
             <div className="space-y-3">
               {lesson.dictation.map((d, i) => (
                 <div key={i} className="p-3 rounded-lg bg-muted">
-                  <p className="text-sm font-medium text-foreground mb-1"><span className="font-arabic text-lg">{d.word}</span> — {d.transliteration}</p>
+                 <p className="text-sm font-medium text-foreground mb-1">
+                    <span className="font-arabic text-lg">{d.word}</span> — {d.transliteration}
+                    {renderRecorder(d.word)}
+                  </p>
                   <div className="grid grid-cols-2 gap-2 mt-2">
                     {d.options.map((opt, idx) => (
                       <div key={idx} className={`p-2 rounded font-arabic text-sm ${idx === d.correctIndex ? "bg-primary/10 text-primary border border-primary/30 font-semibold" : "bg-background text-muted-foreground border border-border"}`}>
@@ -282,6 +322,18 @@ function N2LessonEditor({ lesson: initialLesson, onBack, onSaved }: { lesson: Ni
   const [lesson, setLesson] = useState<Niveau2Lesson>({ ...initialLesson });
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const { user } = useAuth();
+  const { clips, uploadClip, deleteClip } = useTeacherAudioClips("niveau_2", lesson.id);
+  const clipMap = new Map(clips.map(c => [c.audio_key, c.audio_url]));
+
+  const renderRecorder = (audioKey: string) => (
+    <AudioClipRecorder
+      audioKey={audioKey}
+      existingUrl={clipMap.get(audioKey)}
+      onSave={async (key, blob) => { if (user) await uploadClip(key, blob, user.id); }}
+      onDelete={deleteClip}
+    />
+  );
 
   const update = (field: keyof Niveau2Lesson, val: any) => setLesson(prev => ({ ...prev, [field]: val }));
 
@@ -370,10 +422,13 @@ function N2LessonEditor({ lesson: initialLesson, onBack, onSaved }: { lesson: Ni
               <>
                 <p className="text-sm font-medium text-foreground">{rule.title}</p>
                 <p className="text-xs text-muted-foreground">{rule.explanation}</p>
-                <div className="flex gap-2 mt-1 flex-wrap">
+                <div className="flex gap-2 mt-1 flex-wrap items-center">
                   {rule.examples.map((ex, j) => (
-                    <span key={j} className="font-arabic text-sm text-primary cursor-pointer" onClick={() => speak(ex.arabic)}>
-                      {ex.arabic}
+                    <span key={j} className="inline-flex items-center gap-1">
+                      <span className="font-arabic text-sm text-primary cursor-pointer" onClick={() => speak(ex.arabic)}>
+                        {ex.arabic}
+                      </span>
+                      {renderRecorder(ex.arabic)}
                     </span>
                   ))}
                 </div>
@@ -395,7 +450,10 @@ function N2LessonEditor({ lesson: initialLesson, onBack, onSaved }: { lesson: Ni
         ) : (
           <>
             <p className="text-sm font-medium text-foreground mb-2">{lesson.comprehension.title}</p>
-            <p className="font-arabic text-lg text-foreground mb-2 cursor-pointer" dir="rtl" onClick={() => speak(lesson.comprehension.arabic)}>{lesson.comprehension.arabic}</p>
+            <p className="font-arabic text-lg text-foreground mb-2 cursor-pointer inline-flex items-center gap-1" dir="rtl" onClick={() => speak(lesson.comprehension.arabic)}>
+              {lesson.comprehension.arabic}
+            </p>
+            {renderRecorder(lesson.comprehension.arabic)}
             <p className="text-sm text-muted-foreground italic">{lesson.comprehension.translation}</p>
           </>
         )}
@@ -437,7 +495,10 @@ function N2LessonEditor({ lesson: initialLesson, onBack, onSaved }: { lesson: Ni
             <div className="space-y-3">
               {lesson.dictation.map((d, i) => (
                 <div key={i} className="p-3 rounded-lg bg-muted">
-                  <p className="text-sm font-medium text-foreground mb-1"><span className="font-arabic text-lg">{d.sentence || (d as any).word}</span></p>
+                  <p className="text-sm font-medium text-foreground mb-1">
+                    <span className="font-arabic text-lg">{d.sentence || (d as any).word}</span>
+                    {renderRecorder(d.sentence || (d as any).word)}
+                  </p>
                   <p className="text-xs text-muted-foreground">{d.transliteration}</p>
                 </div>
               ))}

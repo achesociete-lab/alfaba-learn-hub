@@ -281,6 +281,39 @@ export type Database = {
         }
         Relationships: []
       }
+      teacher_audio_clips: {
+        Row: {
+          audio_key: string
+          audio_url: string
+          created_at: string
+          id: string
+          lesson_number: number
+          level: Database["public"]["Enums"]["class_level"]
+          recorded_by: string
+          updated_at: string
+        }
+        Insert: {
+          audio_key: string
+          audio_url: string
+          created_at?: string
+          id?: string
+          lesson_number: number
+          level: Database["public"]["Enums"]["class_level"]
+          recorded_by: string
+          updated_at?: string
+        }
+        Update: {
+          audio_key?: string
+          audio_url?: string
+          created_at?: string
+          id?: string
+          lesson_number?: number
+          level?: Database["public"]["Enums"]["class_level"]
+          recorded_by?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       teacher_recordings: {
         Row: {
           audio_url: string
