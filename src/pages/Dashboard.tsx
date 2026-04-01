@@ -90,7 +90,7 @@ const Dashboard = () => {
       if (insertError) throw insertError;
       toast.success("Devoir déposé avec succès !");
       setHwTitle("");
-      const { data } = await supabase.from("homework_submissions").select("id, title, status, grade, submitted_at").eq("user_id", user.id).order("submitted_at", { ascending: false });
+      const { data } = await supabase.from("homework_submissions").select("id, title, status, grade, feedback, submitted_at").eq("user_id", user.id).order("submitted_at", { ascending: false });
       if (data) setHomework(data);
     } catch (err: any) {
       toast.error(err.message || "Erreur lors du dépôt");
