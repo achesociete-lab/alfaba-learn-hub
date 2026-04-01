@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import {
-  BookOpen, CheckCircle, Volume2,
+  BookOpen, CheckCircle, Volume2, Mic,
   Search, ArrowLeft, Edit, Save, X, Plus, Trash2, Video
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,9 @@ import type { Niveau2Lesson, Niveau2QCM, Niveau2Dictation, GrammarRule, Comprehe
 import { useArabicSpeech } from "@/hooks/use-arabic-speech";
 import { getIllustration } from "@/utils/vocabulary-illustrations";
 import { useNiveau1Lessons, useNiveau2Lessons, updateLessonContent } from "@/hooks/use-lessons";
+import { useTeacherAudioClips } from "@/hooks/use-teacher-audio-clips";
+import { useAuth } from "@/contexts/AuthContext";
+import AudioClipRecorder from "@/components/admin/AudioClipRecorder";
 import { toast } from "sonner";
 
 // ─── Editable field ───
