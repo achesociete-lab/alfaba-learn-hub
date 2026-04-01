@@ -85,7 +85,7 @@ const Auth = () => {
 
   const handleTestComplete = (determinedLevel: "niveau_1" | "niveau_2") => {
     setLevel(determinedLevel);
-    handleSignup();
+    handleSignup(determinedLevel);
   };
 
   const handleResendEmail = async () => {
