@@ -159,6 +159,18 @@ const ArabicChat = () => {
     }
   }, [messages, isLoading, autoSpeak, speak]);
 
+  // Auto-speak user messages
+  useEffect(() => {
+    if (!autoSpeak || messages.length === 0) return;
+    const lastIndex = messages.length - 1;
+    const lastMsg = messages[lastIndex];
+    if (lastMsg.role === "user" && lastIndex > lastSpokenIndexRef.current) {
+      lastSpokenIndexRef.current = lastIndex;
+      const ar = extractArabic(lastMsg.content);
+      if (ar) speak(ar);
+    }
+  }, [messages, autoSpeak, speak]);
+
   const sendMessage = useCallback(async () => {
     const text = input.trim();
     if (!text || isLoading) return;
