@@ -68,12 +68,12 @@ const questions: Question[] = [
   },
   {
     type: "reading",
-    question: "Quel est le son de cette lettre avec la voyelle ?",
+    question: "Quelle voyelle porte cette lettre ?",
     arabic: "بُ",
     options: [
-      { label: "Ba", score: 0 },
-      { label: "Bi", score: 0 },
-      { label: "Bou", score: 2 },
+      { label: "Fatha (a)", score: 0 },
+      { label: "Kasra (i)", score: 0 },
+      { label: "Damma (ou)", score: 2 },
     ],
   },
   // --- Tests de dictée (identification) ---
