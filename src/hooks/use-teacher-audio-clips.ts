@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+
+type ClassLevel = Database["public"]["Enums"]["class_level"];
 
 export interface TeacherAudioClip {
   id: string;
