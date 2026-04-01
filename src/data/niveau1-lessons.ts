@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════
 // Niveau 1 — Programme thématique : 10 leçons progressives
-// Basé sur l'ouvrage Madrassa Niveau 1 pour francophones
+// Programme ALFASL Niveau 1 pour francophones
 // ═══════════════════════════════════════════════════════════════════
 
 export interface LessonExample {
