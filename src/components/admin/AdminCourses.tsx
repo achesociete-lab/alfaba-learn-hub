@@ -422,10 +422,13 @@ function N2LessonEditor({ lesson: initialLesson, onBack, onSaved }: { lesson: Ni
               <>
                 <p className="text-sm font-medium text-foreground">{rule.title}</p>
                 <p className="text-xs text-muted-foreground">{rule.explanation}</p>
-                <div className="flex gap-2 mt-1 flex-wrap">
+                <div className="flex gap-2 mt-1 flex-wrap items-center">
                   {rule.examples.map((ex, j) => (
-                    <span key={j} className="font-arabic text-sm text-primary cursor-pointer" onClick={() => speak(ex.arabic)}>
-                      {ex.arabic}
+                    <span key={j} className="inline-flex items-center gap-1">
+                      <span className="font-arabic text-sm text-primary cursor-pointer" onClick={() => speak(ex.arabic)}>
+                        {ex.arabic}
+                      </span>
+                      {renderRecorder(ex.arabic)}
                     </span>
                   ))}
                 </div>
