@@ -36,7 +36,7 @@ const QuranTest = ({ allSurahs }: Props) => {
 
   // Recording & evaluation
   const recorder = useAudioRecorder();
-  const { speak } = useArabicSpeech();
+  const { speak, stop } = useArabicSpeech();
   const [feedback, setFeedback] = useState<AiFeedback | null>(null);
   const [evaluating, setEvaluating] = useState(false);
   const [speakingFeedback, setSpeakingFeedback] = useState(false);
