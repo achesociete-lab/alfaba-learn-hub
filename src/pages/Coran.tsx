@@ -33,6 +33,7 @@ import { RECITERS, playAyahAudio, playAyahSequence } from "@/utils/quran-audio";
 import { fetchQuranPageAyahs, type QuranPageAyah } from "@/utils/quran-pages";
 import { Slider } from "@/components/ui/slider";
 import SurahMeritSection from "@/components/quran/SurahMeritSection";
+import QuranTest from "@/components/quran/QuranTest";
 
 type RecitationMode = "read" | "memorize";
 type NavTab = "surah" | "juz" | "search" | "merits";
