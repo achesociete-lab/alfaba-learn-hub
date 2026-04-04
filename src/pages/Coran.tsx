@@ -36,7 +36,7 @@ import SurahMeritSection from "@/components/quran/SurahMeritSection";
 import QuranTest from "@/components/quran/QuranTest";
 
 type RecitationMode = "read" | "memorize";
-type NavTab = "surah" | "juz" | "search" | "merits";
+type NavTab = "surah" | "juz" | "search" | "merits" | "test";
 type VoiceSource = "reciter" | "teacher";
 
 const Coran = () => {
