@@ -150,27 +150,22 @@ function buildTajwidNotes(params: { missingCount: number; addedCount: number; mi
   const notes: string[] = [];
 
   if (params.mispronouncedCount > 0) {
-    notes.push("Travaille les makharij et distingue mieux les lettres proches avant d'accélérer.");
-    notes.push("Soigne les allongements (madd) et articule chaque mot entièrement.");
+    notes.push("Prononce chaque lettre bien distinctement.");
   }
 
   if (params.missingCount > 0) {
-    notes.push("Ralentis légèrement pour éviter de sauter des mots ou des segments entiers.");
+    notes.push("Lis plus lentement pour ne pas sauter de mots.");
   }
 
   if (params.addedCount > 0) {
-    notes.push("Garde les yeux sur le texte pour éviter d'ajouter des mots non demandés.");
+    notes.push("Suis bien le texte pour ne pas ajouter de mots.");
   }
 
   if (notes.length === 0) {
-    notes.push("Continue à soigner la clarté des lettres et la régularité du rythme.");
+    notes.push("Continue à bien articuler chaque mot.");
   }
 
-  if (params.score < 60) {
-    notes.push("Réécoute la récitation modèle puis répète le passage par petits groupes de mots.");
-  }
-
-  return notes.slice(0, 4);
+  return notes.slice(0, 2);
 }
 
 function clamp(value: number, min: number, max: number) {
