@@ -110,7 +110,7 @@ export function evaluateRecitationLocally(expectedText: string, transcription: s
       errors.push({
         word: spokenWord,
         type: "added",
-        correction: `Le mot « ${spokenWord} » ne fait pas partie du passage demandé.`,
+        correction: `Mot en trop à la fin.`,
       });
       spokenIndex += 1;
     }
