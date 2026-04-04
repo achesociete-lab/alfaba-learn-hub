@@ -99,7 +99,7 @@ export function evaluateRecitationLocally(expectedText: string, transcription: s
       errors.push({
         word: expectedWord,
         type: "missing",
-        correction: `Le mot « ${expectedWord} » manque à la fin de la récitation.`,
+        correction: `Ce mot manque à la fin.`,
       });
       expectedIndex += 1;
       continue;
