@@ -39,6 +39,7 @@ const QuranTest = ({ allSurahs }: Props) => {
   const { speak } = useArabicSpeech();
   const [feedback, setFeedback] = useState<AiFeedback | null>(null);
   const [evaluating, setEvaluating] = useState(false);
+  const [speakingFeedback, setSpeakingFeedback] = useState(false);
 
   // Load verses when surah changes
   useEffect(() => {
