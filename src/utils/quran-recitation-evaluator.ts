@@ -133,10 +133,10 @@ export function evaluateRecitationLocally(expectedText: string, transcription: s
 }
 
 function buildOverallFeedback(score: number, errorsCount: number) {
-  if (score >= 90) return "Très bonne récitation : le passage est globalement juste et fluide.";
-  if (score >= 75) return `Bonne récitation avec ${errorsCount} point${errorsCount > 1 ? "s" : ""} à corriger.`;
-  if (score >= 50) return "Récitation moyenne : plusieurs mots doivent être repris plus lentement.";
-  return "La récitation contient trop d'écarts pour être validée. Reprends le passage mot par mot.";
+  if (score >= 90) return "Très bien, ta récitation est bonne !";
+  if (score >= 75) return `C'est bien, quelques petites corrections à faire.`;
+  if (score >= 50) return "Pas mal, mais reprends plus lentement certains mots.";
+  return "Il faut reprendre ce passage plus doucement, mot par mot.";
 }
 
 function buildEncouragement(score: number) {
