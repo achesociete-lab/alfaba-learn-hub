@@ -550,6 +550,10 @@ const Coran = () => {
                     if (surah) selectSurah(surah);
                   }} />
                 </TabsContent>
+
+                <TabsContent value="test">
+                  <QuranTest allSurahs={allSurahs} />
+                </TabsContent>
               </Tabs>
 
               {/* History */}
