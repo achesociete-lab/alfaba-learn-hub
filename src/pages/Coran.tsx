@@ -453,8 +453,9 @@ const Coran = () => {
           {!selectedSurahInfo && !showMushafPage && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
               <Tabs value={navTab} onValueChange={(v) => setNavTab(v as NavTab)} className="w-full">
-                <TabsList className="w-full grid grid-cols-4 mb-6">
+                <TabsList className="w-full grid grid-cols-5 mb-6">
                   <TabsTrigger value="surah" className="gap-1.5 text-xs"><BookOpen className="h-3.5 w-3.5" /> Sourates</TabsTrigger>
+                  <TabsTrigger value="test" className="gap-1.5 text-xs"><GraduationCap className="h-3.5 w-3.5" /> Test</TabsTrigger>
                   <TabsTrigger value="merits" className="gap-1.5 text-xs"><Sparkles className="h-3.5 w-3.5" /> Mérites</TabsTrigger>
                   <TabsTrigger value="juz" className="gap-1.5 text-xs"><Layers className="h-3.5 w-3.5" /> Juz</TabsTrigger>
                   <TabsTrigger value="search" className="gap-1.5 text-xs"><Search className="h-3.5 w-3.5" /> Recherche</TabsTrigger>
