@@ -433,6 +433,15 @@ const QuranTest = ({ allSurahs }: Props) => {
             </div>
             <Progress value={feedback.score} className="h-3 max-w-xs mx-auto mb-4" />
             <p className="text-sm text-foreground">{feedback.overallFeedback}</p>
+            <Button
+              onClick={() => speakFeedback(feedback)}
+              variant="outline"
+              size="sm"
+              className="mt-3 gap-2"
+            >
+              <Volume2 className={`h-4 w-4 ${speakingFeedback ? "animate-pulse text-primary" : ""}`} />
+              {speakingFeedback ? "Arrêter la lecture" : "Écouter la correction"}
+            </Button>
           </div>
 
           {/* Errors */}
