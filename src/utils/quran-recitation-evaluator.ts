@@ -62,7 +62,7 @@ export function evaluateRecitationLocally(expectedText: string, transcription: s
         errors.push({
           word: spokenWord,
           type: "added",
-          correction: `Le mot « ${spokenWord} » semble avoir été ajouté. Suis le texte mot à mot.`,
+          correction: `Mot en trop.`,
         });
         spokenIndex += 1;
         continue;
@@ -73,7 +73,7 @@ export function evaluateRecitationLocally(expectedText: string, transcription: s
         errors.push({
           word: expectedWord,
           type: "missing",
-          correction: `Le mot « ${expectedWord} » a été sauté. Reprends plus lentement à partir de ce mot.`,
+          correction: `Ce mot a été sauté.`,
         });
         expectedIndex += 1;
         continue;
@@ -86,8 +86,8 @@ export function evaluateRecitationLocally(expectedText: string, transcription: s
         type: "mispronounced",
         correction:
           similarity >= NEAR_MATCH_THRESHOLD
-            ? `Prononciation proche, mais à corriger sur « ${expectedWord} ». Tu as dit « ${spokenWord} ».`
-            : `Le mot attendu est « ${expectedWord} ». Réécoute-le puis répète-le lentement.`,
+            ? `Prononciation proche mais à corriger.`
+            : `Ce mot n'est pas correct, réécoute-le.`,
       });
       expectedIndex += 1;
       spokenIndex += 1;
@@ -99,7 +99,7 @@ export function evaluateRecitationLocally(expectedText: string, transcription: s
       errors.push({
         word: expectedWord,
         type: "missing",
-        correction: `Le mot « ${expectedWord} » manque à la fin de la récitation.`,
+        correction: `Ce mot manque à la fin.`,
       });
       expectedIndex += 1;
       continue;
@@ -110,7 +110,7 @@ export function evaluateRecitationLocally(expectedText: string, transcription: s
       errors.push({
         word: spokenWord,
         type: "added",
-        correction: `Le mot « ${spokenWord} » ne fait pas partie du passage demandé.`,
+        correction: `Mot en trop à la fin.`,
       });
       spokenIndex += 1;
     }
@@ -126,51 +126,46 @@ export function evaluateRecitationLocally(expectedText: string, transcription: s
   return {
     score,
     overallFeedback: buildOverallFeedback(score, errors.length),
-    errors: errors.slice(0, 12),
+    errors: errors.slice(0, 3),
     tajwidNotes,
     encouragement: buildEncouragement(score),
   };
 }
 
 function buildOverallFeedback(score: number, errorsCount: number) {
-  if (score >= 90) return "Très bonne récitation : le passage est globalement juste et fluide.";
-  if (score >= 75) return `Bonne récitation avec ${errorsCount} point${errorsCount > 1 ? "s" : ""} à corriger.`;
-  if (score >= 50) return "Récitation moyenne : plusieurs mots doivent être repris plus lentement.";
-  return "La récitation contient trop d'écarts pour être validée. Reprends le passage mot par mot.";
+  if (score >= 90) return "Très bien, ta récitation est bonne !";
+  if (score >= 75) return `C'est bien, quelques petites corrections à faire.`;
+  if (score >= 50) return "Pas mal, mais reprends plus lentement certains mots.";
+  return "Il faut reprendre ce passage plus doucement, mot par mot.";
 }
 
 function buildEncouragement(score: number) {
-  if (score >= 90) return "Excellent travail, continue ainsi !";
-  if (score >= 75) return "Tu progresses bien, concentre-toi sur les mots signalés.";
-  if (score >= 50) return "Tu es sur la bonne voie : réécoute puis recommence calmement.";
-  return "Ne te décourage pas : avance lentement et corrige un mot à la fois.";
+  if (score >= 90) return "Continue comme ça !";
+  if (score >= 75) return "Tu progresses bien, continue !";
+  if (score >= 50) return "Réécoute et recommence, tu vas y arriver !";
+  return "Courage, reprends doucement !";
 }
 
 function buildTajwidNotes(params: { missingCount: number; addedCount: number; mispronouncedCount: number; score: number }) {
   const notes: string[] = [];
 
   if (params.mispronouncedCount > 0) {
-    notes.push("Travaille les makharij et distingue mieux les lettres proches avant d'accélérer.");
-    notes.push("Soigne les allongements (madd) et articule chaque mot entièrement.");
+    notes.push("Prononce chaque lettre bien distinctement.");
   }
 
   if (params.missingCount > 0) {
-    notes.push("Ralentis légèrement pour éviter de sauter des mots ou des segments entiers.");
+    notes.push("Lis plus lentement pour ne pas sauter de mots.");
   }
 
   if (params.addedCount > 0) {
-    notes.push("Garde les yeux sur le texte pour éviter d'ajouter des mots non demandés.");
+    notes.push("Suis bien le texte pour ne pas ajouter de mots.");
   }
 
   if (notes.length === 0) {
-    notes.push("Continue à soigner la clarté des lettres et la régularité du rythme.");
+    notes.push("Continue à bien articuler chaque mot.");
   }
 
-  if (params.score < 60) {
-    notes.push("Réécoute la récitation modèle puis répète le passage par petits groupes de mots.");
-  }
-
-  return notes.slice(0, 4);
+  return notes.slice(0, 2);
 }
 
 function clamp(value: number, min: number, max: number) {

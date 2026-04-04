@@ -165,13 +165,9 @@ const QuranTest = ({ allSurahs }: Props) => {
     const parts: string[] = [];
     parts.push(fb.overallFeedback);
     if (fb.errors.length > 0) {
-      parts.push(`Il y a ${fb.errors.length} point${fb.errors.length > 1 ? "s" : ""} à corriger.`);
-      fb.errors.slice(0, 5).forEach((err) => {
+      fb.errors.slice(0, 3).forEach((err) => {
         parts.push(err.correction);
       });
-    }
-    if (fb.tajwidNotes.length > 0) {
-      fb.tajwidNotes.forEach((n) => parts.push(n));
     }
     if (fb.encouragement) parts.push(fb.encouragement);
     const fullText = parts.join(". ");
