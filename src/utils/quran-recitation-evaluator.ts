@@ -62,7 +62,7 @@ export function evaluateRecitationLocally(expectedText: string, transcription: s
         errors.push({
           word: spokenWord,
           type: "added",
-          correction: `Le mot « ${spokenWord} » semble avoir été ajouté. Suis le texte mot à mot.`,
+          correction: `Mot en trop.`,
         });
         spokenIndex += 1;
         continue;
