@@ -126,7 +126,7 @@ export function evaluateRecitationLocally(expectedText: string, transcription: s
   return {
     score,
     overallFeedback: buildOverallFeedback(score, errors.length),
-    errors: errors.slice(0, 12),
+    errors: errors.slice(0, 3),
     tajwidNotes,
     encouragement: buildEncouragement(score),
   };
