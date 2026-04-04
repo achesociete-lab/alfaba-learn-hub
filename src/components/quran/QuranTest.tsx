@@ -147,10 +147,50 @@ const QuranTest = ({ allSurahs }: Props) => {
   }, [recorder.audioBlob, selectedSurah, expectedText, ayahStart, ayahEnd]);
 
   const resetTest = () => {
+    stop();
     setStep("select");
     setFeedback(null);
     recorder.reset();
+    setSpeakingFeedback(false);
   };
+
+  // Build oral feedback text and speak it
+  const speakFeedback = useCallback(async (fb: AiFeedback) => {
+    if (speakingFeedback) {
+      stop();
+      setSpeakingFeedback(false);
+      return;
+    }
+    setSpeakingFeedback(true);
+    const parts: string[] = [];
+    parts.push(fb.overallFeedback);
+    if (fb.errors.length > 0) {
+      parts.push(`Il y a ${fb.errors.length} point${fb.errors.length > 1 ? "s" : ""} à corriger.`);
+      fb.errors.slice(0, 5).forEach((err) => {
+        parts.push(err.correction);
+      });
+    }
+    if (fb.tajwidNotes.length > 0) {
+      fb.tajwidNotes.forEach((n) => parts.push(n));
+    }
+    if (fb.encouragement) parts.push(fb.encouragement);
+    const fullText = parts.join(". ");
+
+    try {
+      await speak(fullText, 0.9);
+    } catch {
+      // ignore
+    }
+    setSpeakingFeedback(false);
+  }, [speak, stop, speakingFeedback]);
+
+  // Auto-play oral feedback when results appear
+  useEffect(() => {
+    if (step === "result" && feedback && !speakingFeedback) {
+      const timer = setTimeout(() => speakFeedback(feedback), 600);
+      return () => clearTimeout(timer);
+    }
+  }, [step, feedback]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return "text-green-600";
