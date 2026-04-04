@@ -86,8 +86,8 @@ export function evaluateRecitationLocally(expectedText: string, transcription: s
         type: "mispronounced",
         correction:
           similarity >= NEAR_MATCH_THRESHOLD
-            ? `Prononciation proche, mais à corriger sur « ${expectedWord} ». Tu as dit « ${spokenWord} ».`
-            : `Le mot attendu est « ${expectedWord} ». Réécoute-le puis répète-le lentement.`,
+            ? `Prononciation proche mais à corriger.`
+            : `Ce mot n'est pas correct, réécoute-le.`,
       });
       expectedIndex += 1;
       spokenIndex += 1;
