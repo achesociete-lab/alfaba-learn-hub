@@ -6,7 +6,7 @@ import {
   BookOpen, Mic, MicOff, Square, RotateCcw, ChevronRight, ChevronLeft,
   Star, Volume2, CheckCircle, Send,
   Eye, EyeOff, Search, Layers, BookMarked, Play, Pause, Upload,
-  Repeat, Gauge, Sparkles,
+  Repeat, Gauge, Sparkles, GraduationCap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
