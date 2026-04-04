@@ -6,7 +6,7 @@ import {
   BookOpen, Mic, MicOff, Square, RotateCcw, ChevronRight, ChevronLeft,
   Star, Volume2, CheckCircle, Send,
   Eye, EyeOff, Search, Layers, BookMarked, Play, Pause, Upload,
-  Repeat, Gauge, Sparkles,
+  Repeat, Gauge, Sparkles, GraduationCap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,9 +33,10 @@ import { RECITERS, playAyahAudio, playAyahSequence } from "@/utils/quran-audio";
 import { fetchQuranPageAyahs, type QuranPageAyah } from "@/utils/quran-pages";
 import { Slider } from "@/components/ui/slider";
 import SurahMeritSection from "@/components/quran/SurahMeritSection";
+import QuranTest from "@/components/quran/QuranTest";
 
 type RecitationMode = "read" | "memorize";
-type NavTab = "surah" | "juz" | "search" | "merits";
+type NavTab = "surah" | "juz" | "search" | "merits" | "test";
 type VoiceSource = "reciter" | "teacher";
 
 const Coran = () => {
@@ -452,8 +453,9 @@ const Coran = () => {
           {!selectedSurahInfo && !showMushafPage && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
               <Tabs value={navTab} onValueChange={(v) => setNavTab(v as NavTab)} className="w-full">
-                <TabsList className="w-full grid grid-cols-4 mb-6">
+                <TabsList className="w-full grid grid-cols-5 mb-6">
                   <TabsTrigger value="surah" className="gap-1.5 text-xs"><BookOpen className="h-3.5 w-3.5" /> Sourates</TabsTrigger>
+                  <TabsTrigger value="test" className="gap-1.5 text-xs"><GraduationCap className="h-3.5 w-3.5" /> Test</TabsTrigger>
                   <TabsTrigger value="merits" className="gap-1.5 text-xs"><Sparkles className="h-3.5 w-3.5" /> Mérites</TabsTrigger>
                   <TabsTrigger value="juz" className="gap-1.5 text-xs"><Layers className="h-3.5 w-3.5" /> Juz</TabsTrigger>
                   <TabsTrigger value="search" className="gap-1.5 text-xs"><Search className="h-3.5 w-3.5" /> Recherche</TabsTrigger>
@@ -547,6 +549,10 @@ const Coran = () => {
                     const surah = allSurahs.find(s => s.number === surahNumber);
                     if (surah) selectSurah(surah);
                   }} />
+                </TabsContent>
+
+                <TabsContent value="test">
+                  <QuranTest allSurahs={allSurahs} />
                 </TabsContent>
               </Tabs>
 
