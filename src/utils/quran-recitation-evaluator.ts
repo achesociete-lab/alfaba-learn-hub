@@ -73,7 +73,7 @@ export function evaluateRecitationLocally(expectedText: string, transcription: s
         errors.push({
           word: expectedWord,
           type: "missing",
-          correction: `Le mot « ${expectedWord} » a été sauté. Reprends plus lentement à partir de ce mot.`,
+          correction: `Ce mot a été sauté.`,
         });
         expectedIndex += 1;
         continue;
