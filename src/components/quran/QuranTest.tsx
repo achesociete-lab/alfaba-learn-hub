@@ -128,7 +128,7 @@ const QuranTest = ({ allSurahs }: Props) => {
 
         if (!evalResponse.ok) throw new Error("AI eval failed");
         evaluation = await evalResponse.json();
-        if (evaluation.error) throw new Error("AI returned error");
+        if ((evaluation as any).error) throw new Error("AI returned error");
       } catch {
         // Fallback to local evaluation
         evaluation = evaluateRecitationLocally(expectedText, transcription);
