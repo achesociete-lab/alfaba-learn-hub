@@ -140,10 +140,10 @@ function buildOverallFeedback(score: number, errorsCount: number) {
 }
 
 function buildEncouragement(score: number) {
-  if (score >= 90) return "Excellent travail, continue ainsi !";
-  if (score >= 75) return "Tu progresses bien, concentre-toi sur les mots signalés.";
-  if (score >= 50) return "Tu es sur la bonne voie : réécoute puis recommence calmement.";
-  return "Ne te décourage pas : avance lentement et corrige un mot à la fois.";
+  if (score >= 90) return "Continue comme ça !";
+  if (score >= 75) return "Tu progresses bien, continue !";
+  if (score >= 50) return "Réécoute et recommence, tu vas y arriver !";
+  return "Courage, reprends doucement !";
 }
 
 function buildTajwidNotes(params: { missingCount: number; addedCount: number; mispronouncedCount: number; score: number }) {
