@@ -17,17 +17,17 @@ interface ReauthenticationEmailProps {
 }
 
 export const ReauthenticationEmail = ({ token }: ReauthenticationEmailProps) => (
-  <Html lang="en" dir="ltr">
+  <Html lang="fr" dir="ltr">
     <Head />
-    <Preview>Your verification code</Preview>
+    <Preview>Votre code de vérification ALFASL</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>Confirm reauthentication</Heading>
-        <Text style={text}>Use the code below to confirm your identity:</Text>
+        <Text style={logo}>ALFASL <span style={arabicLogo}>الفصل</span></Text>
+        <Heading style={h1}>Vérification de votre identité</Heading>
+        <Text style={text}>Utilisez le code ci-dessous pour confirmer votre identité :</Text>
         <Text style={codeStyle}>{token}</Text>
         <Text style={footer}>
-          This code will expire shortly. If you didn't request this, you can
-          safely ignore this email.
+          Ce code expirera dans quelques minutes. Si vous n'avez pas demandé ce code, vous pouvez ignorer cet email.
         </Text>
       </Container>
     </Body>
@@ -36,17 +36,28 @@ export const ReauthenticationEmail = ({ token }: ReauthenticationEmailProps) => 
 
 export default ReauthenticationEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
+const main = { backgroundColor: '#ffffff', fontFamily: "'Inter', Arial, sans-serif" }
 const container = { padding: '20px 25px' }
+const logo = {
+  fontSize: '24px',
+  fontWeight: 'bold' as const,
+  color: 'hsl(166, 82%, 27%)',
+  textAlign: 'center' as const,
+  margin: '0 0 24px',
+}
+const arabicLogo = {
+  fontFamily: "'Amiri', serif",
+  color: 'hsl(40, 60%, 55%)',
+}
 const h1 = {
   fontSize: '22px',
   fontWeight: 'bold' as const,
-  color: '#000000',
+  color: 'hsl(160, 40%, 10%)',
   margin: '0 0 20px',
 }
 const text = {
   fontSize: '14px',
-  color: '#55575d',
+  color: 'hsl(160, 15%, 40%)',
   lineHeight: '1.5',
   margin: '0 0 25px',
 }
@@ -54,7 +65,7 @@ const codeStyle = {
   fontFamily: 'Courier, monospace',
   fontSize: '22px',
   fontWeight: 'bold' as const,
-  color: '#000000',
+  color: 'hsl(166, 82%, 27%)',
   margin: '0 0 30px',
 }
 const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
