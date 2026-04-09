@@ -181,7 +181,41 @@ const Dashboard = () => {
               })}
             </div>
             <p className="text-xs text-muted-foreground mt-3">🟢 = leçon terminée</p>
+
+            {/* Level up banner */}
+            {allN1Done && !showLevelTest && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-4 p-4 rounded-xl bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20 flex items-center justify-between gap-4"
+              >
+                <div className="flex items-center gap-3">
+                  <GraduationCap className="h-8 w-8 text-primary shrink-0" />
+                  <div>
+                    <p className="text-sm font-bold text-foreground">🎉 Bravo ! Tu as terminé toutes les leçons du Niveau 1 !</p>
+                    <p className="text-xs text-muted-foreground">Passe le test de validation pour accéder au Niveau 2.</p>
+                  </div>
+                </div>
+                <Button onClick={() => setShowLevelTest(true)} className="gap-2 shrink-0 gradient-emerald border-0 text-primary-foreground">
+                  <GraduationCap className="h-4 w-4" /> Passer le test
+                </Button>
+              </motion.div>
+            )}
           </motion.div>
+
+          {/* Level up test modal */}
+          {showLevelTest && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-8">
+              <LevelUpTest
+                onPass={() => {
+                  setShowLevelTest(false);
+                  // Reload profile to reflect new level
+                  window.location.reload();
+                }}
+                onDismiss={() => setShowLevelTest(false)}
+              />
+            </motion.div>
+          )}
 
           {/* Tabs */}
           <Tabs defaultValue="consignes" className="space-y-4">
