@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import {
   BookOpen, Upload, CheckCircle, ClipboardList, BarChart3,
   FileText, PenTool, Calendar, LogOut, User, Brain, Trophy, Video,
+  GraduationCap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -14,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { useLessonProgress } from "@/hooks/use-lesson-progress";
+import LevelUpTest from "@/components/LevelUpTest";
 
 interface Profile {
   first_name: string;
@@ -103,10 +105,13 @@ const Dashboard = () => {
     ? (homework.filter(h => h.grade !== null).reduce((sum, h) => sum + (h.grade || 0), 0) / homework.filter(h => h.grade !== null).length).toFixed(1)
     : "—";
 
+  const [showLevelTest, setShowLevelTest] = useState(false);
+
   const isN1 = profile?.level === "niveau_1";
-  const totalLessons = isN1 ? 28 : 12;
+  const totalLessons = isN1 ? 10 : 13;
   const completed = isN1 ? completedLessons : completedN2Lessons;
   const progressPct = Math.round((completed.length / totalLessons) * 100);
+  const allN1Done = isN1 && completedLessons.length >= 10;
 
   if (authLoading) return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground">Chargement...</p></div>;
   if (!user) return null;
