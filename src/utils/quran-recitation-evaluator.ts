@@ -116,56 +116,75 @@ export function evaluateRecitationLocally(expectedText: string, transcription: s
     }
   }
 
-  const weightedMatches = exactMatches + nearMatchesWeight * 0.6;
+  const weightedMatches = exactMatches + nearMatchesWeight * 0.5;
   const baseScore = (weightedMatches / expectedWords.length) * 100;
-  const penalty = missingCount * 6 + addedCount * 4 + mispronouncedCount * 2;
+  const penalty = missingCount * 8 + addedCount * 5 + mispronouncedCount * 4;
   const score = clamp(Math.round(baseScore - penalty), 0, 100);
 
-  const tajwidNotes = buildTajwidNotes({ missingCount, addedCount, mispronouncedCount, score });
+  // Estimate level based on accuracy
+  const accuracy = exactMatches / expectedWords.length;
+  const estimatedLevel = accuracy >= 0.85 ? "avancé" : accuracy >= 0.6 ? "intermédiaire" : "débutant";
+
+  
 
   return {
     score,
-    overallFeedback: buildOverallFeedback(score, errors.length),
-    errors: errors.slice(0, 3),
-    tajwidNotes,
-    encouragement: buildEncouragement(score),
+    overallFeedback: buildOverallFeedback(score, errors.length, estimatedLevel),
+    errors: errors.slice(0, 5),
+    tajwidNotes: buildTajwidNotes({ missingCount, addedCount, mispronouncedCount, score, estimatedLevel }),
+    encouragement: buildEncouragement(score, estimatedLevel),
   };
 }
 
-function buildOverallFeedback(score: number, errorsCount: number) {
-  if (score >= 90) return "Très bien, ta récitation est bonne !";
-  if (score >= 75) return `C'est bien, quelques petites corrections à faire.`;
-  if (score >= 50) return "Pas mal, mais reprends plus lentement certains mots.";
-  return "Il faut reprendre ce passage plus doucement, mot par mot.";
+function buildOverallFeedback(score: number, errorsCount: number, level: string) {
+  const levelLabel = level === "avancé" ? "Niveau avancé" : level === "intermédiaire" ? "Niveau intermédiaire" : "Niveau débutant";
+  if (score >= 90) return `${levelLabel}. Très bonne récitation, quelques détails à peaufiner.`;
+  if (score >= 75) return `${levelLabel}. C'est bien, mais il y a des erreurs de prononciation à corriger.`;
+  if (score >= 50) return `${levelLabel}. Plusieurs erreurs détectées, reprends ce passage plus lentement.`;
+  return `${levelLabel}. Il faut retravailler ce passage mot par mot en écoutant bien le modèle.`;
 }
 
-function buildEncouragement(score: number) {
-  if (score >= 90) return "Continue comme ça !";
-  if (score >= 75) return "Tu progresses bien, continue !";
-  if (score >= 50) return "Réécoute et recommence, tu vas y arriver !";
-  return "Courage, reprends doucement !";
+function buildEncouragement(score: number, level: string) {
+  if (level === "débutant") {
+    if (score >= 70) return "C'est encourageant pour un début, continue à t'entraîner !";
+    return "Réécoute bien chaque mot avant de recommencer, tu vas progresser.";
+  }
+  if (level === "intermédiaire") {
+    if (score >= 75) return "Tu progresses bien, concentre-toi sur les lettres similaires.";
+    return "Reprends plus lentement en faisant attention à chaque lettre.";
+  }
+  if (score >= 85) return "Excellent niveau, travaille les détails de tajwid pour te perfectionner.";
+  return "Revois les règles de tajwid pour ce passage.";
 }
 
-function buildTajwidNotes(params: { missingCount: number; addedCount: number; mispronouncedCount: number; score: number }) {
+function buildTajwidNotes(params: { missingCount: number; addedCount: number; mispronouncedCount: number; score: number; estimatedLevel: string }) {
   const notes: string[] = [];
 
   if (params.mispronouncedCount > 0) {
-    notes.push("Prononce chaque lettre bien distinctement.");
+    if (params.estimatedLevel === "débutant") {
+      notes.push("Écoute attentivement chaque mot et essaie de reproduire les sons exactement.");
+    } else {
+      notes.push("Fais attention aux lettres qui se ressemblent : ح/ه, ص/س, ض/د, ط/ت, ع/أ, ق/ك.");
+    }
   }
 
   if (params.missingCount > 0) {
-    notes.push("Lis plus lentement pour ne pas sauter de mots.");
+    notes.push("Tu as sauté des mots. Lis plus lentement en suivant le texte du doigt.");
   }
 
   if (params.addedCount > 0) {
-    notes.push("Suis bien le texte pour ne pas ajouter de mots.");
+    notes.push("Tu as ajouté des mots qui ne sont pas dans le texte. Suis bien le mushaf.");
+  }
+
+  if (params.estimatedLevel === "avancé" && params.mispronouncedCount > 0) {
+    notes.push("Travaille les règles de tajwid : ghunna, idgham, ikhfa et les prolongations (madd).");
   }
 
   if (notes.length === 0) {
-    notes.push("Continue à bien articuler chaque mot.");
+    notes.push("Continue à perfectionner ta prononciation de chaque lettre.");
   }
 
-  return notes.slice(0, 2);
+  return notes.slice(0, 3);
 }
 
 function clamp(value: number, min: number, max: number) {
