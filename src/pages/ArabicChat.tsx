@@ -10,6 +10,7 @@ import { useChatHistory } from "@/hooks/use-chat-history";
 import { useLessonProgress } from "@/hooks/use-lesson-progress";
 import { toast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
+import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 
 type Msg = { role: "user" | "assistant"; content: string };
