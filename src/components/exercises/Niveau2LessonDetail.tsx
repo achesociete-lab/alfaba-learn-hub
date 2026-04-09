@@ -106,7 +106,7 @@ function GrammarTab({ lesson }: { lesson: Niveau2Lesson }) {
                   <div className="flex items-center gap-2">
                     <Volume2 className="h-4 w-4 text-muted-foreground shrink-0" />
                     <div>
-                      <p className="font-arabic text-xl text-foreground">{ex.arabic}</p>
+                      <p className="font-arabic text-2xl text-foreground">{ex.arabic}</p>
                       <p className="text-xs text-muted-foreground">{ex.transliteration}</p>
                     </div>
                   </div>
@@ -132,7 +132,7 @@ function GrammarTab({ lesson }: { lesson: Niveau2Lesson }) {
             <Volume2 className="h-4 w-4 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Cliquez pour écouter</span>
           </div>
-          <p className="font-arabic text-lg leading-loose text-foreground">{lesson.comprehension.arabic}</p>
+          <p className="font-arabic text-xl leading-loose text-foreground">{lesson.comprehension.arabic}</p>
         </div>
         <p className="text-sm text-muted-foreground italic">{lesson.comprehension.translation}</p>
       </div>
@@ -207,7 +207,7 @@ function ExercisesTab({ lesson, onAllCorrect }: { lesson: Niveau2Lesson; onAllCo
           {q.type === "comprehension" && (
             <p className="text-[10px] uppercase tracking-wider text-gold mb-2 font-semibold">Compréhension</p>
           )}
-          <p className="text-base font-medium text-foreground mb-4">{q.question}</p>
+          <p className="text-lg font-medium text-foreground mb-4">{q.question}</p>
           <div className="grid grid-cols-2 gap-3">
             {q.options.map((opt, idx) => {
               let cls = "border border-border bg-background hover:bg-muted";
@@ -217,7 +217,7 @@ function ExercisesTab({ lesson, onAllCorrect }: { lesson: Niveau2Lesson; onAllCo
               }
               return (
                 <button key={idx} onClick={() => handleSelect(idx)} disabled={selected !== null}
-                  className={`p-3 rounded-lg text-sm font-medium transition-all ${cls}`}>
+                  className={`p-4 rounded-lg text-base font-medium transition-all ${cls}`}>
                   {opt}
                   {selected !== null && idx === q.correctIndex && <CheckCircle className="h-4 w-4 inline ml-2" />}
                   {selected !== null && idx === selected && idx !== q.correctIndex && <XCircle className="h-4 w-4 inline ml-2" />}
@@ -378,7 +378,7 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Niveau2Lesson; onAllCo
                 }
                 return (
                   <button key={idx} onClick={() => handleSelect(idx)} disabled={selected !== null}
-                    className={`p-4 rounded-lg font-arabic text-lg transition-all cursor-pointer hover:bg-primary/5 ${cls}`}>
+                    className={`p-4 rounded-lg font-arabic text-2xl transition-all cursor-pointer hover:bg-primary/5 ${cls}`}>
                     {opt}
                     {selected !== null && idx === d.correctIndex && <CheckCircle className="h-4 w-4 inline ml-2" />}
                     {selected !== null && idx === selected && idx !== d.correctIndex && <XCircle className="h-4 w-4 inline ml-2" />}
@@ -395,7 +395,7 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Niveau2Lesson; onAllCo
                 onChange={(e) => setTypedAnswer(e.target.value)}
                 disabled={answerChecked}
                 placeholder="اكتب الإجابة هنا..."
-                className="w-full p-4 rounded-lg border border-border bg-background font-arabic text-2xl text-center focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+                className="w-full p-4 rounded-lg border border-border bg-background font-arabic text-3xl text-center focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
                 onKeyDown={(e) => { if (e.key === "Enter" && typedAnswer.trim()) handleCheckTyped(); }}
               />
               {!answerChecked && (
@@ -411,7 +411,7 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Niveau2Lesson; onAllCo
                   ) : (
                     <span className="flex flex-col items-center gap-1">
                       <span className="flex items-center gap-2"><XCircle className="h-4 w-4" /> Incorrect</span>
-                      <span className="font-arabic text-lg">Réponse : {correctArabic}</span>
+                      <span className="font-arabic text-xl">Réponse : {correctArabic}</span>
                     </span>
                   )}
                 </motion.div>

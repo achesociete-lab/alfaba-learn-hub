@@ -107,7 +107,7 @@ function TheorySectionView({ section }: { section: TheorySection }) {
                 <div className="flex items-center gap-2">
                   <Volume2 className="h-4 w-4 text-muted-foreground shrink-0" />
                   <div>
-                    <p className="font-arabic text-xl text-foreground">{ex.arabic}</p>
+                    <p className="font-arabic text-2xl text-foreground">{ex.arabic}</p>
                     <p className="text-xs text-muted-foreground">{ex.transliteration}</p>
                   </div>
                 </div>
@@ -264,7 +264,7 @@ function QCMTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: () => 
       </div>
       <AnimatePresence mode="wait">
         <motion.div key={current} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="p-6 rounded-xl border border-border bg-card">
-          <p className="text-base font-medium text-foreground mb-4">{q.question}</p>
+          <p className="text-lg font-medium text-foreground mb-4">{q.question}</p>
           <div className="grid grid-cols-2 gap-3">
             {q.options.map((opt, idx) => {
               let cls = "border border-border bg-background hover:bg-muted";
@@ -274,7 +274,7 @@ function QCMTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: () => 
               }
               return (
                 <button key={idx} onClick={() => handleSelect(idx)} disabled={selected !== null}
-                  className={`p-3 rounded-lg text-sm font-medium transition-all ${cls}`}>
+                  className={`p-4 rounded-lg text-base font-medium transition-all ${cls}`}>
                   {opt}
                   {selected !== null && idx === q.correctIndex && <CheckCircle className="h-4 w-4 inline ml-2" />}
                   {selected !== null && idx === selected && idx !== q.correctIndex && <XCircle className="h-4 w-4 inline ml-2" />}
@@ -436,7 +436,7 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
                 }
                 return (
                   <button key={idx} onClick={() => handleSelect(idx)} disabled={selected !== null}
-                    className={`p-4 rounded-lg font-arabic text-xl transition-all ${cls}`}>
+                    className={`p-4 rounded-lg font-arabic text-2xl transition-all ${cls}`}>
                     {opt}
                     {selected !== null && idx === d.correctIndex && <CheckCircle className="h-4 w-4 inline ml-2" />}
                     {selected !== null && idx === selected && idx !== d.correctIndex && <XCircle className="h-4 w-4 inline ml-2" />}
@@ -453,7 +453,7 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
                 onChange={(e) => setTypedAnswer(e.target.value)}
                 disabled={answerChecked}
                 placeholder="اكتب الإجابة هنا..."
-                className="w-full p-4 rounded-lg border border-border bg-background font-arabic text-2xl text-center focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+                className="w-full p-4 rounded-lg border border-border bg-background font-arabic text-3xl text-center focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
                 onKeyDown={(e) => { if (e.key === "Enter" && typedAnswer.trim()) handleCheckTyped(); }}
               />
               {!answerChecked && (
@@ -469,7 +469,7 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
                   ) : (
                     <span className="flex flex-col items-center gap-1">
                       <span className="flex items-center gap-2"><XCircle className="h-4 w-4" /> Incorrect</span>
-                      <span className="font-arabic text-lg">Réponse : {correctArabic}</span>
+                      <span className="font-arabic text-xl">Réponse : {correctArabic}</span>
                     </span>
                   )}
                 </motion.div>
