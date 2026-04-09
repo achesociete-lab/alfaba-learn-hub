@@ -72,7 +72,15 @@ const ArabicChat = () => {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [userLevel, setUserLevel] = useState<string>("niveau_1");
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Fetch user level
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("profiles").select("level").eq("user_id", user.id).single()
+      .then(({ data }) => { if (data?.level) setUserLevel(data.level); });
+  }, [user]);
   const { speak, stop: stopSpeech } = useArabicSpeech();
   const recorder = useAudioRecorder();
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -198,10 +206,11 @@ const ArabicChat = () => {
     };
 
     try {
+      const currentCompleted = userLevel === "niveau_2" ? completedN2Lessons : completedLessons;
       await streamChat({
         messages: [...messages, userMsg],
-        level: "niveau_1",
-        completedLessons: completedLessons,
+        level: userLevel,
+        completedLessons: currentCompleted,
         onDelta: update,
         onDone: () => setIsLoading(false),
       });
