@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import {
   BookOpen, Upload, CheckCircle, ClipboardList, BarChart3,
   FileText, PenTool, Calendar, LogOut, User, Brain, Trophy, Video,
+  GraduationCap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -14,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { useLessonProgress } from "@/hooks/use-lesson-progress";
+import LevelUpTest from "@/components/LevelUpTest";
 
 interface Profile {
   first_name: string;
@@ -103,10 +105,13 @@ const Dashboard = () => {
     ? (homework.filter(h => h.grade !== null).reduce((sum, h) => sum + (h.grade || 0), 0) / homework.filter(h => h.grade !== null).length).toFixed(1)
     : "—";
 
+  const [showLevelTest, setShowLevelTest] = useState(false);
+
   const isN1 = profile?.level === "niveau_1";
-  const totalLessons = isN1 ? 28 : 12;
+  const totalLessons = isN1 ? 10 : 13;
   const completed = isN1 ? completedLessons : completedN2Lessons;
   const progressPct = Math.round((completed.length / totalLessons) * 100);
+  const allN1Done = isN1 && completedLessons.length >= 10;
 
   if (authLoading) return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground">Chargement...</p></div>;
   if (!user) return null;
@@ -176,7 +181,41 @@ const Dashboard = () => {
               })}
             </div>
             <p className="text-xs text-muted-foreground mt-3">🟢 = leçon terminée</p>
+
+            {/* Level up banner */}
+            {allN1Done && !showLevelTest && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-4 p-4 rounded-xl bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20 flex items-center justify-between gap-4"
+              >
+                <div className="flex items-center gap-3">
+                  <GraduationCap className="h-8 w-8 text-primary shrink-0" />
+                  <div>
+                    <p className="text-sm font-bold text-foreground">🎉 Bravo ! Tu as terminé toutes les leçons du Niveau 1 !</p>
+                    <p className="text-xs text-muted-foreground">Passe le test de validation pour accéder au Niveau 2.</p>
+                  </div>
+                </div>
+                <Button onClick={() => setShowLevelTest(true)} className="gap-2 shrink-0 gradient-emerald border-0 text-primary-foreground">
+                  <GraduationCap className="h-4 w-4" /> Passer le test
+                </Button>
+              </motion.div>
+            )}
           </motion.div>
+
+          {/* Level up test modal */}
+          {showLevelTest && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-8">
+              <LevelUpTest
+                onPass={() => {
+                  setShowLevelTest(false);
+                  // Reload profile to reflect new level
+                  window.location.reload();
+                }}
+                onDismiss={() => setShowLevelTest(false)}
+              />
+            </motion.div>
+          )}
 
           {/* Tabs */}
           <Tabs defaultValue="consignes" className="space-y-4">

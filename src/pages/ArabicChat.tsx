@@ -7,8 +7,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useArabicSpeech } from "@/hooks/use-arabic-speech";
 import { useAudioRecorder } from "@/hooks/use-audio-recorder";
 import { useChatHistory } from "@/hooks/use-chat-history";
+import { useLessonProgress } from "@/hooks/use-lesson-progress";
 import { toast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
+import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 
 type Msg = { role: "user" | "assistant"; content: string };
@@ -16,9 +18,9 @@ type Msg = { role: "user" | "assistant"; content: string };
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/arabic-chat`;
 
 async function streamChat({
-  messages, level, onDelta, onDone, signal,
+  messages, level, completedLessons, onDelta, onDone, signal,
 }: {
-  messages: Msg[]; level: string; onDelta: (t: string) => void; onDone: () => void; signal?: AbortSignal;
+  messages: Msg[]; level: string; completedLessons: number[]; onDelta: (t: string) => void; onDone: () => void; signal?: AbortSignal;
 }) {
   const resp = await fetch(CHAT_URL, {
     method: "POST",
@@ -26,7 +28,7 @@ async function streamChat({
       "Content-Type": "application/json",
       Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
     },
-    body: JSON.stringify({ messages, level }),
+    body: JSON.stringify({ messages, level, completedLessons }),
     signal,
   });
   if (!resp.ok) {
@@ -66,11 +68,20 @@ function extractArabic(text: string): string {
 
 const ArabicChat = () => {
   const { user, loading } = useAuth();
+  const { completedLessons, completedN2Lessons } = useLessonProgress();
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [userLevel, setUserLevel] = useState<string>("niveau_1");
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Fetch user level
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("profiles").select("level").eq("user_id", user.id).single()
+      .then(({ data }) => { if (data?.level) setUserLevel(data.level); });
+  }, [user]);
   const { speak, stop: stopSpeech } = useArabicSpeech();
   const recorder = useAudioRecorder();
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -196,9 +207,11 @@ const ArabicChat = () => {
     };
 
     try {
+      const currentCompleted = userLevel === "niveau_2" ? completedN2Lessons : completedLessons;
       await streamChat({
         messages: [...messages, userMsg],
-        level: "niveau_1",
+        level: userLevel,
+        completedLessons: currentCompleted,
         onDelta: update,
         onDone: () => setIsLoading(false),
       });
