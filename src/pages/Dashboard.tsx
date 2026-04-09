@@ -16,6 +16,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { useLessonProgress } from "@/hooks/use-lesson-progress";
 import LevelUpTest from "@/components/LevelUpTest";
+import DailyExercise from "@/components/DailyExercise";
 
 interface Profile {
   first_name: string;
@@ -216,6 +217,9 @@ const Dashboard = () => {
               />
             </motion.div>
           )}
+
+          {/* Daily Exercise */}
+          <DailyExercise level={profile?.level || "niveau_1"} completedLessons={completed} />
 
           {/* Tabs */}
           <Tabs defaultValue="consignes" className="space-y-4">
