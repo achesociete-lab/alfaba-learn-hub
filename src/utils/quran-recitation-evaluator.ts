@@ -125,7 +125,7 @@ export function evaluateRecitationLocally(expectedText: string, transcription: s
   const accuracy = exactMatches / expectedWords.length;
   const estimatedLevel = accuracy >= 0.85 ? "avancé" : accuracy >= 0.6 ? "intermédiaire" : "débutant";
 
-  const tajwidNotes = buildTajwidNotes({ missingCount, addedCount, mispronouncedCount, score });
+  
 
   return {
     score,
