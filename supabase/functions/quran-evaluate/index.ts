@@ -100,7 +100,7 @@ ${transcription}
                   },
                   encouragement: { type: 'string', description: 'Message encourageant adapté au niveau' },
                 },
-                required: ['score', 'overallFeedback', 'errors', 'tajwidNotes', 'encouragement'],
+                required: ['estimatedLevel', 'score', 'overallFeedback', 'errors', 'tajwidNotes', 'encouragement'],
                 additionalProperties: false,
               },
             },
