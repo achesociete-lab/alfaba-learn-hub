@@ -218,6 +218,9 @@ const Dashboard = () => {
             </motion.div>
           )}
 
+          {/* Daily Exercise */}
+          <DailyExercise level={profile?.level || "niveau_1"} completedLessons={completed} />
+
           {/* Tabs */}
           <Tabs defaultValue="consignes" className="space-y-4">
             <TabsList className="bg-muted flex-wrap h-auto gap-1">
