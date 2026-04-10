@@ -128,12 +128,15 @@ const Navbar = () => {
                   <LogOut className="h-4 w-4" /> Déconnexion
                 </Button>
               ) : (
-              <Button asChild size="sm" variant="outline" className="border-primary text-primary hover:bg-primary/5 mt-2">
-                  <Link to="/auth" onClick={() => setOpen(false)}>S'inscrire</Link>
-                </Button>
-                <Button asChild size="sm" className="gradient-emerald border-0 text-primary-foreground mt-1">
-                  <Link to="/auth" onClick={() => setOpen(false)}>Se connecter</Link>
-                </Button>
+                <>
+                  <Button asChild size="sm" variant="outline" className="border-primary text-primary hover:bg-primary/5 mt-2">
+                    <Link to="/auth" onClick={() => setOpen(false)}>S'inscrire</Link>
+                  </Button>
+                  <Button asChild size="sm" className="gradient-emerald border-0 text-primary-foreground mt-1">
+                    <Link to="/auth" onClick={() => setOpen(false)}>Se connecter</Link>
+                  </Button>
+                </>
+              )}
               )}
             </div>
           </motion.div>
