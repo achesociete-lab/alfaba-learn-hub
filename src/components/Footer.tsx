@@ -26,9 +26,13 @@ const Footer = () => (
           </div>
         </div>
         <div>
-          <h4 className="font-display text-sm font-semibold text-gold mb-4">Contact</h4>
-          <p className="text-sm">contact@alfasl.fr</p>
-          <p className="text-sm mt-1">© {new Date().getFullYear()} ALFASL</p>
+          <h4 className="font-display text-sm font-semibold text-gold mb-4">Légal</h4>
+          <div className="flex flex-col gap-2">
+            <Link to="/mentions-legales" className="text-sm hover:text-gold transition-colors">Mentions légales</Link>
+            <Link to="/politique-de-confidentialite" className="text-sm hover:text-gold transition-colors">Politique de confidentialité</Link>
+            <a href="mailto:contact@alfasl.fr" className="text-sm hover:text-gold transition-colors">contact@alfasl.fr</a>
+          </div>
+          <p className="text-sm mt-4">© {new Date().getFullYear()} ALFASL</p>
         </div>
       </div>
     </div>
