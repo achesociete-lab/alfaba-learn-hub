@@ -17,6 +17,7 @@ import Coran from "./pages/Coran.tsx";
 import ArabicChat from "./pages/ArabicChat.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import MentionsLegales from "./pages/MentionsLegales.tsx";
+import PolitiqueConfidentialite from "./pages/PolitiqueConfidentialite.tsx";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/conversation" element={<ArabicChat />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/mentions-legales" element={<MentionsLegales />} />
+            <Route path="/politique-de-confidentialite" element={<PolitiqueConfidentialite />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
