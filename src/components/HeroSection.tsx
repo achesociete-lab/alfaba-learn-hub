@@ -47,7 +47,7 @@ const HeroSection = () => (
         >
           <Button asChild size="lg" className="gradient-emerald border-0 text-primary-foreground text-base px-8">
             <Link to="/niveau-1">
-              Commencer Niveau 1 <ArrowRight className="ml-2 h-5 w-5" />
+              Commencer gratuitement <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
           </Button>
           <Button asChild size="lg" variant="outline" className="border-primary/30 text-foreground hover:bg-primary/5 text-base px-8">
@@ -66,8 +66,8 @@ const HeroSection = () => (
             <p>Niveaux</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-foreground">28</p>
-            <p>Lettres arabes</p>
+            <p className="text-2xl font-bold text-foreground">50+</p>
+            <p>Leçons</p>
           </div>
           <div className="text-center">
             <p className="text-2xl font-bold text-foreground">100%</p>
