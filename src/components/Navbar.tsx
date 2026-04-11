@@ -123,6 +123,19 @@ const Navbar = () => {
                   {link.label}
                 </Link>
               ))}
+              {isAdmin && (
+                <Link
+                  to="/admin"
+                  onClick={() => setOpen(false)}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
+                    location.pathname === "/admin"
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:text-primary"
+                  }`}
+                >
+                  <Shield className="h-4 w-4" /> Admin
+                </Link>
+              )}
               {user ? (
                 <Button size="sm" variant="outline" onClick={() => { signOut(); setOpen(false); }} className="gap-2 mt-2">
                   <LogOut className="h-4 w-4" /> Déconnexion
