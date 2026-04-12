@@ -73,6 +73,7 @@ const Exercises = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [level, setLevel] = useState<Level>("niveau_1");
+  const { maxLessons, isFreePlan, loading: subLoading } = useSubscription();
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -84,7 +85,7 @@ const Exercises = () => {
       .then(({ data }) => { if (data) setLevel(data.level as Level); });
   }, [user]);
 
-  if (authLoading) {
+  if (authLoading || subLoading) {
     return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground">Chargement...</p></div>;
   }
   if (!user) return null;
@@ -101,9 +102,15 @@ const Exercises = () => {
                 ? "Niveau 1 — L'alphabet arabe lettre par lettre"
                 : "Niveau 2 — Grammaire, compréhension & dictée avancée"}
             </p>
+            {isFreePlan && (
+              <p className="text-sm text-amber-600 mt-2">
+                🔒 Plan Découverte — Accès aux {maxLessons} premières leçons.{" "}
+                <Link to="/tarifs" className="underline font-medium">Passer au plan Essentiel</Link>
+              </p>
+            )}
           </motion.div>
 
-          {level === "niveau_1" ? <Niveau1Lessons /> : <Niveau2Lessons />}
+          {level === "niveau_1" ? <Niveau1Lessons maxLessons={maxLessons} /> : <Niveau2Lessons />}
         </div>
       </main>
       <Footer />
