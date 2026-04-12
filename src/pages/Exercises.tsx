@@ -4,7 +4,8 @@ import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import { useSubscription } from "@/hooks/use-subscription";
 import { type Lesson } from "@/data/niveau1-lessons";
 import { type Niveau2Lesson } from "@/data/niveau2-lessons";
 import LessonSelector from "@/components/exercises/LessonSelector";
@@ -17,7 +18,7 @@ import { useNiveau1Lessons, useNiveau2Lessons } from "@/hooks/use-lessons";
 type Level = "niveau_1" | "niveau_2";
 
 // ─── Niveau 1 Progressive Lessons ───
-function Niveau1Lessons() {
+function Niveau1Lessons({ maxLessons }: { maxLessons: number }) {
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const { completedLessons, completeLesson } = useLessonProgress();
   const { lessons } = useNiveau1Lessons();
@@ -38,6 +39,7 @@ function Niveau1Lessons() {
       completedLessons={completedLessons}
       currentLesson={null}
       onSelectLesson={setSelectedLesson}
+      maxLessons={maxLessons}
     />
   );
 }
@@ -72,6 +74,7 @@ const Exercises = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [level, setLevel] = useState<Level>("niveau_1");
+  const { maxLessons, isFreePlan, loading: subLoading } = useSubscription();
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -83,7 +86,7 @@ const Exercises = () => {
       .then(({ data }) => { if (data) setLevel(data.level as Level); });
   }, [user]);
 
-  if (authLoading) {
+  if (authLoading || subLoading) {
     return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground">Chargement...</p></div>;
   }
   if (!user) return null;
@@ -100,9 +103,15 @@ const Exercises = () => {
                 ? "Niveau 1 — L'alphabet arabe lettre par lettre"
                 : "Niveau 2 — Grammaire, compréhension & dictée avancée"}
             </p>
+            {isFreePlan && (
+              <p className="text-sm text-destructive mt-2">
+                🔒 Plan Découverte — Accès aux {maxLessons} premières leçons.{" "}
+                <Link to="/tarifs" className="underline font-medium">Passer au plan Essentiel</Link>
+              </p>
+            )}
           </motion.div>
 
-          {level === "niveau_1" ? <Niveau1Lessons /> : <Niveau2Lessons />}
+          {level === "niveau_1" ? <Niveau1Lessons maxLessons={maxLessons} /> : <Niveau2Lessons />}
         </div>
       </main>
       <Footer />
