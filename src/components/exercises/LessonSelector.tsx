@@ -8,9 +8,10 @@ interface LessonSelectorProps {
   currentLesson: number | null;
   onSelectLesson: (lesson: Lesson) => void;
   lessons: Lesson[];
+  maxLessons?: number;
 }
 
-const LessonSelector = ({ completedLessons, currentLesson, onSelectLesson, lessons }: LessonSelectorProps) => {
+const LessonSelector = ({ completedLessons, currentLesson, onSelectLesson, lessons, maxLessons = Infinity }: LessonSelectorProps) => {
   const { isAdmin } = useIsAdmin();
 
   return (
@@ -30,7 +31,8 @@ const LessonSelector = ({ completedLessons, currentLesson, onSelectLesson, lesso
       <div className="space-y-2">
         {lessons.map((lesson, idx) => {
           const isCompleted = completedLessons.includes(lesson.id);
-          const isUnlocked = isAdmin || idx === 0 || completedLessons.includes(lessons[idx - 1].id);
+          const withinPlan = isAdmin || idx < maxLessons;
+          const isUnlocked = withinPlan && (idx === 0 || completedLessons.includes(lessons[idx - 1].id));
           const isActive = currentLesson === lesson.id;
 
           return (
