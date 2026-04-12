@@ -17,7 +17,7 @@ import { useNiveau1Lessons, useNiveau2Lessons } from "@/hooks/use-lessons";
 type Level = "niveau_1" | "niveau_2";
 
 // ─── Niveau 1 Progressive Lessons ───
-function Niveau1Lessons() {
+function Niveau1Lessons({ maxLessons }: { maxLessons: number }) {
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const { completedLessons, completeLesson } = useLessonProgress();
   const { lessons } = useNiveau1Lessons();
@@ -38,6 +38,7 @@ function Niveau1Lessons() {
       completedLessons={completedLessons}
       currentLesson={null}
       onSelectLesson={setSelectedLesson}
+      maxLessons={maxLessons}
     />
   );
 }
