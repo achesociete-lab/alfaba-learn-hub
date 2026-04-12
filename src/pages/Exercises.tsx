@@ -104,7 +104,7 @@ const Exercises = () => {
                 : "Niveau 2 — Grammaire, compréhension & dictée avancée"}
             </p>
             {isFreePlan && (
-              <p className="text-sm text-amber-600 mt-2">
+              <p className="text-sm text-destructive mt-2">
                 🔒 Plan Découverte — Accès aux {maxLessons} premières leçons.{" "}
                 <Link to="/tarifs" className="underline font-medium">Passer au plan Essentiel</Link>
               </p>
