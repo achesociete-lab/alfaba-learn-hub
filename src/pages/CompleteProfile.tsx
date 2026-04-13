@@ -68,10 +68,10 @@ const CompleteProfile = () => {
           </div>
 
           <h1 className="text-2xl font-bold text-foreground text-center mb-2">
-            Complète ton profil
+            Complétez votre profil
           </h1>
           <p className="text-sm text-muted-foreground text-center mb-6">
-            Ces informations sont nécessaires pour personnaliser ton expérience.
+            Ces informations sont nécessaires pour personnaliser votre expérience.
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
