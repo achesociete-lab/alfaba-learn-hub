@@ -23,6 +23,7 @@ interface StudentProfile {
   first_name: string;
   last_name: string;
   level: "niveau_1" | "niveau_2";
+  type_eleve: "en_ligne" | "presentiel";
   created_at: string;
 }
 
@@ -31,11 +32,12 @@ const AdminStudents = () => {
   const [search, setSearch] = useState("");
   const [filterLevel, setFilterLevel] = useState<string>("all");
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [togglingType, setTogglingType] = useState<string | null>(null);
 
   const fetchStudents = async () => {
     const { data } = await supabase
       .from("profiles")
-      .select("user_id, first_name, last_name, level, created_at")
+      .select("user_id, first_name, last_name, level, type_eleve, created_at")
       .order("created_at", { ascending: false });
     if (data) setStudents(data);
   };
@@ -130,6 +132,26 @@ const AdminStudents = () => {
             }>
               {s.level === "niveau_1" ? "Niveau 1" : "Niveau 2"}
             </Badge>
+            <button
+              disabled={togglingType === s.user_id}
+              onClick={async () => {
+                setTogglingType(s.user_id);
+                const newType = s.type_eleve === "en_ligne" ? "presentiel" : "en_ligne";
+                const { error } = await supabase.from("profiles").update({ type_eleve: newType } as any).eq("user_id", s.user_id);
+                if (error) { toast.error("Erreur"); } else {
+                  setStudents(prev => prev.map(st => st.user_id === s.user_id ? { ...st, type_eleve: newType as any } : st));
+                  toast.success(`${s.first_name} est maintenant "${newType === "en_ligne" ? "En ligne" : "Présentiel"}"`);
+                }
+                setTogglingType(null);
+              }}
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${
+                s.type_eleve === "presentiel"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border text-muted-foreground hover:border-primary/30"
+              }`}
+            >
+              {s.type_eleve === "presentiel" ? "📍 Présentiel" : "💻 En ligne"}
+            </button>
 
             <AlertDialog>
               <AlertDialogTrigger asChild>
