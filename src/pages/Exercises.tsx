@@ -100,7 +100,13 @@ const Exercises = () => {
                 ? "Niveau 1 — L'alphabet arabe lettre par lettre"
                 : "Niveau 2 — Grammaire, compréhension & dictée avancée"}
             </p>
-            {isFreePlan && (
+            {isFreePlan && !user && (
+              <p className="text-sm text-muted-foreground mt-2">
+                🔒 Inscris-toi gratuitement pour continuer ton apprentissage →{" "}
+                <Link to="/auth" className="underline font-medium text-primary">S'inscrire</Link>
+              </p>
+            )}
+            {isFreePlan && user && (
               <p className="text-sm text-destructive mt-2">
                 🔒 Plan Découverte — Accès aux {maxLessons} premières leçons.{" "}
                 <Link to="/tarifs" className="underline font-medium">Passer au plan Essentiel</Link>

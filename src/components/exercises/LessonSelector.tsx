@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { CheckCircle, Lock, ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import type { Lesson } from "@/data/niveau1-lessons";
 import { useIsAdmin } from "@/hooks/use-admin";
 
@@ -13,6 +14,7 @@ interface LessonSelectorProps {
 
 const LessonSelector = ({ completedLessons, currentLesson, onSelectLesson, lessons, maxLessons = Infinity }: LessonSelectorProps) => {
   const { isAdmin } = useIsAdmin();
+  const navigate = useNavigate();
 
   return (
     <div className="space-y-4">
@@ -44,8 +46,14 @@ const LessonSelector = ({ completedLessons, currentLesson, onSelectLesson, lesso
               transition={{ delay: idx * 0.05 }}
               whileHover={isUnlocked ? { scale: 1.01 } : {}}
               whileTap={isUnlocked ? { scale: 0.99 } : {}}
-              onClick={() => isUnlocked && onSelectLesson(lesson)}
-              disabled={!isUnlocked}
+              onClick={() => {
+                if (isUnlocked) {
+                  onSelectLesson(lesson);
+                } else if (!withinPlan) {
+                  navigate("/auth");
+                }
+              }}
+              disabled={!isUnlocked && withinPlan}
               className={`w-full flex items-center gap-4 p-4 rounded-xl border text-left transition-all ${
                 isActive
                   ? "border-primary bg-primary/10 ring-2 ring-primary"
