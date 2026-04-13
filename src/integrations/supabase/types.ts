@@ -368,6 +368,7 @@ export type Database = {
           created_at: string
           id: string
           score: number | null
+          status: Database["public"]["Enums"]["recitation_status"]
           surah_number: number
           teacher_audio_url: string | null
           teacher_feedback: string | null
@@ -383,6 +384,7 @@ export type Database = {
           created_at?: string
           id?: string
           score?: number | null
+          status?: Database["public"]["Enums"]["recitation_status"]
           surah_number: number
           teacher_audio_url?: string | null
           teacher_feedback?: string | null
@@ -398,6 +400,7 @@ export type Database = {
           created_at?: string
           id?: string
           score?: number | null
+          status?: Database["public"]["Enums"]["recitation_status"]
           surah_number?: number
           teacher_audio_url?: string | null
           teacher_feedback?: string | null
@@ -623,6 +626,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "teacher" | "student"
       class_level: "niveau_1" | "niveau_2"
+      recitation_status: "en_attente" | "corrigée" | "a_refaire"
       student_type: "en_ligne" | "presentiel"
     }
     CompositeTypes: {
@@ -753,6 +757,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "teacher", "student"],
       class_level: ["niveau_1", "niveau_2"],
+      recitation_status: ["en_attente", "corrigée", "a_refaire"],
       student_type: ["en_ligne", "presentiel"],
     },
   },
