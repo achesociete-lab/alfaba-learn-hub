@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
@@ -9,10 +9,12 @@ import { Separator } from "@/components/ui/separator";
 import { BookOpen, ArrowLeft, Mail, CheckCircle, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import PlacementTest from "@/components/PlacementTest";
+import { useAuth } from "@/contexts/AuthContext";
 
 type SignupStep = "info" | "test";
 
 const Auth = () => {
+  const { user, loading: authLoading } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,11 +29,17 @@ const Auth = () => {
   const [signupStep, setSignupStep] = useState<SignupStep>("info");
   const navigate = useNavigate();
 
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [authLoading, user, navigate]);
+
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+        redirect_uri: `${window.location.origin}/auth`,
       });
 
       if (result.error) {
@@ -44,7 +52,7 @@ const Auth = () => {
       }
 
       toast.success("Connexion réussie !");
-      navigate("/dashboard");
+      navigate("/dashboard", { replace: true });
     } catch (err: any) {
       toast.error(err.message || "Erreur lors de la connexion avec Google");
     } finally {
