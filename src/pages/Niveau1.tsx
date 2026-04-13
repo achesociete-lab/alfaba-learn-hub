@@ -1,13 +1,14 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
-import { ArrowRight, Lock, Volume2 } from "lucide-react";
+import { ArrowRight, Lock, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/hooks/use-subscription";
 import { useLessonProgress } from "@/hooks/use-lesson-progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useState } from "react";
 
 const alphabet = [
@@ -124,11 +125,18 @@ const Niveau1 = () => {
               </div>
             </div>
 
+            <TooltipProvider>
             <div className="max-w-2xl mx-auto space-y-3">
               {lessons.map((lesson, i) => {
-                const isLocked = shouldLock && lesson.num > FREE_LESSON_LIMIT;
+                const isPaywalled = shouldLock && lesson.num > FREE_LESSON_LIMIT;
+                const isCompleted = completedLessons.includes(lesson.num);
+                const isPrevCompleted = i === 0 || completedLessons.includes(lessons[i - 1].num);
+                const isProgressLocked = !isPrevCompleted && !isPaywalled;
+                const isLocked = isPaywalled || isProgressLocked;
 
-                return (
+                const linkTarget = isPaywalled ? "/auth" : isProgressLocked ? "#" : "/exercices";
+
+                const card = (
                   <div key={lesson.num}>
                     {/* CTA after lesson 3 */}
                     {lesson.num === 4 && shouldLock && (
@@ -148,20 +156,28 @@ const Niveau1 = () => {
                       </motion.div>
                     )}
 
-                    <Link to={isLocked ? "/auth" : "/exercices"}>
+                    <Link to={linkTarget} onClick={(e) => isProgressLocked && e.preventDefault()}>
                       <motion.div
                         initial={{ opacity: 0, x: -20 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
                         transition={{ delay: i * 0.05 }}
                         className={`flex items-center gap-4 p-4 rounded-xl border transition-colors ${
-                          isLocked
+                          isCompleted
+                            ? "border-primary/30 bg-primary/5"
+                            : isLocked
                             ? "border-border/50 bg-muted/30 opacity-50 cursor-not-allowed"
                             : "border-border bg-card hover:border-primary/30"
                         }`}
                       >
                         <div className="h-10 w-10 rounded-lg gradient-emerald flex items-center justify-center shrink-0 text-lg">
-                          {isLocked ? <Lock className="h-4 w-4 text-muted-foreground" /> : lesson.icon}
+                          {isCompleted ? (
+                            <CheckCircle className="h-5 w-5 text-primary" />
+                          ) : isLocked ? (
+                            <Lock className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            lesson.icon
+                          )}
                         </div>
                         <div className="flex-1">
                           <h3 className="text-sm font-semibold text-foreground">
@@ -170,7 +186,9 @@ const Niveau1 = () => {
                           <p className="text-xs text-muted-foreground">{lesson.desc}</p>
                           <p className="text-xs text-muted-foreground mt-0.5">⏱️ 15 min</p>
                         </div>
-                        {isLocked ? (
+                        {isCompleted ? (
+                          <CheckCircle className="h-4 w-4 text-primary shrink-0" />
+                        ) : isLocked ? (
                           <Lock className="h-4 w-4 text-muted-foreground shrink-0" />
                         ) : (
                           <ArrowRight className="h-4 w-4 text-muted-foreground" />
@@ -179,8 +197,22 @@ const Niveau1 = () => {
                     </Link>
                   </div>
                 );
+
+                if (isProgressLocked) {
+                  return (
+                    <Tooltip key={lesson.num}>
+                      <TooltipTrigger asChild>{card}</TooltipTrigger>
+                      <TooltipContent>
+                        <p>Termine la leçon précédente pour débloquer</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                }
+
+                return card;
               })}
             </div>
+            </TooltipProvider>
           </section>
 
           <div className="text-center mt-12">
