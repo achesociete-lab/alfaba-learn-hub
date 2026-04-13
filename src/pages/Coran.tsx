@@ -89,6 +89,7 @@ const Coran = () => {
   const recorder = useAudioRecorder();
   const [submitting, setSubmitting] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
+  const [memorizationMap, setMemorizationMap] = useState<Record<number, string>>({});
 
   // Playback controls
   const [repeatCount, setRepeatCount] = useState(1);
@@ -108,6 +109,15 @@ const Coran = () => {
     if (!user) return;
     supabase.from("quran_recitations").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10)
       .then(({ data }) => { if (data) setHistory(data); });
+    // Load memorization statuses
+    supabase.from("surah_memorization").select("surah_number, status").eq("user_id", user.id)
+      .then(({ data }) => {
+        if (data) {
+          const map: Record<number, string> = {};
+          data.forEach((d: any) => { map[d.surah_number] = d.status; });
+          setMemorizationMap(map);
+        }
+      });
   }, [user]);
 
   useEffect(() => {
@@ -306,6 +316,31 @@ const Coran = () => {
     }
   };
 
+  const toggleMemorization = async (surahNumber: number) => {
+    if (!user) return;
+    const statuses = ["en_cours", "mémorisée", "à_réviser"];
+    const current = memorizationMap[surahNumber];
+    const nextIdx = current ? (statuses.indexOf(current) + 1) % statuses.length : 0;
+    const nextStatus = statuses[nextIdx];
+
+    const { error } = await supabase.from("surah_memorization").upsert(
+      { user_id: user.id, surah_number: surahNumber, status: nextStatus } as any,
+      { onConflict: "user_id,surah_number" }
+    );
+    if (!error) {
+      setMemorizationMap(prev => ({ ...prev, [surahNumber]: nextStatus }));
+    }
+  };
+
+  const memStatusLabel = (status?: string) => {
+    switch (status) {
+      case "en_cours": return { label: "En cours", cls: "bg-secondary/20 text-secondary-foreground" };
+      case "mémorisée": return { label: "Mémorisée", cls: "bg-primary/10 text-primary" };
+      case "à_réviser": return { label: "À réviser", cls: "bg-destructive/10 text-destructive" };
+      default: return null;
+    }
+  };
+
   const filteredSurahs = allSurahs.filter(s =>
     s.name.toLowerCase().includes(surahSearch.toLowerCase()) ||
     s.nameArabic.includes(surahSearch) ||
@@ -467,20 +502,28 @@ const Coran = () => {
                     <Input placeholder="Rechercher une sourate..." value={surahSearch} onChange={(e) => setSurahSearch(e.target.value)} className="pl-10" />
                   </div>
                   <div className="grid sm:grid-cols-2 gap-2 max-h-[60vh] overflow-y-auto pr-1">
-                    {filteredSurahs.map((surah) => (
-                      <motion.button key={surah.number} onClick={() => selectSurah(surah)}
-                        className="p-3 rounded-xl border border-border bg-card hover:border-primary/30 transition-all text-left flex items-center gap-3 group">
-                        <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
-                          <span className="text-xs font-bold text-primary">{surah.number}</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-semibold text-foreground truncate">{surah.name}</h3>
-                          <p className="text-xs text-muted-foreground">{surah.versesCount} versets • p.{getSurahStartPage(surah.number)}</p>
-                        </div>
-                        <span className="font-arabic text-base text-foreground shrink-0">{surah.nameArabic}</span>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                      </motion.button>
-                    ))}
+                    {filteredSurahs.map((surah) => {
+                      const memStatus = memStatusLabel(memorizationMap[surah.number]);
+                      return (
+                        <motion.button key={surah.number} onClick={() => selectSurah(surah)}
+                          className="p-3 rounded-xl border border-border bg-card hover:border-primary/30 transition-all text-left flex items-center gap-3 group">
+                          <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+                            <span className="text-xs font-bold text-primary">{surah.number}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-sm font-semibold text-foreground truncate">{surah.name}</h3>
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs text-muted-foreground">{surah.versesCount} versets • p.{getSurahStartPage(surah.number)}</p>
+                              {memStatus && (
+                                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${memStatus.cls}`}>{memStatus.label}</span>
+                              )}
+                            </div>
+                          </div>
+                          <span className="font-arabic text-base text-foreground shrink-0">{surah.nameArabic}</span>
+                          <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                        </motion.button>
+                      );
+                    })}
                   </div>
                 </TabsContent>
 
@@ -748,6 +791,31 @@ const Coran = () => {
                         );
                       })}
                     </div>
+                  </div>
+
+                  {/* Memorization Status Toggle */}
+                  <div className="p-4 rounded-xl border border-border bg-card flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground">📖 Statut de mémorisation</h3>
+                      <p className="text-xs text-muted-foreground">Cliquez pour changer le statut</p>
+                    </div>
+                    <button
+                      onClick={() => toggleMemorization(selectedSurahInfo.number)}
+                      className={`text-xs font-medium px-3 py-1.5 rounded-full transition-all ${
+                        memorizationMap[selectedSurahInfo.number] === "mémorisée"
+                          ? "bg-primary/10 text-primary"
+                          : memorizationMap[selectedSurahInfo.number] === "à_réviser"
+                          ? "bg-destructive/10 text-destructive"
+                          : memorizationMap[selectedSurahInfo.number] === "en_cours"
+                          ? "bg-secondary/20 text-secondary-foreground"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {memorizationMap[selectedSurahInfo.number] === "mémorisée" ? "✅ Mémorisée"
+                        : memorizationMap[selectedSurahInfo.number] === "à_réviser" ? "🔄 À réviser"
+                        : memorizationMap[selectedSurahInfo.number] === "en_cours" ? "📖 En cours"
+                        : "Marquer"}
+                    </button>
                   </div>
 
                   {/* Student Recording & Submission */}

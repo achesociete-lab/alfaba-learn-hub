@@ -8,6 +8,8 @@ import { useArabicSpeech } from "@/hooks/use-arabic-speech";
 import { useAudioRecorder } from "@/hooks/use-audio-recorder";
 import { useChatHistory } from "@/hooks/use-chat-history";
 import { useLessonProgress } from "@/hooks/use-lesson-progress";
+import { useProfile } from "@/hooks/use-profile";
+import { useFormality } from "@/hooks/use-formality";
 import { toast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,9 +20,9 @@ type Msg = { role: "user" | "assistant"; content: string };
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/arabic-chat`;
 
 async function streamChat({
-  messages, level, completedLessons, onDelta, onDone, signal,
+  messages, level, completedLessons, formality, onDelta, onDone, signal,
 }: {
-  messages: Msg[]; level: string; completedLessons: number[]; onDelta: (t: string) => void; onDone: () => void; signal?: AbortSignal;
+  messages: Msg[]; level: string; completedLessons: number[]; formality: string; onDelta: (t: string) => void; onDone: () => void; signal?: AbortSignal;
 }) {
   const resp = await fetch(CHAT_URL, {
     method: "POST",
@@ -28,7 +30,7 @@ async function streamChat({
       "Content-Type": "application/json",
       Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
     },
-    body: JSON.stringify({ messages, level, completedLessons }),
+    body: JSON.stringify({ messages, level, completedLessons, formality }),
     signal,
   });
   if (!resp.ok) {
@@ -66,22 +68,30 @@ function extractArabic(text: string): string {
   return match ? match[0].trim() : "";
 }
 
+function hasArabic(text: string): boolean {
+  return /[\u0600-\u06FF]/.test(text);
+}
+
+// Level-based suggestions
+const SUGGESTIONS: Record<string, string[]> = {
+  niveau_1: ["مَرْحَباً", "كَيْفَ حَالُكَ؟", "أُرِيدُ أَنْ أَتَعَلَّمَ"],
+  niveau_2: ["أَخْبِرْنِي عَنِ الضَّمَائِرِ", "مَا هِيَ الجُمْلَةُ الاِسْمِيَّةُ؟", "عَلِّمْنِي الأَفْعَالَ"],
+};
+
 const ArabicChat = () => {
   const { user, loading } = useAuth();
+  const { profile } = useProfile();
+  const { isTu } = useFormality();
   const { completedLessons, completedN2Lessons } = useLessonProgress();
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [userLevel, setUserLevel] = useState<string>("niveau_1");
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Fetch user level
-  useEffect(() => {
-    if (!user) return;
-    supabase.from("profiles").select("level").eq("user_id", user.id).single()
-      .then(({ data }) => { if (data?.level) setUserLevel(data.level); });
-  }, [user]);
+  const userLevel = profile?.level || "niveau_1";
+  const formality = isTu ? "tu" : "vous";
+
   const { speak, stop: stopSpeech } = useArabicSpeech();
   const recorder = useAudioRecorder();
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -154,7 +164,7 @@ const ArabicChat = () => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
-  // Auto-speak assistant messages
+  // Auto-speak ONLY assistant messages (not user messages)
   useEffect(() => {
     if (isLoading || !autoSpeak || messages.length === 0) return;
     const lastIndex = messages.length - 1;
@@ -166,17 +176,15 @@ const ArabicChat = () => {
     }
   }, [messages, isLoading, autoSpeak, speak]);
 
-  // Auto-speak user messages
+  // Track lastSpokenIndex for user messages (without speaking)
   useEffect(() => {
-    if (!autoSpeak || messages.length === 0) return;
+    if (messages.length === 0) return;
     const lastIndex = messages.length - 1;
     const lastMsg = messages[lastIndex];
     if (lastMsg.role === "user" && lastIndex > lastSpokenIndexRef.current) {
       lastSpokenIndexRef.current = lastIndex;
-      const ar = extractArabic(lastMsg.content);
-      if (ar) speak(ar);
     }
-  }, [messages, autoSpeak, speak]);
+  }, [messages]);
 
   const sendMessage = useCallback(async () => {
     const text = input.trim();
@@ -212,6 +220,7 @@ const ArabicChat = () => {
         messages: [...messages, userMsg],
         level: userLevel,
         completedLessons: currentCompleted,
+        formality,
         onDelta: update,
         onDone: () => setIsLoading(false),
       });
@@ -220,7 +229,7 @@ const ArabicChat = () => {
       setIsLoading(false);
       toast({ variant: "destructive", title: "Erreur", description: e.message });
     }
-  }, [input, isLoading, messages, history]);
+  }, [input, isLoading, messages, history, userLevel, formality, completedLessons, completedN2Lessons]);
 
   const handleNewConversation = () => {
     currentConvIdRef.current = null;
@@ -241,6 +250,8 @@ const ArabicChat = () => {
   };
 
   if (loading) return null;
+
+  const suggestions = SUGGESTIONS[userLevel] || SUGGESTIONS.niveau_1;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -328,7 +339,7 @@ const ArabicChat = () => {
                   </p>
                 </div>
                 <div className="flex flex-wrap justify-center gap-2 mt-2">
-                  {["مَرْحَباً", "كَيْفَ حَالُكَ؟", "أُرِيدُ أَنْ أَتَعَلَّمَ"].map((s) => (
+                  {suggestions.map((s) => (
                     <Button key={s} variant="outline" size="sm" className="font-arabic text-base" dir="rtl"
                       onClick={() => setInput(s)}>
                       {s}
@@ -347,12 +358,17 @@ const ArabicChat = () => {
                 )}
                 <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
                   msg.role === "user"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-foreground"
+                    ? "bg-muted text-foreground"
+                    : "gradient-emerald text-primary-foreground"
                 }`}>
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed" dir="auto">{msg.content}</p>
+                  <p
+                    className={`whitespace-pre-wrap leading-relaxed ${hasArabic(msg.content) ? "font-arabic text-xl" : "text-sm"}`}
+                    dir="auto"
+                  >
+                    {msg.content}
+                  </p>
                   {msg.role === "assistant" && !isLoading && (
-                    <Button variant="ghost" size="icon" className="h-6 w-6 mt-1 opacity-60 hover:opacity-100"
+                    <Button variant="ghost" size="icon" className="h-6 w-6 mt-1 opacity-60 hover:opacity-100 text-primary-foreground"
                       onClick={() => { const ar = extractArabic(msg.content); if (ar) speak(ar); }}>
                       <Volume2 className="h-3.5 w-3.5" />
                     </Button>
@@ -368,13 +384,21 @@ const ArabicChat = () => {
               </div>
             ))}
 
+            {/* Typing indicator */}
             {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
               <div className="flex gap-3 justify-start">
                 <Avatar className="h-8 w-8 shrink-0 mt-1">
                   <AvatarFallback className="gradient-emerald text-primary-foreground text-xs">أ</AvatarFallback>
                 </Avatar>
-                <div className="bg-muted rounded-2xl px-4 py-3">
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                <div className="gradient-emerald rounded-2xl px-4 py-3">
+                  <p className="text-primary-foreground font-arabic text-sm flex items-center gap-2">
+                    الأستاذ يكتب
+                    <span className="inline-flex gap-0.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground/70 animate-bounce" style={{ animationDelay: "0ms" }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground/70 animate-bounce" style={{ animationDelay: "150ms" }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground/70 animate-bounce" style={{ animationDelay: "300ms" }} />
+                    </span>
+                  </p>
                 </div>
               </div>
             )}

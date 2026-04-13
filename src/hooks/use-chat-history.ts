@@ -51,11 +51,11 @@ export function useChatHistory() {
   }, [user, loadConversations]);
 
   const saveMessages = useCallback(async (conversationId: string, messages: Msg[]) => {
-    // Generate title from first user message
+    // Generate title from first user message content (not "Nouvelle conversation")
     const firstUser = messages.find(m => m.role === "user");
     const title = firstUser
-      ? firstUser.content.slice(0, 50) + (firstUser.content.length > 50 ? "…" : "")
-      : "Nouvelle conversation";
+      ? firstUser.content.slice(0, 40) + (firstUser.content.length > 40 ? "…" : "")
+      : "محادثة جديدة";
 
     await supabase
       .from("chat_conversations")

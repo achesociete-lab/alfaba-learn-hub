@@ -476,6 +476,33 @@ export type Database = {
         }
         Relationships: []
       }
+      surah_memorization: {
+        Row: {
+          created_at: string
+          id: string
+          status: Database["public"]["Enums"]["memorization_status"]
+          surah_number: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          status?: Database["public"]["Enums"]["memorization_status"]
+          surah_number: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          status?: Database["public"]["Enums"]["memorization_status"]
+          surah_number?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       teacher_audio_clips: {
         Row: {
           audio_key: string
@@ -626,6 +653,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "teacher" | "student"
       class_level: "niveau_1" | "niveau_2"
+      memorization_status: "en_cours" | "mémorisée" | "à_réviser"
       recitation_status: "en_attente" | "corrigée" | "a_refaire"
       student_type: "en_ligne" | "presentiel"
     }
@@ -757,6 +785,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "teacher", "student"],
       class_level: ["niveau_1", "niveau_2"],
+      memorization_status: ["en_cours", "mémorisée", "à_réviser"],
       recitation_status: ["en_attente", "corrigée", "a_refaire"],
       student_type: ["en_ligne", "presentiel"],
     },
