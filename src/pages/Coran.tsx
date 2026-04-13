@@ -793,6 +793,31 @@ const Coran = () => {
                     </div>
                   </div>
 
+                  {/* Memorization Status Toggle */}
+                  <div className="p-4 rounded-xl border border-border bg-card flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground">📖 Statut de mémorisation</h3>
+                      <p className="text-xs text-muted-foreground">Cliquez pour changer le statut</p>
+                    </div>
+                    <button
+                      onClick={() => toggleMemorization(selectedSurahInfo.number)}
+                      className={`text-xs font-medium px-3 py-1.5 rounded-full transition-all ${
+                        memorizationMap[selectedSurahInfo.number] === "mémorisée"
+                          ? "bg-primary/10 text-primary"
+                          : memorizationMap[selectedSurahInfo.number] === "à_réviser"
+                          ? "bg-destructive/10 text-destructive"
+                          : memorizationMap[selectedSurahInfo.number] === "en_cours"
+                          ? "bg-secondary/20 text-secondary-foreground"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {memorizationMap[selectedSurahInfo.number] === "mémorisée" ? "✅ Mémorisée"
+                        : memorizationMap[selectedSurahInfo.number] === "à_réviser" ? "🔄 À réviser"
+                        : memorizationMap[selectedSurahInfo.number] === "en_cours" ? "📖 En cours"
+                        : "Marquer"}
+                    </button>
+                  </div>
+
                   {/* Student Recording & Submission */}
                   <div className="p-5 rounded-xl border border-border bg-card text-center">
                     <h3 className="text-sm font-semibold text-foreground mb-1">🎤 Enregistrer ma récitation</h3>
