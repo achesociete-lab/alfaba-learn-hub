@@ -316,6 +316,31 @@ const Coran = () => {
     }
   };
 
+  const toggleMemorization = async (surahNumber: number) => {
+    if (!user) return;
+    const statuses = ["en_cours", "mémorisée", "à_réviser"];
+    const current = memorizationMap[surahNumber];
+    const nextIdx = current ? (statuses.indexOf(current) + 1) % statuses.length : 0;
+    const nextStatus = statuses[nextIdx];
+
+    const { error } = await supabase.from("surah_memorization").upsert(
+      { user_id: user.id, surah_number: surahNumber, status: nextStatus } as any,
+      { onConflict: "user_id,surah_number" }
+    );
+    if (!error) {
+      setMemorizationMap(prev => ({ ...prev, [surahNumber]: nextStatus }));
+    }
+  };
+
+  const memStatusLabel = (status?: string) => {
+    switch (status) {
+      case "en_cours": return { label: "En cours", cls: "bg-secondary/20 text-secondary-foreground" };
+      case "mémorisée": return { label: "Mémorisée", cls: "bg-primary/10 text-primary" };
+      case "à_réviser": return { label: "À réviser", cls: "bg-destructive/10 text-destructive" };
+      default: return null;
+    }
+  };
+
   const filteredSurahs = allSurahs.filter(s =>
     s.name.toLowerCase().includes(surahSearch.toLowerCase()) ||
     s.nameArabic.includes(surahSearch) ||
