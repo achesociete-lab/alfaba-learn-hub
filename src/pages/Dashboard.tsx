@@ -213,6 +213,12 @@ const Dashboard = () => {
             </motion.div>
           )}
 
+          {/* Badges */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mb-8 p-6 rounded-xl border border-border bg-card">
+            <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2"><Trophy className="h-4 w-4" /> Badges</h3>
+            <BadgesSection />
+          </motion.div>
+
           {/* Daily Exercise */}
           <DailyExercise level={profile?.level || "niveau_1"} completedLessons={completed} />
 
