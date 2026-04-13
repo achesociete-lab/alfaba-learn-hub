@@ -573,11 +573,13 @@ const Coran = () => {
                               <h3 className="text-sm font-semibold text-foreground">{surahInfo?.name || `Sourate ${rec.surah_number}`}</h3>
                               <p className="text-xs text-muted-foreground">{new Date(rec.created_at).toLocaleDateString("fr-FR")}</p>
                             </div>
-                            {rec.teacher_reviewed ? (
+                            {rec.status === "corrigée" ? (
                               <div className="text-right">
-                                <span className="text-xs font-semibold px-2 py-1 rounded-full bg-primary/10 text-primary">✓ Corrigé</span>
+                                <span className="text-xs font-semibold px-2 py-1 rounded-full bg-primary/10 text-primary">✓ Corrigée</span>
                                 {rec.score != null && <p className="text-xs font-bold text-primary mt-1">{rec.score}/100</p>}
                               </div>
+                            ) : rec.status === "a_refaire" ? (
+                              <span className="text-xs font-semibold px-2 py-1 rounded-full bg-destructive/10 text-destructive">À refaire</span>
                             ) : (
                               <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">En attente</span>
                             )}

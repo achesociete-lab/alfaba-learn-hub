@@ -2,6 +2,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
 import { ArrowRight, Lock, CheckCircle } from "lucide-react";
+import { useIsAdmin } from "@/hooks/use-admin";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -60,10 +61,11 @@ const FREE_LESSON_LIMIT = 3;
 const Niveau1 = () => {
   const { user } = useAuth();
   const { isFreePlan } = useSubscription();
+  const { isAdmin } = useIsAdmin();
   const { completedLessons } = useLessonProgress();
   const [selectedLetter, setSelectedLetter] = useState<typeof alphabet[0] | null>(null);
 
-  const shouldLock = !user || isFreePlan;
+  const shouldLock = !isAdmin && (!user || isFreePlan);
   const completed = completedLessons.length;
 
   return (
@@ -131,7 +133,7 @@ const Niveau1 = () => {
                 const isPaywalled = shouldLock && lesson.num > FREE_LESSON_LIMIT;
                 const isCompleted = completedLessons.includes(lesson.num);
                 const isPrevCompleted = i === 0 || completedLessons.includes(lessons[i - 1].num);
-                const isProgressLocked = !isPrevCompleted && !isPaywalled;
+                const isProgressLocked = !isAdmin && !isPrevCompleted && !isPaywalled;
                 const isLocked = isPaywalled || isProgressLocked;
 
                 const linkTarget = isPaywalled ? "/auth" : isProgressLocked ? "#" : "/exercices";

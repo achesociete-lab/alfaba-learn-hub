@@ -15,14 +15,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { useLessonProgress } from "@/hooks/use-lesson-progress";
+import { useProfile } from "@/hooks/use-profile";
 import LevelUpTest from "@/components/LevelUpTest";
 import DailyExercise from "@/components/DailyExercise";
-
-interface Profile {
-  first_name: string;
-  last_name: string;
-  level: "niveau_1" | "niveau_2";
-}
 
 interface Homework {
   id: string;
@@ -50,13 +45,15 @@ interface Assignment {
 const Dashboard = () => {
   const { user, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const { profile } = useProfile();
   const [homework, setHomework] = useState<Homework[]>([]);
   const [attendance, setAttendance] = useState<Attendance[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [uploading, setUploading] = useState(false);
   const [hwTitle, setHwTitle] = useState("");
   const { completedLessons, completedN2Lessons, loading: progressLoading } = useLessonProgress();
+
+  const isPresentiel = profile?.type_eleve === "presentiel";
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -65,19 +62,17 @@ const Dashboard = () => {
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
-      const [profileRes, hwRes, attRes, assignRes] = await Promise.all([
-        supabase.from("profiles").select("first_name, last_name, level").eq("user_id", user.id).single(),
+      const [hwRes, attRes, assignRes] = await Promise.all([
         supabase.from("homework_submissions").select("id, title, status, grade, feedback, submitted_at").eq("user_id", user.id).order("submitted_at", { ascending: false }),
         supabase.from("attendance").select("date, present").eq("user_id", user.id).order("date", { ascending: false }).limit(10),
         supabase.from("homework_assignments").select("id, title, description, level, due_date, created_at").order("created_at", { ascending: false }),
       ]);
-      if (profileRes.data) setProfile(profileRes.data);
       if (hwRes.data) setHomework(hwRes.data);
       if (attRes.data) setAttendance(attRes.data);
-      if (assignRes.data) setAssignments(assignRes.data.filter((a: Assignment) => !profileRes.data || a.level === profileRes.data.level));
+      if (assignRes.data) setAssignments(assignRes.data.filter((a: Assignment) => !profile || a.level === profile.level));
     };
     fetchData();
-  }, [user]);
+  }, [user, profile]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -125,7 +120,7 @@ const Dashboard = () => {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-3xl font-bold text-foreground mb-1">{profile ? `Bienvenue, ${profile.first_name} !` : "Espace Élève"}</h1>
-              <p className="text-muted-foreground flex items-center gap-2"><User className="h-4 w-4" />{isN1 ? "Niveau 1" : "Niveau 2"} — {user.email}</p>
+              <p className="text-muted-foreground flex items-center gap-2"><User className="h-4 w-4" />{isN1 ? "Niveau 1" : "Niveau 2"}</p>
             </div>
             <Button variant="outline" size="sm" onClick={signOut} className="gap-2"><LogOut className="h-4 w-4" /> Déconnexion</Button>
           </motion.div>
@@ -193,8 +188,8 @@ const Dashboard = () => {
                 <div className="flex items-center gap-3">
                   <GraduationCap className="h-8 w-8 text-primary shrink-0" />
                   <div>
-                    <p className="text-sm font-bold text-foreground">🎉 Bravo ! Tu as terminé toutes les leçons du Niveau 1 !</p>
-                    <p className="text-xs text-muted-foreground">Passe le test de validation pour accéder au Niveau 2.</p>
+                    <p className="text-sm font-bold text-foreground">🎉 Bravo ! Toutes les leçons du Niveau 1 sont terminées !</p>
+                    <p className="text-xs text-muted-foreground">Passez le test de validation pour accéder au Niveau 2.</p>
                   </div>
                 </div>
                 <Button onClick={() => setShowLevelTest(true)} className="gap-2 shrink-0 gradient-emerald border-0 text-primary-foreground">
@@ -210,7 +205,6 @@ const Dashboard = () => {
               <LevelUpTest
                 onPass={() => {
                   setShowLevelTest(false);
-                  // Reload profile to reflect new level
                   window.location.reload();
                 }}
                 onDismiss={() => setShowLevelTest(false)}
@@ -225,9 +219,13 @@ const Dashboard = () => {
           <Tabs defaultValue="consignes" className="space-y-4">
             <TabsList className="bg-muted flex-wrap h-auto gap-1">
               <TabsTrigger value="consignes" className="flex items-center gap-1.5"><BookOpen className="h-4 w-4" /> Consignes</TabsTrigger>
-              <TabsTrigger value="devoirs" className="flex items-center gap-1.5"><FileText className="h-4 w-4" /> Devoirs</TabsTrigger>
-              <TabsTrigger value="emargement" className="flex items-center gap-1.5"><ClipboardList className="h-4 w-4" /> Émargement</TabsTrigger>
-              <TabsTrigger value="deposer" className="flex items-center gap-1.5"><Upload className="h-4 w-4" /> Déposer</TabsTrigger>
+              {isPresentiel && (
+                <>
+                  <TabsTrigger value="devoirs" className="flex items-center gap-1.5"><FileText className="h-4 w-4" /> Devoirs</TabsTrigger>
+                  <TabsTrigger value="emargement" className="flex items-center gap-1.5"><ClipboardList className="h-4 w-4" /> Émargement</TabsTrigger>
+                  <TabsTrigger value="deposer" className="flex items-center gap-1.5"><Upload className="h-4 w-4" /> Déposer</TabsTrigger>
+                </>
+              )}
             </TabsList>
 
             <TabsContent value="consignes">
@@ -251,70 +249,74 @@ const Dashboard = () => {
               )}
             </TabsContent>
 
-            <TabsContent value="devoirs">
-              {homework.length === 0 ? (
-                <div className="p-8 text-center text-muted-foreground rounded-xl border border-border bg-card"><FileText className="h-10 w-10 mx-auto mb-3 opacity-50" /><p>Aucun devoir déposé.</p></div>
-              ) : (
-                <div className="space-y-3">
-                  {homework.map((hw) => (
-                    <div key={hw.id} className="p-4 rounded-xl border border-border bg-card">
-                      <div className="flex items-center gap-4">
-                        <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${hw.status === "corrigé" ? "bg-primary/10" : "bg-gold/10"}`}>
-                          {hw.status === "corrigé" ? <CheckCircle className="h-5 w-5 text-primary" /> : <PenTool className="h-5 w-5 text-gold" />}
+            {isPresentiel && (
+              <>
+                <TabsContent value="devoirs">
+                  {homework.length === 0 ? (
+                    <div className="p-8 text-center text-muted-foreground rounded-xl border border-border bg-card"><FileText className="h-10 w-10 mx-auto mb-3 opacity-50" /><p>Aucun devoir déposé.</p></div>
+                  ) : (
+                    <div className="space-y-3">
+                      {homework.map((hw) => (
+                        <div key={hw.id} className="p-4 rounded-xl border border-border bg-card">
+                          <div className="flex items-center gap-4">
+                            <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${hw.status === "corrigé" ? "bg-primary/10" : "bg-gold/10"}`}>
+                              {hw.status === "corrigé" ? <CheckCircle className="h-5 w-5 text-primary" /> : <PenTool className="h-5 w-5 text-gold" />}
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="text-sm font-semibold text-foreground">{hw.title}</h3>
+                              <p className="text-xs text-muted-foreground">{new Date(hw.submitted_at).toLocaleDateString("fr-FR")}</p>
+                            </div>
+                            <div className="text-right">
+                              <span className={`text-sm font-bold ${hw.status === "corrigé" ? "text-primary" : "text-muted-foreground"}`}>{hw.grade !== null ? `${hw.grade}/20` : "—"}</span>
+                              <p className={`text-xs ${hw.status === "corrigé" ? "text-primary/70" : "text-gold"}`}>{hw.status}</p>
+                            </div>
+                          </div>
+                          {hw.feedback && (
+                            <div className="mt-3 ml-14 p-3 rounded-lg bg-primary/5 border border-primary/10">
+                              <p className="text-xs font-semibold text-primary mb-1">💬 Commentaire du professeur :</p>
+                              <p className="text-sm text-foreground">{hw.feedback}</p>
+                            </div>
+                          )}
                         </div>
-                        <div className="flex-1">
-                          <h3 className="text-sm font-semibold text-foreground">{hw.title}</h3>
-                          <p className="text-xs text-muted-foreground">{new Date(hw.submitted_at).toLocaleDateString("fr-FR")}</p>
-                        </div>
-                        <div className="text-right">
-                          <span className={`text-sm font-bold ${hw.status === "corrigé" ? "text-primary" : "text-muted-foreground"}`}>{hw.grade !== null ? `${hw.grade}/20` : "—"}</span>
-                          <p className={`text-xs ${hw.status === "corrigé" ? "text-primary/70" : "text-gold"}`}>{hw.status}</p>
-                        </div>
-                      </div>
-                      {hw.feedback && (
-                        <div className="mt-3 ml-14 p-3 rounded-lg bg-primary/5 border border-primary/10">
-                          <p className="text-xs font-semibold text-primary mb-1">💬 Commentaire du professeur :</p>
-                          <p className="text-sm text-foreground">{hw.feedback}</p>
-                        </div>
-                      )}
+                      ))}
                     </div>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
+                  )}
+                </TabsContent>
 
-            <TabsContent value="emargement">
-              {attendance.length === 0 ? (
-                <div className="p-8 text-center text-muted-foreground rounded-xl border border-border bg-card"><Calendar className="h-10 w-10 mx-auto mb-3 opacity-50" /><p>Aucun émargement enregistré.</p></div>
-              ) : (
-                <div className="space-y-2">
-                  {attendance.map((att, i) => (
-                    <div key={i} className="flex items-center gap-4 p-3 rounded-xl border border-border bg-card">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm text-foreground flex-1">{new Date(att.date).toLocaleDateString("fr-FR")}</span>
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${att.present ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"}`}>{att.present ? "Présent" : "Absent"}</span>
+                <TabsContent value="emargement">
+                  {attendance.length === 0 ? (
+                    <div className="p-8 text-center text-muted-foreground rounded-xl border border-border bg-card"><Calendar className="h-10 w-10 mx-auto mb-3 opacity-50" /><p>Aucun émargement enregistré.</p></div>
+                  ) : (
+                    <div className="space-y-2">
+                      {attendance.map((att, i) => (
+                        <div key={i} className="flex items-center gap-4 p-3 rounded-xl border border-border bg-card">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm text-foreground flex-1">{new Date(att.date).toLocaleDateString("fr-FR")}</span>
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${att.present ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"}`}>{att.present ? "Présent" : "Absent"}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
+                  )}
+                </TabsContent>
 
-            <TabsContent value="deposer">
-              <div className="p-8 rounded-xl border-2 border-dashed border-border bg-card text-center">
-                <Upload className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-foreground mb-4">Déposer un devoir</h3>
-                <div className="max-w-sm mx-auto mb-4">
-                  <input type="text" value={hwTitle} onChange={(e) => setHwTitle(e.target.value)} placeholder="Titre du devoir (ex: Dictée leçon 3)" className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm mb-3" />
-                  <label className="block">
-                    <input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onChange={handleFileUpload} disabled={uploading || !hwTitle.trim()} className="hidden" />
-                    <Button type="button" disabled={uploading || !hwTitle.trim()} className="gradient-emerald border-0 text-primary-foreground w-full" onClick={() => (document.querySelector('input[type="file"]') as HTMLInputElement)?.click()}>
-                      {uploading ? "Envoi en cours..." : "Choisir un fichier"}
-                    </Button>
-                  </label>
-                </div>
-                <p className="text-xs text-muted-foreground">PDF, Image ou Document — 10 Mo max</p>
-              </div>
-            </TabsContent>
+                <TabsContent value="deposer">
+                  <div className="p-8 rounded-xl border-2 border-dashed border-border bg-card text-center">
+                    <Upload className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-foreground mb-4">Déposer un devoir</h3>
+                    <div className="max-w-sm mx-auto mb-4">
+                      <input type="text" value={hwTitle} onChange={(e) => setHwTitle(e.target.value)} placeholder="Titre du devoir (ex: Dictée leçon 3)" className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm mb-3" />
+                      <label className="block">
+                        <input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onChange={handleFileUpload} disabled={uploading || !hwTitle.trim()} className="hidden" />
+                        <Button type="button" disabled={uploading || !hwTitle.trim()} className="gradient-emerald border-0 text-primary-foreground w-full" onClick={() => (document.querySelector('input[type="file"]') as HTMLInputElement)?.click()}>
+                          {uploading ? "Envoi en cours..." : "Choisir un fichier"}
+                        </Button>
+                      </label>
+                    </div>
+                    <p className="text-xs text-muted-foreground">PDF, Image ou Document — 10 Mo max</p>
+                  </div>
+                </TabsContent>
+              </>
+            )}
           </Tabs>
 
           {/* Quick actions */}
