@@ -23,12 +23,20 @@ function Niveau1Lessons({ maxLessons }: { maxLessons: number }) {
   const { completedLessons, completeLesson } = useLessonProgress();
   const { lessons } = useNiveau1Lessons();
 
+  const currentIdx = selectedLesson ? lessons.findIndex(l => l.id === selectedLesson.id) : -1;
+  const nextLesson = currentIdx >= 0 && currentIdx < lessons.length - 1 ? lessons[currentIdx + 1] : null;
+
   if (selectedLesson) {
     return (
       <LessonDetail
         lesson={selectedLesson}
         onBack={() => setSelectedLesson(null)}
         onComplete={completeLesson}
+        nextLessonId={nextLesson?.id || null}
+        onNextLesson={(id) => {
+          const lesson = lessons.find(l => l.id === id);
+          if (lesson) setSelectedLesson(lesson);
+        }}
       />
     );
   }
