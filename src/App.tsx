@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
+import ProfileGuard from "@/components/ProfileGuard";
 import Index from "./pages/Index.tsx";
 import Niveau1 from "./pages/Niveau1.tsx";
 import Admin from "./pages/Admin.tsx";
@@ -18,6 +19,7 @@ import ArabicChat from "./pages/ArabicChat.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import MentionsLegales from "./pages/MentionsLegales.tsx";
 import PolitiqueConfidentialite from "./pages/PolitiqueConfidentialite.tsx";
+import CompleteProfile from "./pages/CompleteProfile.tsx";
 
 const queryClient = new QueryClient();
 
@@ -30,18 +32,24 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/niveau-1" element={<Niveau1 />} />
-            <Route path="/niveau-2" element={<Niveau2 />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/tarifs" element={<Tarifs />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/exercices" element={<Exercises />} />
-            <Route path="/classe-virtuelle" element={<ClasseVirtuelle />} />
-            <Route path="/coran" element={<Coran />} />
-            <Route path="/conversation" element={<ArabicChat />} />
-            <Route path="/admin" element={<Admin />} />
+            <Route path="/complete-profile" element={<CompleteProfile />} />
+            <Route path="/tarifs" element={<Tarifs />} />
             <Route path="/mentions-legales" element={<MentionsLegales />} />
             <Route path="/politique-de-confidentialite" element={<PolitiqueConfidentialite />} />
+
+            {/* Protected routes requiring complete profile */}
+            <Route element={<ProfileGuard />}>
+              <Route path="/niveau-1" element={<Niveau1 />} />
+              <Route path="/niveau-2" element={<Niveau2 />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/exercices" element={<Exercises />} />
+              <Route path="/classe-virtuelle" element={<ClasseVirtuelle />} />
+              <Route path="/coran" element={<Coran />} />
+              <Route path="/conversation" element={<ArabicChat />} />
+              <Route path="/admin" element={<Admin />} />
+            </Route>
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

@@ -319,9 +319,11 @@ export type Database = {
       }
       profiles: {
         Row: {
+          age: number | null
           avatar_url: string | null
           created_at: string
           first_name: string
+          gender: string | null
           id: string
           last_name: string
           level: Database["public"]["Enums"]["class_level"]
@@ -329,9 +331,11 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          age?: number | null
           avatar_url?: string | null
           created_at?: string
           first_name?: string
+          gender?: string | null
           id?: string
           last_name?: string
           level?: Database["public"]["Enums"]["class_level"]
@@ -339,9 +343,11 @@ export type Database = {
           user_id: string
         }
         Update: {
+          age?: number | null
           avatar_url?: string | null
           created_at?: string
           first_name?: string
+          gender?: string | null
           id?: string
           last_name?: string
           level?: Database["public"]["Enums"]["class_level"]
