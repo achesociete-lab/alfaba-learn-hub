@@ -76,9 +76,7 @@ const Exercises = () => {
   const [level, setLevel] = useState<Level>("niveau_1");
   const { maxLessons, isFreePlan, loading: subLoading } = useSubscription();
 
-  useEffect(() => {
-    if (!authLoading && !user) navigate("/auth");
-  }, [user, authLoading, navigate]);
+  // No redirect for unauthenticated users — lessons 1-3 are free
 
   useEffect(() => {
     if (!user) return;
@@ -89,7 +87,6 @@ const Exercises = () => {
   if (authLoading || subLoading) {
     return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground">Chargement...</p></div>;
   }
-  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-background">

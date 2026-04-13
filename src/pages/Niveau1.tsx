@@ -139,16 +139,16 @@ const Niveau1 = () => {
                         className="mb-3 p-5 rounded-xl bg-primary/10 border border-primary/30 text-center"
                       >
                         <p className="text-lg font-bold text-foreground mb-1">🔓 Débloquer toutes les leçons</p>
-                        <p className="text-sm text-muted-foreground mb-3">Commencez votre apprentissage complet</p>
+                        <p className="text-sm text-muted-foreground mb-3">Inscris-toi gratuitement pour continuer ton apprentissage →</p>
                         <Button asChild className="gradient-emerald border-0 text-primary-foreground">
-                          <Link to={user ? "/tarifs" : "/auth"}>
-                            {user ? "Voir les offres →" : "S'inscrire gratuitement →"}
+                          <Link to="/auth">
+                            S'inscrire gratuitement →
                           </Link>
                         </Button>
                       </motion.div>
                     )}
 
-                    <Link to={isLocked ? "#" : "/exercices"} onClick={(e) => isLocked && e.preventDefault()}>
+                    <Link to={isLocked ? "/auth" : "/exercices"}>
                       <motion.div
                         initial={{ opacity: 0, x: -20 }}
                         whileInView={{ opacity: 1, x: 0 }}
