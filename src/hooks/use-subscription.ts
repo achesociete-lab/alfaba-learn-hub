@@ -16,8 +16,6 @@ export function useSubscription() {
   useEffect(() => {
     if (adminLoading) return;
 
-    console.log("[useSubscription] isAdmin:", isAdmin, "user:", !!user);
-
     if (isAdmin) {
       setPlan("premium");
       setLoading(false);
