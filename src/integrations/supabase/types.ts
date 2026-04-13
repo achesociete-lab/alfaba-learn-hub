@@ -327,6 +327,7 @@ export type Database = {
           id: string
           last_name: string
           level: Database["public"]["Enums"]["class_level"]
+          type_eleve: Database["public"]["Enums"]["student_type"]
           updated_at: string
           user_id: string
         }
@@ -339,6 +340,7 @@ export type Database = {
           id?: string
           last_name?: string
           level?: Database["public"]["Enums"]["class_level"]
+          type_eleve?: Database["public"]["Enums"]["student_type"]
           updated_at?: string
           user_id: string
         }
@@ -351,6 +353,7 @@ export type Database = {
           id?: string
           last_name?: string
           level?: Database["public"]["Enums"]["class_level"]
+          type_eleve?: Database["public"]["Enums"]["student_type"]
           updated_at?: string
           user_id?: string
         }
@@ -620,6 +623,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "teacher" | "student"
       class_level: "niveau_1" | "niveau_2"
+      student_type: "en_ligne" | "presentiel"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -749,6 +753,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "teacher", "student"],
       class_level: ["niveau_1", "niveau_2"],
+      student_type: ["en_ligne", "presentiel"],
     },
   },
 } as const
