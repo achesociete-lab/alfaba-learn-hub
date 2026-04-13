@@ -15,6 +15,7 @@ const CompleteProfile = () => {
   const [lastName, setLastName] = useState("");
   const [age, setAge] = useState("");
   const [gender, setGender] = useState<"homme" | "femme" | "">("");
+  const [studentType, setStudentType] = useState<"en_ligne" | "presentiel">("en_ligne");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -39,6 +40,7 @@ const CompleteProfile = () => {
           last_name: lastName.trim(),
           age: ageNum,
           gender,
+          type_eleve: studentType,
         })
         .eq("user_id", user.id);
 
@@ -130,6 +132,28 @@ const CompleteProfile = () => {
                   onClick={() => setGender("femme")}
                 >
                   Femme
+                </Button>
+              </div>
+            </div>
+
+            <div>
+              <Label>Type d'élève</Label>
+              <div className="grid grid-cols-2 gap-3 mt-1.5">
+                <Button
+                  type="button"
+                  variant={studentType === "en_ligne" ? "default" : "outline"}
+                  className={studentType === "en_ligne" ? "gradient-emerald border-0 text-primary-foreground" : ""}
+                  onClick={() => setStudentType("en_ligne")}
+                >
+                  En ligne
+                </Button>
+                <Button
+                  type="button"
+                  variant={studentType === "presentiel" ? "default" : "outline"}
+                  className={studentType === "presentiel" ? "gradient-emerald border-0 text-primary-foreground" : ""}
+                  onClick={() => setStudentType("presentiel")}
+                >
+                  Présentiel
                 </Button>
               </div>
             </div>
