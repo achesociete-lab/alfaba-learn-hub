@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsAdmin } from "@/hooks/use-admin";
 
 export type Plan = "découverte" | "essentiel" | "premium";
 
@@ -8,10 +9,19 @@ const FREE_LESSON_LIMIT = 3;
 
 export function useSubscription() {
   const { user } = useAuth();
+  const { isAdmin, loading: adminLoading } = useIsAdmin();
   const [plan, setPlan] = useState<Plan>("découverte");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (adminLoading) return;
+
+    if (isAdmin) {
+      setPlan("premium");
+      setLoading(false);
+      return;
+    }
+
     if (!user) {
       setPlan("découverte");
       setLoading(false);
@@ -37,10 +47,10 @@ export function useSubscription() {
     };
 
     fetch();
-  }, [user]);
+  }, [user, isAdmin, adminLoading]);
 
   const isFreePlan = plan === "découverte";
   const maxLessons = isFreePlan ? FREE_LESSON_LIMIT : Infinity;
 
-  return { plan, isFreePlan, maxLessons, loading };
+  return { plan, isFreePlan, maxLessons, loading: loading || adminLoading };
 }
