@@ -6,7 +6,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Curriculum map: topics covered per lesson
 const NIVEAU1_CURRICULUM: Record<number, string> = {
   1: "الحروف المنفصلة (28 حرفاً)",
   2: "أشكال الحروف (بداية، وسط، نهاية)",
@@ -42,7 +41,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, level, completedLessons } = await req.json();
+    const { messages, level, completedLessons, formality } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
@@ -52,7 +51,6 @@ serve(async (req) => {
     const completed: number[] = completedLessons || [];
     const maxLesson = completed.length > 0 ? Math.max(...completed) : 0;
 
-    // Build list of topics the student has covered
     const coveredTopics = Object.entries(curriculum)
       .filter(([num]) => completed.includes(Number(num)))
       .map(([num, topic]) => `الدرس ${num}: ${topic}`)
@@ -68,6 +66,11 @@ serve(async (req) => {
       ? "الطالب لم يبدأ الدروس بعد. استخدم مفردات بسيطة جداً وجمل قصيرة."
       : `الطالب أنهى ${completed.length} دروس. آخر درس: ${maxLesson}.`;
 
+    // Formality instruction for French text in responses
+    const formalityNote = formality === "tu"
+      ? "عند استخدام أي كلمة فرنسية في ردك (مثل التعليمات أو الملاحظات)، استخدم صيغة المخاطب المفرد غير الرسمي (tutoiement - tu)."
+      : "عند استخدام أي كلمة فرنسية في ردك (مثل التعليمات أو الملاحظات)، استخدم صيغة المخاطب الرسمي (vouvoiement - vous).";
+
     const systemPrompt = `أنت أستاذ لغة عربية فصحى لطلاب فرنكوفونيين.
 
 ### قواعد صارمة:
@@ -76,6 +79,7 @@ serve(async (req) => {
 - إذا كان السؤال بالفرنسية، افهمه وأجب بالعربية فقط.
 - استخدم التشكيل (الحركات) دائماً.
 - لا تستخدم علامات الاقتباس المزدوجة.
+- ${formalityNote}
 
 ### مستوى الطالب: ${levelLabel}
 ${progressDesc}
