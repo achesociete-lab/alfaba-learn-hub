@@ -18,6 +18,7 @@ import { useLessonProgress } from "@/hooks/use-lesson-progress";
 import { useProfile } from "@/hooks/use-profile";
 import LevelUpTest from "@/components/LevelUpTest";
 import DailyExercise from "@/components/DailyExercise";
+import { BadgesSection } from "@/components/BadgesSection";
 
 interface Homework {
   id: string;
