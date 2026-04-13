@@ -89,6 +89,7 @@ const Coran = () => {
   const recorder = useAudioRecorder();
   const [submitting, setSubmitting] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
+  const [memorizationMap, setMemorizationMap] = useState<Record<number, string>>({});
 
   // Playback controls
   const [repeatCount, setRepeatCount] = useState(1);
@@ -108,6 +109,15 @@ const Coran = () => {
     if (!user) return;
     supabase.from("quran_recitations").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10)
       .then(({ data }) => { if (data) setHistory(data); });
+    // Load memorization statuses
+    supabase.from("surah_memorization").select("surah_number, status").eq("user_id", user.id)
+      .then(({ data }) => {
+        if (data) {
+          const map: Record<number, string> = {};
+          data.forEach((d: any) => { map[d.surah_number] = d.status; });
+          setMemorizationMap(map);
+        }
+      });
   }, [user]);
 
   useEffect(() => {
