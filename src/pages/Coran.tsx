@@ -502,20 +502,28 @@ const Coran = () => {
                     <Input placeholder="Rechercher une sourate..." value={surahSearch} onChange={(e) => setSurahSearch(e.target.value)} className="pl-10" />
                   </div>
                   <div className="grid sm:grid-cols-2 gap-2 max-h-[60vh] overflow-y-auto pr-1">
-                    {filteredSurahs.map((surah) => (
-                      <motion.button key={surah.number} onClick={() => selectSurah(surah)}
-                        className="p-3 rounded-xl border border-border bg-card hover:border-primary/30 transition-all text-left flex items-center gap-3 group">
-                        <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
-                          <span className="text-xs font-bold text-primary">{surah.number}</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-semibold text-foreground truncate">{surah.name}</h3>
-                          <p className="text-xs text-muted-foreground">{surah.versesCount} versets • p.{getSurahStartPage(surah.number)}</p>
-                        </div>
-                        <span className="font-arabic text-base text-foreground shrink-0">{surah.nameArabic}</span>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                      </motion.button>
-                    ))}
+                    {filteredSurahs.map((surah) => {
+                      const memStatus = memStatusLabel(memorizationMap[surah.number]);
+                      return (
+                        <motion.button key={surah.number} onClick={() => selectSurah(surah)}
+                          className="p-3 rounded-xl border border-border bg-card hover:border-primary/30 transition-all text-left flex items-center gap-3 group">
+                          <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+                            <span className="text-xs font-bold text-primary">{surah.number}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-sm font-semibold text-foreground truncate">{surah.name}</h3>
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs text-muted-foreground">{surah.versesCount} versets • p.{getSurahStartPage(surah.number)}</p>
+                              {memStatus && (
+                                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${memStatus.cls}`}>{memStatus.label}</span>
+                              )}
+                            </div>
+                          </div>
+                          <span className="font-arabic text-base text-foreground shrink-0">{surah.nameArabic}</span>
+                          <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                        </motion.button>
+                      );
+                    })}
                   </div>
                 </TabsContent>
 
