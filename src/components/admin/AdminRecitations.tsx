@@ -35,6 +35,7 @@ const AdminRecitations = () => {
   const [filter, setFilter] = useState<"pending" | "reviewed">("pending");
   const [feedbackMap, setFeedbackMap] = useState<Map<string, string>>(new Map());
   const [scoreMap, setScoreMap] = useState<Map<string, string>>(new Map());
+  const [statusMap, setStatusMap] = useState<Map<string, string>>(new Map());
   const [savingId, setSavingId] = useState<string | null>(null);
 
   // Audio recording state per recitation
@@ -123,11 +124,14 @@ const AdminRecitations = () => {
         teacherAudioUrl = urlData.publicUrl;
       }
 
+      const selectedStatus = statusMap.get(recId) || "corrigée";
+
       const { error } = await supabase.from("quran_recitations").update({
         teacher_feedback: feedback || null,
         score,
         teacher_reviewed: true,
         teacher_audio_url: teacherAudioUrl,
+        status: selectedStatus,
       } as any).eq("id", recId);
 
       if (error) throw error;
@@ -269,6 +273,31 @@ const AdminRecitations = () => {
                           </Button>
                         </div>
                       )}
+                    </div>
+
+                    {/* Status selector */}
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-muted-foreground">Statut :</span>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={(statusMap.get(rec.id) || "corrigée") === "corrigée" ? "default" : "outline"}
+                          onClick={() => setStatusMap(new Map(statusMap).set(rec.id, "corrigée"))}
+                          className="text-xs h-7"
+                        >
+                          ✓ Corrigée
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={statusMap.get(rec.id) === "a_refaire" ? "destructive" : "outline"}
+                          onClick={() => setStatusMap(new Map(statusMap).set(rec.id, "a_refaire"))}
+                          className="text-xs h-7"
+                        >
+                          ↻ À refaire
+                        </Button>
+                      </div>
                     </div>
 
                     <Button onClick={() => saveReview(rec.id)} disabled={savingId === rec.id} size="sm" className="gap-2">
