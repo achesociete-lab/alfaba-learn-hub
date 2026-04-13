@@ -34,7 +34,7 @@ const LessonSelector = ({ completedLessons, currentLesson, onSelectLesson, lesso
         {lessons.map((lesson, idx) => {
           const isCompleted = completedLessons.includes(lesson.id);
           const withinPlan = isAdmin || idx < maxLessons;
-          const isUnlocked = withinPlan && (idx === 0 || completedLessons.includes(lessons[idx - 1].id));
+          const isUnlocked = isAdmin || (withinPlan && (idx === 0 || completedLessons.includes(lessons[idx - 1].id)));
           const isActive = currentLesson === lesson.id;
 
           return (

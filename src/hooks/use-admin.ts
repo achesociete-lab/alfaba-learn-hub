@@ -14,6 +14,8 @@ export const useIsAdmin = () => {
       return;
     }
 
+    setLoading(true);
+
     const check = async () => {
       const { data } = await supabase
         .from("user_roles")
