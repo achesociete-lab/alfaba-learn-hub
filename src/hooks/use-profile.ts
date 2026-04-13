@@ -8,6 +8,7 @@ export interface Profile {
   level: "niveau_1" | "niveau_2";
   age: number | null;
   gender: string | null;
+  type_eleve: "en_ligne" | "presentiel";
 }
 
 export function useProfile() {
@@ -26,7 +27,7 @@ export function useProfile() {
     if (!user) return;
     const { data } = await supabase
       .from("profiles")
-      .select("first_name, last_name, level, age, gender")
+      .select("first_name, last_name, level, age, gender, type_eleve")
       .eq("user_id", user.id)
       .maybeSingle();
     setProfile(data as Profile | null);
