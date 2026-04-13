@@ -38,12 +38,14 @@ const App = () => (
             <Route path="/mentions-legales" element={<MentionsLegales />} />
             <Route path="/politique-de-confidentialite" element={<PolitiqueConfidentialite />} />
 
+            {/* Public course pages */}
+            <Route path="/niveau-1" element={<Niveau1 />} />
+            <Route path="/exercices" element={<Exercises />} />
+
             {/* Protected routes requiring complete profile */}
             <Route element={<ProfileGuard />}>
-              <Route path="/niveau-1" element={<Niveau1 />} />
               <Route path="/niveau-2" element={<Niveau2 />} />
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/exercices" element={<Exercises />} />
               <Route path="/classe-virtuelle" element={<ClasseVirtuelle />} />
               <Route path="/coran" element={<Coran />} />
               <Route path="/conversation" element={<ArabicChat />} />
