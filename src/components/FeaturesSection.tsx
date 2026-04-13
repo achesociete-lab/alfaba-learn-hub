@@ -1,43 +1,43 @@
 import { motion } from "framer-motion";
 import {
-  Upload,
-  CheckCircle,
+  BookOpen,
+  Mic,
+  Bot,
+  Landmark,
   BarChart3,
-  ClipboardList,
-  Video,
   Lock,
 } from "lucide-react";
 
 const features = [
   {
-    icon: Upload,
-    title: "Dépôt de devoirs",
-    desc: "Les élèves déposent leurs devoirs en ligne, le professeur corrige et note directement.",
+    icon: BookOpen,
+    title: "Leçons structurées",
+    desc: "De l'alphabet aux textes avancés, progressez à votre rythme.",
   },
   {
-    icon: CheckCircle,
-    title: "Correction & Notes",
-    desc: "Système de notation transparent avec feedback détaillé sur chaque devoir.",
+    icon: Mic,
+    title: "Dictées audio",
+    desc: "Entraînez votre oreille et votre prononciation arabe.",
   },
   {
-    icon: ClipboardList,
-    title: "Émargement",
-    desc: "Feuille de présence numérique pour chaque cours en présentiel.",
+    icon: Bot,
+    title: "Professeur IA",
+    desc: "Un assistant disponible 24h/24 qui s'adapte à votre niveau.",
+  },
+  {
+    icon: Landmark,
+    title: "Module Coran",
+    desc: "Apprenez à réciter avec tajwid.",
   },
   {
     icon: BarChart3,
     title: "Suivi de progression",
-    desc: "Tableau de bord avec statistiques de progression et résultats.",
-  },
-  {
-    icon: Video,
-    title: "E-learning",
-    desc: "Accédez aux cours en ligne : vidéos, exercices interactifs et ressources.",
+    desc: "Visualisez vos progrès leçon par leçon.",
   },
   {
     icon: Lock,
     title: "Accès sécurisé",
-    desc: "Chaque élève accède uniquement à son niveau et ses contenus.",
+    desc: "Votre espace personnel et privé.",
   },
 ];
 
@@ -46,10 +46,10 @@ const FeaturesSection = () => (
     <div className="container mx-auto px-4">
       <div className="text-center mb-14">
         <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-3">
-          Tout ce qu'il faut pour <span className="text-gradient-gold">apprendre et enseigner</span>
+          Tout ce qu'il faut pour <span className="text-gradient-gold">apprendre l'arabe</span>
         </h2>
         <p className="text-muted-foreground max-w-lg mx-auto">
-          Des outils pensés pour le présentiel et le distanciel.
+          Une méthode complète, progressive et adaptée à chaque élève.
         </p>
       </div>
 
