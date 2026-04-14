@@ -13,6 +13,7 @@ import { getIllustration } from "@/utils/vocabulary-illustrations";
 import { useIsAdmin } from "@/hooks/use-admin";
 import LessonAudioPlayer from "./LessonAudioPlayer";
 import Lesson1Screens from "./Lesson1Screens";
+import LessonScreens from "./LessonScreens";
 
 interface LessonDetailProps {
   lesson: Lesson;
@@ -566,9 +567,7 @@ const LessonDetail = ({ lesson, onBack, onComplete, nextLessonId, onNextLesson }
   const [exercisesCompleted, setExercisesCompleted] = useState(false);
   const [dictationCompleted, setDictationCompleted] = useState(false);
   const [activeTab, setActiveTab] = useState("lesson");
-  const [theoryCompleted, setTheoryCompleted] = useState(lesson.id !== 1);
-
-  const isLesson1 = lesson.id === 1;
+  const [theoryCompleted, setTheoryCompleted] = useState(false);
 
   const handleComplete = () => {
     onComplete(lesson.id);
@@ -581,16 +580,20 @@ const LessonDetail = ({ lesson, onBack, onComplete, nextLessonId, onNextLesson }
 
   const allDone = exercisesCompleted && dictationCompleted;
 
-  // Lesson progress: 3 steps (lesson viewed, exercises, dictation)
   const steps = [theoryCompleted, exercisesCompleted, dictationCompleted];
   const completedSteps = steps.filter(Boolean).length;
   const lessonProgressPct = Math.round((completedSteps / 3) * 100);
 
   const handleTabChange = (tab: string) => {
-    if ((tab === "exercises" || tab === "dictation") && isLesson1 && !theoryCompleted) {
-      return; // Block tab switch
+    if ((tab === "exercises" || tab === "dictation") && !theoryCompleted) {
+      return;
     }
     setActiveTab(tab);
+  };
+
+  const handleTheoryComplete = () => {
+    setTheoryCompleted(true);
+    setActiveTab("exercises");
   };
 
   return (
@@ -607,7 +610,6 @@ const LessonDetail = ({ lesson, onBack, onComplete, nextLessonId, onNextLesson }
         </div>
       </div>
 
-      {/* Lesson progress bar */}
       <div className="space-y-1">
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>Progression de la leçon</span>
@@ -622,20 +624,24 @@ const LessonDetail = ({ lesson, onBack, onComplete, nextLessonId, onNextLesson }
             <BookOpen className="h-4 w-4" /> Leçon
             {theoryCompleted && <CheckCircle className="h-3 w-3 text-primary" />}
           </TabsTrigger>
-          <TabsTrigger value="exercises" className="gap-1.5 text-xs sm:text-sm" disabled={isLesson1 && !theoryCompleted}>
+          <TabsTrigger value="exercises" className="gap-1.5 text-xs sm:text-sm" disabled={!theoryCompleted}>
             <Brain className="h-4 w-4" /> Exercices
             {exercisesCompleted && <CheckCircle className="h-3 w-3 text-primary" />}
           </TabsTrigger>
-          <TabsTrigger value="dictation" className="gap-1.5 text-xs sm:text-sm" disabled={isLesson1 && !theoryCompleted}>
+          <TabsTrigger value="dictation" className="gap-1.5 text-xs sm:text-sm" disabled={!theoryCompleted}>
             <PenTool className="h-4 w-4" /> Dictée
             {dictationCompleted && <CheckCircle className="h-3 w-3 text-primary" />}
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="lesson">
-          {isLesson1 && !theoryCompleted ? (
-            <Lesson1Screens onComplete={() => { setTheoryCompleted(true); setActiveTab("exercises"); }} />
-          ) : isLesson1 && theoryCompleted ? (
+          {!theoryCompleted ? (
+            lesson.id === 1 ? (
+              <Lesson1Screens onComplete={handleTheoryComplete} />
+            ) : (
+              <LessonScreens lesson={lesson} onComplete={handleTheoryComplete} />
+            )
+          ) : (
             <div className="p-6 rounded-xl border border-primary/30 bg-primary/5 text-center space-y-3">
               <CheckCircle className="h-10 w-10 mx-auto text-primary" />
               <p className="text-foreground font-semibold">Leçon terminée ! ✅</p>
@@ -644,13 +650,11 @@ const LessonDetail = ({ lesson, onBack, onComplete, nextLessonId, onNextLesson }
                 <Brain className="h-4 w-4" /> Aller aux exercices
               </Button>
             </div>
-          ) : (
-            <LessonTab lesson={lesson} />
           )}
         </TabsContent>
 
         <TabsContent value="exercises">
-          {isLesson1 && !theoryCompleted ? (
+          {!theoryCompleted ? (
             <div className="p-6 rounded-xl border border-border bg-card text-center space-y-3">
               <p className="text-foreground font-medium">🔒 Terminez la leçon pour débloquer les exercices</p>
               <Button variant="outline" onClick={() => setActiveTab("lesson")} className="gap-2">
@@ -667,7 +671,7 @@ const LessonDetail = ({ lesson, onBack, onComplete, nextLessonId, onNextLesson }
         </TabsContent>
 
         <TabsContent value="dictation">
-          {isLesson1 && !theoryCompleted ? (
+          {!theoryCompleted ? (
             <div className="p-6 rounded-xl border border-border bg-card text-center space-y-3">
               <p className="text-foreground font-medium">🔒 Terminez la leçon pour débloquer la dictée</p>
               <Button variant="outline" onClick={() => setActiveTab("lesson")} className="gap-2">
