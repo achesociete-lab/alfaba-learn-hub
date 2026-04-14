@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useSubscription } from "@/hooks/use-subscription";
 import { type Lesson } from "@/data/niveau1-lessons";
 import { type Niveau2Lesson } from "@/data/niveau2-lessons";
