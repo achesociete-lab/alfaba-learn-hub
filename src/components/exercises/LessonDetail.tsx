@@ -566,6 +566,9 @@ const LessonDetail = ({ lesson, onBack, onComplete, nextLessonId, onNextLesson }
   const [exercisesCompleted, setExercisesCompleted] = useState(false);
   const [dictationCompleted, setDictationCompleted] = useState(false);
   const [activeTab, setActiveTab] = useState("lesson");
+  const [theoryCompleted, setTheoryCompleted] = useState(lesson.id !== 1);
+
+  const isLesson1 = lesson.id === 1;
 
   const handleComplete = () => {
     onComplete(lesson.id);
@@ -579,9 +582,16 @@ const LessonDetail = ({ lesson, onBack, onComplete, nextLessonId, onNextLesson }
   const allDone = exercisesCompleted && dictationCompleted;
 
   // Lesson progress: 3 steps (lesson viewed, exercises, dictation)
-  const steps = [true, exercisesCompleted, dictationCompleted];
+  const steps = [theoryCompleted, exercisesCompleted, dictationCompleted];
   const completedSteps = steps.filter(Boolean).length;
   const lessonProgressPct = Math.round((completedSteps / 3) * 100);
+
+  const handleTabChange = (tab: string) => {
+    if ((tab === "exercises" || tab === "dictation") && isLesson1 && !theoryCompleted) {
+      return; // Block tab switch
+    }
+    setActiveTab(tab);
+  };
 
   return (
     <div className="space-y-4">
@@ -606,35 +616,67 @@ const LessonDetail = ({ lesson, onBack, onComplete, nextLessonId, onNextLesson }
         <Progress value={lessonProgressPct} className="h-2" />
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
         <TabsList className="bg-muted w-full grid grid-cols-3">
           <TabsTrigger value="lesson" className="gap-1.5 text-xs sm:text-sm">
             <BookOpen className="h-4 w-4" /> Leçon
+            {theoryCompleted && <CheckCircle className="h-3 w-3 text-primary" />}
           </TabsTrigger>
-          <TabsTrigger value="exercises" className="gap-1.5 text-xs sm:text-sm">
+          <TabsTrigger value="exercises" className="gap-1.5 text-xs sm:text-sm" disabled={isLesson1 && !theoryCompleted}>
             <Brain className="h-4 w-4" /> Exercices
             {exercisesCompleted && <CheckCircle className="h-3 w-3 text-primary" />}
           </TabsTrigger>
-          <TabsTrigger value="dictation" className="gap-1.5 text-xs sm:text-sm">
+          <TabsTrigger value="dictation" className="gap-1.5 text-xs sm:text-sm" disabled={isLesson1 && !theoryCompleted}>
             <PenTool className="h-4 w-4" /> Dictée
             {dictationCompleted && <CheckCircle className="h-3 w-3 text-primary" />}
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="lesson">
-          <LessonTab lesson={lesson} />
+          {isLesson1 && !theoryCompleted ? (
+            <Lesson1Screens onComplete={() => { setTheoryCompleted(true); setActiveTab("exercises"); }} />
+          ) : isLesson1 && theoryCompleted ? (
+            <div className="p-6 rounded-xl border border-primary/30 bg-primary/5 text-center space-y-3">
+              <CheckCircle className="h-10 w-10 mx-auto text-primary" />
+              <p className="text-foreground font-semibold">Leçon terminée ! ✅</p>
+              <p className="text-sm text-muted-foreground">Passe aux exercices pour continuer.</p>
+              <Button onClick={() => setActiveTab("exercises")} className="gap-2">
+                <Brain className="h-4 w-4" /> Aller aux exercices
+              </Button>
+            </div>
+          ) : (
+            <LessonTab lesson={lesson} />
+          )}
         </TabsContent>
 
         <TabsContent value="exercises">
-          <QCMTab
-            lesson={lesson}
-            onAllCorrect={() => setExercisesCompleted(true)}
-            onSwitchToDictation={() => setActiveTab("dictation")}
-          />
+          {isLesson1 && !theoryCompleted ? (
+            <div className="p-6 rounded-xl border border-border bg-card text-center space-y-3">
+              <p className="text-foreground font-medium">🔒 Terminez la leçon pour débloquer les exercices</p>
+              <Button variant="outline" onClick={() => setActiveTab("lesson")} className="gap-2">
+                <BookOpen className="h-4 w-4" /> Retour à la leçon
+              </Button>
+            </div>
+          ) : (
+            <QCMTab
+              lesson={lesson}
+              onAllCorrect={() => setExercisesCompleted(true)}
+              onSwitchToDictation={() => setActiveTab("dictation")}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="dictation">
-          <DictationTab lesson={lesson} onAllCorrect={() => setDictationCompleted(true)} />
+          {isLesson1 && !theoryCompleted ? (
+            <div className="p-6 rounded-xl border border-border bg-card text-center space-y-3">
+              <p className="text-foreground font-medium">🔒 Terminez la leçon pour débloquer la dictée</p>
+              <Button variant="outline" onClick={() => setActiveTab("lesson")} className="gap-2">
+                <BookOpen className="h-4 w-4" /> Retour à la leçon
+              </Button>
+            </div>
+          ) : (
+            <DictationTab lesson={lesson} onAllCorrect={() => setDictationCompleted(true)} />
+          )}
         </TabsContent>
       </Tabs>
 
