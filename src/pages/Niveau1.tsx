@@ -136,7 +136,7 @@ const Niveau1 = () => {
                 const isProgressLocked = !isAdmin && !isPrevCompleted && !isPaywalled;
                 const isLocked = isPaywalled || isProgressLocked;
 
-                const linkTarget = isPaywalled ? "/auth" : isProgressLocked ? "#" : "/exercices";
+                const linkTarget = isPaywalled ? (user ? "/tarifs" : "/auth") : isProgressLocked ? "#" : `/exercices?lesson=${lesson.num}`;
 
                 const card = (
                   <div key={lesson.num}>
@@ -149,12 +149,21 @@ const Niveau1 = () => {
                         className="mb-3 p-5 rounded-xl bg-primary/10 border border-primary/30 text-center"
                       >
                         <p className="text-lg font-bold text-foreground mb-1">🔓 Débloquer toutes les leçons</p>
-                        <p className="text-sm text-muted-foreground mb-3">Inscris-toi gratuitement pour continuer ton apprentissage →</p>
-                        <Button asChild className="gradient-emerald border-0 text-primary-foreground">
-                          <Link to="/auth">
-                            S'inscrire gratuitement →
-                          </Link>
-                        </Button>
+                        {user ? (
+                          <>
+                            <p className="text-sm text-muted-foreground mb-3">Passez au plan Essentiel pour débloquer toutes les leçons</p>
+                            <Button asChild className="gradient-emerald border-0 text-primary-foreground">
+                              <Link to="/tarifs">Passer à l'Essentiel →</Link>
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-sm text-muted-foreground mb-3">Inscris-toi gratuitement pour continuer ton apprentissage →</p>
+                            <Button asChild className="gradient-emerald border-0 text-primary-foreground">
+                              <Link to="/auth">S'inscrire gratuitement →</Link>
+                            </Button>
+                          </>
+                        )}
                       </motion.div>
                     )}
 
