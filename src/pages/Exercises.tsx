@@ -18,7 +18,7 @@ import { useNiveau1Lessons, useNiveau2Lessons } from "@/hooks/use-lessons";
 type Level = "niveau_1" | "niveau_2";
 
 // ─── Niveau 1 Progressive Lessons ───
-function Niveau1Lessons({ maxLessons }: { maxLessons: number }) {
+function Niveau1Lessons({ maxLessons, onLessonChange }: { maxLessons: number; onLessonChange: (lesson: Lesson | null) => void }) {
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const { completedLessons, completeLesson } = useLessonProgress();
   const { lessons } = useNiveau1Lessons();
@@ -26,16 +26,26 @@ function Niveau1Lessons({ maxLessons }: { maxLessons: number }) {
   const currentIdx = selectedLesson ? lessons.findIndex(l => l.id === selectedLesson.id) : -1;
   const nextLesson = currentIdx >= 0 && currentIdx < lessons.length - 1 ? lessons[currentIdx + 1] : null;
 
+  const handleSelect = (lesson: Lesson) => {
+    setSelectedLesson(lesson);
+    onLessonChange(lesson);
+  };
+
+  const handleBack = () => {
+    setSelectedLesson(null);
+    onLessonChange(null);
+  };
+
   if (selectedLesson) {
     return (
       <LessonDetail
         lesson={selectedLesson}
-        onBack={() => setSelectedLesson(null)}
+        onBack={handleBack}
         onComplete={completeLesson}
         nextLessonId={nextLesson?.id || null}
         onNextLesson={(id) => {
           const lesson = lessons.find(l => l.id === id);
-          if (lesson) setSelectedLesson(lesson);
+          if (lesson) handleSelect(lesson);
         }}
       />
     );
@@ -46,7 +56,7 @@ function Niveau1Lessons({ maxLessons }: { maxLessons: number }) {
       lessons={lessons}
       completedLessons={completedLessons}
       currentLesson={null}
-      onSelectLesson={setSelectedLesson}
+      onSelectLesson={handleSelect}
       maxLessons={maxLessons}
     />
   );
@@ -83,6 +93,7 @@ const Exercises = () => {
   const navigate = useNavigate();
   const [level, setLevel] = useState<Level>("niveau_1");
   const { maxLessons, isFreePlan, loading: subLoading } = useSubscription();
+  const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
 
   // No redirect for unauthenticated users — lessons 1-3 are free
 
@@ -96,17 +107,23 @@ const Exercises = () => {
     return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground">Chargement...</p></div>;
   }
 
+  const pageTitle = currentLesson
+    ? `Niveau 1 — ${currentLesson.title}`
+    : level === "niveau_1"
+    ? "Niveau 1 — L'alphabet arabe"
+    : "Niveau 2 — Grammaire & dictée avancée";
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       <main className="pt-24 pb-16">
         <div className="container mx-auto px-4 max-w-3xl">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8 text-center">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Exercices interactifs</h1>
+            <h1 className="text-3xl font-bold text-foreground mb-2">{pageTitle}</h1>
             <p className="text-muted-foreground">
               {level === "niveau_1"
-                ? "Niveau 1 — L'alphabet arabe lettre par lettre"
-                : "Niveau 2 — Grammaire, compréhension & dictée avancée"}
+                ? "L'alphabet arabe lettre par lettre"
+                : "Grammaire, compréhension & dictée avancée"}
             </p>
             {isFreePlan && !user && (
               <p className="text-sm text-muted-foreground mt-2">
@@ -122,7 +139,7 @@ const Exercises = () => {
             )}
           </motion.div>
 
-          {level === "niveau_1" ? <Niveau1Lessons maxLessons={maxLessons} /> : <Niveau2Lessons />}
+          {level === "niveau_1" ? <Niveau1Lessons maxLessons={maxLessons} onLessonChange={setCurrentLesson} /> : <Niveau2Lessons />}
         </div>
       </main>
       <Footer />
