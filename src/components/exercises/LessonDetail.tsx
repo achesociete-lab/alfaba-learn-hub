@@ -13,6 +13,7 @@ import { getIllustration } from "@/utils/vocabulary-illustrations";
 import { useIsAdmin } from "@/hooks/use-admin";
 import LessonAudioPlayer from "./LessonAudioPlayer";
 import Lesson1Screens from "./Lesson1Screens";
+import LessonScreens from "./LessonScreens";
 
 interface LessonDetailProps {
   lesson: Lesson;
