@@ -1,6 +1,8 @@
 // Sourates et versets ayant un mérite particulier dans l'Islam
 // Appuyé par des hadiths authentiques (sahih)
 
+export type MeritTheme = "protection" | "récompense" | "mémorisation" | "guérison";
+
 export interface MeritEntry {
   id: string;
   title: string;
@@ -9,6 +11,7 @@ export interface MeritEntry {
   ayahStart?: number;
   ayahEnd?: number;
   description: string;
+  themes: MeritTheme[];
   hadiths: {
     text: string;
     source: string;
@@ -16,6 +19,13 @@ export interface MeritEntry {
   }[];
   benefits: string[];
 }
+
+export const MERIT_THEMES: { value: MeritTheme; label: string; emoji: string }[] = [
+  { value: "protection", label: "Protection", emoji: "🛡️" },
+  { value: "récompense", label: "Récompense", emoji: "🌟" },
+  { value: "mémorisation", label: "Mémorisation", emoji: "📖" },
+  { value: "guérison", label: "Guérison", emoji: "💚" },
+];
 
 export const QURAN_MERITS: MeritEntry[] = [
   {
@@ -27,6 +37,7 @@ export const QURAN_MERITS: MeritEntry[] = [
     ayahEnd: 255,
     description:
       "Le plus grand verset du Coran. Sa récitation offre une protection divine contre tout mal.",
+    themes: ["protection", "récompense"],
     hadiths: [
       {
         text: "Le Prophète ﷺ a dit : Celui qui récite Ayat Al-Kursi après chaque prière obligatoire, rien ne l'empêchera d'entrer au Paradis si ce n'est la mort.",
@@ -52,6 +63,7 @@ export const QURAN_MERITS: MeritEntry[] = [
     surahNumber: 67,
     description:
       "Appelée aussi Al-Mani'a (la protectrice), cette sourate intercède pour celui qui la récite régulièrement et le protège du châtiment de la tombe.",
+    themes: ["protection", "récompense"],
     hadiths: [
       {
         text: "Le Prophète ﷺ a dit : Il y a dans le Coran une sourate de trente versets qui intercédera pour son compagnon jusqu'à ce qu'il lui soit pardonné. C'est (Tabârak alladhi biyadihi-l-Mulk).",
@@ -77,6 +89,7 @@ export const QURAN_MERITS: MeritEntry[] = [
     surahNumber: 112,
     description:
       "Cette courte sourate équivaut au tiers du Coran. Elle affirme le monothéisme pur (Tawhid) et l'unicité absolue d'Allah.",
+    themes: ["récompense", "mémorisation"],
     hadiths: [
       {
         text: "Le Prophète ﷺ a dit : Par Celui qui détient mon âme dans Sa main, elle équivaut au tiers du Coran.",
@@ -102,6 +115,7 @@ export const QURAN_MERITS: MeritEntry[] = [
     surahNumber: 113,
     description:
       "Les deux sourates protectrices. Le Prophète ﷺ les récitait chaque soir et soufflait dans ses mains pour se protéger.",
+    themes: ["protection", "guérison"],
     hadiths: [
       {
         text: "Aïcha رضي الله عنها rapporte que le Prophète ﷺ, chaque nuit quand il se couchait, joignait ses mains, soufflait dedans et récitait (Qul Huwa Allahu Ahad), (Qul A'udhu bi Rabbi-l-Falaq) et (Qul A'udhu bi Rabbi-n-Nas), puis il passait ses mains sur tout le corps qu'il pouvait atteindre. Il faisait cela trois fois.",
@@ -127,6 +141,7 @@ export const QURAN_MERITS: MeritEntry[] = [
     surahNumber: 18,
     description:
       "Sa récitation le vendredi illumine le croyant d'une lumière entre les deux vendredis et protège contre l'épreuve du Dajjal.",
+    themes: ["protection", "récompense", "mémorisation"],
     hadiths: [
       {
         text: "Le Prophète ﷺ a dit : Celui qui récite Sourate Al-Kahf le jour du vendredi, il sera illuminé d'une lumière entre les deux vendredis.",
@@ -152,6 +167,7 @@ export const QURAN_MERITS: MeritEntry[] = [
     surahNumber: 2,
     description:
       "La plus longue sourate du Coran. Sa récitation dans une maison fait fuir les démons. Ses deux derniers versets suffisent à celui qui les récite la nuit.",
+    themes: ["protection", "récompense"],
     hadiths: [
       {
         text: "Le Prophète ﷺ a dit : Ne faites pas de vos maisons des tombeaux, car le diable fuit la maison dans laquelle on récite Sourate Al-Baqara.",
@@ -177,6 +193,7 @@ export const QURAN_MERITS: MeritEntry[] = [
     surahNumber: 1,
     description:
       "La mère du Coran (Umm Al-Quran) et la plus grande sourate. Elle est un pilier de chaque unité de prière et une Ruqya (guérison).",
+    themes: ["guérison", "récompense"],
     hadiths: [
       {
         text: "Le Prophète ﷺ a dit : La plus grande sourate du Coran est Al-Hamdu Lillahi Rabbi-l-Alamin (Al-Fatiha). Elle est les sept versets répétés et le Coran grandiose qui m'a été donné.",
@@ -202,6 +219,7 @@ export const QURAN_MERITS: MeritEntry[] = [
     surahNumber: 36,
     description:
       "Appelée le cœur du Coran. Sa récitation est recommandée pour les malades et les mourants.",
+    themes: ["guérison", "récompense"],
     hadiths: [
       {
         text: "Le Prophète ﷺ a dit : Récitez Ya-Sin auprès de vos morts (ou mourants).",

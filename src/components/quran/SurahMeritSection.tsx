@@ -1,12 +1,13 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { BookOpen, ChevronRight, Sparkles, Quote } from "lucide-react";
-import { QURAN_MERITS, type MeritEntry } from "@/data/quran-merits";
+import { BookOpen, ChevronRight, Sparkles, Quote, Mic } from "lucide-react";
+import { QURAN_MERITS, MERIT_THEMES, type MeritEntry, type MeritTheme } from "@/data/quran-merits";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { useState } from "react";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   onSelectSurah: (surahNumber: number) => void;
@@ -40,6 +41,18 @@ const MeritCard = ({ entry, onSelectSurah }: { entry: MeritEntry; onSelectSurah:
           <div className="px-4 pb-4 space-y-4">
             <p className="text-sm text-muted-foreground">{entry.description}</p>
 
+            {/* Theme badges */}
+            <div className="flex flex-wrap gap-1.5">
+              {entry.themes.map((theme) => {
+                const t = MERIT_THEMES.find((m) => m.value === theme);
+                return t ? (
+                  <span key={theme} className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                    {t.emoji} {t.label}
+                  </span>
+                ) : null;
+              })}
+            </div>
+
             {/* Hadiths */}
             <div className="space-y-3">
               <h4 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
@@ -71,16 +84,26 @@ const MeritCard = ({ entry, onSelectSurah }: { entry: MeritEntry; onSelectSurah:
               ))}
             </div>
 
-            {/* Go to surah */}
-            <button
-              onClick={() => onSelectSurah(entry.surahNumber)}
-              className="flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
-            >
-              <BookOpen className="h-4 w-4" />
-              {entry.ayahStart
-                ? `Lire le verset ${entry.ayahStart} — Sourate ${entry.surahNumber}`
-                : `Lire Sourate ${entry.title}`}
-            </button>
+            {/* Action buttons */}
+            <div className="flex flex-wrap gap-2 pt-1">
+              <button
+                onClick={() => onSelectSurah(entry.surahNumber)}
+                className="flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
+              >
+                <BookOpen className="h-4 w-4" />
+                {entry.ayahStart
+                  ? `Lire le verset ${entry.ayahStart} — Sourate ${entry.surahNumber}`
+                  : `Lire Sourate ${entry.title}`}
+              </button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onSelectSurah(entry.surahNumber)}
+                className="gap-1.5 text-xs ml-auto"
+              >
+                <Mic className="h-3.5 w-3.5" /> Réciter cette sourate →
+              </Button>
+            </div>
           </div>
         </CollapsibleContent>
       </Collapsible>
@@ -89,6 +112,18 @@ const MeritCard = ({ entry, onSelectSurah }: { entry: MeritEntry; onSelectSurah:
 };
 
 export default function SurahMeritSection({ onSelectSurah }: Props) {
+  const [activeThemes, setActiveThemes] = useState<MeritTheme[]>([]);
+
+  const toggleTheme = (theme: MeritTheme) => {
+    setActiveThemes((prev) =>
+      prev.includes(theme) ? prev.filter((t) => t !== theme) : [...prev, theme]
+    );
+  };
+
+  const filteredMerits = activeThemes.length === 0
+    ? QURAN_MERITS
+    : QURAN_MERITS.filter((entry) => entry.themes.some((t) => activeThemes.includes(t)));
+
   return (
     <div className="space-y-3">
       <div className="text-center mb-4">
@@ -98,9 +133,31 @@ export default function SurahMeritSection({ onSelectSurah }: Props) {
         </h2>
         <p className="text-xs text-muted-foreground mt-1">Appuyés par des hadiths authentiques</p>
       </div>
-      {QURAN_MERITS.map((entry) => (
+
+      {/* Theme filters */}
+      <div className="flex flex-wrap justify-center gap-2 mb-4">
+        {MERIT_THEMES.map((theme) => (
+          <button
+            key={theme.value}
+            onClick={() => toggleTheme(theme.value)}
+            className={`text-xs font-medium px-3 py-1.5 rounded-full transition-all ${
+              activeThemes.includes(theme.value)
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "bg-muted text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {theme.emoji} {theme.label}
+          </button>
+        ))}
+      </div>
+
+      {filteredMerits.map((entry) => (
         <MeritCard key={entry.id} entry={entry} onSelectSurah={onSelectSurah} />
       ))}
+
+      {filteredMerits.length === 0 && (
+        <p className="text-sm text-muted-foreground text-center py-8">Aucune sourate ne correspond à ce filtre.</p>
+      )}
     </div>
   );
 }

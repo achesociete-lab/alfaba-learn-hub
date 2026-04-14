@@ -365,32 +365,21 @@ const Coran = () => {
         </div>
       );
     }
-    if (mushafPageError) {
-      return <p className="text-sm text-destructive text-center py-10">{mushafPageError}</p>;
-    }
+    const pageStr = String(currentPage).padStart(3, "0");
+    const imgUrl = `https://www.mp3quran.net/api/quran_pages_arabic/${pageStr}.png`;
     return (
-      <div className={`rounded-xl border border-border bg-card ${compact ? "p-4" : "p-6"}`}>
-        <div className="space-y-6">
-          {mushafSections.map((section) => (
-            <div key={`${section.surahNumber}-${currentPage}`} className="space-y-3">
-              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                <span>Sourate {section.surahNumber}</span>
-                <span>•</span>
-                <span className="font-arabic text-base text-foreground">{section.surahNameArabic}</span>
-              </div>
-              <div className={`${compact ? "text-xl" : "text-2xl"} leading-loose text-right font-arabic text-foreground`} dir="rtl">
-                {section.ayahs.map((ayah) => (
-                  <span key={ayah.id} className="inline">
-                    {ayah.text}
-                    <span className="mx-1 inline-flex min-w-6 items-center justify-center rounded-full border border-border bg-muted px-1.5 py-0.5 text-[11px] font-medium not-italic text-muted-foreground align-middle">
-                      {ayah.ayahNumber}
-                    </span>{" "}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+      <div className={`rounded-xl border border-border bg-card ${compact ? "p-2" : "p-4"} flex items-center justify-center`}>
+        <img
+          src={imgUrl}
+          alt={`Page ${currentPage} du Mushaf`}
+          className="w-full max-w-2xl rounded-lg"
+          loading="lazy"
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = "none";
+            setMushafPageError("Impossible de charger l'image de cette page.");
+          }}
+        />
+        {mushafPageError && <p className="text-sm text-destructive text-center py-10">{mushafPageError}</p>}
       </div>
     );
   };
