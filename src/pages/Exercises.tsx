@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
@@ -19,9 +20,25 @@ type Level = "niveau_1" | "niveau_2";
 
 // ─── Niveau 1 Progressive Lessons ───
 function Niveau1Lessons({ maxLessons, onLessonChange }: { maxLessons: number; onLessonChange: (lesson: Lesson | null) => void }) {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const { completedLessons, completeLesson } = useLessonProgress();
   const { lessons } = useNiveau1Lessons();
+
+  // Auto-select lesson from URL query param
+  useEffect(() => {
+    const lessonParam = searchParams.get("lesson");
+    if (lessonParam && lessons.length > 0 && !selectedLesson) {
+      const num = parseInt(lessonParam, 10);
+      const found = lessons.find(l => l.id === num);
+      if (found) {
+        setSelectedLesson(found);
+        onLessonChange(found);
+        searchParams.delete("lesson");
+        setSearchParams(searchParams, { replace: true });
+      }
+    }
+  }, [lessons, searchParams]);
 
   const currentIdx = selectedLesson ? lessons.findIndex(l => l.id === selectedLesson.id) : -1;
   const nextLesson = currentIdx >= 0 && currentIdx < lessons.length - 1 ? lessons[currentIdx + 1] : null;
