@@ -499,11 +499,6 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
               <p className="text-sm text-muted-foreground italic">🔇 Aucun enregistrement disponible pour ce mot</p>
             </div>
           )}
-            >
-              <Volume2 className={`h-6 w-6 ${isPlaying ? "animate-pulse text-primary" : "text-muted-foreground"}`} />
-              {isPlaying ? "Lecture..." : "🔊 Écouter"}
-            </Button>
-          </div>
 
           {mode === "qcm" ? (
             <div className="grid grid-cols-2 gap-3">
