@@ -63,6 +63,7 @@ function Niveau1Lessons({ maxLessons, onLessonChange }: { maxLessons: number; on
           const lesson = lessons.find(l => l.id === id);
           if (lesson) handleSelect(lesson);
         }}
+        maxLessons={maxLessons}
       />
     );
   }
