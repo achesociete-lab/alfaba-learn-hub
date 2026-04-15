@@ -164,16 +164,6 @@ function LessonTab({ lesson }: { lesson: Lesson }) {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
       <LessonAudioPlayer level="niveau_1" lessonNumber={lesson.id} isTeacher={isAdmin} />
 
-      <div className="flex justify-center">
-        <Button
-          variant="outline"
-          onClick={readLesson}
-          className={`gap-2 rounded-full px-6 ${isReading ? "border-primary bg-primary/10" : ""}`}
-        >
-          <Volume2 className={`h-4 w-4 ${isReading ? "animate-pulse text-primary" : ""}`} />
-          {isReading ? "⏹ Arrêter la lecture" : "🔊 Écouter via synthèse vocale"}
-        </Button>
-      </div>
 
       {lesson.videoUrl && (
         <div className="rounded-xl overflow-hidden border border-border bg-card">
@@ -491,13 +481,24 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
       <AnimatePresence mode="wait">
         <motion.div key={`${current}-${mode}`} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="p-6 rounded-xl border border-border bg-card">
           <p className="text-center text-muted-foreground mb-2 text-sm">Écoutez et {mode === "qcm" ? "choisissez" : "écrivez"} le bon mot :</p>
-          <div className="flex justify-center mb-6">
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={playDictation}
-              disabled={isPlaying}
-              className="gap-3 rounded-full px-8 py-6 text-lg border-primary/30 hover:bg-primary/10"
+          {teacherClipUrl ? (
+            <div className="flex justify-center mb-6">
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={playDictation}
+                disabled={isPlaying}
+                className="gap-3 rounded-full px-8 py-6 text-lg border-primary/30 hover:bg-primary/10"
+              >
+                <Volume2 className={`h-6 w-6 ${isPlaying ? "animate-pulse text-primary" : "text-muted-foreground"}`} />
+                {isPlaying ? "Lecture..." : "🔊 Écouter"}
+              </Button>
+            </div>
+          ) : (
+            <div className="flex justify-center mb-6">
+              <p className="text-sm text-muted-foreground italic">🔇 Aucun enregistrement disponible pour ce mot</p>
+            </div>
+          )}
             >
               <Volume2 className={`h-6 w-6 ${isPlaying ? "animate-pulse text-primary" : "text-muted-foreground"}`} />
               {isPlaying ? "Lecture..." : "🔊 Écouter"}
