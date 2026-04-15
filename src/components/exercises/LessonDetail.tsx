@@ -230,11 +230,7 @@ function QCMTab({ lesson, onAllCorrect, onSwitchToDictation }: { lesson: Lesson;
         correctAnswer: q.options[q.correctIndex],
       }]);
     }
-    if (current + 1 >= qcmList.length) {
-      setTimeout(() => {
-        if (newScore === qcmList.length) onAllCorrect();
-      }, 500);
-    }
+    // Score check moved to finished screen
   };
 
   const next = () => {
@@ -252,6 +248,8 @@ function QCMTab({ lesson, onAllCorrect, onSwitchToDictation }: { lesson: Lesson;
 
   if (finished) {
     const pct = Math.round((score / qcmList.length) * 100);
+    const passed = pct >= 80;
+    if (passed) onAllCorrect();
     return (
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="p-8 rounded-xl border border-border bg-card text-center space-y-4">
         <Trophy className="h-16 w-16 mx-auto text-secondary" />
@@ -261,10 +259,9 @@ function QCMTab({ lesson, onAllCorrect, onSwitchToDictation }: { lesson: Lesson;
         </p>
         <Progress value={pct} className="h-3 max-w-xs mx-auto" />
         <p className="text-sm text-muted-foreground">
-          {score === qcmList.length ? "Parfait ! 🎉" : score >= qcmList.length * 0.7 ? "Très bien ! 👏" : "Continue à t'entraîner 💪"}
+          {passed ? (score === qcmList.length ? "Parfait ! 🎉" : "Très bien ! 👏") : "Encore un petit effort ! Il faut 80% pour passer à la suite. 💪"}
         </p>
 
-        {/* Wrong answers recap */}
         {wrongAnswers.length > 0 && (
           <div className="text-left mt-4 space-y-2">
             <h4 className="text-sm font-semibold text-foreground">❌ Questions ratées :</h4>
@@ -280,7 +277,7 @@ function QCMTab({ lesson, onAllCorrect, onSwitchToDictation }: { lesson: Lesson;
 
         <div className="flex flex-wrap justify-center gap-3 pt-2">
           <Button onClick={reset} variant="outline" className="gap-2"><RotateCcw className="h-4 w-4" /> Réessayer</Button>
-          {onSwitchToDictation && (
+          {passed && onSwitchToDictation && (
             <Button onClick={onSwitchToDictation} className="gap-2"><PenTool className="h-4 w-4" /> Passer à la Dictée</Button>
           )}
         </div>
@@ -385,11 +382,7 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
         correctAnswer: correctArabic,
       }]);
     }
-    if (current + 1 >= dictList.length) {
-      setTimeout(() => {
-        if (newScore === dictList.length) onAllCorrect();
-      }, 500);
-    }
+    // Score check moved to finished screen
   };
 
   const handleCheckTyped = () => {
@@ -406,11 +399,7 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
         correctAnswer: correctArabic,
       }]);
     }
-    if (current + 1 >= dictList.length) {
-      setTimeout(() => {
-        if (newScore === dictList.length) onAllCorrect();
-      }, 500);
-    }
+    // Score check moved to finished screen
   };
 
   const next = () => {
@@ -434,6 +423,8 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
 
   if (finished) {
     const pct = Math.round((score / dictList.length) * 100);
+    const passed = pct >= 80;
+    if (passed) onAllCorrect();
     return (
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="p-8 rounded-xl border border-border bg-card text-center space-y-4">
         <Trophy className="h-16 w-16 mx-auto text-secondary" />
@@ -443,7 +434,7 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
         </p>
         <Progress value={pct} className="h-3 max-w-xs mx-auto" />
         <p className="text-sm text-muted-foreground">
-          {score === dictList.length ? "Excellent ! 🎉" : "Continue à t'entraîner 💪"}
+          {passed ? (score === dictList.length ? "Excellent ! 🎉" : "Très bien ! 👏") : "Encore un petit effort ! Il faut 80% pour passer à la suite. 💪"}
         </p>
 
         {wrongAnswers.length > 0 && (
@@ -629,7 +620,7 @@ const LessonDetail = ({ lesson, onBack, onComplete, nextLessonId, onNextLesson, 
             <Brain className="h-4 w-4" /> Exercices
             {exercisesCompleted && <CheckCircle className="h-3 w-3 text-primary" />}
           </TabsTrigger>
-          <TabsTrigger value="dictation" className="gap-1.5 text-xs sm:text-sm" disabled={!theoryCompleted}>
+          <TabsTrigger value="dictation" className="gap-1.5 text-xs sm:text-sm" disabled={!theoryCompleted || !exercisesCompleted}>
             <PenTool className="h-4 w-4" /> Dictée
             {dictationCompleted && <CheckCircle className="h-3 w-3 text-primary" />}
           </TabsTrigger>
