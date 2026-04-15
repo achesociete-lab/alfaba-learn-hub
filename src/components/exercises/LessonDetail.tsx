@@ -128,37 +128,7 @@ function TheorySectionView({ section }: { section: TheorySection }) {
 
 // ─── Lesson Tab ───
 function LessonTab({ lesson }: { lesson: Lesson }) {
-  const { speak, stop } = useArabicSpeech();
   const { isAdmin } = useIsAdmin();
-  const [isReading, setIsReading] = useState(false);
-
-  const readLesson = async () => {
-    if (isReading) { stop(); setIsReading(false); return; }
-    setIsReading(true);
-    try {
-      for (const section of (lesson.theory || [])) {
-        if (section.letterGrid) {
-          for (const l of section.letterGrid) {
-            await speak(l.letter, 0.8);
-            await new Promise(r => setTimeout(r, 500));
-          }
-        }
-        if (section.formsTable) {
-          for (const row of section.formsTable) {
-            await speak(row.isolated, 0.8);
-            await new Promise(r => setTimeout(r, 600));
-          }
-        }
-        if (section.arabicExamples) {
-          for (const ex of section.arabicExamples) {
-            await speak(ex.arabic, 0.75);
-            await new Promise(r => setTimeout(r, 800));
-          }
-        }
-      }
-    } catch { /* stopped */ }
-    setIsReading(false);
-  };
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
