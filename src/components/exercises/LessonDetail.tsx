@@ -662,11 +662,13 @@ const LessonDetail = ({ lesson, onBack, onComplete, nextLessonId, onNextLesson, 
         </TabsContent>
 
         <TabsContent value="dictation">
-          {!theoryCompleted ? (
+          {!theoryCompleted || !exercisesCompleted ? (
             <div className="p-6 rounded-xl border border-border bg-card text-center space-y-3">
-              <p className="text-foreground font-medium">🔒 Terminez la leçon pour débloquer la dictée</p>
-              <Button variant="outline" onClick={() => setActiveTab("lesson")} className="gap-2">
-                <BookOpen className="h-4 w-4" /> Retour à la leçon
+              <p className="text-foreground font-medium">
+                {!theoryCompleted ? "🔒 Terminez la leçon pour débloquer la dictée" : "🔒 Obtenez au moins 80% aux exercices pour débloquer la dictée"}
+              </p>
+              <Button variant="outline" onClick={() => setActiveTab(!theoryCompleted ? "lesson" : "exercises")} className="gap-2">
+                {!theoryCompleted ? <><BookOpen className="h-4 w-4" /> Retour à la leçon</> : <><Brain className="h-4 w-4" /> Retour aux exercices</>}
               </Button>
             </div>
           ) : (
