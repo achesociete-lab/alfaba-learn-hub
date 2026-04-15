@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Lesson, TheorySection } from "@/data/niveau1-lessons";
 import { useArabicSpeech } from "@/hooks/use-arabic-speech";
+import { getTeacherClipUrl } from "@/hooks/use-teacher-audio-clips";
 import { getIllustration } from "@/utils/vocabulary-illustrations";
 import { useIsAdmin } from "@/hooks/use-admin";
 import LessonAudioPlayer from "./LessonAudioPlayer";
@@ -337,7 +338,6 @@ function QCMTab({ lesson, onAllCorrect, onSwitchToDictation }: { lesson: Lesson;
 
 // ─── Dictation Tab ───
 function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: () => void }) {
-  const { speak } = useArabicSpeech();
   const dictList = lesson.dictation || [];
   const [current, setCurrent] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
@@ -350,17 +350,30 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
   const [answerCorrect, setAnswerCorrect] = useState(false);
   const [wrongAnswers, setWrongAnswers] = useState<WrongAnswer[]>([]);
   const currentRef = useRef(current);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   if (dictList.length === 0) return <p className="text-center text-muted-foreground p-4">Aucune dictée disponible.</p>;
   const d = dictList[current];
   const correctArabic = d.options[d.correctIndex];
 
+  const teacherClipUrl = getTeacherClipUrl(correctArabic);
+
   const playDictation = async () => {
+    if (!teacherClipUrl) return;
     setIsPlaying(true);
     try {
-      await speak(correctArabic, 0.75);
+      if (audioRef.current) { audioRef.current.pause(); }
+      const audio = new Audio(teacherClipUrl);
+      audioRef.current = audio;
+      await audio.play();
+      await new Promise<void>((resolve) => {
+        audio.addEventListener("ended", () => resolve(), { once: true });
+        audio.addEventListener("error", () => resolve(), { once: true });
+      });
+    } catch (e) {
+      console.warn("Teacher clip playback failed:", e);
     } finally {
-      setTimeout(() => setIsPlaying(false), 1500);
+      setIsPlaying(false);
     }
   };
 
