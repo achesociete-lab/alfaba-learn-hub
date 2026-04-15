@@ -21,6 +21,7 @@ interface LessonDetailProps {
   onComplete: (lessonId: number) => void;
   nextLessonId?: number | null;
   onNextLesson?: (lessonId: number) => void;
+  maxLessons?: number;
 }
 
 // ─── Theory Section Renderer ───
@@ -563,7 +564,7 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
 }
 
 // ─── Main Component ───
-const LessonDetail = ({ lesson, onBack, onComplete, nextLessonId, onNextLesson }: LessonDetailProps) => {
+const LessonDetail = ({ lesson, onBack, onComplete, nextLessonId, onNextLesson, maxLessons = Infinity }: LessonDetailProps) => {
   const [exercisesCompleted, setExercisesCompleted] = useState(false);
   const [dictationCompleted, setDictationCompleted] = useState(false);
   const [activeTab, setActiveTab] = useState("lesson");
@@ -692,9 +693,17 @@ const LessonDetail = ({ lesson, onBack, onComplete, nextLessonId, onNextLesson }
               <CheckCircle className="h-4 w-4" /> Valider la leçon
             </Button>
             {nextLessonId && onNextLesson && (
-              <Button onClick={() => { handleComplete(); onNextLesson(nextLessonId); }} variant="outline" className="gap-2">
-                Leçon suivante <ArrowRight className="h-4 w-4" />
-              </Button>
+              nextLessonId <= maxLessons ? (
+                <Button onClick={() => { handleComplete(); onNextLesson(nextLessonId); }} variant="outline" className="gap-2">
+                  Leçon suivante <ArrowRight className="h-4 w-4" />
+                </Button>
+              ) : (
+                <a href="/tarifs">
+                  <Button variant="secondary" className="gap-2">
+                    🔒 Passez au plan Essentiel pour continuer <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </a>
+              )
             )}
           </div>
         </motion.div>
