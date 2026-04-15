@@ -577,9 +577,8 @@ const LessonDetail = ({ lesson, onBack, onComplete, nextLessonId, onNextLesson, 
   const lessonProgressPct = Math.round((completedSteps / 3) * 100);
 
   const handleTabChange = (tab: string) => {
-    if ((tab === "exercises" || tab === "dictation") && !theoryCompleted) {
-      return;
-    }
+    if ((tab === "exercises" || tab === "dictation") && !theoryCompleted) return;
+    if (tab === "dictation" && !exercisesCompleted) return;
     setActiveTab(tab);
   };
 
