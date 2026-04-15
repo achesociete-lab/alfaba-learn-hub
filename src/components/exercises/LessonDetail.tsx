@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Lesson, TheorySection } from "@/data/niveau1-lessons";
 import { useArabicSpeech } from "@/hooks/use-arabic-speech";
+import { getTeacherClipUrl } from "@/hooks/use-teacher-audio-clips";
 import { getIllustration } from "@/utils/vocabulary-illustrations";
 import { useIsAdmin } from "@/hooks/use-admin";
 import LessonAudioPlayer from "./LessonAudioPlayer";
@@ -127,52 +128,12 @@ function TheorySectionView({ section }: { section: TheorySection }) {
 
 // ─── Lesson Tab ───
 function LessonTab({ lesson }: { lesson: Lesson }) {
-  const { speak, stop } = useArabicSpeech();
   const { isAdmin } = useIsAdmin();
-  const [isReading, setIsReading] = useState(false);
-
-  const readLesson = async () => {
-    if (isReading) { stop(); setIsReading(false); return; }
-    setIsReading(true);
-    try {
-      for (const section of (lesson.theory || [])) {
-        if (section.letterGrid) {
-          for (const l of section.letterGrid) {
-            await speak(l.letter, 0.8);
-            await new Promise(r => setTimeout(r, 500));
-          }
-        }
-        if (section.formsTable) {
-          for (const row of section.formsTable) {
-            await speak(row.isolated, 0.8);
-            await new Promise(r => setTimeout(r, 600));
-          }
-        }
-        if (section.arabicExamples) {
-          for (const ex of section.arabicExamples) {
-            await speak(ex.arabic, 0.75);
-            await new Promise(r => setTimeout(r, 800));
-          }
-        }
-      }
-    } catch { /* stopped */ }
-    setIsReading(false);
-  };
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
       <LessonAudioPlayer level="niveau_1" lessonNumber={lesson.id} isTeacher={isAdmin} />
 
-      <div className="flex justify-center">
-        <Button
-          variant="outline"
-          onClick={readLesson}
-          className={`gap-2 rounded-full px-6 ${isReading ? "border-primary bg-primary/10" : ""}`}
-        >
-          <Volume2 className={`h-4 w-4 ${isReading ? "animate-pulse text-primary" : ""}`} />
-          {isReading ? "⏹ Arrêter la lecture" : "🔊 Écouter via synthèse vocale"}
-        </Button>
-      </div>
 
       {lesson.videoUrl && (
         <div className="rounded-xl overflow-hidden border border-border bg-card">
@@ -337,7 +298,6 @@ function QCMTab({ lesson, onAllCorrect, onSwitchToDictation }: { lesson: Lesson;
 
 // ─── Dictation Tab ───
 function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: () => void }) {
-  const { speak } = useArabicSpeech();
   const dictList = lesson.dictation || [];
   const [current, setCurrent] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
@@ -350,17 +310,30 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
   const [answerCorrect, setAnswerCorrect] = useState(false);
   const [wrongAnswers, setWrongAnswers] = useState<WrongAnswer[]>([]);
   const currentRef = useRef(current);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   if (dictList.length === 0) return <p className="text-center text-muted-foreground p-4">Aucune dictée disponible.</p>;
   const d = dictList[current];
   const correctArabic = d.options[d.correctIndex];
 
+  const teacherClipUrl = getTeacherClipUrl(correctArabic);
+
   const playDictation = async () => {
+    if (!teacherClipUrl) return;
     setIsPlaying(true);
     try {
-      await speak(correctArabic, 0.75);
+      if (audioRef.current) { audioRef.current.pause(); }
+      const audio = new Audio(teacherClipUrl);
+      audioRef.current = audio;
+      await audio.play();
+      await new Promise<void>((resolve) => {
+        audio.addEventListener("ended", () => resolve(), { once: true });
+        audio.addEventListener("error", () => resolve(), { once: true });
+      });
+    } catch (e) {
+      console.warn("Teacher clip playback failed:", e);
     } finally {
-      setTimeout(() => setIsPlaying(false), 1500);
+      setIsPlaying(false);
     }
   };
 
@@ -478,18 +451,24 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
       <AnimatePresence mode="wait">
         <motion.div key={`${current}-${mode}`} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="p-6 rounded-xl border border-border bg-card">
           <p className="text-center text-muted-foreground mb-2 text-sm">Écoutez et {mode === "qcm" ? "choisissez" : "écrivez"} le bon mot :</p>
-          <div className="flex justify-center mb-6">
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={playDictation}
-              disabled={isPlaying}
-              className="gap-3 rounded-full px-8 py-6 text-lg border-primary/30 hover:bg-primary/10"
-            >
-              <Volume2 className={`h-6 w-6 ${isPlaying ? "animate-pulse text-primary" : "text-muted-foreground"}`} />
-              {isPlaying ? "Lecture..." : "🔊 Écouter"}
-            </Button>
-          </div>
+          {teacherClipUrl ? (
+            <div className="flex justify-center mb-6">
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={playDictation}
+                disabled={isPlaying}
+                className="gap-3 rounded-full px-8 py-6 text-lg border-primary/30 hover:bg-primary/10"
+              >
+                <Volume2 className={`h-6 w-6 ${isPlaying ? "animate-pulse text-primary" : "text-muted-foreground"}`} />
+                {isPlaying ? "Lecture..." : "🔊 Écouter"}
+              </Button>
+            </div>
+          ) : (
+            <div className="flex justify-center mb-6">
+              <p className="text-sm text-muted-foreground italic">🔇 Aucun enregistrement disponible pour ce mot</p>
+            </div>
+          )}
 
           {mode === "qcm" ? (
             <div className="grid grid-cols-2 gap-3">
