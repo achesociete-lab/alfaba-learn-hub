@@ -55,6 +55,7 @@ function Niveau1Lessons({ maxLessons, onLessonChange }: { maxLessons: number; on
   if (selectedLesson) {
     return (
       <LessonDetail
+        key={selectedLesson.id}
         lesson={selectedLesson}
         onBack={handleBack}
         onComplete={completeLesson}

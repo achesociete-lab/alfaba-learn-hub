@@ -12,6 +12,7 @@ import { useArabicSpeech } from "@/hooks/use-arabic-speech";
 import { getTeacherClipUrl } from "@/hooks/use-teacher-audio-clips";
 import { getIllustration } from "@/utils/vocabulary-illustrations";
 import { useIsAdmin } from "@/hooks/use-admin";
+import { playCorrectSound, playWrongSound } from "@/utils/sound-feedback";
 import LessonAudioPlayer from "./LessonAudioPlayer";
 import Lesson1Screens from "./Lesson1Screens";
 import LessonScreens from "./LessonScreens";
@@ -182,16 +183,15 @@ function QCMTab({ lesson, onAllCorrect, onSwitchToDictation }: { lesson: Lesson;
     if (selected !== null) return;
     setSelected(idx);
     const isCorrect = idx === q.correctIndex;
-    const newScore = isCorrect ? score + 1 : score;
-    if (isCorrect) setScore(newScore);
-    if (!isCorrect) {
+    if (isCorrect) { setScore(s => s + 1); playCorrectSound(); }
+    else {
+      playWrongSound();
       setWrongAnswers(prev => [...prev, {
         question: q.question,
         userAnswer: q.options[idx],
         correctAnswer: q.options[q.correctIndex],
       }]);
     }
-    // Score check moved to finished screen
   };
 
   const next = () => {
@@ -346,16 +346,15 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
     if (selected !== null) return;
     setSelected(idx);
     const isCorrect = idx === d.correctIndex;
-    const newScore = isCorrect ? score + 1 : score;
-    if (isCorrect) setScore(newScore);
-    if (!isCorrect) {
+    if (isCorrect) { setScore(s => s + 1); playCorrectSound(); }
+    else {
+      playWrongSound();
       setWrongAnswers(prev => [...prev, {
         question: `Mot ${current + 1}`,
         userAnswer: d.options[idx],
         correctAnswer: correctArabic,
       }]);
     }
-    // Score check moved to finished screen
   };
 
   const handleCheckTyped = () => {
@@ -363,16 +362,15 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
     const isCorrect = typedAnswer.trim() === correctArabic.trim();
     setAnswerChecked(true);
     setAnswerCorrect(isCorrect);
-    const newScore = isCorrect ? score + 1 : score;
-    if (isCorrect) setScore(newScore);
-    if (!isCorrect) {
+    if (isCorrect) { setScore(s => s + 1); playCorrectSound(); }
+    else {
+      playWrongSound();
       setWrongAnswers(prev => [...prev, {
         question: `Mot ${current + 1}`,
         userAnswer: typedAnswer.trim(),
         correctAnswer: correctArabic,
       }]);
     }
-    // Score check moved to finished screen
   };
 
   const next = () => {
@@ -539,6 +537,7 @@ const LessonDetail = ({ lesson, onBack, onComplete, nextLessonId, onNextLesson, 
   const [dictationCompleted, setDictationCompleted] = useState(false);
   const [activeTab, setActiveTab] = useState("lesson");
   const [theoryCompleted, setTheoryCompleted] = useState(false);
+  const { isAdmin } = useIsAdmin();
 
   const handleComplete = () => {
     onComplete(lesson.id);
@@ -549,6 +548,12 @@ const LessonDetail = ({ lesson, onBack, onComplete, nextLessonId, onNextLesson, 
     }
   };
 
+  const adminSkip = () => {
+    setTheoryCompleted(true);
+    setExercisesCompleted(true);
+    setDictationCompleted(true);
+  };
+
   const allDone = exercisesCompleted && dictationCompleted;
 
   const steps = [theoryCompleted, exercisesCompleted, dictationCompleted];
@@ -556,8 +561,10 @@ const LessonDetail = ({ lesson, onBack, onComplete, nextLessonId, onNextLesson, 
   const lessonProgressPct = Math.round((completedSteps / 3) * 100);
 
   const handleTabChange = (tab: string) => {
-    if ((tab === "exercises" || tab === "dictation") && !theoryCompleted) return;
-    if (tab === "dictation" && !exercisesCompleted) return;
+    if (!isAdmin) {
+      if ((tab === "exercises" || tab === "dictation") && !theoryCompleted) return;
+      if (tab === "dictation" && !exercisesCompleted) return;
+    }
     setActiveTab(tab);
   };
 
@@ -588,17 +595,23 @@ const LessonDetail = ({ lesson, onBack, onComplete, nextLessonId, onNextLesson, 
         <Progress value={lessonProgressPct} className="h-2" />
       </div>
 
+      {isAdmin && !allDone && (
+        <Button variant="outline" size="sm" onClick={adminSkip} className="text-xs text-muted-foreground border-dashed">
+          ⚡ Passer [admin]
+        </Button>
+      )}
+
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
         <TabsList className="bg-muted w-full grid grid-cols-3">
           <TabsTrigger value="lesson" className="gap-1.5 text-xs sm:text-sm">
             <BookOpen className="h-4 w-4" /> Leçon
             {theoryCompleted && <CheckCircle className="h-3 w-3 text-primary" />}
           </TabsTrigger>
-          <TabsTrigger value="exercises" className="gap-1.5 text-xs sm:text-sm" disabled={!theoryCompleted}>
+          <TabsTrigger value="exercises" className="gap-1.5 text-xs sm:text-sm" disabled={!isAdmin && !theoryCompleted}>
             <Brain className="h-4 w-4" /> Exercices
             {exercisesCompleted && <CheckCircle className="h-3 w-3 text-primary" />}
           </TabsTrigger>
-          <TabsTrigger value="dictation" className="gap-1.5 text-xs sm:text-sm" disabled={!theoryCompleted || !exercisesCompleted}>
+          <TabsTrigger value="dictation" className="gap-1.5 text-xs sm:text-sm" disabled={!isAdmin && (!theoryCompleted || !exercisesCompleted)}>
             <PenTool className="h-4 w-4" /> Dictée
             {dictationCompleted && <CheckCircle className="h-3 w-3 text-primary" />}
           </TabsTrigger>
