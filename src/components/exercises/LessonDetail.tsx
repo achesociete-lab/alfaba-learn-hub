@@ -537,6 +537,7 @@ const LessonDetail = ({ lesson, onBack, onComplete, nextLessonId, onNextLesson, 
   const [dictationCompleted, setDictationCompleted] = useState(false);
   const [activeTab, setActiveTab] = useState("lesson");
   const [theoryCompleted, setTheoryCompleted] = useState(false);
+  const { isAdmin } = useIsAdmin();
 
   const handleComplete = () => {
     onComplete(lesson.id);
@@ -547,6 +548,12 @@ const LessonDetail = ({ lesson, onBack, onComplete, nextLessonId, onNextLesson, 
     }
   };
 
+  const adminSkip = () => {
+    setTheoryCompleted(true);
+    setExercisesCompleted(true);
+    setDictationCompleted(true);
+  };
+
   const allDone = exercisesCompleted && dictationCompleted;
 
   const steps = [theoryCompleted, exercisesCompleted, dictationCompleted];
@@ -554,8 +561,10 @@ const LessonDetail = ({ lesson, onBack, onComplete, nextLessonId, onNextLesson, 
   const lessonProgressPct = Math.round((completedSteps / 3) * 100);
 
   const handleTabChange = (tab: string) => {
-    if ((tab === "exercises" || tab === "dictation") && !theoryCompleted) return;
-    if (tab === "dictation" && !exercisesCompleted) return;
+    if (!isAdmin) {
+      if ((tab === "exercises" || tab === "dictation") && !theoryCompleted) return;
+      if (tab === "dictation" && !exercisesCompleted) return;
+    }
     setActiveTab(tab);
   };
 
