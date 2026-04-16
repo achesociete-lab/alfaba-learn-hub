@@ -595,17 +595,23 @@ const LessonDetail = ({ lesson, onBack, onComplete, nextLessonId, onNextLesson, 
         <Progress value={lessonProgressPct} className="h-2" />
       </div>
 
+      {isAdmin && !allDone && (
+        <Button variant="outline" size="sm" onClick={adminSkip} className="text-xs text-muted-foreground border-dashed">
+          ⚡ Passer [admin]
+        </Button>
+      )}
+
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
         <TabsList className="bg-muted w-full grid grid-cols-3">
           <TabsTrigger value="lesson" className="gap-1.5 text-xs sm:text-sm">
             <BookOpen className="h-4 w-4" /> Leçon
             {theoryCompleted && <CheckCircle className="h-3 w-3 text-primary" />}
           </TabsTrigger>
-          <TabsTrigger value="exercises" className="gap-1.5 text-xs sm:text-sm" disabled={!theoryCompleted}>
+          <TabsTrigger value="exercises" className="gap-1.5 text-xs sm:text-sm" disabled={!isAdmin && !theoryCompleted}>
             <Brain className="h-4 w-4" /> Exercices
             {exercisesCompleted && <CheckCircle className="h-3 w-3 text-primary" />}
           </TabsTrigger>
-          <TabsTrigger value="dictation" className="gap-1.5 text-xs sm:text-sm" disabled={!theoryCompleted || !exercisesCompleted}>
+          <TabsTrigger value="dictation" className="gap-1.5 text-xs sm:text-sm" disabled={!isAdmin && (!theoryCompleted || !exercisesCompleted)}>
             <PenTool className="h-4 w-4" /> Dictée
             {dictationCompleted && <CheckCircle className="h-3 w-3 text-primary" />}
           </TabsTrigger>
