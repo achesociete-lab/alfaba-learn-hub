@@ -12,6 +12,7 @@ import { useArabicSpeech } from "@/hooks/use-arabic-speech";
 import { getTeacherClipUrl } from "@/hooks/use-teacher-audio-clips";
 import { getIllustration } from "@/utils/vocabulary-illustrations";
 import { useIsAdmin } from "@/hooks/use-admin";
+import { playCorrectSound, playWrongSound } from "@/utils/sound-feedback";
 import LessonAudioPlayer from "./LessonAudioPlayer";
 import Lesson1Screens from "./Lesson1Screens";
 import LessonScreens from "./LessonScreens";
@@ -182,16 +183,15 @@ function QCMTab({ lesson, onAllCorrect, onSwitchToDictation }: { lesson: Lesson;
     if (selected !== null) return;
     setSelected(idx);
     const isCorrect = idx === q.correctIndex;
-    const newScore = isCorrect ? score + 1 : score;
-    if (isCorrect) setScore(newScore);
-    if (!isCorrect) {
+    if (isCorrect) { setScore(s => s + 1); playCorrectSound(); }
+    else {
+      playWrongSound();
       setWrongAnswers(prev => [...prev, {
         question: q.question,
         userAnswer: q.options[idx],
         correctAnswer: q.options[q.correctIndex],
       }]);
     }
-    // Score check moved to finished screen
   };
 
   const next = () => {
@@ -346,16 +346,15 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
     if (selected !== null) return;
     setSelected(idx);
     const isCorrect = idx === d.correctIndex;
-    const newScore = isCorrect ? score + 1 : score;
-    if (isCorrect) setScore(newScore);
-    if (!isCorrect) {
+    if (isCorrect) { setScore(s => s + 1); playCorrectSound(); }
+    else {
+      playWrongSound();
       setWrongAnswers(prev => [...prev, {
         question: `Mot ${current + 1}`,
         userAnswer: d.options[idx],
         correctAnswer: correctArabic,
       }]);
     }
-    // Score check moved to finished screen
   };
 
   const handleCheckTyped = () => {
@@ -363,16 +362,15 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
     const isCorrect = typedAnswer.trim() === correctArabic.trim();
     setAnswerChecked(true);
     setAnswerCorrect(isCorrect);
-    const newScore = isCorrect ? score + 1 : score;
-    if (isCorrect) setScore(newScore);
-    if (!isCorrect) {
+    if (isCorrect) { setScore(s => s + 1); playCorrectSound(); }
+    else {
+      playWrongSound();
       setWrongAnswers(prev => [...prev, {
         question: `Mot ${current + 1}`,
         userAnswer: typedAnswer.trim(),
         correctAnswer: correctArabic,
       }]);
     }
-    // Score check moved to finished screen
   };
 
   const next = () => {
