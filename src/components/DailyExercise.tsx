@@ -214,7 +214,6 @@ const DailyExercise = ({ level, completedLessons }: DailyExerciseProps) => {
             <p className="text-xs font-semibold text-secondary uppercase tracking-wider">📖 Mot du jour</p>
             <div className="text-center py-4">
               <p className="text-4xl font-arabic text-foreground mb-2" dir="rtl">{todayWord.arabic}</p>
-              <p className="text-sm text-muted-foreground italic">{todayWord.transliteration}</p>
               <p className="text-lg font-semibold text-primary mt-1">{todayWord.meaning}</p>
             </div>
             <Button

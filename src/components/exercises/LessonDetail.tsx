@@ -111,7 +111,6 @@ function TheorySectionView({ section }: { section: TheorySection }) {
                   <Volume2 className="h-4 w-4 text-muted-foreground shrink-0" />
                   <div>
                     <p className="font-arabic text-2xl text-foreground">{ex.arabic}</p>
-                    <p className="text-xs text-muted-foreground">{ex.transliteration}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">

@@ -515,7 +515,7 @@ const lesson6: Lesson = {
         { arabic: "أَخْضَرٌ", transliteration: "akhḍar", meaning: "vert" },
         { arabic: "أَزْرَقٌ", transliteration: "azraq", meaning: "bleu" },
       ],
-      tip: "Essayez de lire chaque mot lettre par lettre avant de regarder la translittération !",
+      tip: "Essayez de lire chaque mot lettre par lettre, en vous appuyant sur les voyelles courtes !",
     },
   ],
   qcm: [
