@@ -29,16 +29,23 @@ export function useNiveau1Lessons() {
       const merged: Lesson[] = [];
       const seen = new Set<number>();
 
-      // First, all DB lessons that look usable
+      // First, all DB lessons that look usable.
+      // A lesson is only kept if it has a real title (either from DB or from static fallback)
+      // to avoid showing untitled "ghost" lessons.
       data.forEach((row: any) => {
         const c = row.content as any;
         if (!c || !Array.isArray(c.qcm) || !Array.isArray(c.dictation)) return;
         const staticMatch = staticN1.find((s) => s.id === row.lesson_number);
+        const title = c.title || staticMatch?.title;
+        if (!title) return; // skip lessons without any title
         const lesson: Lesson = {
           ...(staticMatch || ({} as Lesson)),
           ...c,
           id: row.lesson_number,
-          theory: Array.isArray(c.theory) ? c.theory : staticMatch?.theory || [],
+          title,
+          subtitle: c.subtitle || staticMatch?.subtitle || "",
+          icon: c.icon || staticMatch?.icon || "📘",
+          theory: Array.isArray(c.theory) && c.theory.length > 0 ? c.theory : staticMatch?.theory || [],
         };
         merged.push(lesson);
         seen.add(row.lesson_number);
