@@ -800,7 +800,103 @@ const lesson10: Lesson = {
   ],
 };
 
+// ─── Leçon 11 : Les mots essentiels (vocabulaire de transition vers le Niveau 2) ───
+const lesson11: Lesson = {
+  id: 11,
+  title: "Les mots essentiels",
+  subtitle: "50 mots indispensables pour débuter",
+  icon: "📚",
+  theory: [
+    {
+      title: "Écran 1 — La famille",
+      content: "Découvrez les mots de base pour parler de votre famille. Cliquez sur chaque mot pour entendre sa prononciation.",
+      arabicExamples: [
+        { arabic: "أَب", transliteration: "", meaning: "Père" },
+        { arabic: "أُم", transliteration: "", meaning: "Mère" },
+        { arabic: "أَخ", transliteration: "", meaning: "Frère" },
+        { arabic: "أُخْت", transliteration: "", meaning: "Sœur" },
+        { arabic: "بَيْت", transliteration: "", meaning: "Maison" },
+      ],
+      tip: "Ces mots reviennent constamment dans la vie quotidienne. Mémorisez-les en priorité.",
+    },
+    {
+      title: "Écran 2 — Le corps",
+      content: "Les principales parties du corps. Indispensables pour comprendre et se faire comprendre.",
+      arabicExamples: [
+        { arabic: "يَد", transliteration: "", meaning: "Main" },
+        { arabic: "رَأْس", transliteration: "", meaning: "Tête" },
+        { arabic: "عَيْن", transliteration: "", meaning: "Œil" },
+        { arabic: "أُذُن", transliteration: "", meaning: "Oreille" },
+        { arabic: "قَلْب", transliteration: "", meaning: "Cœur" },
+      ],
+      tip: "Le mot قَلْب (cœur) est aussi très utilisé au sens figuré dans le Coran.",
+    },
+    {
+      title: "Écran 3 — La nature",
+      content: "Le vocabulaire de la nature, omniprésent dans la langue arabe et le Coran.",
+      arabicExamples: [
+        { arabic: "شَمْس", transliteration: "", meaning: "Soleil" },
+        { arabic: "قَمَر", transliteration: "", meaning: "Lune" },
+        { arabic: "مَاء", transliteration: "", meaning: "Eau" },
+        { arabic: "نَار", transliteration: "", meaning: "Feu" },
+        { arabic: "سَمَاء", transliteration: "", meaning: "Ciel" },
+      ],
+      tip: "Plusieurs sourates du Coran portent ces noms : Ash-Shams (Le Soleil), Al-Qamar (La Lune).",
+    },
+    {
+      title: "Écran 4 — La vie quotidienne",
+      content: "Les objets et lieux que vous rencontrez chaque jour.",
+      arabicExamples: [
+        { arabic: "كِتَاب", transliteration: "", meaning: "Livre" },
+        { arabic: "قَلَم", transliteration: "", meaning: "Stylo" },
+        { arabic: "بَاب", transliteration: "", meaning: "Porte" },
+        { arabic: "مَسْجِد", transliteration: "", meaning: "Mosquée" },
+        { arabic: "طَعَام", transliteration: "", meaning: "Nourriture" },
+      ],
+      tip: "كِتَاب (livre) vient de la racine ك-ت-ب liée à l'écriture, comme كَتَبَ (il a écrit).",
+    },
+    {
+      title: "Écran 5 — Les verbes essentiels",
+      content: "Les verbes les plus utilisés. En arabe, le verbe est conjugué ici à la 3ᵉ personne masculin singulier au passé (forme de référence).",
+      arabicExamples: [
+        { arabic: "ذَهَبَ", transliteration: "", meaning: "Aller (il est allé)" },
+        { arabic: "أَكَلَ", transliteration: "", meaning: "Manger (il a mangé)" },
+        { arabic: "شَرِبَ", transliteration: "", meaning: "Boire (il a bu)" },
+        { arabic: "قَرَأَ", transliteration: "", meaning: "Lire (il a lu)" },
+        { arabic: "كَتَبَ", transliteration: "", meaning: "Écrire (il a écrit)" },
+      ],
+      tip: "Bravo ! Vous connaissez maintenant 25 mots essentiels. Passez aux exercices pour les valider.",
+    },
+  ],
+  qcm: [
+    { question: "Quel mot signifie « Père » ?", options: ["أُم", "أَب", "أَخ", "أُخْت"], correctIndex: 1, explanation: "أَب = Père." },
+    { question: "Que signifie أُم ?", options: ["Père", "Frère", "Mère", "Sœur"], correctIndex: 2, explanation: "أُم = Mère." },
+    { question: "Quel mot signifie « Maison » ?", options: ["بَاب", "بَيْت", "كِتَاب", "مَسْجِد"], correctIndex: 1, explanation: "بَيْت = Maison." },
+    { question: "Que signifie يَد ?", options: ["Tête", "Œil", "Main", "Cœur"], correctIndex: 2, explanation: "يَد = Main." },
+    { question: "Quel mot signifie « Œil » ?", options: ["أُذُن", "رَأْس", "عَيْن", "قَلْب"], correctIndex: 2, explanation: "عَيْن = Œil." },
+    { question: "Que signifie قَلْب ?", options: ["Tête", "Cœur", "Main", "Oreille"], correctIndex: 1, explanation: "قَلْب = Cœur." },
+    { question: "Quel mot signifie « Soleil » ?", options: ["قَمَر", "نَار", "شَمْس", "سَمَاء"], correctIndex: 2, explanation: "شَمْس = Soleil." },
+    { question: "Que signifie قَمَر ?", options: ["Soleil", "Lune", "Ciel", "Eau"], correctIndex: 1, explanation: "قَمَر = Lune." },
+    { question: "Quel mot signifie « Eau » ?", options: ["نَار", "مَاء", "سَمَاء", "شَمْس"], correctIndex: 1, explanation: "مَاء = Eau." },
+    { question: "Que signifie سَمَاء ?", options: ["Terre", "Mer", "Ciel", "Nuage"], correctIndex: 2, explanation: "سَمَاء = Ciel." },
+    { question: "Quel mot signifie « Livre » ?", options: ["قَلَم", "كِتَاب", "بَاب", "طَعَام"], correctIndex: 1, explanation: "كِتَاب = Livre." },
+    { question: "Que signifie مَسْجِد ?", options: ["Maison", "École", "Mosquée", "Marché"], correctIndex: 2, explanation: "مَسْجِد = Mosquée." },
+    { question: "Quel verbe signifie « Manger » ?", options: ["شَرِبَ", "أَكَلَ", "ذَهَبَ", "قَرَأَ"], correctIndex: 1, explanation: "أَكَلَ = il a mangé." },
+    { question: "Que signifie كَتَبَ ?", options: ["Lire", "Écrire", "Aller", "Boire"], correctIndex: 1, explanation: "كَتَبَ = il a écrit." },
+    { question: "Quel verbe signifie « Lire » ?", options: ["كَتَبَ", "قَرَأَ", "ذَهَبَ", "أَكَلَ"], correctIndex: 1, explanation: "قَرَأَ = il a lu. C'est de la même racine que قُرْآن (Coran)." },
+  ],
+  dictation: [
+    { word: "بَيْت", transliteration: "", options: ["بَاب", "بَيْت", "بِنْت", "بَيْن"], correctIndex: 1 },
+    { word: "كِتَاب", transliteration: "", options: ["كَاتِب", "كِتَاب", "مَكْتَب", "كُتُب"], correctIndex: 1 },
+    { word: "شَمْس", transliteration: "", options: ["شَمْس", "قَمَر", "سَمَاء", "شَمَّ"], correctIndex: 0 },
+    { word: "قَلْب", transliteration: "", options: ["كَلْب", "قَلَم", "قَلْب", "قَالَ"], correctIndex: 2 },
+    { word: "مَسْجِد", transliteration: "", options: ["مَسْجِد", "سَجَدَ", "مَسَاجِد", "مُسْجِد"], correctIndex: 0 },
+    { word: "كَتَبَ", transliteration: "", options: ["كِتَاب", "كَاتِب", "كَتَبَ", "مَكْتُوب"], correctIndex: 2 },
+    { word: "قَرَأَ", transliteration: "", options: ["قُرْآن", "قَارِئ", "قَرَأَ", "قِرَاءَة"], correctIndex: 2 },
+  ],
+};
+
 export const niveau1Lessons: Lesson[] = [
   lesson1, lesson2, lesson3, lesson4, lesson5,
-  lesson6, lesson7, lesson8, lesson9, lesson10,
+  lesson6, lesson7, lesson8, lesson9, lesson10, lesson11,
 ];
