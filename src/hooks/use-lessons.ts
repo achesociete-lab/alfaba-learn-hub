@@ -20,12 +20,37 @@ export function useNiveau1Lessons() {
       .order("lesson_number");
 
     if (!error && data && data.length > 0) {
-      const parsed = data.map((row: any) => row.content as unknown as Lesson);
-      // Only use DB data if it matches the expected structure
-      const isValid = parsed.every(
-        (l) => l && Array.isArray(l.theory) && Array.isArray(l.qcm) && Array.isArray(l.dictation)
-      );
-      if (isValid) setLessons(parsed);
+      // Merge DB content with static fallback per-lesson.
+      // A DB lesson is only used if it has at least qcm + dictation arrays;
+      // missing fields (e.g. theory) fall back to the static lesson.
+      const byNumber = new Map<number, any>();
+      data.forEach((row: any) => byNumber.set(row.lesson_number, row.content));
+
+      const merged: Lesson[] = [];
+      const seen = new Set<number>();
+
+      // First, all DB lessons that look usable
+      data.forEach((row: any) => {
+        const c = row.content as any;
+        if (!c || !Array.isArray(c.qcm) || !Array.isArray(c.dictation)) return;
+        const staticMatch = staticN1.find((s) => s.id === row.lesson_number);
+        const lesson: Lesson = {
+          ...(staticMatch || ({} as Lesson)),
+          ...c,
+          id: row.lesson_number,
+          theory: Array.isArray(c.theory) ? c.theory : staticMatch?.theory || [],
+        };
+        merged.push(lesson);
+        seen.add(row.lesson_number);
+      });
+
+      // Add any static lessons not in DB (safety net)
+      staticN1.forEach((s) => {
+        if (!seen.has(s.id)) merged.push(s);
+      });
+
+      merged.sort((a, b) => a.id - b.id);
+      if (merged.length > 0) setLessons(merged);
     }
     setLoading(false);
   }, []);
