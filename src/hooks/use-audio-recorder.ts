@@ -38,8 +38,12 @@ export function useAudioRecorder() {
     speechDetectedRef.current = false;
   };
 
-  const startRecording = useCallback(async (opts: StartOptions = {}) => {
-    const { silenceTimeoutMs = 0, silenceThreshold = 0.015, onAutoStop } = opts;
+  const startRecording = useCallback(async (opts?: StartOptions | unknown) => {
+    const safeOpts: StartOptions =
+      opts && typeof opts === "object" && !("nativeEvent" in (opts as object))
+        ? (opts as StartOptions)
+        : {};
+    const { silenceTimeoutMs = 0, silenceThreshold = 0.015, onAutoStop } = safeOpts;
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
