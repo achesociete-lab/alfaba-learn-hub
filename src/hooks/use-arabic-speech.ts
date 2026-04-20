@@ -9,6 +9,27 @@ type TtsErrorPayload = {
   code?: string;
 };
 
+/**
+ * Clean text before sending to TTS for smoother voice output.
+ * - Remove parenthesized content
+ * - Strip standalone dashes / brackets / special markers
+ * - Replace commas/semicolons with natural pause
+ * - Drop emoji & special symbols, keep Arabic + Latin + basic punctuation
+ */
+export function cleanTextForTTS(text: string): string {
+  if (!text) return "";
+  let t = text;
+  t = t.replace(/\([^)]*\)/g, " ");
+  t = t.replace(/\[[^\]]*\]/g, " ");
+  t = t.replace(/\{[^}]*\}/g, " ");
+  t = t.replace(/[*_`#>~]/g, " ");
+  t = t.replace(/(^|\s)[-–—•](\s|$)/g, " ");
+  t = t.replace(/[,،؛;]/g, " , ");
+  t = t.replace(/[^\p{L}\p{N}\s.,!?؟،؛:'"\u0600-\u06FF\u0750-\u077F]/gu, " ");
+  t = t.replace(/\s+/g, " ").trim();
+  return t;
+}
+
 export function useArabicSpeech() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -16,7 +37,8 @@ export function useArabicSpeech() {
   // Preload teacher clips once
   useEffect(() => { preloadTeacherClips(); }, []);
 
-  const speak = useCallback(async (text: string, rate = 0.8, voiceId?: string) => {
+  const speak = useCallback(async (rawText: string, rate = 0.8, voiceId?: string) => {
+    const text = cleanTextForTTS(rawText);
     if (!text?.trim()) return;
 
     // Stop any current playback
