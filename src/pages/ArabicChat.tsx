@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
-import { useArabicSpeech } from "@/hooks/use-arabic-speech";
+import { useArabicSpeech, cleanTextForTTS } from "@/hooks/use-arabic-speech";
 import { useAudioRecorder } from "@/hooks/use-audio-recorder";
 import { useChatHistory } from "@/hooks/use-chat-history";
 import { useLessonProgress } from "@/hooks/use-lesson-progress";
