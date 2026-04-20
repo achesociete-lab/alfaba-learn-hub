@@ -96,8 +96,16 @@ const ArabicChat = () => {
   const recorder = useAudioRecorder();
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [autoSpeak, setAutoSpeak] = useState(true);
+  const [autoConverse, setAutoConverse] = useState(false);
   const lastSpokenIndexRef = useRef(-1);
   const [showSidebar, setShowSidebar] = useState(false);
+
+  // Streaming TTS state — speak the assistant message progressively, sentence by sentence
+  const ttsSpokenLenRef = useRef(0);
+  const ttsQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const ttsActiveForMsgRef = useRef(-1);
+  const autoConverseRef = useRef(false);
+  useEffect(() => { autoConverseRef.current = autoConverse; }, [autoConverse]);
 
   const history = useChatHistory();
   const currentConvIdRef = useRef<string | null>(null);
@@ -117,10 +125,20 @@ const ArabicChat = () => {
     history.saveMessages(currentConvIdRef.current, messages);
   }, [messages, isLoading]);
 
-  const transcribeAndSend = useCallback(async () => {
-    recorder.stopRecording();
+  // Forward declaration via ref so callbacks can call sendMessage before it's defined
+  const sendMessageRef = useRef<(text?: string) => Promise<void>>(async () => {});
+
+  const startVoiceRecording = useCallback(() => {
+    recorder.startRecording({
+      silenceTimeoutMs: 1500,
+      silenceThreshold: 0.018,
+    }).catch((e) => {
+      console.error(e);
+      toast({ title: "Microphone refusé", variant: "destructive" });
+    });
   }, [recorder]);
 
+  // Auto-transcribe & auto-send when a recording finishes
   useEffect(() => {
     if (!recorder.audioBlob || isTranscribing) return;
     const run = async () => {
@@ -143,8 +161,21 @@ const ArabicChat = () => {
         if (!resp.ok) throw new Error("Transcription échouée");
         const data = await resp.json();
         const text = data.text?.trim();
-        if (text) setInput(text);
-        else toast({ title: "Aucun texte détecté", variant: "destructive" });
+        if (text) {
+          if (autoConverseRef.current) {
+            // Auto-send directly
+            await sendMessageRef.current(text);
+          } else {
+            setInput(text);
+          }
+        } else {
+          if (!autoConverseRef.current) {
+            toast({ title: "Aucun texte détecté", variant: "destructive" });
+          } else {
+            // Re-arm mic if we're in conversation mode and nothing was heard
+            startVoiceRecording();
+          }
+        }
       } catch (e: any) {
         console.error(e);
         toast({ title: "Erreur de transcription", description: e.message, variant: "destructive" });
@@ -164,30 +195,62 @@ const ArabicChat = () => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
-  // Auto-speak ONLY assistant messages (not user messages)
-  useEffect(() => {
-    if (isLoading || !autoSpeak || messages.length === 0) return;
-    const lastIndex = messages.length - 1;
-    const lastMsg = messages[lastIndex];
-    if (lastMsg.role === "assistant" && lastIndex > lastSpokenIndexRef.current) {
-      lastSpokenIndexRef.current = lastIndex;
-      const ar = extractArabic(lastMsg.content);
-      if (ar) speak(ar);
-    }
-  }, [messages, isLoading, autoSpeak, speak]);
+  // Streaming TTS: as the assistant message grows, speak each newly-completed sentence
+  const speakNewSentencesFrom = useCallback((fullText: string, isFinal: boolean) => {
+    if (!autoSpeak) return;
+    const ar = extractArabic(fullText);
+    if (!ar) return;
+    const remaining = ar.slice(ttsSpokenLenRef.current);
+    if (!remaining) return;
 
-  // Track lastSpokenIndex for user messages (without speaking)
-  useEffect(() => {
-    if (messages.length === 0) return;
-    const lastIndex = messages.length - 1;
-    const lastMsg = messages[lastIndex];
-    if (lastMsg.role === "user" && lastIndex > lastSpokenIndexRef.current) {
-      lastSpokenIndexRef.current = lastIndex;
+    // Find sentence boundaries in remaining
+    const sentenceRegex = /[^.!?؟\n]+[.!?؟\n]+/g;
+    const matches = remaining.match(sentenceRegex) || [];
+    let consumed = 0;
+    const toSpeak: string[] = [];
+    for (const s of matches) {
+      toSpeak.push(s.trim());
+      consumed += s.length;
     }
-  }, [messages]);
+    // On final, flush the tail too
+    if (isFinal && consumed < remaining.length) {
+      const tail = remaining.slice(consumed).trim();
+      if (tail) toSpeak.push(tail);
+      consumed = remaining.length;
+    }
+    if (consumed === 0) return;
+    ttsSpokenLenRef.current += consumed;
 
-  const sendMessage = useCallback(async () => {
-    const text = input.trim();
+    for (const sentence of toSpeak) {
+      const cleaned = cleanTextForTTS(sentence);
+      if (!cleaned) continue;
+      ttsQueueRef.current = ttsQueueRef.current.then(() => speak(cleaned));
+    }
+  }, [autoSpeak, speak]);
+
+  // When the assistant turn ends, optionally re-arm the mic for hands-free conversation
+  useEffect(() => {
+    if (isLoading || messages.length === 0) return;
+    const last = messages[messages.length - 1];
+    if (last.role !== "assistant") return;
+    // Only react once per assistant message
+    if (ttsActiveForMsgRef.current === messages.length - 1) {
+      // Flush remainder
+      speakNewSentencesFrom(last.content, true);
+    }
+    if (!autoConverseRef.current) return;
+    // Wait for TTS queue to drain, then re-arm mic
+    const cancelled = { v: false };
+    ttsQueueRef.current.then(() => {
+      if (cancelled.v) return;
+      if (recorder.isRecording || isTranscribing) return;
+      startVoiceRecording();
+    });
+    return () => { cancelled.v = true; };
+  }, [isLoading, messages, speakNewSentencesFrom, recorder.isRecording, isTranscribing, startVoiceRecording]);
+
+  const sendMessage = useCallback(async (overrideText?: string) => {
+    const text = (overrideText ?? input).trim();
     if (!text || isLoading) return;
 
     // Create conversation if none active
@@ -198,20 +261,30 @@ const ArabicChat = () => {
     }
 
     const userMsg: Msg = { role: "user", content: text };
-    setInput("");
+    if (!overrideText) setInput("");
     setMessages((prev) => [...prev, userMsg]);
     setIsLoading(true);
+
+    // Reset streaming TTS state for the upcoming assistant message
+    ttsSpokenLenRef.current = 0;
+    ttsActiveForMsgRef.current = -1; // will be set on first delta
 
     let assistantSoFar = "";
     const update = (chunk: string) => {
       assistantSoFar += chunk;
       setMessages((prev) => {
         const last = prev[prev.length - 1];
+        let next: Msg[];
         if (last?.role === "assistant") {
-          return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantSoFar } : m));
+          next = prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantSoFar } : m));
+        } else {
+          next = [...prev, { role: "assistant", content: assistantSoFar }];
         }
-        return [...prev, { role: "assistant", content: assistantSoFar }];
+        ttsActiveForMsgRef.current = next.length - 1;
+        return next;
       });
+      // Speak completed sentences as they arrive
+      speakNewSentencesFrom(assistantSoFar, false);
     };
 
     try {
@@ -222,14 +295,25 @@ const ArabicChat = () => {
         completedLessons: currentCompleted,
         formality,
         onDelta: update,
-        onDone: () => setIsLoading(false),
+        onDone: () => {
+          // Final flush of any remaining text
+          speakNewSentencesFrom(assistantSoFar, true);
+          setIsLoading(false);
+        },
       });
     } catch (e: any) {
       console.error(e);
       setIsLoading(false);
       toast({ variant: "destructive", title: "Erreur", description: e.message });
     }
-  }, [input, isLoading, messages, history, userLevel, formality, completedLessons, completedN2Lessons]);
+  }, [input, isLoading, messages, history, userLevel, formality, completedLessons, completedN2Lessons, speakNewSentencesFrom]);
+
+  // Keep ref in sync so other callbacks can call latest sendMessage
+  useEffect(() => { sendMessageRef.current = sendMessage; }, [sendMessage]);
+
+  const transcribeAndSend = useCallback(async () => {
+    recorder.stopRecording();
+  }, [recorder]);
 
   const handleNewConversation = () => {
     currentConvIdRef.current = null;
