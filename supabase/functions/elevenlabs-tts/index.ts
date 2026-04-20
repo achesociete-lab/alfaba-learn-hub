@@ -25,8 +25,8 @@ serve(async (req) => {
       throw new Error('ELEVENLABS_API_KEY is not configured');
     }
 
-    // Use custom voice if provided, otherwise default to "Wahab" (Arabic native voice)
-    const voiceId = customVoiceId || 'ldeGOUQJqLGjlVgYn7YL';
+    // Use custom voice if provided, otherwise default to the new Arabic voice
+    const voiceId = customVoiceId || '2Vt7Dq33feLEafRndlox';
 
     const speed = rate ?? 0.8;
 
