@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Bot, User, Loader2, Volume2, VolumeX, Trash2, Mic, Square, Plus, MessageSquare, ChevronLeft } from "lucide-react";
+import { Send, Bot, User, Loader2, Volume2, VolumeX, Trash2, Mic, Square, Plus, MessageSquare, ChevronLeft, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
