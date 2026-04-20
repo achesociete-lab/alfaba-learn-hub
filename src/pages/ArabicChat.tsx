@@ -396,15 +396,38 @@ const ArabicChat = () => {
             <p className="text-sm text-muted-foreground mt-1">
               Pratiquez l'arabe en discutant avec votre assistant IA
             </p>
-            <Button
-              variant={autoSpeak ? "default" : "outline"}
-              size="sm"
-              className="mt-2 gap-1.5 text-xs"
-              onClick={() => { setAutoSpeak(!autoSpeak); if (autoSpeak) stopSpeech(); }}
-            >
-              {autoSpeak ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
-              {autoSpeak ? "Lecture auto activée" : "Lecture auto désactivée"}
-            </Button>
+            <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
+              <Button
+                variant={autoSpeak ? "default" : "outline"}
+                size="sm"
+                className="gap-1.5 text-xs"
+                onClick={() => { setAutoSpeak(!autoSpeak); if (autoSpeak) stopSpeech(); }}
+              >
+                {autoSpeak ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
+                {autoSpeak ? "Lecture auto activée" : "Lecture auto désactivée"}
+              </Button>
+              <Button
+                variant={autoConverse ? "default" : "outline"}
+                size="sm"
+                className="gap-1.5 text-xs"
+                onClick={() => {
+                  const next = !autoConverse;
+                  setAutoConverse(next);
+                  if (next) {
+                    setAutoSpeak(true);
+                    if (!recorder.isRecording && !isTranscribing && !isLoading) {
+                      startVoiceRecording();
+                    }
+                  } else {
+                    if (recorder.isRecording) recorder.stopRecording();
+                    stopSpeech();
+                  }
+                }}
+              >
+                <Radio className="h-3.5 w-3.5" />
+                {autoConverse ? "Conversation auto activée" : "Conversation auto"}
+              </Button>
+            </div>
           </div>
 
           {/* Messages */}
@@ -502,7 +525,7 @@ const ArabicChat = () => {
                 <Square className="h-4 w-4" />
               </Button>
             ) : (
-              <Button variant="outline" size="icon" className="shrink-0" onClick={() => recorder.startRecording()} disabled={isLoading || isTranscribing}>
+              <Button variant="outline" size="icon" className="shrink-0" onClick={() => startVoiceRecording()} disabled={isLoading || isTranscribing}>
                 {isTranscribing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mic className="h-4 w-4" />}
               </Button>
             )}
@@ -519,7 +542,7 @@ const ArabicChat = () => {
               dir="auto"
               disabled={isLoading || recorder.isRecording}
             />
-            <Button onClick={sendMessage} disabled={!input.trim() || isLoading} size="icon" className="shrink-0 gradient-emerald border-0">
+            <Button onClick={() => sendMessage()} disabled={!input.trim() || isLoading} size="icon" className="shrink-0 gradient-emerald border-0">
               <Send className="h-4 w-4 text-primary-foreground" />
             </Button>
           </div>
