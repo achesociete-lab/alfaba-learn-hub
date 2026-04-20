@@ -37,7 +37,8 @@ export function useArabicSpeech() {
   // Preload teacher clips once
   useEffect(() => { preloadTeacherClips(); }, []);
 
-  const speak = useCallback(async (text: string, rate = 0.8, voiceId?: string) => {
+  const speak = useCallback(async (rawText: string, rate = 0.8, voiceId?: string) => {
+    const text = cleanTextForTTS(rawText);
     if (!text?.trim()) return;
 
     // Stop any current playback
