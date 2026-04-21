@@ -4,9 +4,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { MapPin, Upload, Sparkles, Trash2, Loader2, Users } from "lucide-react";
+import { MapPin, Trash2, Loader2, Users, Save } from "lucide-react";
 import { toast } from "sonner";
 
 const AdminPresentielCourses = () => {
@@ -15,7 +16,10 @@ const AdminPresentielCourses = () => {
   const [students, setStudents] = useState<any[]>([]);
   const [title, setTitle] = useState("");
   const [photo, setPhoto] = useState<File | null>(null);
-  const [generating, setGenerating] = useState(false);
+  const [qcmText, setQcmText] = useState("");
+  const [translationText, setTranslationText] = useState("");
+  const [dictationText, setDictationText] = useState("");
+  const [saving, setSaving] = useState(false);
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
 
   const fetchData = async () => {
@@ -29,41 +33,38 @@ const AdminPresentielCourses = () => {
 
   useEffect(() => { fetchData(); }, []);
 
-  const handleCreate = async () => {
-    if (!photo || !title.trim() || !user) {
-      toast.error("Titre et photo requis");
+  const handleSave = async () => {
+    if (!title.trim() || !user) {
+      toast.error("Titre requis");
       return;
     }
-    setGenerating(true);
+    setSaving(true);
     try {
-      // 1. Upload photo
-      const ext = photo.name.split(".").pop();
-      const path = `${user.id}/${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("presentiel-courses").upload(path, photo);
-      if (upErr) throw upErr;
-      const { data: pub } = supabase.storage.from("presentiel-courses").getPublicUrl(path);
-      const photoUrl = pub.publicUrl;
+      let photoUrl: string | null = null;
 
-      // 2. Génération IA
-      toast.info("Analyse de la photo et génération du contenu…");
-      const { data: gen, error: genErr } = await supabase.functions.invoke("presentiel-generate", {
-        body: { imageUrl: photoUrl, title },
-      });
-      if (genErr) throw genErr;
+      // 1. Upload photo (optionnel)
+      if (photo) {
+        const ext = photo.name.split(".").pop();
+        const path = `${user.id}/${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("presentiel-courses").upload(path, photo);
+        if (upErr) throw upErr;
+        const { data: pub } = supabase.storage.from("presentiel-courses").getPublicUrl(path);
+        photoUrl = pub.publicUrl;
+      }
 
-      // 3. Insert cours
+      // 2. Insert cours (contenu manuel stocké en texte brut dans le JSONB)
       const { data: course, error: insErr } = await supabase.from("presentiel_courses").insert({
         title,
         photo_url: photoUrl,
-        ocr_text: gen.ocr_text || "",
-        qcm: gen.qcm || [],
-        translation: gen.translation || {},
-        dictation: gen.dictation || {},
+        ocr_text: "",
+        qcm: qcmText.trim() ? { text: qcmText } as any : [],
+        translation: translationText.trim() ? { text: translationText } : {},
+        dictation: dictationText.trim() ? { text: dictationText } : {},
         created_by: user.id,
       }).select().single();
       if (insErr) throw insErr;
 
-      // 4. Assignations
+      // 3. Assignations
       if (selectedStudents.length > 0 && course) {
         const rows = selectedStudents.map((uid) => ({
           course_id: course.id,
@@ -73,16 +74,19 @@ const AdminPresentielCourses = () => {
         await supabase.from("presentiel_course_assignments").insert(rows);
       }
 
-      toast.success("Cours créé et assigné !");
+      toast.success("Cours enregistré !");
       setTitle("");
       setPhoto(null);
+      setQcmText("");
+      setTranslationText("");
+      setDictationText("");
       setSelectedStudents([]);
       fetchData();
     } catch (err: any) {
       console.error(err);
-      toast.error(err.message || "Erreur création cours");
+      toast.error(err.message || "Erreur enregistrement");
     } finally {
-      setGenerating(false);
+      setSaving(false);
     }
   };
 
@@ -103,14 +107,47 @@ const AdminPresentielCourses = () => {
       <Card>
         <CardContent className="p-5 space-y-4">
           <h3 className="font-semibold text-foreground">Nouveau cours</h3>
+
           <div>
             <Label>Titre du cours</Label>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: Leçon du 21 avril – Le verbe" />
           </div>
+
           <div>
-            <Label>Photo du cours (tableau, page de manuel…)</Label>
+            <Label>Photo du cours (illustrative, optionnelle)</Label>
             <Input type="file" accept="image/*" onChange={(e) => setPhoto(e.target.files?.[0] || null)} />
           </div>
+
+          <div>
+            <Label>QCM</Label>
+            <Textarea
+              value={qcmText}
+              onChange={(e) => setQcmText(e.target.value)}
+              placeholder="Saisis ici les questions du QCM (1 par ligne, indique la bonne réponse)…"
+              className="min-h-[140px]"
+            />
+          </div>
+
+          <div>
+            <Label>Traduction</Label>
+            <Textarea
+              value={translationText}
+              onChange={(e) => setTranslationText(e.target.value)}
+              placeholder="Texte arabe à traduire et sa traduction française…"
+              className="min-h-[120px]"
+            />
+          </div>
+
+          <div>
+            <Label>Dictée</Label>
+            <Textarea
+              value={dictationText}
+              onChange={(e) => setDictationText(e.target.value)}
+              placeholder="Phrases à dicter (1 par ligne)…"
+              className="min-h-[120px]"
+            />
+          </div>
+
           <div>
             <Label className="flex items-center gap-2"><Users className="h-4 w-4" />Élèves présentiel ({students.length})</Label>
             <div className="mt-2 max-h-40 overflow-y-auto border rounded-lg p-2 space-y-1">
@@ -132,8 +169,9 @@ const AdminPresentielCourses = () => {
               ))}
             </div>
           </div>
-          <Button onClick={handleCreate} disabled={generating || !photo || !title.trim()} className="w-full gradient-emerald border-0 text-primary-foreground">
-            {generating ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" />Génération IA en cours…</>) : (<><Sparkles className="h-4 w-4 mr-2" />Créer et générer le contenu</>)}
+
+          <Button onClick={handleSave} disabled={saving || !title.trim()} className="w-full gradient-emerald border-0 text-primary-foreground">
+            {saving ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" />Enregistrement…</>) : (<><Save className="h-4 w-4 mr-2" />Enregistrer le cours</>)}
           </Button>
         </CardContent>
       </Card>
@@ -146,7 +184,7 @@ const AdminPresentielCourses = () => {
               {c.photo_url && <img src={c.photo_url} alt="" className="h-14 w-14 rounded object-cover" />}
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-foreground truncate">{c.title}</p>
-                <p className="text-xs text-muted-foreground">{new Date(c.course_date).toLocaleDateString("fr-FR")} — {(c.qcm || []).length} questions</p>
+                <p className="text-xs text-muted-foreground">{new Date(c.course_date).toLocaleDateString("fr-FR")}</p>
               </div>
               <Button size="icon" variant="ghost" onClick={() => handleDelete(c.id)} className="text-destructive">
                 <Trash2 className="h-4 w-4" />
