@@ -8,8 +8,13 @@ import { FileText, Languages, Headphones, CheckCircle2, Volume2 } from "lucide-r
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { playSuccess, playError } from "@/utils/sound-feedback";
-import { speakArabicWithFallback } from "@/hooks/use-arabic-speech";
+const speakNative = (text: string) => {
+  try {
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "ar-SA";
+    window.speechSynthesis.speak(u);
+  } catch {}
+};
 
 interface Props {
   course: any;
@@ -45,7 +50,6 @@ const PresentielCourseDetail = ({ course, userProgress, onProgressUpdate }: Prop
       if (qcmAnswers[i] === q.correct) score++;
     });
     setQcmSubmitted(true);
-    if (score >= 7) playSuccess(); else playError();
     await upsertProgress({ qcm_score: score, qcm_completed: true });
     toast.success(`QCM terminé : ${score}/${course.qcm.length}`);
   };
