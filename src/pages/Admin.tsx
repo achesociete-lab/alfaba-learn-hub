@@ -21,6 +21,7 @@ const Admin = () => {
   const { user, loading: authLoading } = useAuth();
   const { isAdmin, loading: adminLoading } = useIsAdmin();
   const navigate = useNavigate();
+  const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -29,6 +30,20 @@ const Admin = () => {
   useEffect(() => {
     if (!adminLoading && !isAdmin && user) navigate("/dashboard");
   }, [isAdmin, adminLoading, user, navigate]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    const fetchPending = async () => {
+      const { count } = await supabase
+        .from("profiles")
+        .select("*", { count: "exact", head: true })
+        .eq("type_eleve", "en_attente" as any);
+      setPendingCount(count || 0);
+    };
+    fetchPending();
+    const interval = setInterval(fetchPending, 30000);
+    return () => clearInterval(interval);
+  }, [isAdmin]);
 
   if (authLoading || adminLoading) {
     return (
