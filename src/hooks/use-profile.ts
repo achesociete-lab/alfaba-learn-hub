@@ -39,6 +39,7 @@ export function useProfile() {
       setLoading(false);
       return;
     }
+    setLoading(true);
     const fetch = async () => {
       await refetch();
       setLoading(false);
