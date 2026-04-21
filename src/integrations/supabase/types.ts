@@ -317,6 +317,127 @@ export type Database = {
         }
         Relationships: []
       }
+      presentiel_course_assignments: {
+        Row: {
+          assigned_at: string
+          assigned_by: string
+          course_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by: string
+          course_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string
+          course_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presentiel_course_assignments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "presentiel_courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      presentiel_course_progress: {
+        Row: {
+          completed_at: string | null
+          course_id: string
+          created_at: string
+          dictation_completed: boolean
+          id: string
+          qcm_completed: boolean
+          qcm_score: number | null
+          translation_completed: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          course_id: string
+          created_at?: string
+          dictation_completed?: boolean
+          id?: string
+          qcm_completed?: boolean
+          qcm_score?: number | null
+          translation_completed?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          course_id?: string
+          created_at?: string
+          dictation_completed?: boolean
+          id?: string
+          qcm_completed?: boolean
+          qcm_score?: number | null
+          translation_completed?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presentiel_course_progress_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "presentiel_courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      presentiel_courses: {
+        Row: {
+          course_date: string
+          created_at: string
+          created_by: string
+          dictation: Json | null
+          id: string
+          ocr_text: string | null
+          photo_url: string | null
+          qcm: Json | null
+          title: string
+          translation: Json | null
+          updated_at: string
+        }
+        Insert: {
+          course_date?: string
+          created_at?: string
+          created_by: string
+          dictation?: Json | null
+          id?: string
+          ocr_text?: string | null
+          photo_url?: string | null
+          qcm?: Json | null
+          title: string
+          translation?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          course_date?: string
+          created_at?: string
+          created_by?: string
+          dictation?: Json | null
+          id?: string
+          ocr_text?: string | null
+          photo_url?: string | null
+          qcm?: Json | null
+          title?: string
+          translation?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           age: number | null
@@ -655,7 +776,7 @@ export type Database = {
       class_level: "niveau_1" | "niveau_2"
       memorization_status: "en_cours" | "mémorisée" | "à_réviser"
       recitation_status: "en_attente" | "corrigée" | "a_refaire"
-      student_type: "en_ligne" | "presentiel"
+      student_type: "en_ligne" | "presentiel" | "en_attente"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -787,7 +908,7 @@ export const Constants = {
       class_level: ["niveau_1", "niveau_2"],
       memorization_status: ["en_cours", "mémorisée", "à_réviser"],
       recitation_status: ["en_attente", "corrigée", "a_refaire"],
-      student_type: ["en_ligne", "presentiel"],
+      student_type: ["en_ligne", "presentiel", "en_attente"],
     },
   },
 } as const
