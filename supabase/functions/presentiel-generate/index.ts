@@ -62,28 +62,31 @@ Réponds UNIQUEMENT en JSON strict, sans markdown, sans \`\`\`, structure exacte
       }),
     })
 
+    console.log('[presentiel-generate] AI status', response.status)
     if (response.status === 429) return json({ error: 'Rate limit, réessayez dans 30s' }, 429)
-    if (response.status === 402) return json({ error: 'Crédits IA épuisés' }, 402)
+    if (response.status === 402) return json({ error: 'Crédits IA épuisés. Recharge dans Settings → Workspace → Usage.' }, 402)
     if (!response.ok) {
       const text = await response.text()
-      console.error('AI gateway error', response.status, text)
-      return json({ error: `IA gateway: ${response.status}` }, 500)
+      console.error('[presentiel-generate] AI gateway error', response.status, text)
+      return json({ error: `IA gateway ${response.status}: ${text.slice(0, 300)}` }, 500)
     }
 
     const data = await response.json()
     const raw = data.choices?.[0]?.message?.content ?? '{}'
+    console.log('[presentiel-generate] raw preview', String(raw).slice(0, 200))
     let parsed: any
     try {
       parsed = typeof raw === 'string' ? JSON.parse(raw) : raw
     } catch (e) {
-      console.error('Parse error', raw)
-      return json({ error: 'Réponse IA invalide' }, 500)
+      console.error('[presentiel-generate] Parse error', String(raw).slice(0, 500))
+      return json({ error: 'Réponse IA invalide (JSON parse failed)' }, 500)
     }
 
+    console.log('[presentiel-generate] success', { qcm: parsed.qcm?.length, hasTranslation: !!parsed.translation })
     return json({ ok: true, ...parsed })
   } catch (err) {
-    console.error('presentiel-generate error', err)
-    return json({ error: String(err) }, 500)
+    console.error('[presentiel-generate] exception', err)
+    return json({ error: String(err instanceof Error ? err.message : err) }, 500)
   }
 })
 
