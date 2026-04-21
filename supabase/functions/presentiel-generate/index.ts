@@ -11,12 +11,16 @@ Deno.serve(async (req) => {
 
   try {
     const { imageUrl, title } = await req.json()
+    console.log('[presentiel-generate] start', { imageUrl, title })
     if (!imageUrl) {
       return json({ error: 'imageUrl required' }, 400)
     }
 
     const apiKey = Deno.env.get('LOVABLE_API_KEY')
-    if (!apiKey) return json({ error: 'LOVABLE_API_KEY missing' }, 500)
+    if (!apiKey) {
+      console.error('[presentiel-generate] LOVABLE_API_KEY missing')
+      return json({ error: 'LOVABLE_API_KEY missing' }, 500)
+    }
 
     const systemPrompt = `Tu es un professeur d'arabe expert. À partir d'une PHOTO de cours d'arabe, tu dois :
 1. Lire le texte arabe visible (vocalisé ou non)
