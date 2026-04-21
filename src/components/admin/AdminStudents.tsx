@@ -23,7 +23,7 @@ interface StudentProfile {
   first_name: string;
   last_name: string;
   level: "niveau_1" | "niveau_2";
-  type_eleve: "en_ligne" | "presentiel";
+  type_eleve: "en_ligne" | "presentiel" | "en_attente";
   created_at: string;
 }
 
