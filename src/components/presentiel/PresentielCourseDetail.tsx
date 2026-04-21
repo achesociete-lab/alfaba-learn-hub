@@ -158,7 +158,7 @@ const PresentielCourseDetail = ({ course, userProgress, onProgressUpdate }: Prop
               <CardContent className="p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <Label className="text-sm">Phrase {i + 1}</Label>
-                  <Button size="sm" variant="outline" onClick={() => speakArabicWithFallback(s.arabic)}>
+                  <Button size="sm" variant="outline" onClick={() => speakNative(s.arabic)}>
                     <Volume2 className="h-4 w-4 mr-1" /> Écouter
                   </Button>
                 </div>
