@@ -1,7 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/use-admin";
+import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AdminOverview from "@/components/admin/AdminOverview";
@@ -10,9 +11,11 @@ import AdminHomework from "@/components/admin/AdminHomework";
 import AdminAttendance from "@/components/admin/AdminAttendance";
 import AdminCourses from "@/components/admin/AdminCourses";
 import AdminRecitations from "@/components/admin/AdminRecitations";
+import AdminPresentielCourses from "@/components/admin/AdminPresentielCourses";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
-import { Shield, Users, FileText, ClipboardList, BarChart3, BookOpen, Headphones } from "lucide-react";
+import { Shield, Users, FileText, ClipboardList, BarChart3, BookOpen, Headphones, MapPin } from "lucide-react";
 
 const Admin = () => {
   const { user, loading: authLoading } = useAuth();
