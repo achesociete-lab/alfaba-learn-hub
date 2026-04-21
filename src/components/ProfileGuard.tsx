@@ -1,10 +1,11 @@
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/use-profile";
 
 const ProfileGuard = () => {
   const { user, loading: authLoading } = useAuth();
-  const { loading: profileLoading, isComplete } = useProfile();
+  const { profile, loading: profileLoading, isComplete } = useProfile();
+  const location = useLocation();
 
   if (authLoading || profileLoading) {
     return (
@@ -14,11 +15,19 @@ const ProfileGuard = () => {
     );
   }
 
-  if (!user) {
-    return <Navigate to="/auth" replace />;
+  if (!user) return <Navigate to="/auth" replace />;
+
+  // Pending presentiel students: only allow /compte-en-attente
+  if (profile?.type_eleve === "en_attente" && location.pathname !== "/compte-en-attente") {
+    return <Navigate to="/compte-en-attente" replace />;
   }
 
-  if (!isComplete) {
+  // Presentiel students get redirected to their course page from /dashboard
+  if (profile?.type_eleve === "presentiel" && location.pathname === "/dashboard") {
+    return <Navigate to="/cours-presentiel" replace />;
+  }
+
+  if (!isComplete && profile?.type_eleve !== "en_attente") {
     return <Navigate to="/complete-profile" replace />;
   }
 
@@ -26,3 +35,4 @@ const ProfileGuard = () => {
 };
 
 export default ProfileGuard;
+

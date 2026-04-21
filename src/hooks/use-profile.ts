@@ -8,7 +8,7 @@ export interface Profile {
   level: "niveau_1" | "niveau_2";
   age: number | null;
   gender: string | null;
-  type_eleve: "en_ligne" | "presentiel";
+  type_eleve: "en_ligne" | "presentiel" | "en_attente";
 }
 
 export function useProfile() {
