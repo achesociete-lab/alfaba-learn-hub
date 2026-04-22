@@ -14,6 +14,7 @@ import { toast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { playCorrectSound, playWrongSound } from "@/utils/sound-feedback";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
