@@ -527,7 +527,7 @@ const ArabicChat = () => {
                     className={`whitespace-pre-wrap leading-relaxed ${hasArabic(msg.content) ? "font-arabic text-xl" : "text-sm"}`}
                     dir="auto"
                   >
-                    {msg.content}
+                    {msg.role === "assistant" ? (stripDictee(msg.content) || "🔊 …") : msg.content}
                   </p>
                   {msg.role === "assistant" && !isLoading && (
                     <Button variant="ghost" size="icon" className="h-6 w-6 mt-1 opacity-60 hover:opacity-100 text-primary-foreground"
