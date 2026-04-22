@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Bot, User, Loader2, Volume2, VolumeX, Trash2, Mic, Square, Plus, MessageSquare, ChevronLeft, Radio } from "lucide-react";
+import { Send, Bot, User, Loader2, Volume2, Trash2, Mic, Square, Plus, MessageSquare, ChevronLeft, StopCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -96,7 +96,7 @@ const ArabicChat = () => {
   const recorder = useAudioRecorder();
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [autoSpeak, setAutoSpeak] = useState(true);
-  const [autoConverse, setAutoConverse] = useState(false);
+  const [autoConverse, setAutoConverse] = useState(true);
   const lastSpokenIndexRef = useRef(-1);
   const [showSidebar, setShowSidebar] = useState(false);
 
@@ -104,7 +104,7 @@ const ArabicChat = () => {
   const ttsSpokenLenRef = useRef(0);
   const ttsQueueRef = useRef<Promise<void>>(Promise.resolve());
   const ttsActiveForMsgRef = useRef(-1);
-  const autoConverseRef = useRef(false);
+  const autoConverseRef = useRef(true);
   useEffect(() => { autoConverseRef.current = autoConverse; }, [autoConverse]);
 
   const history = useChatHistory();
@@ -132,6 +132,7 @@ const ArabicChat = () => {
     recorder.startRecording({
       silenceTimeoutMs: 1500,
       silenceThreshold: 0.018,
+      maxSilenceBeforeStopMs: 10000, // 10 s sans parole → on coupe le micro
     }).catch((e) => {
       console.error(e);
       toast({ title: "Microphone refusé", variant: "destructive" });
