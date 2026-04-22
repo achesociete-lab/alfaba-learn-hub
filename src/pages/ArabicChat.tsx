@@ -527,7 +527,18 @@ const ArabicChat = () => {
                 <Square className="h-4 w-4" />
               </Button>
             ) : (
-              <Button variant="outline" size="icon" className="shrink-0" onClick={() => startVoiceRecording()} disabled={isLoading || isTranscribing}>
+              <Button
+                variant="outline"
+                size="icon"
+                className="shrink-0"
+                onClick={() => {
+                  // Démarrage manuel de la conversation vocale par l'élève
+                  setAutoConverse(true);
+                  setAutoSpeak(true);
+                  startVoiceRecording();
+                }}
+                disabled={isLoading || isTranscribing}
+              >
                 {isTranscribing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mic className="h-4 w-4" />}
               </Button>
             )}
