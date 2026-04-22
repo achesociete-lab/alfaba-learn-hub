@@ -206,21 +206,8 @@ const ArabicChat = () => {
     if (!loading && !user) navigate("/auth");
   }, [user, loading, navigate]);
 
-  // Démarrage automatique de la conversation vocale à l'ouverture
-  const autoStartedRef = useRef(false);
-  useEffect(() => {
-    if (autoStartedRef.current) return;
-    if (!user || loading) return;
-    if (!autoConverse) return;
-    autoStartedRef.current = true;
-    // Petit délai pour laisser le rendu se faire avant de demander le micro
-    const t = setTimeout(() => {
-      if (!recorder.isRecording && !isTranscribing && !isLoading) {
-        startVoiceRecording();
-      }
-    }, 400);
-    return () => clearTimeout(t);
-  }, [user, loading, autoConverse, recorder.isRecording, isTranscribing, isLoading, startVoiceRecording]);
+  // Pas de démarrage automatique du micro : l'élève doit cliquer sur le bouton micro
+  // pour lancer la conversation vocale.
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
