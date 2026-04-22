@@ -332,6 +332,7 @@ const ArabicChat = () => {
 
     // Reset streaming TTS state for the upcoming assistant message
     ttsSpokenLenRef.current = 0;
+    dicteeSpokenCountRef.current = 0;
     ttsActiveForMsgRef.current = -1; // will be set on first delta
 
     let assistantSoFar = "";
