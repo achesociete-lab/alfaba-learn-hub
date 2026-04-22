@@ -1,10 +1,12 @@
 import { useState, useRef, useCallback } from "react";
 
 type StartOptions = {
-  /** Auto-stop after this many ms of silence. Set to 0/undefined to disable. */
+  /** Auto-stop after this many ms of silence (after speech was detected). Set to 0/undefined to disable. */
   silenceTimeoutMs?: number;
   /** RMS threshold below which audio is considered "silence" (0-1). */
   silenceThreshold?: number;
+  /** Auto-stop after this many ms if NO speech is ever detected (inactivity cutoff). 0/undefined disables. */
+  noSpeechTimeoutMs?: number;
   /** Called when recording stops automatically due to silence. */
   onAutoStop?: () => void;
 };
@@ -43,7 +45,7 @@ export function useAudioRecorder() {
       opts && typeof opts === "object" && !("nativeEvent" in (opts as object))
         ? (opts as StartOptions)
         : {};
-    const { silenceTimeoutMs = 0, silenceThreshold = 0.015, onAutoStop } = safeOpts;
+    const { silenceTimeoutMs = 0, silenceThreshold = 0.015, noSpeechTimeoutMs = 0, onAutoStop } = safeOpts;
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -75,7 +77,7 @@ export function useAudioRecorder() {
       }, 500);
 
       // Voice Activity Detection
-      if (silenceTimeoutMs > 0) {
+      if (silenceTimeoutMs > 0 || noSpeechTimeoutMs > 0) {
         const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
         audioCtxRef.current = ctx;
         const source = ctx.createMediaStreamSource(stream);
@@ -84,6 +86,7 @@ export function useAudioRecorder() {
         source.connect(analyser);
         analyserRef.current = analyser;
         const data = new Uint8Array(analyser.fftSize);
+        const recordingStartedAt = Date.now();
 
         const tick = () => {
           if (!analyserRef.current) return;
@@ -97,14 +100,29 @@ export function useAudioRecorder() {
           const rms = Math.sqrt(sum / data.length);
 
           const now = Date.now();
+
+          // Inactivity cutoff: no speech ever detected within noSpeechTimeoutMs
+          if (
+            noSpeechTimeoutMs > 0 &&
+            !speechDetectedRef.current &&
+            now - recordingStartedAt >= noSpeechTimeoutMs
+          ) {
+            if (mediaRecorderRef.current?.state === "recording") {
+              mediaRecorderRef.current.stop();
+              setIsRecording(false);
+              onAutoStop?.();
+            }
+            return;
+          }
+
           if (rms > silenceThreshold) {
             speechDetectedRef.current = true;
             silenceStartRef.current = null;
-          } else if (speechDetectedRef.current) {
+          } else if (speechDetectedRef.current && silenceTimeoutMs > 0) {
             if (silenceStartRef.current === null) {
               silenceStartRef.current = now;
             } else if (now - silenceStartRef.current >= silenceTimeoutMs) {
-              // Auto-stop
+              // Auto-stop after end of speech
               if (mediaRecorderRef.current?.state === "recording") {
                 mediaRecorderRef.current.stop();
                 setIsRecording(false);
