@@ -240,9 +240,28 @@ const ArabicChat = () => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
-  // Streaming TTS: as the assistant message grows, speak each newly-completed sentence
+  // Streaming TTS: as the assistant message grows, speak each newly-completed sentence.
+  // Si le message contient des balises [DICTEE]…[/DICTEE], on prononce uniquement le mot dicté
+  // (et on n'affiche rien de ce mot dans le chat — voir stripDictee côté rendu).
+  const dicteeSpokenCountRef = useRef(0);
   const speakNewSentencesFrom = useCallback((fullText: string, isFinal: boolean) => {
     if (!autoSpeak) return;
+
+    // Mode dictée : extraire les mots [DICTEE]…[/DICTEE] et ne prononcer que ceux-là.
+    if (hasDictee(fullText)) {
+      const words = extractDicteeWords(fullText);
+      const newOnes = words.slice(dicteeSpokenCountRef.current);
+      if (newOnes.length === 0) return;
+      dicteeSpokenCountRef.current = words.length;
+      for (const w of newOnes) {
+        const cleaned = cleanTextForTTS(w);
+        if (!cleaned) continue;
+        ttsQueueRef.current = ttsQueueRef.current.then(() => speak(cleaned));
+      }
+      // En mode dictée pure on ne lit rien d'autre.
+      return;
+    }
+
     const ar = extractArabic(fullText);
     if (!ar) return;
     const remaining = ar.slice(ttsSpokenLenRef.current);
