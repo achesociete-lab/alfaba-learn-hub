@@ -104,7 +104,7 @@ const ArabicChat = () => {
   const ttsSpokenLenRef = useRef(0);
   const ttsQueueRef = useRef<Promise<void>>(Promise.resolve());
   const ttsActiveForMsgRef = useRef(-1);
-  const autoConverseRef = useRef(true);
+  const autoConverseRef = useRef(false);
   useEffect(() => { autoConverseRef.current = autoConverse; }, [autoConverse]);
 
   const history = useChatHistory();
