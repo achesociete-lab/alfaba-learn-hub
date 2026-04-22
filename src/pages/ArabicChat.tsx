@@ -128,11 +128,19 @@ const ArabicChat = () => {
   // Forward declaration via ref so callbacks can call sendMessage before it's defined
   const sendMessageRef = useRef<(text?: string) => Promise<void>>(async () => {});
 
-  const startVoiceRecording = useCallback(() => {
+  const startVoiceRecording = useCallback((opts?: { autoStopOnSilence?: boolean }) => {
+    const autoStopOnSilence = opts?.autoStopOnSilence ?? false;
     recorder.startRecording({
-      silenceTimeoutMs: 1500,
+      silenceTimeoutMs: 3000, // 3 s de silence après parole → fin de tour
       silenceThreshold: 0.018,
-      noSpeechTimeoutMs: 10000, // 10 s sans parole détectée → on coupe le micro
+      // Si activé : 10 s sans aucune parole → arrêter complètement la conversation
+      noSpeechTimeoutMs: autoStopOnSilence ? 10000 : 0,
+      onAutoStop: autoStopOnSilence
+        ? () => {
+            // Inactivité après réponse du professeur : on coupe la conversation
+            setAutoConverse(false);
+          }
+        : undefined,
     }).catch((e) => {
       console.error(e);
       toast({ title: "Microphone refusé", variant: "destructive" });
