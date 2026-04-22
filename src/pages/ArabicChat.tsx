@@ -262,7 +262,8 @@ const ArabicChat = () => {
     ttsQueueRef.current.then(() => {
       if (cancelled.v) return;
       if (recorder.isRecording || isTranscribing) return;
-      startVoiceRecording();
+      // Re-armer le micro avec auto-stop d'inactivité : 10 s sans parole → fin de conversation
+      startVoiceRecording({ autoStopOnSilence: true });
     });
     return () => { cancelled.v = true; };
   }, [isLoading, messages, speakNewSentencesFrom, recorder.isRecording, isTranscribing, startVoiceRecording]);
