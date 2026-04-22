@@ -415,35 +415,21 @@ const ArabicChat = () => {
             <p className="text-sm text-muted-foreground mt-1">
               Pratiquez l'arabe en discutant avec votre assistant IA
             </p>
-            <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
-              {autoConverse ? (
+            {/* Bouton STOP discret, visible uniquement pendant la conversation vocale */}
+            {(autoConverse || recorder.isRecording) && (
+              <div className="flex items-center justify-center mt-2">
                 <Button
-                  variant="destructive"
-                  size="sm"
-                  className="gap-1.5 text-xs"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-destructive hover:bg-destructive/10"
                   onClick={stopAutoConverse}
+                  title="Arrêter la conversation"
+                  aria-label="Arrêter la conversation"
                 >
-                  <StopCircle className="h-3.5 w-3.5" />
-                  Arrêter la conversation
+                  <Square className="h-4 w-4 fill-current" />
                 </Button>
-              ) : (
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="gap-1.5 text-xs"
-                  onClick={() => {
-                    setAutoConverse(true);
-                    setAutoSpeak(true);
-                    if (!recorder.isRecording && !isTranscribing && !isLoading) {
-                      startVoiceRecording();
-                    }
-                  }}
-                >
-                  <Mic className="h-3.5 w-3.5" />
-                  Reprendre la conversation
-                </Button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Messages */}
