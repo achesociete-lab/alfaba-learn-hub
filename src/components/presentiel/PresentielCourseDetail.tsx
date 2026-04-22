@@ -8,6 +8,7 @@ import { FileText, Languages, Headphones, CheckCircle2, Volume2 } from "lucide-r
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { playCorrectSound, playWrongSound } from "@/utils/sound-feedback";
 const speakNative = (text: string) => {
   try {
     const u = new SpeechSynthesisUtterance(text);
@@ -98,7 +99,11 @@ const PresentielCourseDetail = ({ course, userProgress, onProgressUpdate }: Prop
                       <button
                         key={j}
                         disabled={qcmSubmitted}
-                        onClick={() => setQcmAnswers({ ...qcmAnswers, [i]: j })}
+                        onClick={() => {
+                          setQcmAnswers({ ...qcmAnswers, [i]: j });
+                          if (j === q.correct) playCorrectSound();
+                          else playWrongSound();
+                        }}
                         className={`w-full text-left p-3 rounded-lg border-2 transition-all text-sm ${
                           isCorrect ? "border-primary bg-primary/10" :
                           isWrong ? "border-destructive bg-destructive/10" :

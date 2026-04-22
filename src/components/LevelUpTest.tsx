@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { playCorrectSound, playWrongSound } from "@/utils/sound-feedback";
 
 interface Props {
   onPass: () => void;
@@ -88,7 +89,12 @@ const LevelUpTest = ({ onPass, onDismiss }: Props) => {
   const handleSelect = (idx: number) => {
     if (selected !== null) return;
     setSelected(idx);
-    if (idx === q.correctIndex) setScore((s) => s + 1);
+    if (idx === q.correctIndex) {
+      setScore((s) => s + 1);
+      playCorrectSound();
+    } else {
+      playWrongSound();
+    }
   };
 
   const next = () => {

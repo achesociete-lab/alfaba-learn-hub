@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, ArrowRight, ArrowLeft, GraduationCap } from "lucide-react";
+import { playCorrectSound, playWrongSound } from "@/utils/sound-feedback";
 
 interface PlacementTestProps {
   onComplete: (level: "niveau_1" | "niveau_2") => void;
