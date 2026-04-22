@@ -96,7 +96,7 @@ const ArabicChat = () => {
   const recorder = useAudioRecorder();
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [autoSpeak, setAutoSpeak] = useState(true);
-  const [autoConverse, setAutoConverse] = useState(true);
+  const [autoConverse, setAutoConverse] = useState(false);
   const lastSpokenIndexRef = useRef(-1);
   const [showSidebar, setShowSidebar] = useState(false);
 
