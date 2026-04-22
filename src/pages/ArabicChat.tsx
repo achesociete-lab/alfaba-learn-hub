@@ -187,8 +187,8 @@ const ArabicChat = () => {
           if (!autoConverseRef.current) {
             toast({ title: "Aucun texte détecté", variant: "destructive" });
           } else {
-            // Re-arm mic if we're in conversation mode and nothing was heard
-            startVoiceRecording();
+            // Re-armer le micro avec auto-stop d'inactivité (10 s)
+            startVoiceRecording({ autoStopOnSilence: true });
           }
         }
       } catch (e: any) {
