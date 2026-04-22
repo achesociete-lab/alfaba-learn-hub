@@ -96,7 +96,7 @@ const ArabicChat = () => {
   const recorder = useAudioRecorder();
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [autoSpeak, setAutoSpeak] = useState(true);
-  const [autoConverse, setAutoConverse] = useState(true);
+  const [autoConverse, setAutoConverse] = useState(false);
   const lastSpokenIndexRef = useRef(-1);
   const [showSidebar, setShowSidebar] = useState(false);
 
@@ -104,7 +104,7 @@ const ArabicChat = () => {
   const ttsSpokenLenRef = useRef(0);
   const ttsQueueRef = useRef<Promise<void>>(Promise.resolve());
   const ttsActiveForMsgRef = useRef(-1);
-  const autoConverseRef = useRef(true);
+  const autoConverseRef = useRef(false);
   useEffect(() => { autoConverseRef.current = autoConverse; }, [autoConverse]);
 
   const history = useChatHistory();
@@ -128,11 +128,19 @@ const ArabicChat = () => {
   // Forward declaration via ref so callbacks can call sendMessage before it's defined
   const sendMessageRef = useRef<(text?: string) => Promise<void>>(async () => {});
 
-  const startVoiceRecording = useCallback(() => {
+  const startVoiceRecording = useCallback((opts?: { autoStopOnSilence?: boolean }) => {
+    const autoStopOnSilence = opts?.autoStopOnSilence ?? false;
     recorder.startRecording({
-      silenceTimeoutMs: 1500,
+      silenceTimeoutMs: 3000, // 3 s de silence après parole → fin de tour
       silenceThreshold: 0.018,
-      noSpeechTimeoutMs: 10000, // 10 s sans parole détectée → on coupe le micro
+      // Si activé : 10 s sans aucune parole → arrêter complètement la conversation
+      noSpeechTimeoutMs: autoStopOnSilence ? 10000 : 0,
+      onAutoStop: autoStopOnSilence
+        ? () => {
+            // Inactivité après réponse du professeur : on coupe la conversation
+            setAutoConverse(false);
+          }
+        : undefined,
     }).catch((e) => {
       console.error(e);
       toast({ title: "Microphone refusé", variant: "destructive" });
@@ -179,8 +187,8 @@ const ArabicChat = () => {
           if (!autoConverseRef.current) {
             toast({ title: "Aucun texte détecté", variant: "destructive" });
           } else {
-            // Re-arm mic if we're in conversation mode and nothing was heard
-            startVoiceRecording();
+            // Re-armer le micro avec auto-stop d'inactivité (10 s)
+            startVoiceRecording({ autoStopOnSilence: true });
           }
         }
       } catch (e: any) {
@@ -198,21 +206,8 @@ const ArabicChat = () => {
     if (!loading && !user) navigate("/auth");
   }, [user, loading, navigate]);
 
-  // Démarrage automatique de la conversation vocale à l'ouverture
-  const autoStartedRef = useRef(false);
-  useEffect(() => {
-    if (autoStartedRef.current) return;
-    if (!user || loading) return;
-    if (!autoConverse) return;
-    autoStartedRef.current = true;
-    // Petit délai pour laisser le rendu se faire avant de demander le micro
-    const t = setTimeout(() => {
-      if (!recorder.isRecording && !isTranscribing && !isLoading) {
-        startVoiceRecording();
-      }
-    }, 400);
-    return () => clearTimeout(t);
-  }, [user, loading, autoConverse, recorder.isRecording, isTranscribing, isLoading, startVoiceRecording]);
+  // Pas de démarrage automatique du micro : l'élève doit cliquer sur le bouton micro
+  // pour lancer la conversation vocale.
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -267,7 +262,8 @@ const ArabicChat = () => {
     ttsQueueRef.current.then(() => {
       if (cancelled.v) return;
       if (recorder.isRecording || isTranscribing) return;
-      startVoiceRecording();
+      // Re-armer le micro avec auto-stop d'inactivité : 10 s sans parole → fin de conversation
+      startVoiceRecording({ autoStopOnSilence: true });
     });
     return () => { cancelled.v = true; };
   }, [isLoading, messages, speakNewSentencesFrom, recorder.isRecording, isTranscribing, startVoiceRecording]);
@@ -419,35 +415,21 @@ const ArabicChat = () => {
             <p className="text-sm text-muted-foreground mt-1">
               Pratiquez l'arabe en discutant avec votre assistant IA
             </p>
-            <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
-              {autoConverse ? (
+            {/* Bouton STOP discret, visible uniquement pendant la conversation vocale */}
+            {(autoConverse || recorder.isRecording) && (
+              <div className="flex items-center justify-center mt-2">
                 <Button
-                  variant="destructive"
-                  size="sm"
-                  className="gap-1.5 text-xs"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-destructive hover:bg-destructive/10"
                   onClick={stopAutoConverse}
+                  title="Arrêter la conversation"
+                  aria-label="Arrêter la conversation"
                 >
-                  <StopCircle className="h-3.5 w-3.5" />
-                  Arrêter la conversation
+                  <Square className="h-4 w-4 fill-current" />
                 </Button>
-              ) : (
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="gap-1.5 text-xs"
-                  onClick={() => {
-                    setAutoConverse(true);
-                    setAutoSpeak(true);
-                    if (!recorder.isRecording && !isTranscribing && !isLoading) {
-                      startVoiceRecording();
-                    }
-                  }}
-                >
-                  <Mic className="h-3.5 w-3.5" />
-                  Reprendre la conversation
-                </Button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Messages */}
@@ -462,7 +444,7 @@ const ArabicChat = () => {
                     السَّلامُ عَلَيْكُمْ! أَنَا الأُسْتَاذُ
                   </p>
                   <p className="text-muted-foreground text-sm mt-1">
-                    Écrivez en arabe ou en français pour commencer la conversation
+                    Appuyez sur le micro pour commencer
                   </p>
                 </div>
                 <div className="flex flex-wrap justify-center gap-2 mt-2">
@@ -545,7 +527,18 @@ const ArabicChat = () => {
                 <Square className="h-4 w-4" />
               </Button>
             ) : (
-              <Button variant="outline" size="icon" className="shrink-0" onClick={() => startVoiceRecording()} disabled={isLoading || isTranscribing}>
+              <Button
+                variant="outline"
+                size="icon"
+                className="shrink-0"
+                onClick={() => {
+                  // Démarrage manuel de la conversation vocale par l'élève
+                  setAutoConverse(true);
+                  setAutoSpeak(true);
+                  startVoiceRecording();
+                }}
+                disabled={isLoading || isTranscribing}
+              >
                 {isTranscribing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mic className="h-4 w-4" />}
               </Button>
             )}
