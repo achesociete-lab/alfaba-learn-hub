@@ -318,6 +318,12 @@ const ArabicChat = () => {
         onDone: () => {
           // Final flush of any remaining text
           speakNewSentencesFrom(assistantSoFar, true);
+          // Son Duolingo selon le contenu de la correction
+          const txt = assistantSoFar;
+          const positive = /(أَحْسَنْتَ|أحسنت|مُمْتَازٌ|ممتاز|رَائِعٌ|رائع|بَارَكَ اللَّهُ|بارك الله|صَحِيحٌ|صحيح)/.test(txt);
+          const negative = /(الصَّوابُ|الصواب|خَطَأٌ|خطأ|حَاوِلْ|حاول مرَّةً|أَعِدْ|الصَّحِيحُ|الصحيح)/.test(txt);
+          if (positive && !negative) playCorrectSound();
+          else if (negative) playWrongSound();
           setIsLoading(false);
         },
       });
