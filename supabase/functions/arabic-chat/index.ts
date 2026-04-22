@@ -106,6 +106,8 @@ serve(async (req) => {
 
 ${levelSpecificRules}
 
+${writingExerciseRules}
+
 ### مستوى الطالب: ${levelLabel}
 ${progressDesc}
 
