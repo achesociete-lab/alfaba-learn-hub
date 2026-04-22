@@ -132,12 +132,18 @@ const ArabicChat = () => {
     recorder.startRecording({
       silenceTimeoutMs: 1500,
       silenceThreshold: 0.018,
-      maxSilenceBeforeStopMs: 10000, // 10 s sans parole → on coupe le micro
+      noSpeechTimeoutMs: 10000, // 10 s sans parole détectée → on coupe le micro
     }).catch((e) => {
       console.error(e);
       toast({ title: "Microphone refusé", variant: "destructive" });
     });
   }, [recorder]);
+
+  const stopAutoConverse = useCallback(() => {
+    setAutoConverse(false);
+    if (recorder.isRecording) recorder.stopRecording();
+    stopSpeech();
+  }, [recorder, stopSpeech]);
 
   // Auto-transcribe & auto-send when a recording finishes
   useEffect(() => {
@@ -398,36 +404,33 @@ const ArabicChat = () => {
               Pratiquez l'arabe en discutant avec votre assistant IA
             </p>
             <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
-              <Button
-                variant={autoSpeak ? "default" : "outline"}
-                size="sm"
-                className="gap-1.5 text-xs"
-                onClick={() => { setAutoSpeak(!autoSpeak); if (autoSpeak) stopSpeech(); }}
-              >
-                {autoSpeak ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
-                {autoSpeak ? "Lecture auto activée" : "Lecture auto désactivée"}
-              </Button>
-              <Button
-                variant={autoConverse ? "default" : "outline"}
-                size="sm"
-                className="gap-1.5 text-xs"
-                onClick={() => {
-                  const next = !autoConverse;
-                  setAutoConverse(next);
-                  if (next) {
+              {autoConverse ? (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="gap-1.5 text-xs"
+                  onClick={stopAutoConverse}
+                >
+                  <StopCircle className="h-3.5 w-3.5" />
+                  Arrêter la conversation
+                </Button>
+              ) : (
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="gap-1.5 text-xs"
+                  onClick={() => {
+                    setAutoConverse(true);
                     setAutoSpeak(true);
                     if (!recorder.isRecording && !isTranscribing && !isLoading) {
                       startVoiceRecording();
                     }
-                  } else {
-                    if (recorder.isRecording) recorder.stopRecording();
-                    stopSpeech();
-                  }
-                }}
-              >
-                <Radio className="h-3.5 w-3.5" />
-                {autoConverse ? "Conversation auto activée" : "Conversation auto"}
-              </Button>
+                  }}
+                >
+                  <Mic className="h-3.5 w-3.5" />
+                  Reprendre la conversation
+                </Button>
+              )}
             </div>
           </div>
 
