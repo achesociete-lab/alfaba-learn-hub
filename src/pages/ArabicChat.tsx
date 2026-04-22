@@ -444,7 +444,7 @@ const ArabicChat = () => {
                     السَّلامُ عَلَيْكُمْ! أَنَا الأُسْتَاذُ
                   </p>
                   <p className="text-muted-foreground text-sm mt-1">
-                    Écrivez en arabe ou en français pour commencer la conversation
+                    Appuyez sur le micro pour commencer
                   </p>
                 </div>
                 <div className="flex flex-wrap justify-center gap-2 mt-2">
