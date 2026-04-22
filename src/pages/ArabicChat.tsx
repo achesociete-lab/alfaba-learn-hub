@@ -14,6 +14,7 @@ import { toast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { playCorrectSound, playWrongSound } from "@/utils/sound-feedback";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -317,6 +318,12 @@ const ArabicChat = () => {
         onDone: () => {
           // Final flush of any remaining text
           speakNewSentencesFrom(assistantSoFar, true);
+          // Son Duolingo selon le contenu de la correction
+          const txt = assistantSoFar;
+          const positive = /(أَحْسَنْتَ|أحسنت|مُمْتَازٌ|ممتاز|رَائِعٌ|رائع|بَارَكَ اللَّهُ|بارك الله|صَحِيحٌ|صحيح)/.test(txt);
+          const negative = /(الصَّوابُ|الصواب|خَطَأٌ|خطأ|حَاوِلْ|حاول مرَّةً|أَعِدْ|الصَّحِيحُ|الصحيح)/.test(txt);
+          if (positive && !negative) playCorrectSound();
+          else if (negative) playWrongSound();
           setIsLoading(false);
         },
       });
