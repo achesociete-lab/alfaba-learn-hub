@@ -1,5 +1,6 @@
 import { useCallback, useRef, useEffect } from "react";
 import { getTeacherClipUrl, preloadTeacherClips } from "./use-teacher-audio-clips";
+import { transliterateArabicInText } from "@/utils/arabic-transliteration";
 // Simple in-memory cache for audio blobs to avoid re-fetching
 const audioCache = new Map<string, string>();
 let isElevenLabsUnavailable = false;
@@ -19,13 +20,22 @@ type TtsErrorPayload = {
 export function cleanTextForTTS(text: string): string {
   if (!text) return "";
   let t = text;
+  // Supprimer parenthèses/crochets/accolades et leur contenu
   t = t.replace(/\([^)]*\)/g, " ");
   t = t.replace(/\[[^\]]*\]/g, " ");
   t = t.replace(/\{[^}]*\}/g, " ");
+  // Supprimer marqueurs markdown
   t = t.replace(/[*_`#>~]/g, " ");
+  // Supprimer tirets isolés
   t = t.replace(/(^|\s)[-–—•](\s|$)/g, " ");
+  // Remplacer guillemets par rien (pas de lecture)
+  t = t.replace(/["'«»“”‘’]/g, " ");
+  // Remplacer virgules / points-virgules par une pause naturelle
   t = t.replace(/[,،؛;]/g, " , ");
-  t = t.replace(/[^\p{L}\p{N}\s.,!?؟،؛:'"\u0600-\u06FF\u0750-\u077F]/gu, " ");
+  // Conserver lettres, chiffres, ponctuation utile et arabe
+  t = t.replace(/[^\p{L}\p{N}\s.,!?؟،؛:\u0600-\u06FF\u0750-\u077F]/gu, " ");
+  // Translittérer l'arabe pour une voix française fluide
+  t = transliterateArabicInText(t);
   t = t.replace(/\s+/g, " ").trim();
   return t;
 }
