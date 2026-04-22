@@ -531,7 +531,15 @@ const ArabicChat = () => {
                   </p>
                   {msg.role === "assistant" && !isLoading && (
                     <Button variant="ghost" size="icon" className="h-6 w-6 mt-1 opacity-60 hover:opacity-100 text-primary-foreground"
-                      onClick={() => { const ar = extractArabic(msg.content); if (ar) speak(ar); }}>
+                      onClick={() => {
+                        const dictees = extractDicteeWords(msg.content);
+                        if (dictees.length > 0) {
+                          dictees.forEach((w) => speak(w));
+                        } else {
+                          const ar = extractArabic(msg.content);
+                          if (ar) speak(ar);
+                        }
+                      }}>
                       <Volume2 className="h-3.5 w-3.5" />
                     </Button>
                   )}
