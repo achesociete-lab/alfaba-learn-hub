@@ -73,6 +73,32 @@ function hasArabic(text: string): boolean {
   return /[\u0600-\u06FF]/.test(text);
 }
 
+// Mode dictée : l'IA encadre le mot à dicter avec [DICTEE]...[/DICTEE].
+// Le mot ne doit PAS s'afficher dans le chat — uniquement être prononcé via TTS.
+const DICTEE_REGEX = /\[DICTEE\]([\s\S]*?)\[\/DICTEE\]/gi;
+const DICTEE_OPEN_REGEX = /\[DICTEE\]([\s\S]*)$/i;
+
+function extractDicteeWords(text: string): string[] {
+  const words: string[] = [];
+  const re = /\[DICTEE\]([\s\S]*?)\[\/DICTEE\]/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    const w = m[1].trim();
+    if (w) words.push(w);
+  }
+  return words;
+}
+
+function stripDictee(text: string): string {
+  let cleaned = text.replace(DICTEE_REGEX, "🔊 …");
+  cleaned = cleaned.replace(DICTEE_OPEN_REGEX, "🔊 …");
+  return cleaned.trim();
+}
+
+function hasDictee(text: string): boolean {
+  return /\[DICTEE\]/i.test(text);
+}
+
 // Level-based suggestions
 const SUGGESTIONS: Record<string, string[]> = {
   niveau_1: ["مَرْحَباً", "كَيْفَ حَالُكَ؟", "أُرِيدُ أَنْ أَتَعَلَّمَ"],
@@ -214,9 +240,28 @@ const ArabicChat = () => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
-  // Streaming TTS: as the assistant message grows, speak each newly-completed sentence
+  // Streaming TTS: as the assistant message grows, speak each newly-completed sentence.
+  // Si le message contient des balises [DICTEE]…[/DICTEE], on prononce uniquement le mot dicté
+  // (et on n'affiche rien de ce mot dans le chat — voir stripDictee côté rendu).
+  const dicteeSpokenCountRef = useRef(0);
   const speakNewSentencesFrom = useCallback((fullText: string, isFinal: boolean) => {
     if (!autoSpeak) return;
+
+    // Mode dictée : extraire les mots [DICTEE]…[/DICTEE] et ne prononcer que ceux-là.
+    if (hasDictee(fullText)) {
+      const words = extractDicteeWords(fullText);
+      const newOnes = words.slice(dicteeSpokenCountRef.current);
+      if (newOnes.length === 0) return;
+      dicteeSpokenCountRef.current = words.length;
+      for (const w of newOnes) {
+        const cleaned = cleanTextForTTS(w);
+        if (!cleaned) continue;
+        ttsQueueRef.current = ttsQueueRef.current.then(() => speak(cleaned));
+      }
+      // En mode dictée pure on ne lit rien d'autre.
+      return;
+    }
+
     const ar = extractArabic(fullText);
     if (!ar) return;
     const remaining = ar.slice(ttsSpokenLenRef.current);
@@ -287,6 +332,7 @@ const ArabicChat = () => {
 
     // Reset streaming TTS state for the upcoming assistant message
     ttsSpokenLenRef.current = 0;
+    dicteeSpokenCountRef.current = 0;
     ttsActiveForMsgRef.current = -1; // will be set on first delta
 
     let assistantSoFar = "";
@@ -481,11 +527,19 @@ const ArabicChat = () => {
                     className={`whitespace-pre-wrap leading-relaxed ${hasArabic(msg.content) ? "font-arabic text-xl" : "text-sm"}`}
                     dir="auto"
                   >
-                    {msg.content}
+                    {msg.role === "assistant" ? (stripDictee(msg.content) || "🔊 …") : msg.content}
                   </p>
                   {msg.role === "assistant" && !isLoading && (
                     <Button variant="ghost" size="icon" className="h-6 w-6 mt-1 opacity-60 hover:opacity-100 text-primary-foreground"
-                      onClick={() => { const ar = extractArabic(msg.content); if (ar) speak(ar); }}>
+                      onClick={() => {
+                        const dictees = extractDicteeWords(msg.content);
+                        if (dictees.length > 0) {
+                          dictees.forEach((w) => speak(w));
+                        } else {
+                          const ar = extractArabic(msg.content);
+                          if (ar) speak(ar);
+                        }
+                      }}>
                       <Volume2 className="h-3.5 w-3.5" />
                     </Button>
                   )}
