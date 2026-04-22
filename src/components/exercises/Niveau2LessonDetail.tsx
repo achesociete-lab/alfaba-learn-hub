@@ -10,6 +10,7 @@ import type { Niveau2Lesson } from "@/data/niveau2-lessons";
 import { useArabicSpeech } from "@/hooks/use-arabic-speech";
 import { getIllustration } from "@/utils/vocabulary-illustrations";
 import { useIsAdmin } from "@/hooks/use-admin";
+import { playCorrectSound, playWrongSound } from "@/utils/sound-feedback";
 import LessonAudioPlayer from "./LessonAudioPlayer";
 
 interface Niveau2LessonDetailProps {
@@ -157,8 +158,10 @@ function ExercisesTab({ lesson, onAllCorrect }: { lesson: Niveau2Lesson; onAllCo
   const handleSelect = (idx: number) => {
     if (selected !== null) return;
     setSelected(idx);
-    const newScore = idx === q.correctIndex ? score + 1 : score;
-    if (idx === q.correctIndex) setScore(newScore);
+    const isCorrect = idx === q.correctIndex;
+    const newScore = isCorrect ? score + 1 : score;
+    if (isCorrect) { setScore(newScore); playCorrectSound(); }
+    else { playWrongSound(); }
     if (current + 1 >= allQuestions.length) {
       setTimeout(() => {
         if (newScore === allQuestions.length) onAllCorrect();
@@ -276,8 +279,10 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Niveau2Lesson; onAllCo
   const handleSelect = (idx: number) => {
     if (selected !== null) return;
     setSelected(idx);
-    const newScore = idx === d.correctIndex ? score + 1 : score;
-    if (idx === d.correctIndex) setScore(newScore);
+    const isCorrect = idx === d.correctIndex;
+    const newScore = isCorrect ? score + 1 : score;
+    if (isCorrect) { setScore(newScore); playCorrectSound(); }
+    else { playWrongSound(); }
     if (current + 1 >= lesson.dictation.length) {
       setTimeout(() => {
         if (newScore === lesson.dictation.length) onAllCorrect();
@@ -291,7 +296,8 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Niveau2Lesson; onAllCo
     setAnswerChecked(true);
     setAnswerCorrect(isCorrect);
     const newScore = isCorrect ? score + 1 : score;
-    if (isCorrect) setScore(newScore);
+    if (isCorrect) { setScore(newScore); playCorrectSound(); }
+    else { playWrongSound(); }
     if (current + 1 >= lesson.dictation.length) {
       setTimeout(() => {
         if (newScore === lesson.dictation.length) onAllCorrect();

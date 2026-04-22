@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, BookOpen, CheckCircle, XCircle, ArrowRight, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { playCorrectSound, playWrongSound } from "@/utils/sound-feedback";
 
 // ── Word of the Day pools ──
 
@@ -161,6 +162,9 @@ const DailyExercise = ({ level, completedLessons }: DailyExerciseProps) => {
     setShowExplanation(true);
     if (optIndex === todayQCMs[qcmIndex].correctIndex) {
       setScore(s => s + 1);
+      playCorrectSound();
+    } else {
+      playWrongSound();
     }
   };
 
