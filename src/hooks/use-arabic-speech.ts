@@ -1,6 +1,5 @@
 import { useCallback, useRef, useEffect } from "react";
 import { getTeacherClipUrl, preloadTeacherClips } from "./use-teacher-audio-clips";
-import { transliterateArabicInText } from "@/utils/arabic-transliteration";
 // Simple in-memory cache for audio blobs to avoid re-fetching
 const audioCache = new Map<string, string>();
 let isElevenLabsUnavailable = false;
@@ -32,10 +31,10 @@ export function cleanTextForTTS(text: string): string {
   t = t.replace(/["'«»“”‘’]/g, " ");
   // Remplacer virgules / points-virgules par une pause naturelle
   t = t.replace(/[,،؛;]/g, " , ");
-  // Conserver lettres, chiffres, ponctuation utile et arabe
+  // Conserver lettres, chiffres, ponctuation utile et arabe (avec tashkeel/harakat)
   t = t.replace(/[^\p{L}\p{N}\s.,!?؟،؛:\u0600-\u06FF\u0750-\u077F]/gu, " ");
-  // Translittérer l'arabe pour une voix française fluide
-  t = transliterateArabicInText(t);
+  // ⚠️ Pas de translittération : l'arabe est envoyé tel quel à ElevenLabs
+  // (avec ses harakat) pour la voix clonée du professeur.
   t = t.replace(/\s+/g, " ").trim();
   return t;
 }

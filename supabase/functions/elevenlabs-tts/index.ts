@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { text, rate, voiceId: customVoiceId } = await req.json();
+    const { text, voiceId: customVoiceId } = await req.json();
 
     if (!text?.trim()) {
       return new Response(JSON.stringify({ error: 'Text is required' }), {
@@ -25,13 +25,13 @@ serve(async (req) => {
       throw new Error('ELEVENLABS_API_KEY is not configured');
     }
 
-    // Use custom voice if provided, otherwise default to the new Arabic voice
-    const voiceId = customVoiceId || '2Vt7Dq33feLEafRndlox';
-
-    const speed = rate ?? 0.8;
+    // Voix clonée du professeur (configurée via secret ELEVENLABS_VOICE_ID),
+    // sinon override custom, sinon fallback sur la voix arabe par défaut.
+    const CLONED_VOICE_ID = Deno.env.get('ELEVENLABS_VOICE_ID');
+    const voiceId = CLONED_VOICE_ID || customVoiceId || '2Vt7Dq33feLEafRndlox';
 
     const response = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_22050_32`,
+      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
       {
         method: 'POST',
         headers: {
@@ -42,11 +42,11 @@ serve(async (req) => {
           text,
           model_id: 'eleven_multilingual_v2',
           voice_settings: {
-            stability: 0.6,
-            similarity_boost: 0.75,
+            stability: 0.35,
+            similarity_boost: 0.85,
             style: 0.3,
             use_speaker_boost: true,
-            speed,
+            speed: 1.15,
           },
         }),
       }
