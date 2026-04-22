@@ -73,6 +73,32 @@ function hasArabic(text: string): boolean {
   return /[\u0600-\u06FF]/.test(text);
 }
 
+// Mode dictée : l'IA encadre le mot à dicter avec [DICTEE]...[/DICTEE].
+// Le mot ne doit PAS s'afficher dans le chat — uniquement être prononcé via TTS.
+const DICTEE_REGEX = /\[DICTEE\]([\s\S]*?)\[\/DICTEE\]/gi;
+const DICTEE_OPEN_REGEX = /\[DICTEE\]([\s\S]*)$/i;
+
+function extractDicteeWords(text: string): string[] {
+  const words: string[] = [];
+  const re = /\[DICTEE\]([\s\S]*?)\[\/DICTEE\]/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    const w = m[1].trim();
+    if (w) words.push(w);
+  }
+  return words;
+}
+
+function stripDictee(text: string): string {
+  let cleaned = text.replace(DICTEE_REGEX, "🔊 …");
+  cleaned = cleaned.replace(DICTEE_OPEN_REGEX, "🔊 …");
+  return cleaned.trim();
+}
+
+function hasDictee(text: string): boolean {
+  return /\[DICTEE\]/i.test(text);
+}
+
 // Level-based suggestions
 const SUGGESTIONS: Record<string, string[]> = {
   niveau_1: ["مَرْحَباً", "كَيْفَ حَالُكَ؟", "أُرِيدُ أَنْ أَتَعَلَّمَ"],
