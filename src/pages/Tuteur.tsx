@@ -17,7 +17,20 @@ import { supabase } from "@/integrations/supabase/client";
 interface Session { id: string; started_at: string; ended_at: string | null; summary: string | null; score: number | null; }
 interface Homework { id: string; title: string; content: any; due_date: string | null; status: string; score: number | null; feedback: string | null; created_at: string; }
 interface Progress { total_sessions: number; average_score: number; streak_days: number; weekly_plan: any; weak_letters: any[]; strong_letters: any[]; }
-interface ChatMsg { role: "user" | "assistant"; content: string; }
+interface TutorQuestion {
+  type: "mcq" | "text";
+  prompt_fr: string;
+  display: string;
+  translit?: string;
+  meaning_fr?: string;
+  choices?: string[];
+  correct_index?: number;
+}
+interface TutorPayload {
+  feedback_fr: string;
+  feedback_ar: string;
+  question: TutorQuestion | null;
+}
 
 const Tuteur = () => {
   const { user } = useAuth();
