@@ -44,8 +44,10 @@ const Tuteur = () => {
   const [loading, setLoading] = useState(true);
 
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<ChatMsg[]>([]);
-  const [input, setInput] = useState("");
+  const [currentPayload, setCurrentPayload] = useState<TutorPayload | null>(null);
+  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
+  const [revealed, setRevealed] = useState(false);
+  const [textAnswer, setTextAnswer] = useState("");
   const [sending, setSending] = useState(false);
   const [busy, setBusy] = useState(false);
 
