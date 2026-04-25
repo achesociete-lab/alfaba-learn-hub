@@ -147,20 +147,19 @@ serve(async (req) => {
       const ctxStr = JSON.stringify({
         first_name: ctx.profile?.first_name,
         level: ctx.profile?.level,
-        progress: ctx.progress,
-        recent_sessions: ctx.recentSessions.slice(0, 3),
-        pending_homework: ctx.pendingHw,
+        weak_letters: ctx.progress?.weak_letters,
       });
 
-      const greeting = await callAI([
+      const raw = await callAI([
         { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: `ابدأْ جلسةً جديدةً معَ الطالبِ. رحِّبْ بهِ، اقترحْ برنامجاً موجزاً للجلسةِ بناءً على نقاطِ ضعفِهِ، ثمَّ ابدأْ بأوَّلِ تمرينٍ.\n\nمعطياتُ الطالبِ:\n${ctxStr}` },
-      ]);
+        { role: "user", content: `Démarre une nouvelle session. Salue brièvement l'élève (1 phrase) et propose IMMÉDIATEMENT un premier exercice MCQ adapté à son niveau et ses points faibles.\n\nÉlève: ${ctxStr}` },
+      ], true);
 
-      const messages = [{ role: "assistant", content: greeting }];
+      const parsed = JSON.parse(raw);
+      const messages = [{ role: "assistant", content: raw }];
       await supabase.from("tutor_sessions").update({ messages }).eq("id", session.id);
 
-      return new Response(JSON.stringify({ session_id: session.id, message: greeting }), {
+      return new Response(JSON.stringify({ session_id: session.id, payload: parsed }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -180,20 +179,19 @@ serve(async (req) => {
       const history = (session.messages || []) as Array<{ role: string; content: string }>;
       history.push({ role: "user", content: body.user_message });
 
-      const reply = await callAI([
+      const raw = await callAI([
         { role: "system", content: SYSTEM_PROMPT },
         ...history,
-      ]);
+      ], true);
 
-      history.push({ role: "assistant", content: reply });
+      const parsed = JSON.parse(raw);
+      history.push({ role: "assistant", content: raw });
       await supabase.from("tutor_sessions").update({ messages: history }).eq("id", session.id);
 
-      return new Response(JSON.stringify({ message: reply }), {
+      return new Response(JSON.stringify({ payload: parsed }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    // ============ END_SESSION ============
     if (body.action === "end_session") {
       if (!body.session_id) throw new Error("session_id required");
 
