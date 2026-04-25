@@ -32,7 +32,7 @@ const TutorWeeklyReportEmail = ({
 }: ReportProps) => (
   <Html lang="fr" dir="ltr">
     <Head />
-    <Preview>Votre rapport hebdomadaire ALFASL — {sessionsCount} session{sessionsCount > 1 ? 's' : ''} cette semaine</Preview>
+    <Preview>{`Votre rapport hebdomadaire ALFASL — ${sessionsCount} session${sessionsCount > 1 ? 's' : ''} cette semaine`}</Preview>
     <Body style={main}>
       <Container style={container}>
         <Heading style={h1}>📊 Votre rapport hebdomadaire</Heading>
