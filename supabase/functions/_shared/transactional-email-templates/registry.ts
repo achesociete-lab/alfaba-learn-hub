@@ -10,7 +10,9 @@ export interface TemplateEntry {
 }
 
 import { template as adminPendingSignup } from './admin-pending-signup.tsx'
+import { template as tutorWeeklyReport } from './tutor-weekly-report.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'admin-pending-signup': adminPendingSignup,
+  'tutor-weekly-report': tutorWeeklyReport,
 }

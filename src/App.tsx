@@ -16,6 +16,7 @@ import Exercises from "./pages/Exercises.tsx";
 import ClasseVirtuelle from "./pages/ClasseVirtuelle.tsx";
 import Coran from "./pages/Coran.tsx";
 import ArabicChat from "./pages/ArabicChat.tsx";
+import Tuteur from "./pages/Tuteur.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import MentionsLegales from "./pages/MentionsLegales.tsx";
 import PolitiqueConfidentialite from "./pages/PolitiqueConfidentialite.tsx";
@@ -57,6 +58,7 @@ const App = () => (
               <Route path="/classe-virtuelle" element={<ClasseVirtuelle />} />
               <Route path="/coran" element={<Coran />} />
               <Route path="/conversation" element={<ArabicChat />} />
+              <Route path="/tuteur" element={<Tuteur />} />
               <Route path="/admin" element={<Admin />} />
             </Route>
 

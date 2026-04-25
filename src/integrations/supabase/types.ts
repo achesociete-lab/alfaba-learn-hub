@@ -684,6 +684,185 @@ export type Database = {
         }
         Relationships: []
       }
+      tutor_homework: {
+        Row: {
+          content: Json
+          created_at: string
+          due_date: string | null
+          feedback: string | null
+          id: string
+          score: number | null
+          session_id: string | null
+          status: string
+          submission: Json | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          due_date?: string | null
+          feedback?: string | null
+          id?: string
+          score?: number | null
+          session_id?: string | null
+          status?: string
+          submission?: Json | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          due_date?: string | null
+          feedback?: string | null
+          id?: string
+          score?: number | null
+          session_id?: string | null
+          status?: string
+          submission?: Json | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_homework_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "tutor_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tutor_progress: {
+        Row: {
+          average_score: number
+          created_at: string
+          id: string
+          last_session_at: string | null
+          lessons_completed: Json
+          level: string
+          streak_days: number
+          strong_letters: Json
+          total_sessions: number
+          updated_at: string
+          user_id: string
+          weak_letters: Json
+          weekly_plan: Json
+        }
+        Insert: {
+          average_score?: number
+          created_at?: string
+          id?: string
+          last_session_at?: string | null
+          lessons_completed?: Json
+          level?: string
+          streak_days?: number
+          strong_letters?: Json
+          total_sessions?: number
+          updated_at?: string
+          user_id: string
+          weak_letters?: Json
+          weekly_plan?: Json
+        }
+        Update: {
+          average_score?: number
+          created_at?: string
+          id?: string
+          last_session_at?: string | null
+          lessons_completed?: Json
+          level?: string
+          streak_days?: number
+          strong_letters?: Json
+          total_sessions?: number
+          updated_at?: string
+          user_id?: string
+          weak_letters?: Json
+          weekly_plan?: Json
+        }
+        Relationships: []
+      }
+      tutor_reports: {
+        Row: {
+          average_score: number
+          created_at: string
+          id: string
+          progress_summary: string | null
+          recommendations: Json
+          sent_by_email: boolean
+          sessions_count: number
+          user_id: string
+          week_end: string
+          week_start: string
+        }
+        Insert: {
+          average_score?: number
+          created_at?: string
+          id?: string
+          progress_summary?: string | null
+          recommendations?: Json
+          sent_by_email?: boolean
+          sessions_count?: number
+          user_id: string
+          week_end: string
+          week_start: string
+        }
+        Update: {
+          average_score?: number
+          created_at?: string
+          id?: string
+          progress_summary?: string | null
+          recommendations?: Json
+          sent_by_email?: boolean
+          sessions_count?: number
+          user_id?: string
+          week_end?: string
+          week_start?: string
+        }
+        Relationships: []
+      }
+      tutor_sessions: {
+        Row: {
+          created_at: string
+          ended_at: string | null
+          id: string
+          messages: Json
+          score: number | null
+          started_at: string
+          strong_points: Json
+          summary: string | null
+          user_id: string
+          weak_points: Json
+        }
+        Insert: {
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          messages?: Json
+          score?: number | null
+          started_at?: string
+          strong_points?: Json
+          summary?: string | null
+          user_id: string
+          weak_points?: Json
+        }
+        Update: {
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          messages?: Json
+          score?: number | null
+          started_at?: string
+          strong_points?: Json
+          summary?: string | null
+          user_id?: string
+          weak_points?: Json
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
