@@ -27,6 +27,7 @@ const getAuthNavLinks = (level: string | null) => {
 
   links.push({ to: "/coran", label: "Coran" });
   links.push({ to: "/conversation", label: "Professeur Virtuel" });
+  links.push({ to: "/tuteur", label: "Tuteur IA" });
   links.push({ to: "/dashboard", label: "Espace Élève" });
 
   return links;
