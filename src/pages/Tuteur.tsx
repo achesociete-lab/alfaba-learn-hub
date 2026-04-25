@@ -79,12 +79,19 @@ const Tuteur = () => {
     return data;
   };
 
+  const resetQuestionState = () => {
+    setSelectedIdx(null);
+    setRevealed(false);
+    setTextAnswer("");
+  };
+
   const startSession = async () => {
     setBusy(true);
     try {
       const data = await callTutor("start_session");
       setActiveSessionId(data.session_id);
-      setMessages([{ role: "assistant", content: data.message }]);
+      setCurrentPayload(data.payload);
+      resetQuestionState();
     } catch (e: any) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });
     } finally {
@@ -92,20 +99,34 @@ const Tuteur = () => {
     }
   };
 
-  const sendMessage = async () => {
-    if (!input.trim() || !activeSessionId) return;
-    const userMsg = input.trim();
-    setMessages((m) => [...m, { role: "user", content: userMsg }]);
-    setInput("");
+  const submitAnswer = async (userAnswer: string) => {
+    if (!activeSessionId) return;
     setSending(true);
     try {
-      const data = await callTutor("message", { session_id: activeSessionId, user_message: userMsg });
-      setMessages((m) => [...m, { role: "assistant", content: data.message }]);
+      const data = await callTutor("message", { session_id: activeSessionId, user_message: userAnswer });
+      setCurrentPayload(data.payload);
+      resetQuestionState();
     } catch (e: any) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });
     } finally {
       setSending(false);
     }
+  };
+
+  const handleMcqChoice = (idx: number) => {
+    if (revealed || sending) return;
+    setSelectedIdx(idx);
+    setRevealed(true);
+    const q = currentPayload?.question;
+    if (!q?.choices) return;
+    const isCorrect = idx === q.correct_index;
+    const answer = `${isCorrect ? "Bonne réponse" : "Mauvaise réponse"}: j'ai choisi "${q.choices[idx]}" (correcte: "${q.choices[q.correct_index ?? 0]}"). Question suivante.`;
+    setTimeout(() => submitAnswer(answer), 1200);
+  };
+
+  const handleTextSubmit = () => {
+    if (!textAnswer.trim() || sending) return;
+    submitAnswer(`Ma réponse: ${textAnswer.trim()}`);
   };
 
   const endSession = async () => {
@@ -115,7 +136,8 @@ const Tuteur = () => {
       const data = await callTutor("end_session", { session_id: activeSessionId });
       toast({ title: "Session terminée ✅", description: data.summary?.summary || "Bilan enregistré" });
       setActiveSessionId(null);
-      setMessages([]);
+      setCurrentPayload(null);
+      resetQuestionState();
       await loadAll();
     } catch (e: any) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });
