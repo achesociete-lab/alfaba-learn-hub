@@ -17,7 +17,20 @@ import { supabase } from "@/integrations/supabase/client";
 interface Session { id: string; started_at: string; ended_at: string | null; summary: string | null; score: number | null; }
 interface Homework { id: string; title: string; content: any; due_date: string | null; status: string; score: number | null; feedback: string | null; created_at: string; }
 interface Progress { total_sessions: number; average_score: number; streak_days: number; weekly_plan: any; weak_letters: any[]; strong_letters: any[]; }
-interface ChatMsg { role: "user" | "assistant"; content: string; }
+interface TutorQuestion {
+  type: "mcq" | "text";
+  prompt_fr: string;
+  display: string;
+  translit?: string;
+  meaning_fr?: string;
+  choices?: string[];
+  correct_index?: number;
+}
+interface TutorPayload {
+  feedback_fr: string;
+  feedback_ar: string;
+  question: TutorQuestion | null;
+}
 
 const Tuteur = () => {
   const { user } = useAuth();
@@ -31,8 +44,10 @@ const Tuteur = () => {
   const [loading, setLoading] = useState(true);
 
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<ChatMsg[]>([]);
-  const [input, setInput] = useState("");
+  const [currentPayload, setCurrentPayload] = useState<TutorPayload | null>(null);
+  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
+  const [revealed, setRevealed] = useState(false);
+  const [textAnswer, setTextAnswer] = useState("");
   const [sending, setSending] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -64,12 +79,19 @@ const Tuteur = () => {
     return data;
   };
 
+  const resetQuestionState = () => {
+    setSelectedIdx(null);
+    setRevealed(false);
+    setTextAnswer("");
+  };
+
   const startSession = async () => {
     setBusy(true);
     try {
       const data = await callTutor("start_session");
       setActiveSessionId(data.session_id);
-      setMessages([{ role: "assistant", content: data.message }]);
+      setCurrentPayload(data.payload);
+      resetQuestionState();
     } catch (e: any) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });
     } finally {
@@ -77,20 +99,34 @@ const Tuteur = () => {
     }
   };
 
-  const sendMessage = async () => {
-    if (!input.trim() || !activeSessionId) return;
-    const userMsg = input.trim();
-    setMessages((m) => [...m, { role: "user", content: userMsg }]);
-    setInput("");
+  const submitAnswer = async (userAnswer: string) => {
+    if (!activeSessionId) return;
     setSending(true);
     try {
-      const data = await callTutor("message", { session_id: activeSessionId, user_message: userMsg });
-      setMessages((m) => [...m, { role: "assistant", content: data.message }]);
+      const data = await callTutor("message", { session_id: activeSessionId, user_message: userAnswer });
+      setCurrentPayload(data.payload);
+      resetQuestionState();
     } catch (e: any) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });
     } finally {
       setSending(false);
     }
+  };
+
+  const handleMcqChoice = (idx: number) => {
+    if (revealed || sending) return;
+    setSelectedIdx(idx);
+    setRevealed(true);
+    const q = currentPayload?.question;
+    if (!q?.choices) return;
+    const isCorrect = idx === q.correct_index;
+    const answer = `${isCorrect ? "Bonne réponse" : "Mauvaise réponse"}: j'ai choisi "${q.choices[idx]}" (correcte: "${q.choices[q.correct_index ?? 0]}"). Question suivante.`;
+    setTimeout(() => submitAnswer(answer), 1200);
+  };
+
+  const handleTextSubmit = () => {
+    if (!textAnswer.trim() || sending) return;
+    submitAnswer(`Ma réponse: ${textAnswer.trim()}`);
   };
 
   const endSession = async () => {
@@ -100,7 +136,8 @@ const Tuteur = () => {
       const data = await callTutor("end_session", { session_id: activeSessionId });
       toast({ title: "Session terminée ✅", description: data.summary?.summary || "Bilan enregistré" });
       setActiveSessionId(null);
-      setMessages([]);
+      setCurrentPayload(null);
+      resetQuestionState();
       await loadAll();
     } catch (e: any) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });
@@ -191,53 +228,123 @@ const Tuteur = () => {
     );
   }
 
-  // ===== Active session view =====
+  // ===== Active session view (Duolingo style) =====
   if (activeSessionId) {
+    const q = currentPayload?.question;
+    const fb = currentPayload?.feedback_fr;
+    const fbAr = currentPayload?.feedback_ar;
+    const isCorrect = revealed && q?.type === "mcq" && selectedIdx === q.correct_index;
+    const showFeedbackBanner = revealed && q?.type === "mcq";
+
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <Navbar />
-        <div className="container mx-auto pt-20 px-4 max-w-3xl flex-1 flex flex-col pb-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xl font-bold flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" /> Session avec le Tuteur
+        <div className="container mx-auto pt-20 px-4 max-w-xl flex-1 flex flex-col pb-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" /> Tuteur IA
             </h2>
             <Button size="sm" variant="outline" onClick={endSession} disabled={busy}>
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Terminer"}
             </Button>
           </div>
-          <Card className="flex-1 flex flex-col overflow-hidden">
-            <ScrollArea className="flex-1 p-4">
-              <div className="space-y-3">
-                {messages.map((m, i) => (
-                  <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-                    <div
-                      className={`max-w-[80%] rounded-2xl px-4 py-2 ${
-                        m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
-                      }`}
-                      dir={m.role === "assistant" ? "rtl" : "ltr"}
-                      style={{ fontFamily: m.role === "assistant" ? "Amiri, serif" : undefined, fontSize: m.role === "assistant" ? "18px" : undefined }}
-                    >
-                      {m.content}
-                    </div>
-                  </div>
-                ))}
-                {sending && <div className="text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin inline mr-1" /> Le tuteur réfléchit...</div>}
-              </div>
-            </ScrollArea>
-            <div className="border-t p-3 flex gap-2">
-              <Textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Votre réponse..."
-                className="resize-none min-h-[44px]"
-                rows={1}
-                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-              />
-              <Button onClick={sendMessage} disabled={sending || !input.trim()}>
-                <Send className="h-4 w-4" />
-              </Button>
+
+          {sending && !currentPayload && (
+            <div className="flex-1 flex items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-          </Card>
+          )}
+
+          {currentPayload && (
+            <motion.div key={JSON.stringify(q)} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+              {fb && fb.trim() && (
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground">{fb}</p>
+                  {fbAr && <p className="text-base mt-1" dir="rtl" style={{ fontFamily: "Amiri, serif" }}>{fbAr}</p>}
+                </div>
+              )}
+
+              {q ? (
+                <>
+                  <p className="text-center text-sm font-medium text-muted-foreground">{q.prompt_fr}</p>
+
+                  <Card className="border-2 border-primary/20">
+                    <CardContent className="p-8 text-center space-y-2">
+                      <div className="text-6xl md:text-7xl font-bold text-primary" dir="rtl" style={{ fontFamily: "Amiri, serif", lineHeight: 1.2 }}>
+                        {q.display}
+                      </div>
+                      {q.translit && <p className="text-base text-muted-foreground">{q.translit}</p>}
+                      {q.meaning_fr && <p className="text-sm italic text-foreground/70">{q.meaning_fr}</p>}
+                    </CardContent>
+                  </Card>
+
+                  {q.type === "mcq" && q.choices && (
+                    <div className="grid grid-cols-2 gap-3">
+                      {q.choices.map((choice, idx) => {
+                        const isSelected = selectedIdx === idx;
+                        const isRight = idx === q.correct_index;
+                        let cls = "border-2 border-border hover:border-primary/50 hover:bg-primary/5";
+                        if (revealed) {
+                          if (isRight) cls = "border-2 border-green-500 bg-green-500/10";
+                          else if (isSelected) cls = "border-2 border-red-500 bg-red-500/10";
+                          else cls = "border-2 border-border opacity-50";
+                        }
+                        return (
+                          <button
+                            key={idx}
+                            onClick={() => handleMcqChoice(idx)}
+                            disabled={revealed || sending}
+                            className={`${cls} rounded-xl p-4 transition-all min-h-[64px] flex items-center justify-center text-2xl font-bold`}
+                            dir="rtl"
+                            style={{ fontFamily: "Amiri, serif" }}
+                          >
+                            {choice}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {q.type === "text" && (
+                    <div className="flex gap-2">
+                      <Textarea
+                        value={textAnswer}
+                        onChange={(e) => setTextAnswer(e.target.value)}
+                        placeholder="Votre réponse..."
+                        className="resize-none"
+                        dir="rtl"
+                        rows={2}
+                        onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleTextSubmit(); } }}
+                      />
+                      <Button onClick={handleTextSubmit} disabled={sending || !textAnswer.trim()}>
+                        <Send className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+
+                  {showFeedbackBanner && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`rounded-xl p-3 text-center font-semibold ${isCorrect ? "bg-green-500/15 text-green-700 dark:text-green-400" : "bg-red-500/15 text-red-700 dark:text-red-400"}`}
+                    >
+                      {isCorrect ? "✅ Bravo !" : "❌ Réessaie !"}
+                    </motion.div>
+                  )}
+                </>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">Session terminée. Cliquez sur "Terminer" pour le bilan.</p>
+                </div>
+              )}
+
+              {sending && (
+                <div className="text-center text-xs text-muted-foreground">
+                  <Loader2 className="h-3 w-3 animate-spin inline mr-1" /> Question suivante...
+                </div>
+              )}
+            </motion.div>
+          )}
         </div>
       </div>
     );

@@ -7,17 +7,35 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const SYSTEM_PROMPT = `أنتَ "المعلِّمُ الخاصُّ" — أستاذٌ خصوصيٌّ متخصِّصٌ في تعليمِ اللغةِ العربيةِ الفصحى للناطقينَ بالفرنسية.
-دورُكَ:
-- تحليلُ مستوى الطالبِ ونقاطِ ضعفِهِ وقوَّتِهِ
-- اقتراحُ تمارينَ مخصَّصةٍ
-- تصحيحُ الإجاباتِ بلُطفٍ وبيانٍ
-- تشجيعُ الطالبِ ودفعُهُ نحوَ التقدُّم
-أسلوبُكَ:
-- العربيةُ الفصحى الصحيحةُ معَ الشكلِ الكاملِ
-- ردودٌ قصيرةٌ وواضحةٌ
-- تنتهي دائماً بسؤالٍ أو تمرينٍ
-- لا تستعملِ الإيموجي ولا الرموزَ الزخرفية`;
+// STYLE DUOLINGO : très court, une question à la fois, choix multiples par défaut
+const SYSTEM_PROMPT = `Tu es un tuteur d'arabe style Duolingo pour francophones.
+
+RÈGLES STRICTES — tu réponds TOUJOURS en JSON valide UNIQUEMENT, jamais de texte libre :
+{
+  "feedback_fr": "string TRÈS court (max 1 phrase) en français, encouragement ou correction",
+  "feedback_ar": "string court en arabe vocalisé (ex: أَحْسَنْتَ ! ou حَاوِلْ مَرَّةً أُخْرَى)",
+  "question": {
+    "type": "mcq" | "text",
+    "prompt_fr": "string très court — la consigne en français (ex: 'Touche la bonne lettre')",
+    "display": "string — le mot/lettre arabe en GRAND au centre, vocalisé (ex: بَ)",
+    "translit": "string — translittération latine (ex: 'ba')",
+    "meaning_fr": "string optionnelle — sens français si c'est un mot",
+    "choices": ["string","string","string","string"],
+    "correct_index": 0
+  } | null
+}
+
+CONTRAINTES :
+- UNE SEULE question par message, JAMAIS plusieurs
+- Format MCQ avec 4 choix par défaut (lettres ou mots arabes vocalisés)
+- "text" uniquement pour niveaux avancés
+- "display" = le contenu central de la carte (lettre/mot en arabe vocalisé)
+- "translit" = prononciation latine simple
+- Phrases courtes type Duolingo, jamais de paragraphes
+- Si l'élève répond correctement : feedback bref + question suivante
+- Si erreur : montrer la bonne réponse + encourager + même type de question (variation)
+- Quand la session est finie ou pour saluer : question = null
+- Toujours arabe vocalisé (avec harakat) dans display/feedback_ar`;
 
 interface Body {
   action: "analyze" | "start_session" | "message" | "end_session" | "generate_homework" | "correct_homework" | "weekly_plan";
@@ -129,20 +147,19 @@ serve(async (req) => {
       const ctxStr = JSON.stringify({
         first_name: ctx.profile?.first_name,
         level: ctx.profile?.level,
-        progress: ctx.progress,
-        recent_sessions: ctx.recentSessions.slice(0, 3),
-        pending_homework: ctx.pendingHw,
+        weak_letters: ctx.progress?.weak_letters,
       });
 
-      const greeting = await callAI([
+      const raw = await callAI([
         { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: `ابدأْ جلسةً جديدةً معَ الطالبِ. رحِّبْ بهِ، اقترحْ برنامجاً موجزاً للجلسةِ بناءً على نقاطِ ضعفِهِ، ثمَّ ابدأْ بأوَّلِ تمرينٍ.\n\nمعطياتُ الطالبِ:\n${ctxStr}` },
-      ]);
+        { role: "user", content: `Démarre une nouvelle session. Salue brièvement l'élève (1 phrase) et propose IMMÉDIATEMENT un premier exercice MCQ adapté à son niveau et ses points faibles.\n\nÉlève: ${ctxStr}` },
+      ], true);
 
-      const messages = [{ role: "assistant", content: greeting }];
+      const parsed = JSON.parse(raw);
+      const messages = [{ role: "assistant", content: raw }];
       await supabase.from("tutor_sessions").update({ messages }).eq("id", session.id);
 
-      return new Response(JSON.stringify({ session_id: session.id, message: greeting }), {
+      return new Response(JSON.stringify({ session_id: session.id, payload: parsed }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -162,20 +179,19 @@ serve(async (req) => {
       const history = (session.messages || []) as Array<{ role: string; content: string }>;
       history.push({ role: "user", content: body.user_message });
 
-      const reply = await callAI([
+      const raw = await callAI([
         { role: "system", content: SYSTEM_PROMPT },
         ...history,
-      ]);
+      ], true);
 
-      history.push({ role: "assistant", content: reply });
+      const parsed = JSON.parse(raw);
+      history.push({ role: "assistant", content: raw });
       await supabase.from("tutor_sessions").update({ messages: history }).eq("id", session.id);
 
-      return new Response(JSON.stringify({ message: reply }), {
+      return new Response(JSON.stringify({ payload: parsed }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    // ============ END_SESSION ============
     if (body.action === "end_session") {
       if (!body.session_id) throw new Error("session_id required");
 
