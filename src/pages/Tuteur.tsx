@@ -88,7 +88,10 @@ const Tuteur = () => {
   };
 
   const startSession = async () => {
-    setBusy(true);
+    // Affichage instantané : on bascule en mode session avec un squelette
+    setActiveSessionId("__loading__");
+    setCurrentPayload(null);
+    resetQuestionState();
     try {
       const data = await callTutor("start_session");
       setActiveSessionId(data.session_id);
@@ -96,8 +99,7 @@ const Tuteur = () => {
       resetQuestionState();
     } catch (e: any) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });
-    } finally {
-      setBusy(false);
+      setActiveSessionId(null);
     }
   };
 
