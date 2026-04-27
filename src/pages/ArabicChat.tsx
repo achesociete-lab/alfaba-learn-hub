@@ -462,7 +462,7 @@ const ArabicChat = () => {
                 <MessageSquare className="h-4 w-4" />
               </Button>
               <h1 className="text-2xl font-display font-bold text-foreground">
-                تحدّث مع <span className="text-gradient-gold">الأستاذ</span>
+                تحدّث مع <span className="text-gradient-gold">مساعد المعلم</span>
               </h1>
             </div>
             <p className="text-sm text-muted-foreground mt-1">
@@ -489,12 +489,14 @@ const ArabicChat = () => {
           <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-4 mb-4 min-h-0" style={{ maxHeight: "calc(100vh - 240px)" }}>
             {messages.length === 0 && (
               <div className="flex flex-col items-center justify-center h-full text-center py-16 gap-4">
-                <div className="w-16 h-16 rounded-full gradient-emerald flex items-center justify-center">
-                  <Bot className="h-8 w-8 text-primary-foreground" />
-                </div>
+                <img
+                  src="/alfasl_musaid_almoalim_final.png"
+                  alt="Musa'id Al-Moalim"
+                  className="w-32 h-32 object-contain drop-shadow-xl"
+                />
                 <div>
                   <p className="text-lg font-semibold text-foreground font-arabic" dir="rtl">
-                    السَّلامُ عَلَيْكُمْ! أَنَا الأُسْتَاذُ
+                    السَّلامُ عَلَيْكُمْ! أَنَا مُسَاعِدُ الْمُعَلِّمِ
                   </p>
                   <p className="text-muted-foreground text-sm mt-1">
                     Appuyez sur le micro pour commencer
@@ -515,7 +517,7 @@ const ArabicChat = () => {
               <div key={i} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                 {msg.role === "assistant" && (
                   <Avatar className="h-8 w-8 shrink-0 mt-1">
-                    <AvatarFallback className="gradient-emerald text-primary-foreground text-xs">أ</AvatarFallback>
+                    <img src="/alfasl_musaid_almoalim_final.png" alt="مساعد المعلم" className="h-full w-full object-cover" />
                   </Avatar>
                 )}
                 <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
@@ -558,11 +560,11 @@ const ArabicChat = () => {
             {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
               <div className="flex gap-3 justify-start">
                 <Avatar className="h-8 w-8 shrink-0 mt-1">
-                  <AvatarFallback className="gradient-emerald text-primary-foreground text-xs">أ</AvatarFallback>
+                  <img src="/alfasl_musaid_almoalim_final.png" alt="مساعد المعلم" className="h-full w-full object-cover" />
                 </Avatar>
                 <div className="gradient-emerald rounded-2xl px-4 py-3">
                   <p className="text-primary-foreground font-arabic text-sm flex items-center gap-2">
-                    الأستاذ يكتب
+                    مساعد المعلم يكتب
                     <span className="inline-flex gap-0.5">
                       <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground/70 animate-bounce" style={{ animationDelay: "0ms" }} />
                       <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground/70 animate-bounce" style={{ animationDelay: "150ms" }} />
