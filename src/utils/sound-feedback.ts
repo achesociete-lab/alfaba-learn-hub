@@ -36,6 +36,33 @@ export function playCorrectSound() {
   } catch {}
 }
 
+// Victory fanfare — triumphant arpeggio + sparkle
+export function playVictorySound() {
+  try {
+    const ctx = audioCtx();
+    // Triumphant ascending: C5, E5, G5, C6, E6, G6
+    playNote(ctx, 523.25, 0.00, 0.18, "triangle", 0.22);
+    playNote(ctx, 659.25, 0.10, 0.18, "triangle", 0.22);
+    playNote(ctx, 783.99, 0.20, 0.18, "triangle", 0.22);
+    playNote(ctx, 1046.5, 0.30, 0.22, "triangle", 0.24);
+    playNote(ctx, 1318.5, 0.42, 0.22, "triangle", 0.24);
+    playNote(ctx, 1568.0, 0.54, 0.50, "triangle", 0.26);
+    // Sparkles
+    playNote(ctx, 2093.0, 0.60, 0.40, "sine", 0.12);
+    playNote(ctx, 2637.0, 0.70, 0.35, "sine", 0.10);
+  } catch {}
+}
+
+// Arrival / completion — soft chime, two-tone bell
+export function playArrivalSound() {
+  try {
+    const ctx = audioCtx();
+    playNote(ctx, 880.0, 0.00, 0.35, "sine", 0.18); // A5
+    playNote(ctx, 1318.5, 0.15, 0.45, "sine", 0.16); // E6
+    playNote(ctx, 1760.0, 0.30, 0.55, "sine", 0.12); // A6
+  } catch {}
+}
+
 // Sad/wrong — descending minor with a soft buzz
 export function playWrongSound() {
   try {
