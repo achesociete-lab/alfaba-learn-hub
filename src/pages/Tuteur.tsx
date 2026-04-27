@@ -306,14 +306,25 @@ const Tuteur = () => {
             <Card className="border-2 border-primary/30 overflow-hidden">
               <div className="gradient-emerald p-8 text-center text-primary-foreground">
                 <Crown className="h-16 w-16 mx-auto mb-4" />
-                <h1 className="text-3xl font-display font-bold mb-2">Tuteur IA Personnel</h1>
-                <p className="text-primary-foreground/90">Réservé aux abonnés Premium</p>
+                <h1 className="text-3xl font-display font-bold mb-2 font-arabic">مساري</h1>
+                <p className="text-primary-foreground/95 text-lg font-medium">Mon Parcours — Votre parcours personnalisé d'apprentissage</p>
+                <p className="text-primary-foreground/80 text-sm mt-2">Réservé aux abonnés Premium</p>
               </div>
               <CardContent className="p-8 space-y-4">
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 mb-2">
+                  <p className="text-foreground font-semibold text-center">
+                    Passez de la conversation libre à un vrai parcours personnalisé
+                  </p>
+                  <p className="text-muted-foreground text-sm text-center mt-1">
+                    Le Professeur Virtuel (الأستاذ) vous fait pratiquer à l'oral.<br/>
+                    <span className="text-primary font-medium">مساري</span> vous construit un programme structuré, adapté à vos points faibles.
+                  </p>
+                </div>
                 <div className="space-y-3">
                   {[
-                    "Sessions illimitées avec un tuteur IA expert",
-                    "Plan d'apprentissage hebdomadaire personnalisé",
+                    "Parcours personnalisé évolutif selon votre niveau",
+                    "Sessions illimitées de questions ciblées",
+                    "Plan d'apprentissage hebdomadaire sur mesure",
                     "Devoirs adaptés à vos points faibles",
                     "Correction automatique avec feedback détaillé",
                     "Rapport hebdomadaire envoyé par email",
@@ -353,7 +364,7 @@ const Tuteur = () => {
         <div className="container mx-auto pt-20 px-4 max-w-xl flex-1 flex flex-col pb-4">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" /> Tuteur IA
+              <Sparkles className="h-5 w-5 text-primary" /> <span className="font-arabic">مساري</span>
             </h2>
             <Button size="sm" variant="outline" onClick={endSession} disabled={busy}>
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Terminer"}
@@ -542,9 +553,9 @@ const Tuteur = () => {
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <div>
             <h1 className="text-3xl font-display font-bold flex items-center gap-2">
-              <Crown className="h-7 w-7 text-primary" /> Mon Tuteur IA
+              <Crown className="h-7 w-7 text-primary" /> <span className="font-arabic">مساري</span>
             </h1>
-            <p className="text-muted-foreground text-sm">Votre professeur personnel d'arabe</p>
+            <p className="text-muted-foreground text-sm">Mon Parcours — Votre parcours personnalisé d'apprentissage</p>
           </div>
           <Button size="lg" className="gradient-emerald border-0" onClick={startSession} disabled={busy || loading}>
             {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
