@@ -275,9 +275,20 @@ const Tuteur = () => {
             </Button>
           </div>
 
-          {sending && !currentPayload && (
-            <div className="flex-1 flex items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          {!currentPayload && (
+            <div className="flex-1 flex flex-col items-center justify-center gap-4 animate-pulse">
+              <div className="h-4 w-32 bg-muted rounded" />
+              <div className="h-40 w-full max-w-sm bg-muted/50 rounded-2xl" />
+              <div className="grid grid-cols-2 gap-3 w-full max-w-sm">
+                <div className="h-16 bg-muted/40 rounded-xl" />
+                <div className="h-16 bg-muted/40 rounded-xl" />
+                <div className="h-16 bg-muted/40 rounded-xl" />
+                <div className="h-16 bg-muted/40 rounded-xl" />
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                <Loader2 className="h-3 w-3 animate-spin inline mr-1" />
+                Préparation de votre session...
+              </p>
             </div>
           )}
 
