@@ -465,8 +465,11 @@ const ArabicChat = () => {
                 تحدّث مع <span className="text-gradient-gold">مساعد المعلم</span>
               </h1>
             </div>
+            <p className="text-lg font-arabic text-foreground mt-2" dir="rtl">
+              تَكَلَّمْ وَتَعَلَّمْ
+            </p>
             <p className="text-sm text-muted-foreground mt-1">
-              Pratiquez l'arabe en discutant avec votre assistant IA
+              Parlez et apprenez
             </p>
             {/* Bouton STOP discret, visible uniquement pendant la conversation vocale */}
             {(autoConverse || recorder.isRecording) && (
