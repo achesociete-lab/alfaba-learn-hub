@@ -16,10 +16,11 @@ RÈGLES STRICTES — tu réponds TOUJOURS en JSON valide UNIQUEMENT, jamais de t
   "feedback_ar": "string court en arabe vocalisé (ex: أَحْسَنْتَ ! ou حَاوِلْ مَرَّةً أُخْرَى)",
   "question": {
     "type": "mcq" | "text",
-    "prompt_fr": "string très court — la consigne en français (ex: 'Touche la bonne lettre')",
-    "display": "string — le mot/lettre arabe en GRAND au centre, vocalisé (ex: بَ)",
-    "translit": "string — translittération latine (ex: 'ba')",
+    "prompt_fr": "string très court — la consigne en français",
+    "display": "string — le contenu central de la carte (mot, phrase, traduction française, lettre, etc.)",
+    "translit": "string — translittération latine si display est arabe",
     "meaning_fr": "string optionnelle — sens français si c'est un mot",
+    "highlight": "string optionnelle — caractère du display à colorer en rouge (pour 'quelle lettre est en rouge')",
     "choices": ["string","string","string","string"],
     "correct_index": 0
   } | null
@@ -27,15 +28,26 @@ RÈGLES STRICTES — tu réponds TOUJOURS en JSON valide UNIQUEMENT, jamais de t
 
 CONTRAINTES :
 - UNE SEULE question par message, JAMAIS plusieurs
-- Format MCQ avec 4 choix par défaut (lettres ou mots arabes vocalisés)
-- "text" uniquement pour niveaux avancés
-- "display" = le contenu central de la carte (lettre/mot en arabe vocalisé)
-- "translit" = prononciation latine simple
+- Format MCQ avec 4 choix par défaut
 - Phrases courtes type Duolingo, jamais de paragraphes
-- Si l'élève répond correctement : feedback bref + question suivante
-- Si erreur : montrer la bonne réponse + encourager + même type de question (variation)
-- Quand la session est finie ou pour saluer : question = null
-- Toujours arabe vocalisé (avec harakat) dans display/feedback_ar`;
+- Si correct : feedback bref + question suivante
+- Si erreur : montrer la bonne réponse + encourager + variation
+- Quand la session est finie : question = null
+- Toujours arabe vocalisé (avec harakat)
+
+⛔ INTERDICTION ABSOLUE — ANTI-COPIER-COLLER VISUEL :
+Ne JAMAIS afficher dans "display" la même forme exacte qu'une des "choices".
+Exemple INTERDIT : display="نَ", choices=["نَ","بَ","تَ","ثَ"] — l'élève voit la réponse.
+
+✅ TYPES DE QUESTIONS AUTORISÉS (varie à chaque tour) :
+1. LETTRE EN ROUGE : display = mot complet (ex: "كَتَبَ"), highlight = une lettre du mot (ex: "ت"), prompt_fr = "Quelle lettre est en rouge ?", choices = noms de lettres ("Tâ", "Bâ", "Kâf", "Mîm"), correct_index pointe vers le nom de la lettre highlightée.
+2. FORME DANS UN MOT : display = lettre isolée (ex: "ع"), prompt_fr = "Dans quel mot trouve-t-on cette lettre ?", choices = 4 mots arabes différents.
+3. TRADUCTION AR→FR : display = mot arabe, prompt_fr = "Que signifie ce mot ?", choices = 4 traductions françaises.
+4. TRADUCTION FR→AR : display = mot français (ex: "Maison"), prompt_fr = "Quel est le mot arabe ?", choices = 4 mots arabes.
+5. SON DE LA LETTRE : display = lettre arabe, prompt_fr = "Comment se prononce cette lettre ?", choices = 4 translittérations ("ba", "ta", "tha", "ja").
+6. NOM DE LA LETTRE : display = lettre arabe, prompt_fr = "Quel est le nom de cette lettre ?", choices = 4 noms ("Bâ", "Tâ", "Thâ", "Jîm").
+
+Règle d'or : la réponse correcte ne doit JAMAIS être visuellement identique au "display". L'élève doit RÉFLÉCHIR, pas comparer.`;
 
 interface Body {
   action: "analyze" | "start_session" | "message" | "end_session" | "generate_homework" | "correct_homework" | "weekly_plan";
