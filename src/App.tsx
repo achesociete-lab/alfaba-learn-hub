@@ -25,6 +25,7 @@ import InscriptionPresentiel from "./pages/InscriptionPresentiel.tsx";
 import CompteEnAttente from "./pages/CompteEnAttente.tsx";
 import CoursPresentiel from "./pages/CoursPresentiel.tsx";
 import Unsubscribe from "./pages/Unsubscribe.tsx";
+import RouteTracker from "./components/RouteTracker";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <RouteTracker />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
