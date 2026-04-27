@@ -13,6 +13,8 @@ import Navbar from "@/components/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/hooks/use-subscription";
 import { supabase } from "@/integrations/supabase/client";
+import confetti from "canvas-confetti";
+import { playCorrectSound, playWrongSound, playVictorySound, playArrivalSound } from "@/utils/sound-feedback";
 
 interface Session { id: string; started_at: string; ended_at: string | null; summary: string | null; score: number | null; }
 interface Homework { id: string; title: string; content: any; due_date: string | null; status: string; score: number | null; feedback: string | null; created_at: string; }
@@ -120,8 +122,10 @@ const Tuteur = () => {
     const q = currentPayload?.question;
     if (!q?.choices) return;
     const isCorrect = idx === q.correct_index;
+    if (isCorrect) playCorrectSound(); else playWrongSound();
     const answer = `${isCorrect ? "Bonne réponse" : "Mauvaise réponse"}: j'ai choisi "${q.choices[idx]}" (correcte: "${q.choices[q.correct_index ?? 0]}"). Question suivante.`;
-    setTimeout(() => submitAnswer(answer), 1200);
+    // Transition quasi-instantanée — juste assez pour voir le feedback couleur
+    setTimeout(() => submitAnswer(answer), isCorrect ? 350 : 700);
   };
 
   const handleTextSubmit = () => {
@@ -129,12 +133,32 @@ const Tuteur = () => {
     submitAnswer(`Ma réponse: ${textAnswer.trim()}`);
   };
 
+  const fireFireworks = () => {
+    const duration = 2500;
+    const end = Date.now() + duration;
+    const colors = ["#10b981", "#fbbf24", "#fef3c7", "#34d399"];
+    (function frame() {
+      confetti({ particleCount: 4, angle: 60, spread: 70, origin: { x: 0 }, colors });
+      confetti({ particleCount: 4, angle: 120, spread: 70, origin: { x: 1 }, colors });
+      if (Date.now() < end) requestAnimationFrame(frame);
+    })();
+    confetti({ particleCount: 120, spread: 100, origin: { y: 0.6 }, colors });
+  };
+
   const endSession = async () => {
     if (!activeSessionId) return;
     setBusy(true);
+    playArrivalSound();
     try {
       const data = await callTutor("end_session", { session_id: activeSessionId });
-      toast({ title: "Session terminée ✅", description: data.summary?.summary || "Bilan enregistré" });
+      const score = data.summary?.score ?? 0;
+      if (score >= 80) {
+        playVictorySound();
+        fireFireworks();
+        toast({ title: `🎉 Excellent ! ${score}/100`, description: data.summary?.summary || "Bravo !" });
+      } else {
+        toast({ title: "Session terminée ✅", description: data.summary?.summary || "Bilan enregistré" });
+      }
       setActiveSessionId(null);
       setCurrentPayload(null);
       resetQuestionState();
