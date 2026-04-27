@@ -236,6 +236,43 @@ const ArabicChat = () => {
   // Pas de démarrage automatique du micro : l'élève doit cliquer sur le bouton micro
   // pour lancer la conversation vocale.
 
+  // Pré-initialisation du MediaRecorder dès le chargement (Safari notamment) :
+  // on demande la permission micro tôt et on libère immédiatement le flux,
+  // pour réduire la latence au premier clic.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        if (!navigator.mediaDevices?.getUserMedia) return;
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+        // Warmup : instancier MediaRecorder une fois pour forcer Safari à charger le pipeline audio
+        try {
+          const candidates = [
+            "audio/webm;codecs=opus",
+            "audio/webm",
+            "audio/mp4;codecs=mp4a.40.2",
+            "audio/mp4",
+          ];
+          let mt: string | undefined;
+          for (const c of candidates) {
+            if ((MediaRecorder as any).isTypeSupported?.(c)) { mt = c; break; }
+          }
+          const mr = mt ? new MediaRecorder(stream, { mimeType: mt }) : new MediaRecorder(stream);
+          // Pas besoin de start() — l'instanciation suffit pour pré-charger
+          void mr;
+        } catch { /* noop */ }
+        stream.getTracks().forEach((t) => t.stop());
+      } catch {
+        // Permission refusée ou non disponible : on retentera au clic
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
@@ -465,8 +502,11 @@ const ArabicChat = () => {
                 تحدّث مع <span className="text-gradient-gold">مساعد المعلم</span>
               </h1>
             </div>
+            <p className="text-lg font-arabic text-foreground mt-2" dir="rtl">
+              تَكَلَّمْ وَتَعَلَّمْ
+            </p>
             <p className="text-sm text-muted-foreground mt-1">
-              Pratiquez l'arabe en discutant avec votre assistant IA
+              Parlez et apprenez
             </p>
             {/* Bouton STOP discret, visible uniquement pendant la conversation vocale */}
             {(autoConverse || recorder.isRecording) && (

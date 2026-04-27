@@ -49,7 +49,24 @@ export function useAudioRecorder() {
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" });
+      // Safari ne supporte pas audio/webm;codecs=opus → fallback sur mp4/aac ou défaut.
+      const candidates = [
+        "audio/webm;codecs=opus",
+        "audio/webm",
+        "audio/mp4;codecs=mp4a.40.2",
+        "audio/mp4",
+        "audio/aac",
+      ];
+      let mimeType: string | undefined;
+      for (const c of candidates) {
+        if (typeof MediaRecorder !== "undefined" && (MediaRecorder as any).isTypeSupported?.(c)) {
+          mimeType = c;
+          break;
+        }
+      }
+      const mediaRecorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
       setAudioBlob(null);
@@ -61,7 +78,8 @@ export function useAudioRecorder() {
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        const blobType = mediaRecorder.mimeType || mimeType || "audio/webm";
+        const blob = new Blob(chunksRef.current, { type: blobType });
         setAudioBlob(blob);
         setAudioUrl(URL.createObjectURL(blob));
         stream.getTracks().forEach((t) => t.stop());
