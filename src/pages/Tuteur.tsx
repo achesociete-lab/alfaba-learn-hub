@@ -393,11 +393,30 @@ const Tuteur = () => {
                   <Card className="border-2 border-primary/20">
                     <CardContent className="p-8 text-center space-y-2">
                       <div className="text-6xl md:text-7xl font-bold text-primary" dir="rtl" style={{ fontFamily: "Amiri, serif", lineHeight: 1.2 }}>
-                        {q.highlight && q.display.includes(q.highlight)
-                          ? q.display.split("").map((ch, i) => (
-                              <span key={i} className={ch === q.highlight ? "text-red-500" : ""}>{ch}</span>
-                            ))
-                          : q.display}
+                        {(() => {
+                          if (!q.highlight) return q.display;
+                          // Normalise le highlight (lettre de base sans harakat) pour matcher
+                          const STRIP_DIACRITICS = /[\u064B-\u0652\u0670\u0640]/g;
+                          const target = q.highlight.replace(STRIP_DIACRITICS, "");
+                          if (!target) return q.display;
+                          // Découpe le mot en "graphèmes" : lettre de base + ses harakat éventuels
+                          const chars = Array.from(q.display);
+                          const groups: string[] = [];
+                          for (const ch of chars) {
+                            if (/[\u064B-\u0652\u0670\u0640]/.test(ch) && groups.length > 0) {
+                              groups[groups.length - 1] += ch;
+                            } else {
+                              groups.push(ch);
+                            }
+                          }
+                          return groups.map((g, i) => {
+                            const base = g.replace(STRIP_DIACRITICS, "");
+                            const isMatch = base === target;
+                            return (
+                              <span key={i} style={isMatch ? { color: "#DC2626" } : undefined}>{g}</span>
+                            );
+                          });
+                        })()}
                       </div>
                       {q.translit && <p className="text-base text-muted-foreground">{q.translit}</p>}
                       {q.meaning_fr && <p className="text-sm italic text-foreground/70">{q.meaning_fr}</p>}
