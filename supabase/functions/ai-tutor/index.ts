@@ -63,7 +63,7 @@ async function callAI(messages: Array<{ role: string; content: string }>, jsonMo
   if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
 
   const body: any = {
-    model: "google/gemini-2.5-pro",
+    model: "google/gemini-2.5-flash",
     messages,
   };
   if (jsonMode) {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Crown, Flame, Trophy, BookOpen, Send, Loader2, Sparkles, Calendar, CheckCircle2, Clock } from "lucide-react";
@@ -15,25 +15,16 @@ import { useSubscription } from "@/hooks/use-subscription";
 import { supabase } from "@/integrations/supabase/client";
 import confetti from "canvas-confetti";
 import { playCorrectSound, playWrongSound, playVictorySound, playArrivalSound } from "@/utils/sound-feedback";
+import type { TutorQuestion, TutorPayload } from "@/types/tutor";
+import { getRandomFallbackQuestion } from "@/utils/tutor-fallback-questions";
 
 interface Session { id: string; started_at: string; ended_at: string | null; summary: string | null; score: number | null; }
 interface Homework { id: string; title: string; content: any; due_date: string | null; status: string; score: number | null; feedback: string | null; created_at: string; }
 interface Progress { total_sessions: number; average_score: number; streak_days: number; weekly_plan: any; weak_letters: any[]; strong_letters: any[]; }
-interface TutorQuestion {
-  type: "mcq" | "text";
-  prompt_fr: string;
-  display: string;
-  translit?: string;
-  meaning_fr?: string;
-  highlight?: string;
-  choices?: string[];
-  correct_index?: number;
-}
-interface TutorPayload {
-  feedback_fr: string;
-  feedback_ar: string;
-  question: TutorQuestion | null;
-}
+
+const SESSION_START_TIMEOUT_MS = 5000;
+const NEXT_QUESTION_TIMEOUT_MS = 5000;
+
 
 const Tuteur = () => {
   const { user } = useAuth();
@@ -56,6 +47,11 @@ const Tuteur = () => {
 
   const [activeHw, setActiveHw] = useState<Homework | null>(null);
   const [submission, setSubmission] = useState<Record<number, string>>({});
+
+  // Buffer de questions préchargées en arrière-plan
+  const prefetchedRef = useRef<TutorPayload | null>(null);
+  const prefetchInFlightRef = useRef<boolean>(false);
+  const seenDisplaysRef = useRef<Set<string>>(new Set());
 
   const isPremium = plan === "premium";
 
@@ -82,22 +78,74 @@ const Tuteur = () => {
     return data;
   };
 
+  // Course entre l'IA et un timeout — si l'IA dépasse, on bascule sur fallback
+  const callTutorWithTimeout = async (action: string, payload: any, timeoutMs: number) => {
+    return Promise.race([
+      callTutor(action, payload),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs)),
+    ]);
+  };
+
+  const buildFallbackPayload = (): TutorPayload => {
+    const q = getRandomFallbackQuestion(seenDisplaysRef.current);
+    seenDisplaysRef.current.add(q.display);
+    return { feedback_fr: "", feedback_ar: "", question: q };
+  };
+
   const resetQuestionState = () => {
     setSelectedIdx(null);
     setRevealed(false);
     setTextAnswer("");
   };
 
+  // Précharge la question suivante en arrière-plan pendant que l'élève répond
+  const prefetchNext = async (sessionId: string, lastAnswer: string) => {
+    if (prefetchInFlightRef.current || prefetchedRef.current) return;
+    prefetchInFlightRef.current = true;
+    try {
+      const data = await callTutor("message", { session_id: sessionId, user_message: lastAnswer });
+      if (data?.payload) prefetchedRef.current = data.payload;
+    } catch {
+      // silencieux : on aura le fallback au moment du submit
+    } finally {
+      prefetchInFlightRef.current = false;
+    }
+  };
+
   const startSession = async () => {
-    // Affichage instantané : on bascule en mode session avec un squelette
+    // Affichage instantané : squelette + on lance la course IA vs timeout 5s
     setActiveSessionId("__loading__");
     setCurrentPayload(null);
     resetQuestionState();
+    seenDisplaysRef.current = new Set();
+    prefetchedRef.current = null;
+
     try {
-      const data = await callTutor("start_session");
-      setActiveSessionId(data.session_id);
-      setCurrentPayload(data.payload);
+      const data = await callTutorWithTimeout("start_session", {}, SESSION_START_TIMEOUT_MS);
+
+      if (data && data.session_id && data.payload?.question) {
+        // Réponse IA reçue à temps
+        setActiveSessionId(data.session_id);
+        setCurrentPayload(data.payload);
+        if (data.payload.question?.display) seenDisplaysRef.current.add(data.payload.question.display);
+        resetQuestionState();
+        return;
+      }
+
+      // Timeout : fallback local immédiat, puis on continue d'attendre l'IA en arrière-plan
+      // pour récupérer un session_id réel.
+      const fallback = buildFallbackPayload();
+      setCurrentPayload(fallback);
       resetQuestionState();
+      // Attendre l'IA en arrière-plan pour récupérer le session_id
+      callTutor("start_session").then((d) => {
+        if (d?.session_id) {
+          setActiveSessionId(d.session_id);
+          // Garde la question fallback affichée — elle sera remplacée à la prochaine réponse
+        }
+      }).catch(() => {
+        toast({ title: "Mode hors-ligne", description: "Questions de base — réessayez plus tard pour le contenu personnalisé." });
+      });
     } catch (e: any) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });
       setActiveSessionId(null);
@@ -107,16 +155,52 @@ const Tuteur = () => {
   const submitAnswer = async (userAnswer: string) => {
     if (!activeSessionId) return;
     setSending(true);
-    try {
-      const data = await callTutor("message", { session_id: activeSessionId, user_message: userAnswer });
-      setCurrentPayload(data.payload);
+
+    // Si on a déjà une question préchargée, on l'affiche immédiatement
+    if (prefetchedRef.current && activeSessionId !== "__loading__") {
+      const next = prefetchedRef.current;
+      prefetchedRef.current = null;
+      setCurrentPayload(next);
+      if (next.question?.display) seenDisplaysRef.current.add(next.question.display);
       resetQuestionState();
+      setSending(false);
+      // Précharge la suivante en background
+      const answerForNext = "Question suivante.";
+      prefetchNext(activeSessionId, answerForNext);
+      return;
+    }
+
+    // Sinon : course entre l'IA et un timeout
+    try {
+      // Si on est encore en mode loading (pas de session_id réel), on ne peut qu'attendre
+      if (activeSessionId === "__loading__") {
+        const fallback = buildFallbackPayload();
+        setCurrentPayload(fallback);
+        resetQuestionState();
+        setSending(false);
+        return;
+      }
+
+      const data = await callTutorWithTimeout("message", { session_id: activeSessionId, user_message: userAnswer }, NEXT_QUESTION_TIMEOUT_MS);
+      if (data?.payload) {
+        setCurrentPayload(data.payload);
+        if (data.payload.question?.display) seenDisplaysRef.current.add(data.payload.question.display);
+        resetQuestionState();
+        // Précharge la suivante
+        prefetchNext(activeSessionId, "Question suivante.");
+      } else {
+        // Timeout — fallback
+        const fallback = buildFallbackPayload();
+        setCurrentPayload(fallback);
+        resetQuestionState();
+      }
     } catch (e: any) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });
     } finally {
       setSending(false);
     }
   };
+
 
   const handleMcqChoice = (idx: number) => {
     if (revealed || sending) return;
