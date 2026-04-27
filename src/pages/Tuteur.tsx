@@ -309,7 +309,11 @@ const Tuteur = () => {
                   <Card className="border-2 border-primary/20">
                     <CardContent className="p-8 text-center space-y-2">
                       <div className="text-6xl md:text-7xl font-bold text-primary" dir="rtl" style={{ fontFamily: "Amiri, serif", lineHeight: 1.2 }}>
-                        {q.display}
+                        {q.highlight && q.display.includes(q.highlight)
+                          ? q.display.split("").map((ch, i) => (
+                              <span key={i} className={ch === q.highlight ? "text-red-500" : ""}>{ch}</span>
+                            ))
+                          : q.display}
                       </div>
                       {q.translit && <p className="text-base text-muted-foreground">{q.translit}</p>}
                       {q.meaning_fr && <p className="text-sm italic text-foreground/70">{q.meaning_fr}</p>}
