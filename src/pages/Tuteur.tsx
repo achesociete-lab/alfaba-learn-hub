@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Crown, Flame, Trophy, BookOpen, Send, Loader2, Sparkles, Calendar, CheckCircle2, Clock } from "lucide-react";
@@ -15,25 +15,16 @@ import { useSubscription } from "@/hooks/use-subscription";
 import { supabase } from "@/integrations/supabase/client";
 import confetti from "canvas-confetti";
 import { playCorrectSound, playWrongSound, playVictorySound, playArrivalSound } from "@/utils/sound-feedback";
+import type { TutorQuestion, TutorPayload } from "@/types/tutor";
+import { getRandomFallbackQuestion } from "@/utils/tutor-fallback-questions";
 
 interface Session { id: string; started_at: string; ended_at: string | null; summary: string | null; score: number | null; }
 interface Homework { id: string; title: string; content: any; due_date: string | null; status: string; score: number | null; feedback: string | null; created_at: string; }
 interface Progress { total_sessions: number; average_score: number; streak_days: number; weekly_plan: any; weak_letters: any[]; strong_letters: any[]; }
-interface TutorQuestion {
-  type: "mcq" | "text";
-  prompt_fr: string;
-  display: string;
-  translit?: string;
-  meaning_fr?: string;
-  highlight?: string;
-  choices?: string[];
-  correct_index?: number;
-}
-interface TutorPayload {
-  feedback_fr: string;
-  feedback_ar: string;
-  question: TutorQuestion | null;
-}
+
+const SESSION_START_TIMEOUT_MS = 5000;
+const NEXT_QUESTION_TIMEOUT_MS = 5000;
+
 
 const Tuteur = () => {
   const { user } = useAuth();
