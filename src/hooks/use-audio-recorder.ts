@@ -78,7 +78,8 @@ export function useAudioRecorder() {
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        const blobType = mediaRecorder.mimeType || mimeType || "audio/webm";
+        const blob = new Blob(chunksRef.current, { type: blobType });
         setAudioBlob(blob);
         setAudioUrl(URL.createObjectURL(blob));
         stream.getTracks().forEach((t) => t.stop());
