@@ -25,6 +25,7 @@ interface TutorQuestion {
   display: string;
   translit?: string;
   meaning_fr?: string;
+  highlight?: string;
   choices?: string[];
   correct_index?: number;
 }
