@@ -158,7 +158,7 @@ const ArabicChat = () => {
   const startVoiceRecording = useCallback((opts?: { autoStopOnSilence?: boolean }) => {
     const autoStopOnSilence = opts?.autoStopOnSilence ?? false;
     recorder.startRecording({
-      silenceTimeoutMs: 3000, // 3 s de silence après parole → fin de tour
+      silenceTimeoutMs: 1500, // 1,5 s de silence après parole → fin de tour
       silenceThreshold: 0.018,
       // Si activé : 10 s sans aucune parole → arrêter complètement la conversation
       noSpeechTimeoutMs: autoStopOnSilence ? 10000 : 0,
