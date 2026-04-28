@@ -288,17 +288,9 @@ const ArabicChat = () => {
       // Flush remainder
       speakNewSentencesFrom(last.content, true);
     }
-    if (!autoConverseRef.current) return;
-    // Wait for TTS queue to drain, then re-arm mic
-    const cancelled = { v: false };
-    ttsQueueRef.current.then(() => {
-      if (cancelled.v) return;
-      if (recorder.isRecording || isTranscribing) return;
-      // Re-armer le micro avec auto-stop d'inactivité : 10 s sans parole → fin de conversation
-      startVoiceRecording({ autoStopOnSilence: true });
-    });
-    return () => { cancelled.v = true; };
-  }, [isLoading, messages, speakNewSentencesFrom, recorder.isRecording, isTranscribing, startVoiceRecording]);
+    // Vocal simplifié : pas de re-armement automatique du micro après réponse.
+    // L'utilisateur clique le micro pour parler à son tour.
+  }, [isLoading, messages, speakNewSentencesFrom]);
 
   const sendMessage = useCallback(async (overrideText?: string) => {
     const text = (overrideText ?? input).trim();
