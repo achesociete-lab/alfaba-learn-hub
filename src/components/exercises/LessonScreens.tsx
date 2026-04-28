@@ -124,7 +124,7 @@ function TheoryScreen({ section, onNext, isLast }: { section: TheorySection; onN
             <thead>
               <tr className="border-b border-border bg-muted/50">
                 <th className="py-2.5 px-2 text-xs text-muted-foreground font-medium">Lettre</th>
-                <th className="py-2.5 px-2 text-xs text-muted-foreground font-medium">Isolée</th>
+                <th className="py-2.5 px-2 text-xs text-muted-foreground font-medium">Seule</th>
                 <th className="py-2.5 px-2 text-xs text-muted-foreground font-medium">Début</th>
                 <th className="py-2.5 px-2 text-xs text-muted-foreground font-medium">Milieu</th>
                 <th className="py-2.5 px-2 text-xs text-muted-foreground font-medium">Fin</th>

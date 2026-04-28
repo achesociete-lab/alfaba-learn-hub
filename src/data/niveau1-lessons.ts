@@ -67,7 +67,7 @@ const lesson1: Lesson = {
   theory: [
     {
       title: "Introduction à l'alphabet arabe",
-      content: "L'alphabet arabe compte 28 lettres. Contrairement au français, l'arabe s'écrit de droite à gauche. Toutes les lettres sont des consonnes ; les voyelles sont indiquées par des signes diacritiques placés au-dessus ou en dessous des lettres. Dans cette première leçon, nous allons découvrir chaque lettre dans sa forme isolée.",
+      content: "L'alphabet arabe compte 28 lettres. Contrairement au français, l'arabe s'écrit de droite à gauche. Toutes les lettres sont des consonnes ; les voyelles sont indiquées par des signes diacritiques placés au-dessus ou en dessous des lettres. Dans cette première leçon, nous allons découvrir chaque lettre dans sa forme seule.",
       tip: "Prenez le temps d'observer chaque lettre. Essayez de les regrouper par ressemblance visuelle : cela facilitera la mémorisation.",
     },
     {
@@ -110,9 +110,9 @@ const lesson1: Lesson = {
       tip: "Mémoriser les familles plutôt que les lettres individuellement. En connaissant 14 formes de base, vous maîtrisez les 28 lettres !",
     },
     {
-      title: "Les lettres non-liantes",
+      title: "Les lettres qui ne s'attachent pas",
       content: "6 lettres ne se lient jamais à la lettre suivante (elles ne s'attachent qu'à la lettre précédente). Ce sont : ا د ذ ر ز و. Toutes les autres lettres se lient des deux côtés.",
-      tip: "Retenez l'astuce : les lettres non-liantes sont celles dont le tracé se termine « dans le vide » vers la gauche.",
+      tip: "Retenez l'astuce : les lettres qui ne s'attachent pas sont celles dont le tracé se termine « dans le vide » vers la gauche.",
     },
   ],
   qcm: [
@@ -121,13 +121,13 @@ const lesson1: Lesson = {
     { question: "Quelle lettre est-ce : ب ?", options: ["Tâ'", "Bâ'", "Thâ'", "Nûn"], correctIndex: 1, explanation: "C'est la lettre Bâ' (ب), avec un point en dessous." },
     { question: "Combien de points a la lettre ث ?", options: ["Aucun", "Un", "Deux", "Trois"], correctIndex: 3, explanation: "La lettre Thâ' (ث) a trois points au-dessus." },
     { question: "Quelle lettre a un point au milieu : ج ح خ ?", options: ["ح", "خ", "ج", "Aucune"], correctIndex: 2, explanation: "Le Jîm (ج) a un point au milieu de sa forme." },
-    { question: "Parmi ces lettres, laquelle est non-liante ?", options: ["ب", "د", "ل", "ك"], correctIndex: 1, explanation: "Le Dâl (د) est une lettre non-liante : elle ne se lie pas à la lettre suivante." },
+    { question: "Parmi ces lettres, laquelle est qui ne s'attache pas ?", options: ["ب", "د", "ل", "ك"], correctIndex: 1, explanation: "Le Dâl (د) est une lettre qui ne s'attache pas : elle ne se lie pas à la lettre suivante." },
     { question: "Quelle est la première lettre de l'alphabet arabe ?", options: ["ب", "ا", "ع", "و"], correctIndex: 1, explanation: "L'Alif (ا) est la première lettre de l'alphabet arabe." },
     { question: "Les lettres ص et ض se distinguent par :", options: ["La taille", "Le nombre de points", "La couleur", "La position"], correctIndex: 1, explanation: "Sâd (ص) n'a pas de point, Dâd (ض) a un point au-dessus." },
     { question: "Comment se prononce la lettre خ ?", options: ["Comme un 'k'", "Comme la jota espagnole", "Comme un 'h' léger", "Comme un 'g'"], correctIndex: 1, explanation: "Le Khâ' (خ) se prononce comme la jota espagnole ou le 'ch' allemand dans 'Bach'." },
     { question: "Quel groupe de lettres partage la même forme de base ?", options: ["ب ج د", "ب ت ث", "ا ل ك", "ف ع غ"], correctIndex: 1, explanation: "Les lettres ب ت ث partagent la même forme de base et se distinguent par leurs points." },
     { question: "Quelle lettre est-ce : ع ?", options: ["Ghayn", "'Ayn", "Fâ'", "Qâf"], correctIndex: 1, explanation: "C'est la lettre 'Ayn (ع), un son guttural propre à l'arabe." },
-    { question: "Combien y a-t-il de lettres non-liantes ?", options: ["4", "5", "6", "8"], correctIndex: 2, explanation: "Il y a 6 lettres non-liantes : ا د ذ ر ز و." },
+    { question: "Combien y a-t-il de lettres qui ne s'attachent pas ?", options: ["4", "5", "6", "8"], correctIndex: 2, explanation: "Il y a 6 lettres qui ne s'attachent pas : ا د ذ ر ز و." },
   ],
   dictation: [
     { word: "ا", transliteration: "Alif", options: ["ا", "ل", "د", "و"], correctIndex: 0 },
@@ -152,7 +152,7 @@ const lesson2: Lesson = {
   theory: [
     {
       title: "Les 4 formes de chaque lettre",
-      content: "En arabe, chaque lettre change de forme selon sa position dans le mot. Il existe 4 formes :\n\n1. **Isolée** : la lettre seule\n2. **Initiale** : au début du mot (liée à la lettre suivante)\n3. **Médiane** : au milieu du mot (liée des deux côtés)\n4. **Finale** : à la fin du mot (liée à la lettre précédente)\n\nLa bonne nouvelle : le corps de la lettre reste reconnaissable. Seules les liaisons changent.",
+      content: "En arabe, chaque lettre change de forme selon sa position dans le mot. Il existe 4 formes :\n\n1. **Seule** : la lettre seule\n2. **Début** : au début du mot (liée à la lettre suivante)\n3. **Milieu** : au milieu du mot (liée des deux côtés)\n4. **Fin** : à la fin du mot (liée à la lettre précédente)\n\nLa bonne nouvelle : le corps de la lettre reste reconnaissable. Seules les liaisons changent.",
       tip: "La clé est de reconnaître le « squelette » de la lettre. Les points et la forme générale restent toujours les mêmes.",
     },
     {
@@ -169,7 +169,7 @@ const lesson2: Lesson = {
     },
     {
       title: "Tableaux des formes — Groupe 2",
-      content: "Les lettres non-liantes n'ont que 2 formes (isolée et finale) car elles ne se connectent jamais à gauche :",
+      content: "Les lettres qui ne s'attachent pas n'ont que 2 formes (isolée et finale) car elles ne se connectent jamais à gauche :",
       formsTable: [
         { letter: "د", name: "Dâl", isolated: "د", initial: "د", medial: "ـد", final: "ـد" },
         { letter: "ذ", name: "Dhâl", isolated: "ذ", initial: "ذ", medial: "ـذ", final: "ـذ" },
@@ -203,7 +203,7 @@ const lesson2: Lesson = {
     },
     {
       title: "Exemple de décomposition d'un mot",
-      content: "Prenons le mot **بَيْت** (bayt = maison) :\n\n• **بـ** → Bâ' en position initiale (liée à droite)\n• **ـيـ** → Yâ' en position médiane (liée des deux côtés)\n• **ـت** → Tâ' en position finale (liée à gauche uniquement)\n\nChaque lettre garde ses points distinctifs : c'est ainsi qu'on la reconnaît quelle que soit sa forme.",
+      content: "Prenons le mot **بَيْت** (bayt = maison) :\n\n• **بـ** → Bâ' en au début (liée à droite)\n• **ـيـ** → Yâ' en au milieu (liée des deux côtés)\n• **ـت** → Tâ' en à la fin (liée à gauche uniquement)\n\nChaque lettre garde ses points distinctifs : c'est ainsi qu'on la reconnaît quelle que soit sa forme.",
       arabicExamples: [
         { arabic: "بَيْتٌ", transliteration: "bayt", meaning: "maison" },
         { arabic: "كِتَابٌ", transliteration: "kitâb", meaning: "livre" },
@@ -215,27 +215,27 @@ const lesson2: Lesson = {
   ],
   qcm: [
     { question: "Combien de formes peut prendre une lettre arabe liante ?", options: ["2", "3", "4", "5"], correctIndex: 2, explanation: "Une lettre liante a 4 formes : isolée, initiale, médiane et finale." },
-    { question: "Combien de formes ont les lettres non-liantes ?", options: ["1", "2", "3", "4"], correctIndex: 1, explanation: "Les lettres non-liantes ont 2 formes : isolée et finale (attachée à la lettre précédente)." },
-    { question: "Quelle est la forme initiale de ب ?", options: ["ب", "بـ", "ـبـ", "ـب"], correctIndex: 1, explanation: "La forme initiale de Bâ' est بـ (liée à la lettre suivante)." },
-    { question: "Dans le mot بَيْت, quelle position occupe la lettre ي ?", options: ["Isolée", "Initiale", "Médiane", "Finale"], correctIndex: 2, explanation: "Dans بيت, le Yâ' est en position médiane, lié des deux côtés." },
-    { question: "Quelle lettre est non-liante ?", options: ["ب", "ر", "ل", "ن"], correctIndex: 1, explanation: "Le Râ' (ر) est une lettre non-liante." },
-    { question: "La forme finale de ج est :", options: ["جـ", "ـجـ", "ـج", "ج"], correctIndex: 2, explanation: "La forme finale de Jîm est ـج (liée à la lettre précédente)." },
-    { question: "Pourquoi les lettres non-liantes n'ont-elles que 2 formes ?", options: ["Elles sont trop petites", "Elles ne se connectent jamais à la lettre suivante", "Elles n'existent qu'en fin de mot", "Elles n'ont pas de points"], correctIndex: 1, explanation: "Les lettres non-liantes ne se connectent jamais à gauche (à la lettre suivante), donc elles n'ont pas de forme initiale ou médiane distincte." },
-    { question: "Quelle est la forme médiane de ع ?", options: ["عـ", "ـع", "ـعـ", "ع"], correctIndex: 2, explanation: "La forme médiane de 'Ayn est ـعـ (liée des deux côtés)." },
-    { question: "Dans le mot كِتَاب, la lettre ا est en position :", options: ["Initiale", "Médiane", "Finale", "Isolée"], correctIndex: 1, explanation: "L'Alif dans كتاب est entre le Tâ' et le Bâ', mais comme elle est non-liante, elle garde sa forme isolée/finale." },
+    { question: "Combien de formes ont les lettres qui ne s'attachent pas ?", options: ["1", "2", "3", "4"], correctIndex: 1, explanation: "Les lettres qui ne s'attachent pas ont 2 formes : isolée et finale (attachée à la lettre précédente)." },
+    { question: "Quelle est la forme du début de ب ?", options: ["ب", "بـ", "ـبـ", "ـب"], correctIndex: 1, explanation: "La forme du début de Bâ' est بـ (liée à la lettre suivante)." },
+    { question: "Dans le mot بَيْت, quelle position occupe la lettre ي ?", options: ["Seule", "Début", "Milieu", "Fin"], correctIndex: 2, explanation: "Dans بيت, le Yâ' est en au milieu, lié des deux côtés." },
+    { question: "Quelle lettre est qui ne s'attache pas ?", options: ["ب", "ر", "ل", "ن"], correctIndex: 1, explanation: "Le Râ' (ر) est une lettre qui ne s'attache pas." },
+    { question: "La forme de la fin de ج est :", options: ["جـ", "ـجـ", "ـج", "ج"], correctIndex: 2, explanation: "La forme de la fin de Jîm est ـج (liée à la lettre précédente)." },
+    { question: "Pourquoi les lettres qui ne s'attachent pas n'ont-elles que 2 formes ?", options: ["Elles sont trop petites", "Elles ne se connectent jamais à la lettre suivante", "Elles n'existent qu'en fin de mot", "Elles n'ont pas de points"], correctIndex: 1, explanation: "Les lettres qui ne s'attachent pas ne se connectent jamais à gauche (à la lettre suivante), donc elles n'ont pas de forme du début ou médiane distincte." },
+    { question: "Quelle est la forme du milieu de ع ?", options: ["عـ", "ـع", "ـعـ", "ع"], correctIndex: 2, explanation: "La forme du milieu de 'Ayn est ـعـ (liée des deux côtés)." },
+    { question: "Dans le mot كِتَاب, la lettre ا est en position :", options: ["Début", "Milieu", "Fin", "Seule"], correctIndex: 1, explanation: "L'Alif dans كتاب est entre le Tâ' et le Bâ', mais comme elle est qui ne s'attache pas, elle garde sa forme seule/finale." },
     { question: "Quelle information reste constante quelle que soit la forme d'une lettre ?", options: ["La taille", "Les points", "La largeur", "La couleur"], correctIndex: 1, explanation: "Les points (nombre et position) restent toujours les mêmes, c'est ce qui permet d'identifier la lettre." },
   ],
   dictation: [
-    { word: "بـ", transliteration: "Bâ' initiale", options: ["بـ", "ب", "ـبـ", "ـب"], correctIndex: 0 },
-    { word: "ـتـ", transliteration: "Tâ' médiane", options: ["تـ", "ت", "ـتـ", "ـت"], correctIndex: 2 },
+    { word: "بـ", transliteration: "Bâ' au début", options: ["بـ", "ب", "ـبـ", "ـب"], correctIndex: 0 },
+    { word: "ـتـ", transliteration: "Tâ' au milieu", options: ["تـ", "ت", "ـتـ", "ـت"], correctIndex: 2 },
     { word: "ـج", transliteration: "Jîm finale", options: ["جـ", "ج", "ـجـ", "ـج"], correctIndex: 3 },
     { word: "سـ", transliteration: "Sîn initiale", options: ["ـسـ", "سـ", "ـس", "س"], correctIndex: 1 },
     { word: "ـكـ", transliteration: "Kâf médiane", options: ["كـ", "ك", "ـكـ", "ـك"], correctIndex: 2 },
     { word: "ـن", transliteration: "Nûn finale", options: ["نـ", "ن", "ـنـ", "ـن"], correctIndex: 3 },
     { word: "عـ", transliteration: "'Ayn initiale", options: ["عـ", "ع", "ـعـ", "ـع"], correctIndex: 0 },
     { word: "ـمـ", transliteration: "Mîm médiane", options: ["مـ", "م", "ـمـ", "ـم"], correctIndex: 2 },
-    { word: "فـ", transliteration: "Fâ' initiale", options: ["ـف", "ف", "فـ", "ـفـ"], correctIndex: 2 },
-    { word: "ـي", transliteration: "Yâ' finale", options: ["يـ", "ي", "ـيـ", "ـي"], correctIndex: 3 },
+    { word: "فـ", transliteration: "Fâ' au début", options: ["ـف", "ف", "فـ", "ـفـ"], correctIndex: 2 },
+    { word: "ـي", transliteration: "Yâ' à la fin", options: ["يـ", "ي", "ـيـ", "ـي"], correctIndex: 3 },
   ],
 };
 
@@ -778,7 +778,7 @@ const lesson10: Lesson = {
     { question: "La Shadda indique :", options: ["Une voyelle longue", "Un doublement de lettre", "L'absence de voyelle", "La fin du mot"], correctIndex: 1, explanation: "La Shadda indique le doublement de la lettre." },
     { question: "Comment dit-on « le soleil » en arabe ?", options: ["شَمْسٌ", "الشَّمْسُ", "شَمْسًا", "شُمُوسٌ"], correctIndex: 1, explanation: "الشَّمْسُ = le soleil (avec article défini)." },
     { question: "Que signifie كَتَبَ ?", options: ["Il a lu", "Il a écrit", "Il a bu", "Il a mangé"], correctIndex: 1, explanation: "كَتَبَ = il a écrit." },
-    { question: "Combien de lettres non-liantes y a-t-il ?", options: ["4", "5", "6", "7"], correctIndex: 2, explanation: "6 lettres non-liantes : ا د ذ ر ز و." },
+    { question: "Combien de lettres qui ne s'attachent pas y a-t-il ?", options: ["4", "5", "6", "7"], correctIndex: 2, explanation: "6 lettres qui ne s'attachent pas : ا د ذ ر ز و." },
     { question: "Le verbe arabe en phrase verbale se place :", options: ["Après le sujet", "En premier", "À la fin", "Au milieu"], correctIndex: 1, explanation: "L'ordre classique est Verbe-Sujet-Complément." },
     { question: "Comment se lit جَمِيلٌ ?", options: ["jamal", "jamîl", "jamûl", "jumul"], correctIndex: 1, explanation: "جَمِيلٌ = jamîl (beau), avec voyelle longue î." },
     { question: "Que signifie هٰذَا بَيْتٌ ?", options: ["La maison est belle", "Ceci est une maison", "Cette maison", "Où est la maison ?"], correctIndex: 1, explanation: "هٰذَا بَيْتٌ = Ceci est une maison." },

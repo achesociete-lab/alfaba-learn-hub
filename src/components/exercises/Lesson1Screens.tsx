@@ -212,7 +212,7 @@ function NonLinkingScreen({ onComplete }: { onComplete: () => void }) {
       className="flex flex-col items-center justify-center min-h-[50vh] space-y-8"
     >
       <div className="text-center">
-        <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">Les lettres non-liantes</h2>
+        <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">Les lettres qui ne s'attachent pas</h2>
         <p className="text-sm text-muted-foreground max-w-md mx-auto">
           Ces 6 lettres ne se lient jamais à la lettre suivante. Elles ne s'attachent qu'à la lettre précédente.
         </p>

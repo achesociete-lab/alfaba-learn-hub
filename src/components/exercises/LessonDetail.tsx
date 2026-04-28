@@ -75,7 +75,7 @@ function TheorySectionView({ section }: { section: TheorySection }) {
             <thead>
               <tr className="border-b border-border">
                 <th className="py-2 text-xs text-muted-foreground">Lettre</th>
-                <th className="py-2 text-xs text-muted-foreground">Isolée</th>
+                <th className="py-2 text-xs text-muted-foreground">Seule</th>
                 <th className="py-2 text-xs text-muted-foreground">Début</th>
                 <th className="py-2 text-xs text-muted-foreground">Milieu</th>
                 <th className="py-2 text-xs text-muted-foreground">Fin</th>
