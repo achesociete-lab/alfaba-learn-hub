@@ -9,7 +9,6 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Lesson, TheorySection } from "@/data/niveau1-lessons";
 import { useArabicSpeech } from "@/hooks/use-arabic-speech";
-import { getTeacherClipUrl } from "@/hooks/use-teacher-audio-clips";
 import { getIllustration } from "@/utils/vocabulary-illustrations";
 import { useIsAdmin } from "@/hooks/use-admin";
 import { playCorrectSound, playWrongSound } from "@/utils/sound-feedback";
@@ -76,7 +75,7 @@ function TheorySectionView({ section }: { section: TheorySection }) {
             <thead>
               <tr className="border-b border-border">
                 <th className="py-2 text-xs text-muted-foreground">Lettre</th>
-                <th className="py-2 text-xs text-muted-foreground">Isolée</th>
+                <th className="py-2 text-xs text-muted-foreground">Seule</th>
                 <th className="py-2 text-xs text-muted-foreground">Début</th>
                 <th className="py-2 text-xs text-muted-foreground">Milieu</th>
                 <th className="py-2 text-xs text-muted-foreground">Fin</th>
@@ -309,28 +308,19 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
   const [answerCorrect, setAnswerCorrect] = useState(false);
   const [wrongAnswers, setWrongAnswers] = useState<WrongAnswer[]>([]);
   const currentRef = useRef(current);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const { speak, stop: stopSpeech } = useArabicSpeech();
 
   if (dictList.length === 0) return <p className="text-center text-muted-foreground p-4">Aucune dictée disponible.</p>;
   const d = dictList[current];
   const correctArabic = d.options[d.correctIndex];
 
-  const teacherClipUrl = getTeacherClipUrl(correctArabic);
-
   const playDictation = async () => {
-    if (!teacherClipUrl) return;
     setIsPlaying(true);
     try {
-      if (audioRef.current) { audioRef.current.pause(); }
-      const audio = new Audio(teacherClipUrl);
-      audioRef.current = audio;
-      await audio.play();
-      await new Promise<void>((resolve) => {
-        audio.addEventListener("ended", () => resolve(), { once: true });
-        audio.addEventListener("error", () => resolve(), { once: true });
-      });
+      stopSpeech();
+      await speak(correctArabic, 0.75);
     } catch (e) {
-      console.warn("Teacher clip playback failed:", e);
+      console.warn("Dictation playback failed:", e);
     } finally {
       setIsPlaying(false);
     }
@@ -448,24 +438,18 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
       <AnimatePresence mode="wait">
         <motion.div key={`${current}-${mode}`} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="p-6 rounded-xl border border-border bg-card">
           <p className="text-center text-muted-foreground mb-2 text-sm">Écoutez et {mode === "qcm" ? "choisissez" : "écrivez"} le bon mot :</p>
-          {teacherClipUrl ? (
-            <div className="flex justify-center mb-6">
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={playDictation}
-                disabled={isPlaying}
-                className="gap-3 rounded-full px-8 py-6 text-lg border-primary/30 hover:bg-primary/10"
-              >
-                <Volume2 className={`h-6 w-6 ${isPlaying ? "animate-pulse text-primary" : "text-muted-foreground"}`} />
-                {isPlaying ? "Lecture..." : "🔊 Écouter"}
-              </Button>
-            </div>
-          ) : (
-            <div className="flex justify-center mb-6">
-              <p className="text-sm text-muted-foreground italic">🔇 Aucun enregistrement disponible pour ce mot</p>
-            </div>
-          )}
+          <div className="flex justify-center mb-6">
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={playDictation}
+              disabled={isPlaying}
+              className="gap-3 rounded-full px-8 py-6 text-lg border-primary/30 hover:bg-primary/10"
+            >
+              <Volume2 className={`h-6 w-6 ${isPlaying ? "animate-pulse text-primary" : "text-muted-foreground"}`} />
+              {isPlaying ? "Lecture..." : "🔊 Écouter"}
+            </Button>
+          </div>
 
           {mode === "qcm" ? (
             <div className="grid grid-cols-2 gap-3">
@@ -672,12 +656,9 @@ const LessonDetail = ({ lesson, onBack, onComplete, nextLessonId, onNextLesson, 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="p-4 rounded-xl border border-primary bg-primary/10 text-center space-y-3">
           <p className="text-foreground font-semibold">🎉 Leçon complète !</p>
           <div className="flex flex-wrap justify-center gap-3">
-            <Button onClick={handleComplete} className="gap-2">
-              <CheckCircle className="h-4 w-4" /> Valider la leçon
-            </Button>
-            {nextLessonId && onNextLesson && (
+            {nextLessonId && onNextLesson ? (
               nextLessonId <= maxLessons ? (
-                <Button onClick={() => { handleComplete(); onNextLesson(nextLessonId); }} variant="outline" className="gap-2">
+                <Button onClick={() => { handleComplete(); onNextLesson(nextLessonId); }} className="gap-2">
                   Leçon suivante <ArrowRight className="h-4 w-4" />
                 </Button>
               ) : (
@@ -687,6 +668,10 @@ const LessonDetail = ({ lesson, onBack, onComplete, nextLessonId, onNextLesson, 
                   </Button>
                 </a>
               )
+            ) : (
+              <Button onClick={handleComplete} className="gap-2">
+                <CheckCircle className="h-4 w-4" /> Terminer
+              </Button>
             )}
           </div>
         </motion.div>

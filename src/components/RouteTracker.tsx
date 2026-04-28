@@ -26,6 +26,8 @@ const BLOCKED_SUBSTRINGS = [
   "/register",
   "/inscription-presentiel",
   "/onboarding",
+  "/complete-profile",
+  "/compte-en-attente",
 ];
 
 const isBlocked = (pathname: string) =>

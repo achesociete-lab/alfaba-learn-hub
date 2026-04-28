@@ -123,21 +123,18 @@ const ArabicChat = () => {
   const recorder = useAudioRecorder();
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [autoSpeak, setAutoSpeak] = useState(true);
-  const [autoConverse, setAutoConverse] = useState(false);
   const lastSpokenIndexRef = useRef(-1);
   const [showSidebar, setShowSidebar] = useState(false);
 
-  // Streaming TTS state — speak the assistant message progressively, sentence by sentence
+  // Streaming TTS state
   const ttsSpokenLenRef = useRef(0);
   const ttsQueueRef = useRef<Promise<void>>(Promise.resolve());
   const ttsActiveForMsgRef = useRef(-1);
-  const autoConverseRef = useRef(false);
-  useEffect(() => { autoConverseRef.current = autoConverse; }, [autoConverse]);
 
   const history = useChatHistory();
   const currentConvIdRef = useRef<string | null>(null);
 
-  // Sync active conversation messages
+  // Sync active conversation
   useEffect(() => {
     if (history.activeConversation) {
       setMessages(history.activeConversation.messages);
@@ -146,58 +143,50 @@ const ArabicChat = () => {
     }
   }, [history.activeId]);
 
-  // Save messages to DB after assistant finishes
   useEffect(() => {
     if (isLoading || messages.length === 0 || !currentConvIdRef.current) return;
     history.saveMessages(currentConvIdRef.current, messages);
   }, [messages, isLoading]);
 
-  // Forward declaration via ref so callbacks can call sendMessage before it's defined
+  // Forward declaration via ref
   const sendMessageRef = useRef<(text?: string) => Promise<void>>(async () => {});
 
-  const startVoiceRecording = useCallback((opts?: { autoStopOnSilence?: boolean }) => {
-    const autoStopOnSilence = opts?.autoStopOnSilence ?? false;
+  // ─── Vocal simplifié : MediaRecorder + elevenlabs-stt ───
+  // Clic micro → enregistre. Re-clic OU silence 1.5s → STT → envoi auto.
+  // Compatible Chrome, Safari, Android, iOS via fallback MIME type.
+  const startVoiceRecording = useCallback(() => {
     recorder.startRecording({
-      silenceTimeoutMs: 1500, // 1,5 s de silence après parole → fin de tour
+      silenceTimeoutMs: 1500,
       silenceThreshold: 0.018,
-      // Si activé : 10 s sans aucune parole → arrêter complètement la conversation
-      noSpeechTimeoutMs: autoStopOnSilence ? 10000 : 0,
-      onAutoStop: autoStopOnSilence
-        ? () => {
-            // Inactivité après réponse du professeur : on coupe la conversation
-            setAutoConverse(false);
-          }
-        : undefined,
     }).catch((e) => {
       console.error(e);
-      toast({ title: "Microphone refusé", variant: "destructive" });
+      toast({ title: "Microphone refusé", description: "Autorisez l'accès au micro dans votre navigateur.", variant: "destructive" });
     });
   }, [recorder]);
 
-  const stopAutoConverse = useCallback(() => {
-    setAutoConverse(false);
+  const stopVoice = useCallback(() => {
     if (recorder.isRecording) recorder.stopRecording();
     stopSpeech();
   }, [recorder, stopSpeech]);
 
-  // Auto-transcribe & auto-send when a recording finishes
+  // Auto-transcrire & auto-envoyer dès qu'un blob audio est dispo
   useEffect(() => {
     if (!recorder.audioBlob || isTranscribing) return;
     const run = async () => {
       setIsTranscribing(true);
       try {
         const blob = recorder.audioBlob!;
-        // Choisir une extension de fichier cohérente avec le MIME réel
-        // (Safari produit mp4/aac, Chrome/Android produit webm/opus).
         const mt = blob.type || "audio/webm";
         let ext = "webm";
         if (mt.includes("mp4")) ext = "mp4";
         else if (mt.includes("aac")) ext = "aac";
         else if (mt.includes("ogg")) ext = "ogg";
         else if (mt.includes("wav")) ext = "wav";
+
         const formData = new FormData();
         formData.append("file", blob, `voice.${ext}`);
         formData.append("language_code", "ara");
+
         const resp = await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-stt`,
           {
@@ -213,19 +202,10 @@ const ArabicChat = () => {
         const data = await resp.json();
         const text = data.text?.trim();
         if (text) {
-          if (autoConverseRef.current) {
-            // Auto-send directly
-            await sendMessageRef.current(text);
-          } else {
-            setInput(text);
-          }
+          // Envoi automatique au professeur
+          await sendMessageRef.current(text);
         } else {
-          if (!autoConverseRef.current) {
-            toast({ title: "Aucun texte détecté", variant: "destructive" });
-          } else {
-            // Re-armer le micro avec auto-stop d'inactivité (10 s)
-            startVoiceRecording({ autoStopOnSilence: true });
-          }
+          toast({ title: "Aucun texte détecté", description: "Réessayez en parlant plus fort.", variant: "destructive" });
         }
       } catch (e: any) {
         console.error(e);
@@ -241,46 +221,6 @@ const ArabicChat = () => {
   useEffect(() => {
     if (!loading && !user) navigate("/auth");
   }, [user, loading, navigate]);
-
-  // Pas de démarrage automatique du micro : l'élève doit cliquer sur le bouton micro
-  // pour lancer la conversation vocale.
-
-  // Pré-initialisation du MediaRecorder dès le chargement (Safari notamment) :
-  // on demande la permission micro tôt et on libère immédiatement le flux,
-  // pour réduire la latence au premier clic.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        if (!navigator.mediaDevices?.getUserMedia) return;
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        if (cancelled) {
-          stream.getTracks().forEach((t) => t.stop());
-          return;
-        }
-        // Warmup : instancier MediaRecorder une fois pour forcer Safari à charger le pipeline audio
-        try {
-          const candidates = [
-            "audio/webm;codecs=opus",
-            "audio/webm",
-            "audio/mp4;codecs=mp4a.40.2",
-            "audio/mp4",
-          ];
-          let mt: string | undefined;
-          for (const c of candidates) {
-            if ((MediaRecorder as any).isTypeSupported?.(c)) { mt = c; break; }
-          }
-          const mr = mt ? new MediaRecorder(stream, { mimeType: mt }) : new MediaRecorder(stream);
-          // Pas besoin de start() — l'instanciation suffit pour pré-charger
-          void mr;
-        } catch { /* noop */ }
-        stream.getTracks().forEach((t) => t.stop());
-      } catch {
-        // Permission refusée ou non disponible : on retentera au clic
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -348,17 +288,9 @@ const ArabicChat = () => {
       // Flush remainder
       speakNewSentencesFrom(last.content, true);
     }
-    if (!autoConverseRef.current) return;
-    // Wait for TTS queue to drain, then re-arm mic
-    const cancelled = { v: false };
-    ttsQueueRef.current.then(() => {
-      if (cancelled.v) return;
-      if (recorder.isRecording || isTranscribing) return;
-      // Re-armer le micro avec auto-stop d'inactivité : 10 s sans parole → fin de conversation
-      startVoiceRecording({ autoStopOnSilence: true });
-    });
-    return () => { cancelled.v = true; };
-  }, [isLoading, messages, speakNewSentencesFrom, recorder.isRecording, isTranscribing, startVoiceRecording]);
+    // Vocal simplifié : pas de re-armement automatique du micro après réponse.
+    // L'utilisateur clique le micro pour parler à son tour.
+  }, [isLoading, messages, speakNewSentencesFrom]);
 
   const sendMessage = useCallback(async (overrideText?: string) => {
     const text = (overrideText ?? input).trim();
@@ -518,15 +450,15 @@ const ArabicChat = () => {
               Parlez et apprenez
             </p>
             {/* Bouton STOP discret, visible uniquement pendant la conversation vocale */}
-            {(autoConverse || recorder.isRecording) && (
+            {recorder.isRecording && (
               <div className="flex items-center justify-center mt-2">
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                  onClick={stopAutoConverse}
-                  title="Arrêter la conversation"
-                  aria-label="Arrêter la conversation"
+                  onClick={stopVoice}
+                  title="Arrêter l'enregistrement"
+                  aria-label="Arrêter l'enregistrement"
                 >
                   <Square className="h-4 w-4 fill-current" />
                 </Button>
@@ -654,15 +586,12 @@ const ArabicChat = () => {
                 variant="outline"
                 size="icon"
                 className="shrink-0"
-                onPointerDown={(e) => {
-                  // Tap ou hold : démarrer immédiatement l'enregistrement
-                  e.preventDefault();
-                  setAutoConverse(true);
+                onClick={() => {
                   setAutoSpeak(true);
                   startVoiceRecording();
                 }}
                 disabled={isLoading || isTranscribing}
-                title="Maintenir pour parler, ou taper puis relâcher après 1,5 s de silence"
+                title="Cliquez pour parler — l'envoi est automatique après 1,5 s de silence"
               >
                 {isTranscribing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mic className="h-4 w-4" />}
               </Button>

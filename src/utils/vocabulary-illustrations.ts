@@ -161,6 +161,9 @@ const illustrationMap: Record<string, string> = {
   "musique": "🎵",
   "travail": "💼",
   "voyage": "✈️",
+  "chameau": "🐪",
+  "dromadaire": "🐪",
+  "jamal": "🐪",
 };
 
 /**
