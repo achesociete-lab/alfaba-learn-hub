@@ -186,8 +186,17 @@ const ArabicChat = () => {
     const run = async () => {
       setIsTranscribing(true);
       try {
+        const blob = recorder.audioBlob!;
+        // Choisir une extension de fichier cohérente avec le MIME réel
+        // (Safari produit mp4/aac, Chrome/Android produit webm/opus).
+        const mt = blob.type || "audio/webm";
+        let ext = "webm";
+        if (mt.includes("mp4")) ext = "mp4";
+        else if (mt.includes("aac")) ext = "aac";
+        else if (mt.includes("ogg")) ext = "ogg";
+        else if (mt.includes("wav")) ext = "wav";
         const formData = new FormData();
-        formData.append("file", recorder.audioBlob!, "voice.webm");
+        formData.append("file", blob, `voice.${ext}`);
         formData.append("language_code", "ara");
         const resp = await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-stt`,
