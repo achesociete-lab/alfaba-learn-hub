@@ -586,15 +586,12 @@ const ArabicChat = () => {
                 variant="outline"
                 size="icon"
                 className="shrink-0"
-                onPointerDown={(e) => {
-                  // Tap ou hold : démarrer immédiatement l'enregistrement
-                  e.preventDefault();
-                  setAutoConverse(true);
+                onClick={() => {
                   setAutoSpeak(true);
                   startVoiceRecording();
                 }}
                 disabled={isLoading || isTranscribing}
-                title="Maintenir pour parler, ou taper puis relâcher après 1,5 s de silence"
+                title="Cliquez pour parler — l'envoi est automatique après 1,5 s de silence"
               >
                 {isTranscribing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mic className="h-4 w-4" />}
               </Button>
