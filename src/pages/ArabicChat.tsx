@@ -450,15 +450,15 @@ const ArabicChat = () => {
               Parlez et apprenez
             </p>
             {/* Bouton STOP discret, visible uniquement pendant la conversation vocale */}
-            {(autoConverse || recorder.isRecording) && (
+            {recorder.isRecording && (
               <div className="flex items-center justify-center mt-2">
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                  onClick={stopAutoConverse}
-                  title="Arrêter la conversation"
-                  aria-label="Arrêter la conversation"
+                  onClick={stopVoice}
+                  title="Arrêter l'enregistrement"
+                  aria-label="Arrêter l'enregistrement"
                 >
                   <Square className="h-4 w-4 fill-current" />
                 </Button>
