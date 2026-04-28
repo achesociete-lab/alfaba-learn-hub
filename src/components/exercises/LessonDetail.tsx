@@ -308,28 +308,19 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
   const [answerCorrect, setAnswerCorrect] = useState(false);
   const [wrongAnswers, setWrongAnswers] = useState<WrongAnswer[]>([]);
   const currentRef = useRef(current);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const { speak, stop: stopSpeech } = useArabicSpeech();
 
   if (dictList.length === 0) return <p className="text-center text-muted-foreground p-4">Aucune dictée disponible.</p>;
   const d = dictList[current];
   const correctArabic = d.options[d.correctIndex];
 
-  const teacherClipUrl = getTeacherClipUrl(correctArabic);
-
   const playDictation = async () => {
-    if (!teacherClipUrl) return;
     setIsPlaying(true);
     try {
-      if (audioRef.current) { audioRef.current.pause(); }
-      const audio = new Audio(teacherClipUrl);
-      audioRef.current = audio;
-      await audio.play();
-      await new Promise<void>((resolve) => {
-        audio.addEventListener("ended", () => resolve(), { once: true });
-        audio.addEventListener("error", () => resolve(), { once: true });
-      });
+      stopSpeech();
+      await speak(correctArabic, 0.75);
     } catch (e) {
-      console.warn("Teacher clip playback failed:", e);
+      console.warn("Dictation playback failed:", e);
     } finally {
       setIsPlaying(false);
     }
