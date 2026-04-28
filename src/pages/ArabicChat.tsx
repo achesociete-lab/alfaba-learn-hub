@@ -186,8 +186,17 @@ const ArabicChat = () => {
     const run = async () => {
       setIsTranscribing(true);
       try {
+        const blob = recorder.audioBlob!;
+        // Choisir une extension de fichier cohérente avec le MIME réel
+        // (Safari produit mp4/aac, Chrome/Android produit webm/opus).
+        const mt = blob.type || "audio/webm";
+        let ext = "webm";
+        if (mt.includes("mp4")) ext = "mp4";
+        else if (mt.includes("aac")) ext = "aac";
+        else if (mt.includes("ogg")) ext = "ogg";
+        else if (mt.includes("wav")) ext = "wav";
         const formData = new FormData();
-        formData.append("file", recorder.audioBlob!, "voice.webm");
+        formData.append("file", blob, `voice.${ext}`);
         formData.append("language_code", "ara");
         const resp = await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-stt`,
@@ -626,7 +635,18 @@ const ArabicChat = () => {
             )}
 
             {recorder.isRecording ? (
-              <Button variant="destructive" size="icon" className="shrink-0" onClick={transcribeAndSend} disabled={isTranscribing}>
+              <Button
+                variant="destructive"
+                size="icon"
+                className="shrink-0"
+                onClick={transcribeAndSend}
+                onPointerUp={() => {
+                  // Push-to-talk : relâcher = envoyer
+                  if (recorder.isRecording) recorder.stopRecording();
+                }}
+                disabled={isTranscribing}
+                title="Relâcher pour envoyer"
+              >
                 <Square className="h-4 w-4" />
               </Button>
             ) : (
@@ -634,13 +654,15 @@ const ArabicChat = () => {
                 variant="outline"
                 size="icon"
                 className="shrink-0"
-                onClick={() => {
-                  // Démarrage manuel de la conversation vocale par l'élève
+                onPointerDown={(e) => {
+                  // Tap ou hold : démarrer immédiatement l'enregistrement
+                  e.preventDefault();
                   setAutoConverse(true);
                   setAutoSpeak(true);
                   startVoiceRecording();
                 }}
                 disabled={isLoading || isTranscribing}
+                title="Maintenir pour parler, ou taper puis relâcher après 1,5 s de silence"
               >
                 {isTranscribing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mic className="h-4 w-4" />}
               </Button>
