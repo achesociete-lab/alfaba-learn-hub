@@ -656,12 +656,9 @@ const LessonDetail = ({ lesson, onBack, onComplete, nextLessonId, onNextLesson, 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="p-4 rounded-xl border border-primary bg-primary/10 text-center space-y-3">
           <p className="text-foreground font-semibold">🎉 Leçon complète !</p>
           <div className="flex flex-wrap justify-center gap-3">
-            <Button onClick={handleComplete} className="gap-2">
-              <CheckCircle className="h-4 w-4" /> Valider la leçon
-            </Button>
-            {nextLessonId && onNextLesson && (
+            {nextLessonId && onNextLesson ? (
               nextLessonId <= maxLessons ? (
-                <Button onClick={() => { handleComplete(); onNextLesson(nextLessonId); }} variant="outline" className="gap-2">
+                <Button onClick={() => { handleComplete(); onNextLesson(nextLessonId); }} className="gap-2">
                   Leçon suivante <ArrowRight className="h-4 w-4" />
                 </Button>
               ) : (
@@ -671,6 +668,10 @@ const LessonDetail = ({ lesson, onBack, onComplete, nextLessonId, onNextLesson, 
                   </Button>
                 </a>
               )
+            ) : (
+              <Button onClick={handleComplete} className="gap-2">
+                <CheckCircle className="h-4 w-4" /> Terminer
+              </Button>
             )}
           </div>
         </motion.div>
