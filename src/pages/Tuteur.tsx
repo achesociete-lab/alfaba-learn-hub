@@ -429,8 +429,8 @@ const Tuteur = () => {
                           });
                         })()}
                       </div>
-                      {q.translit && <p className="text-base text-muted-foreground">{q.translit}</p>}
-                      {q.meaning_fr && <p className="text-sm italic text-foreground/70">{q.meaning_fr}</p>}
+                      {revealed && q.translit && <p className="text-base text-muted-foreground">{q.translit}</p>}
+                      {revealed && q.meaning_fr && <p className="text-sm italic text-foreground/70">{q.meaning_fr}</p>}
                     </CardContent>
                   </Card>
 
