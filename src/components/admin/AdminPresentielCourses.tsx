@@ -286,43 +286,14 @@ const AdminPresentielCourses = () => {
             )}
           </div>
 
-          {/* Bloc Génération IA */}
-          <div className="p-4 rounded-lg border-2 border-dashed border-gold/50 bg-gradient-to-br from-gold/5 to-emerald/5 space-y-3">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-gold" />
-              <h4 className="font-semibold text-foreground">Génération automatique par IA</h4>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Indique un thème et le niveau ci-dessous, l'IA remplira automatiquement le texte arabe, le vocabulaire,
-              la dictée {draft.level === "niveau_2" && "ainsi que les questions de compréhension et phrases à remettre en ordre"}.
-            </p>
-            <div className="flex gap-2">
-              <Input
-                value={aiTheme}
-                onChange={(e) => setAiTheme(e.target.value)}
-                placeholder="Ex: La famille, Les couleurs, Le verbe au présent…"
-                disabled={generating}
-                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleGenerateAI(); } }}
-              />
-              <Button
-                onClick={handleGenerateAI}
-                disabled={generating || !aiTheme.trim()}
-                className="gradient-gold border-0 text-primary-foreground shrink-0"
-              >
-                {generating
-                  ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" />Génération…</>)
-                  : (<><Wand2 className="h-4 w-4 mr-2" />Générer</>)}
-              </Button>
-            </div>
-          </div>
-
+          {/* Niveau (nécessaire avant la génération) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="md:col-span-2">
               <Label>Titre du cours</Label>
               <Input
                 value={draft.title}
                 onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-                placeholder="Ex: Leçon du 21 avril – Le verbe"
+                placeholder="Sera rempli automatiquement après la génération"
               />
             </div>
             <div>
@@ -346,41 +317,72 @@ const AdminPresentielCourses = () => {
             />
           </div>
 
-          {/* Photo de la leçon */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <ImageIcon className="h-4 w-4" /> Photo de la leçon (page du livre)
-            </Label>
+          {/* Bloc PRINCIPAL : Photo → OCR → Génération automatique de tout */}
+          <div className="p-4 rounded-lg border-2 border-dashed border-gold/60 bg-gradient-to-br from-gold/10 to-emerald/5 space-y-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-gold" />
+              <h4 className="font-semibold text-foreground">
+                Génération automatique depuis la photo de la leçon
+              </h4>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Téléverse la photo de la page du livre. L'IA va <strong>extraire le texte arabe</strong> avec les harakat,
+              puis générer automatiquement le titre, le vocabulaire, la dictée
+              {draft.level === "niveau_2" && ", les questions de compréhension et la remise en ordre"}.
+              Tout sera basé sur le texte exact de ta leçon.
+            </p>
+
             {draft.photo_url ? (
-              <div className="relative rounded-lg border border-border overflow-hidden bg-muted/20">
-                <img
-                  src={draft.photo_url}
-                  alt="Aperçu de la leçon"
-                  className="w-full max-h-72 object-contain bg-white"
-                />
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  className="absolute top-2 right-2"
-                  onClick={() => setDraft({ ...draft, photo_url: null })}
-                >
-                  <X className="h-4 w-4 mr-1" /> Supprimer
-                </Button>
+              <div className="space-y-2">
+                <div className="relative rounded-lg border border-border overflow-hidden bg-white">
+                  <img
+                    src={draft.photo_url}
+                    alt="Aperçu de la leçon"
+                    className="w-full max-h-80 object-contain"
+                  />
+                  {generating && (
+                    <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center gap-2">
+                      <Loader2 className="h-8 w-8 animate-spin text-gold" />
+                      <span className="text-sm font-medium">Extraction et génération en cours…</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleRegenerateFromPhoto}
+                    disabled={generating}
+                  >
+                    {generating
+                      ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" />Génération…</>)
+                      : (<><Wand2 className="h-4 w-4 mr-2" />Régénérer depuis cette photo</>)}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setDraft({ ...draft, photo_url: null })}
+                    disabled={generating}
+                  >
+                    <X className="h-4 w-4 mr-1" /> Retirer la photo
+                  </Button>
+                </div>
               </div>
             ) : (
-              <label className="flex flex-col items-center justify-center gap-2 p-6 rounded-lg border-2 border-dashed border-border hover:border-primary/50 hover:bg-muted/30 cursor-pointer transition">
-                {uploadingPhoto
-                  ? <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                  : <Upload className="h-6 w-6 text-muted-foreground" />}
-                <span className="text-sm text-muted-foreground">
-                  {uploadingPhoto ? "Téléchargement…" : "Cliquer pour téléverser une photo"}
+              <label className="flex flex-col items-center justify-center gap-2 p-8 rounded-lg border-2 border-dashed border-gold/40 hover:border-gold hover:bg-gold/5 cursor-pointer transition bg-background/50">
+                {uploadingPhoto || generating
+                  ? <Loader2 className="h-8 w-8 animate-spin text-gold" />
+                  : <Upload className="h-8 w-8 text-gold" />}
+                <span className="text-sm font-medium text-foreground">
+                  {uploadingPhoto ? "Téléchargement…" : generating ? "Extraction du texte…" : "Téléverser la photo de la leçon"}
                 </span>
-                <span className="text-xs text-muted-foreground">JPG, PNG · max 10 Mo</span>
+                <span className="text-xs text-muted-foreground">JPG, PNG · max 10 Mo · OCR + génération automatique</span>
                 <input
                   type="file"
                   accept="image/*"
+                  capture="environment"
                   className="hidden"
-                  disabled={uploadingPhoto}
+                  disabled={uploadingPhoto || generating}
                   onChange={(e) => {
                     const f = e.target.files?.[0];
                     if (f) handlePhotoUpload(f);
@@ -390,6 +392,32 @@ const AdminPresentielCourses = () => {
               </label>
             )}
           </div>
+
+          {/* Alternative : génération depuis un thème (sans photo) */}
+          <details className="rounded-lg border border-border p-3">
+            <summary className="cursor-pointer text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Sparkles className="h-4 w-4" /> Pas de photo ? Générer depuis un thème
+            </summary>
+            <div className="flex gap-2 mt-3">
+              <Input
+                value={aiTheme}
+                onChange={(e) => setAiTheme(e.target.value)}
+                placeholder="Ex: La famille, Les couleurs, Le verbe au présent…"
+                disabled={generating}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleGenerateAI(); } }}
+              />
+              <Button
+                onClick={handleGenerateAI}
+                disabled={generating || !aiTheme.trim()}
+                variant="outline"
+                className="shrink-0"
+              >
+                {generating
+                  ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" />Génération…</>)
+                  : (<><Wand2 className="h-4 w-4 mr-2" />Générer</>)}
+              </Button>
+            </div>
+          </details>
 
           {/* Lesson text */}
           <div>
