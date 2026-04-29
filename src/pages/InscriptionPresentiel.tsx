@@ -113,7 +113,7 @@ const InscriptionPresentiel = () => {
             <p className="font-semibold text-foreground mb-6">{email}</p>
             <div className="bg-gold/10 border border-gold/30 rounded-lg p-4 text-left mb-6">
               <p className="text-sm text-foreground">
-                Une fois votre email confirmé, votre compte sera <strong>en attente de validation</strong> par un professeur. Vous serez notifié dès l'activation.
+                Une fois votre email confirmé, vous pourrez vous connecter et accéder directement à vos <strong>cours en présentiel</strong>.
               </p>
             </div>
             <Link to="/auth">
