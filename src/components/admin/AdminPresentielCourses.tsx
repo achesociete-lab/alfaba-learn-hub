@@ -99,8 +99,8 @@ const AdminPresentielCourses = () => {
       setDictationInput("");
       toast.success("Leçon extraite et cours généré ! Vérifie et enregistre.");
     } catch (e: any) {
-      console.error(e);
-      toast.error(e.message || "Erreur génération IA");
+      console.error("[generateFromPhoto]", e);
+      toast.error(e.message || "Erreur génération IA", { duration: 8000 });
     } finally {
       setGenerating(false);
     }
