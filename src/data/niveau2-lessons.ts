@@ -296,7 +296,7 @@ export const niveau2Lessons: Niveau2Lesson[] = [
       },
       {
         title: "Le duel",
-        explanation: "Le duel (pour deux) ajoute ان (âni) avec damma (-ou) ou يْن (ayni) avec fatha (-a)/génitif.",
+        explanation: "Le duel (pour deux) ajoute ان (âni) en position sujet, ou يْن (ayni) en position complément.",
         examples: [
           { arabic: "كِتَابَانِ", transliteration: "kitâbâni", meaning: "deux livres" },
           { arabic: "طَالِبَتَانِ", transliteration: "tâlibatâni", meaning: "deux étudiantes" },
