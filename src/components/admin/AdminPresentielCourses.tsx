@@ -51,17 +51,6 @@ const emptyDraft = (): CourseDraft => ({
   photo_url: null,
 });
 
-const emptyDraft = (): CourseDraft => ({
-  title: "",
-  level: "niveau_1",
-  course_date: new Date().toISOString().slice(0, 10),
-  lesson_text: "",
-  vocabulary: [{ arabic: "", french: "" }],
-  comprehension_questions: [{ question: "", answer: "" }],
-  reorder_exercises: [{ words: [], correct_order: [] }],
-  dictation_words: [],
-  assigned_user_ids: [],
-});
 
 const AdminPresentielCourses = () => {
   const { user } = useAuth();
