@@ -324,7 +324,7 @@ const Auth = () => {
             <button
               onClick={() => {
                 setIsLogin(!isLogin);
-                setSignupStep("mode");
+                setSignupStep("info");
               }}
               className="text-primary font-medium hover:underline"
             >
