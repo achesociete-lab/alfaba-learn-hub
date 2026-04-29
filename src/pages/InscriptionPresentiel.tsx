@@ -145,6 +145,8 @@ const InscriptionPresentiel = () => {
           <h1 className="text-2xl font-bold text-foreground text-center mb-2">Créez votre compte</h1>
           <p className="text-sm text-muted-foreground text-center mb-6">
             Réservé aux élèves suivant les cours sur place. Validation par un professeur requise.
+          </p>
+
           <Button
             type="button"
             variant="outline"
