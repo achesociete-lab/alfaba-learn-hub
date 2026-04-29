@@ -63,6 +63,38 @@ const AdminPresentielCourses = () => {
   const [generating, setGenerating] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
+  const generateFromPhoto = async (publicUrl: string, levelOverride?: Level) => {
+    setGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("presentiel-ai-generate", {
+        body: { photo_url: publicUrl, level: levelOverride || draft.level },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const c = data.course;
+      setDraft((prev) => ({
+        ...prev,
+        photo_url: publicUrl,
+        title: c.title || prev.title,
+        lesson_text: c.lesson_text || "",
+        vocabulary: Array.isArray(c.vocabulary) && c.vocabulary.length ? c.vocabulary : [{ arabic: "", french: "" }],
+        dictation_words: Array.isArray(c.dictation_words) ? c.dictation_words : [],
+        comprehension_questions: Array.isArray(c.comprehension_questions) && c.comprehension_questions.length
+          ? c.comprehension_questions : [{ question: "", answer: "" }],
+        reorder_exercises: Array.isArray(c.reorder_exercises) && c.reorder_exercises.length
+          ? c.reorder_exercises.map((r: any) => ({ words: r.correct_order || [], correct_order: r.correct_order || [] }))
+          : [{ words: [], correct_order: [] }],
+      }));
+      setDictationInput("");
+      toast.success("Leçon extraite et cours généré ! Vérifie et enregistre.");
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e.message || "Erreur génération IA");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const handlePhotoUpload = async (file: File) => {
     if (!user) return;
     if (!file.type.startsWith("image/")) { toast.error("Fichier image requis"); return; }
@@ -77,13 +109,20 @@ const AdminPresentielCourses = () => {
       if (upErr) throw upErr;
       const { data: { publicUrl } } = supabase.storage.from("presentiel-courses").getPublicUrl(path);
       setDraft((d) => ({ ...d, photo_url: publicUrl }));
-      toast.success("Photo téléchargée");
+      toast.success("Photo téléchargée — extraction du texte en cours…");
+      // Lancer immédiatement OCR + génération
+      await generateFromPhoto(publicUrl);
     } catch (e: any) {
       console.error(e);
       toast.error(e.message || "Erreur upload");
     } finally {
       setUploadingPhoto(false);
     }
+  };
+
+  const handleRegenerateFromPhoto = async () => {
+    if (!draft.photo_url) { toast.error("Pas de photo"); return; }
+    await generateFromPhoto(draft.photo_url);
   };
 
   const handleGenerateAI = async () => {
