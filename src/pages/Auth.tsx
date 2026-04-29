@@ -162,22 +162,14 @@ const Auth = () => {
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
               <Mail className="h-8 w-8 text-primary" />
             </div>
-            <h1 className="text-2xl font-bold text-foreground mb-2">
-              {learningMode === "presentiel" ? "Inscription enregistrée" : "Vérifiez votre email"}
-            </h1>
+            <h1 className="text-2xl font-bold text-foreground mb-2">Vérifiez votre email</h1>
             <p className="text-muted-foreground mb-2">
               Un email de vérification a été envoyé à :
             </p>
             <p className="font-semibold text-foreground mb-6">{email}</p>
-            {learningMode === "presentiel" ? (
-              <div className="bg-gold/10 border border-gold/30 rounded-lg p-4 text-left mb-4 text-sm text-foreground">
-                Une fois votre email confirmé, votre compte sera <strong>en attente de validation</strong> par un professeur. Vous serez notifié dès l'activation.
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground mb-6">
-                Cliquez sur le lien dans l'email pour activer votre compte. Vérifiez aussi vos spams.
-              </p>
-            )}
+            <p className="text-sm text-muted-foreground mb-6">
+              Cliquez sur le lien dans l'email pour activer votre compte. Vérifiez aussi vos spams.
+            </p>
 
             <div className="space-y-3">
               <Button onClick={handleResendEmail} disabled={resending} variant="outline" className="w-full">
@@ -187,7 +179,7 @@ const Auth = () => {
                 onClick={() => {
                   setShowVerification(false);
                   setIsLogin(true);
-                  setSignupStep("mode");
+                  setSignupStep("info");
                 }}
                 className="w-full gradient-emerald border-0 text-primary-foreground"
               >
