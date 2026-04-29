@@ -651,7 +651,12 @@ function ComprehensionStep({ course, onDone }: { course: PresentielCourseV2; onD
   const validate = () => {
     const ok = normalize(answer) === normalize(current.answer);
     setValidated(ok);
-    if (ok) setScore((s) => s + 1);
+    if (ok) {
+      setScore((s) => s + 1);
+      playCorrectSound();
+    } else {
+      playWrongSound();
+    }
   };
 
   const next = () => {
