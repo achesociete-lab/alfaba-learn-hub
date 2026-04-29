@@ -31,15 +31,14 @@ const ProfileGuard = () => {
     return <Navigate to="/compte-en-attente" replace />;
   }
 
-  if (!isComplete && profile?.type_eleve !== "en_attente") {
-    return <Navigate to="/complete-profile" replace />;
-  }
-
   // Élèves présentiel : accès UNIQUEMENT à /cours-presentiel (admins exemptés)
+  // On NE force PAS la complétion de profil pour eux (gérée par le prof)
   if (profile?.type_eleve === "presentiel" && !isAdmin) {
     if (!PRESENTIEL_ALLOWED.has(location.pathname)) {
       return <Navigate to="/cours-presentiel" replace />;
     }
+  } else if (!isComplete && profile?.type_eleve !== "en_attente") {
+    return <Navigate to="/complete-profile" replace />;
   }
 
   return <Outlet />;
