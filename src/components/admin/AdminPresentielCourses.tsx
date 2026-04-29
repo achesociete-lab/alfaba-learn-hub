@@ -127,6 +127,7 @@ const AdminPresentielCourses = () => {
         : [{ words: [], correct_order: [] }],
       dictation_words: Array.isArray(c.dictation_words) ? c.dictation_words : [],
       assigned_user_ids: (c.presentiel_course_assignments || []).map((a: any) => a.user_id),
+      photo_url: c.photo_url || null,
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -146,6 +147,7 @@ const AdminPresentielCourses = () => {
         comprehension_questions: draft.comprehension_questions.filter(q => q.question.trim() && q.answer.trim()) as any,
         reorder_exercises: draft.reorder_exercises.filter(r => r.correct_order.length > 0) as any,
         dictation_words: draft.dictation_words.filter(w => w.trim()) as any,
+        photo_url: draft.photo_url,
       };
 
       let courseId = draft.id;
