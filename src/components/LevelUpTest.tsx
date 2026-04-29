@@ -1,90 +1,74 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Trophy, ArrowRight, CheckCircle, XCircle, RotateCcw,
   GraduationCap, Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { playCorrectSound, playWrongSound } from "@/utils/sound-feedback";
+import { LEVEL_UP_QUESTION_BANK, type BankQuestion } from "@/data/levelup-question-bank";
 
 interface Props {
   onPass: () => void;
   onDismiss: () => void;
 }
 
-interface Question {
-  question: string;
-  options: string[];
-  correctIndex: number;
+const TOTAL_QUESTIONS = 40;
+const PASS_PERCENTAGE = 80; // 80%
+const PASS_THRESHOLD = Math.ceil((TOTAL_QUESTIONS * PASS_PERCENTAGE) / 100); // 32/40
+
+// Tirage aléatoire sans répétition, équilibré par catégorie
+function pickQuestions(bank: BankQuestion[], count: number): BankQuestion[] {
+  // Grouper par catégorie
+  const byCat: Record<string, BankQuestion[]> = {};
+  for (const q of bank) {
+    (byCat[q.category] ||= []).push(q);
+  }
+  const categories = Object.keys(byCat);
+  // Mélanger chaque catégorie
+  for (const cat of categories) {
+    byCat[cat] = [...byCat[cat]].sort(() => Math.random() - 0.5);
+  }
+  // Distribuer équitablement
+  const result: BankQuestion[] = [];
+  const seen = new Set<string>();
+  let i = 0;
+  while (result.length < count) {
+    let added = false;
+    for (const cat of categories) {
+      if (result.length >= count) break;
+      const q = byCat[cat][i];
+      if (q && !seen.has(q.question)) {
+        result.push(q);
+        seen.add(q.question);
+        added = true;
+      }
+    }
+    if (!added) break;
+    i++;
+  }
+  // Remélange final
+  return result.sort(() => Math.random() - 0.5);
 }
-
-const TEST_QUESTIONS: Question[] = [
-  {
-    question: "Combien de lettres compte l'alphabet arabe ?",
-    options: ["26", "28", "30", "24"],
-    correctIndex: 1,
-  },
-  {
-    question: "Quelle voyelle courte correspond au son « a » ?",
-    options: ["Damma (ضمة)", "Kasra (كسرة)", "Fatha (فتحة)", "Soukoun (سكون)"],
-    correctIndex: 2,
-  },
-  {
-    question: "Que signifie le mot « بَيْت » ?",
-    options: ["Livre", "Maison", "Porte", "Eau"],
-    correctIndex: 1,
-  },
-  {
-    question: "Les lettres ا د ذ ر ز و sont appelées :",
-    options: ["Lettres solaires", "Lettres lunaires", "Lettres non-liantes", "Lettres emphatiques"],
-    correctIndex: 2,
-  },
-  {
-    question: "Le tanwîn « ـًا » se prononce :",
-    options: ["-in", "-un", "-an", "-ou"],
-    correctIndex: 2,
-  },
-  {
-    question: "Quel signe indique le doublement d'une consonne ?",
-    options: ["Sukun", "Hamza", "Shadda", "Madda"],
-    correctIndex: 2,
-  },
-  {
-    question: "La voyelle longue « و » correspond à quel son court ?",
-    options: ["Fatha", "Kasra", "Damma", "Sukun"],
-    correctIndex: 2,
-  },
-  {
-    question: "Comment se lit « كِتَابٌ » ?",
-    options: ["Kitâbun", "Kutubun", "Katabun", "Katîbun"],
-    correctIndex: 0,
-  },
-  {
-    question: "Choisissez le mot correctement voyellé pour « école » :",
-    options: ["مَدْرَسَة", "مُدْرَسَة", "مِدْرَسَة", "مَدْرِسَة"],
-    correctIndex: 0,
-  },
-  {
-    question: "Le Sukun (سكون) indique :",
-    options: ["Une voyelle longue", "L'absence de voyelle", "Un doublement", "Le tanwîn"],
-    correctIndex: 1,
-  },
-];
-
-const PASS_THRESHOLD = 7; // 7/10
 
 const LevelUpTest = ({ onPass, onDismiss }: Props) => {
   const { user } = useAuth();
+  const [questions, setQuestions] = useState<BankQuestion[]>(() =>
+    pickQuestions(LEVEL_UP_QUESTION_BANK, TOTAL_QUESTIONS)
+  );
   const [current, setCurrent] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
 
-  const q = TEST_QUESTIONS[current];
+  const q = questions[current];
+  const total = questions.length;
+  const progress = useMemo(() => ((current + (selected !== null ? 1 : 0)) / total) * 100, [current, selected, total]);
 
   const handleSelect = (idx: number) => {
     if (selected !== null) return;
@@ -98,7 +82,7 @@ const LevelUpTest = ({ onPass, onDismiss }: Props) => {
   };
 
   const next = () => {
-    if (current + 1 >= TEST_QUESTIONS.length) {
+    if (current + 1 >= total) {
       setFinished(true);
     } else {
       setCurrent((c) => c + 1);
@@ -107,6 +91,7 @@ const LevelUpTest = ({ onPass, onDismiss }: Props) => {
   };
 
   const reset = () => {
+    setQuestions(pickQuestions(LEVEL_UP_QUESTION_BANK, TOTAL_QUESTIONS));
     setCurrent(0);
     setSelected(null);
     setScore(0);
@@ -114,6 +99,7 @@ const LevelUpTest = ({ onPass, onDismiss }: Props) => {
   };
 
   const passed = score >= PASS_THRESHOLD;
+  const percentage = Math.round((score / total) * 100);
 
   const handleUpgrade = useCallback(async () => {
     if (!user) return;
@@ -149,7 +135,7 @@ const LevelUpTest = ({ onPass, onDismiss }: Props) => {
               🎉 Test réussi !
             </h2>
             <p className="text-lg text-muted-foreground mb-1">
-              Score : <span className="font-bold text-primary">{score}</span> / {TEST_QUESTIONS.length}
+              Score : <span className="font-bold text-primary">{score}</span> / {total} ({percentage}%)
             </p>
             <p className="text-muted-foreground mb-6">
               Tu as validé le Niveau 1 avec succès. Tu es prêt(e) pour le Niveau 2 !
@@ -177,11 +163,11 @@ const LevelUpTest = ({ onPass, onDismiss }: Props) => {
               Continue à t'entraîner !
             </h2>
             <p className="text-lg text-muted-foreground mb-1">
-              Score : <span className="font-bold text-destructive">{score}</span> / {TEST_QUESTIONS.length}
+              Score : <span className="font-bold text-destructive">{score}</span> / {total} ({percentage}%)
             </p>
             <p className="text-muted-foreground mb-6">
-              Il faut au moins {PASS_THRESHOLD}/{TEST_QUESTIONS.length} pour passer au Niveau 2.
-              Revois tes leçons et réessaie.
+              Il faut au moins {PASS_THRESHOLD}/{total} ({PASS_PERCENTAGE}%) pour passer au Niveau 2.
+              Revois tes leçons et réessaie avec de nouvelles questions.
             </p>
             <div className="flex gap-3 justify-center">
               <Button onClick={reset} className="gap-2">
@@ -199,18 +185,20 @@ const LevelUpTest = ({ onPass, onDismiss }: Props) => {
 
   return (
     <div className="max-w-lg mx-auto space-y-4">
-      <div className="text-center mb-6">
+      <div className="text-center mb-4">
         <h2 className="text-xl font-bold text-foreground flex items-center justify-center gap-2">
           <GraduationCap className="h-6 w-6 text-primary" />
           Test de passage — Niveau 2
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Réponds correctement à au moins {PASS_THRESHOLD}/{TEST_QUESTIONS.length} questions
+          Score requis : {PASS_THRESHOLD}/{total} ({PASS_PERCENTAGE}%)
         </p>
       </div>
 
+      <Progress value={progress} className="h-2" />
+
       <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <span>Question {current + 1} / {TEST_QUESTIONS.length}</span>
+        <span>Question {current + 1} / {total}</span>
         <span>Score : {score}</span>
       </div>
 
@@ -254,7 +242,7 @@ const LevelUpTest = ({ onPass, onDismiss }: Props) => {
       {selected !== null && (
         <div className="flex justify-end">
           <Button onClick={next} className="gap-2">
-            {current + 1 >= TEST_QUESTIONS.length ? "Voir le résultat" : "Suivant"}
+            {current + 1 >= total ? "Voir le résultat" : "Suivant"}
             <ArrowRight className="h-4 w-4" />
           </Button>
         </div>
