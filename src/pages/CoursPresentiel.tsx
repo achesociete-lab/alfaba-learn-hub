@@ -16,6 +16,7 @@ interface PresentielCourse {
   title: string;
   course_date: string;
   photo_url: string | null;
+  lesson_photos?: string[];
   level: "niveau_1" | "niveau_2";
   lesson_text: string | null;
   vocabulary: { arabic: string; french: string }[];
