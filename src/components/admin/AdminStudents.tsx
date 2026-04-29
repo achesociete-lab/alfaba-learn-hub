@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
-import { Users, Search, Trash2 } from "lucide-react";
+import { Users, Search, Trash2, Check, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,12 +34,22 @@ const AdminStudents = () => {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [togglingType, setTogglingType] = useState<string | null>(null);
 
+  const [validating, setValidating] = useState<string | null>(null);
+
   const fetchStudents = async () => {
     const { data } = await supabase
       .from("profiles")
       .select("user_id, first_name, last_name, level, type_eleve, created_at")
       .order("created_at", { ascending: false });
-    if (data) setStudents(data);
+    if (data) {
+      // Pending first
+      const sorted = [...data].sort((a, b) => {
+        const aPending = a.type_eleve === "en_attente" ? 0 : 1;
+        const bPending = b.type_eleve === "en_attente" ? 0 : 1;
+        return aPending - bPending;
+      });
+      setStudents(sorted);
+    }
   };
 
   useEffect(() => {
@@ -65,6 +75,35 @@ const AdminStudents = () => {
       toast.error(err.message || "Erreur lors de la suppression");
     } finally {
       setDeleting(null);
+    }
+  };
+
+  const handleValidate = async (s: StudentProfile) => {
+    setValidating(s.user_id);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ type_eleve: "presentiel" } as any)
+        .eq("user_id", s.user_id);
+      if (error) throw error;
+
+      // Notify the student by email (best-effort)
+      supabase.functions
+        .invoke("notify-presentiel-approved", {
+          body: { studentName: s.first_name, userId: s.user_id },
+        })
+        .catch((err) => console.warn("notify-presentiel-approved fail", err));
+
+      setStudents((prev) =>
+        prev.map((st) =>
+          st.user_id === s.user_id ? { ...st, type_eleve: "presentiel" as any } : st
+        )
+      );
+      toast.success(`${s.first_name} a été validé(e) et notifié(e) par email`);
+    } catch (err: any) {
+      toast.error(err.message || "Erreur lors de la validation");
+    } finally {
+      setValidating(null);
     }
   };
 
@@ -132,26 +171,43 @@ const AdminStudents = () => {
             }>
               {s.level === "niveau_1" ? "Niveau 1" : "Niveau 2"}
             </Badge>
-            <button
-              disabled={togglingType === s.user_id}
-              onClick={async () => {
-                setTogglingType(s.user_id);
-                const newType = s.type_eleve === "en_ligne" ? "presentiel" : "en_ligne";
-                const { error } = await supabase.from("profiles").update({ type_eleve: newType } as any).eq("user_id", s.user_id);
-                if (error) { toast.error("Erreur"); } else {
-                  setStudents(prev => prev.map(st => st.user_id === s.user_id ? { ...st, type_eleve: newType as any } : st));
-                  toast.success(`${s.first_name} est maintenant "${newType === "en_ligne" ? "En ligne" : "Présentiel"}"`);
-                }
-                setTogglingType(null);
-              }}
-              className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${
-                s.type_eleve === "presentiel"
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-border text-muted-foreground hover:border-primary/30"
-              }`}
-            >
-              {s.type_eleve === "presentiel" ? "📍 Présentiel" : "💻 En ligne"}
-            </button>
+            {s.type_eleve === "en_attente" ? (
+              <>
+                <Badge variant="destructive" className="gap-1">
+                  <Clock className="h-3 w-3" /> En attente
+                </Badge>
+                <Button
+                  size="sm"
+                  disabled={validating === s.user_id}
+                  onClick={() => handleValidate(s)}
+                  className="gradient-emerald border-0 text-primary-foreground"
+                >
+                  <Check className="h-4 w-4 mr-1" />
+                  {validating === s.user_id ? "Validation…" : "Valider"}
+                </Button>
+              </>
+            ) : (
+              <button
+                disabled={togglingType === s.user_id}
+                onClick={async () => {
+                  setTogglingType(s.user_id);
+                  const newType = s.type_eleve === "en_ligne" ? "presentiel" : "en_ligne";
+                  const { error } = await supabase.from("profiles").update({ type_eleve: newType } as any).eq("user_id", s.user_id);
+                  if (error) { toast.error("Erreur"); } else {
+                    setStudents(prev => prev.map(st => st.user_id === s.user_id ? { ...st, type_eleve: newType as any } : st));
+                    toast.success(`${s.first_name} est maintenant "${newType === "en_ligne" ? "En ligne" : "Présentiel"}"`);
+                  }
+                  setTogglingType(null);
+                }}
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${
+                  s.type_eleve === "presentiel"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border text-muted-foreground hover:border-primary/30"
+                }`}
+              >
+                {s.type_eleve === "presentiel" ? "📍 Présentiel" : "💻 En ligne"}
+              </button>
+            )}
 
             <AlertDialog>
               <AlertDialogTrigger asChild>

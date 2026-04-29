@@ -6,13 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { BookOpen, ArrowLeft, Mail, CheckCircle, ArrowRight, Laptop, MapPin } from "lucide-react";
+import { BookOpen, ArrowLeft, Mail, CheckCircle, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import PlacementTest from "@/components/PlacementTest";
 import { useAuth } from "@/contexts/AuthContext";
 
-type SignupStep = "mode" | "info" | "test";
-type LearningMode = "en_ligne" | "presentiel";
+type SignupStep = "info" | "test";
 
 const Auth = () => {
   const { user, loading: authLoading } = useAuth();
@@ -27,8 +26,7 @@ const Auth = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
   const [resending, setResending] = useState(false);
-  const [signupStep, setSignupStep] = useState<SignupStep>("mode");
-  const [learningMode, setLearningMode] = useState<LearningMode>("en_ligne");
+  const [signupStep, setSignupStep] = useState<SignupStep>("info");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -65,7 +63,6 @@ const Auth = () => {
 
   const handleSignup = async (signupLevel?: "niveau_1" | "niveau_2") => {
     const finalLevel = signupLevel || level;
-    const isPresentiel = learningMode === "presentiel";
     setLoading(true);
     try {
       const { data, error } = await supabase.auth.signUp({
@@ -76,7 +73,6 @@ const Auth = () => {
             first_name: firstName,
             last_name: lastName,
             level: finalLevel,
-            pending_presentiel: isPresentiel,
           },
           emailRedirectTo: `${window.location.origin}/auth`,
         },
@@ -86,25 +82,8 @@ const Auth = () => {
       if (data.user && data.user.identities && data.user.identities.length === 0) {
         toast.error("Un compte existe déjà avec cet email. Connectez-vous.");
         setIsLogin(true);
-        setSignupStep("mode");
+        setSignupStep("info");
         return;
-      }
-
-      // Si présentiel : marquer le profil en attente + notifier admin
-      if (isPresentiel && data.user) {
-        await supabase
-          .from("profiles")
-          .update({ type_eleve: "en_attente" as any })
-          .eq("user_id", data.user.id);
-        supabase.functions
-          .invoke("notify-pending-signup", {
-            body: {
-              studentName: `${firstName} ${lastName}`,
-              studentEmail: email,
-              userId: data.user.id,
-            },
-          })
-          .catch((err) => console.warn("notify-pending-signup fail", err));
       }
 
       setShowVerification(true);
@@ -146,12 +125,7 @@ const Auth = () => {
       toast.error("Les mots de passe ne correspondent pas");
       return;
     }
-    // Présentiel : pas de test de niveau, on inscrit directement
-    if (learningMode === "presentiel") {
-      handleSignup("niveau_1");
-    } else {
-      setSignupStep("test");
-    }
+    setSignupStep("test");
   };
 
   const handleTestComplete = (determinedLevel: "niveau_1" | "niveau_2") => {
@@ -188,22 +162,14 @@ const Auth = () => {
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
               <Mail className="h-8 w-8 text-primary" />
             </div>
-            <h1 className="text-2xl font-bold text-foreground mb-2">
-              {learningMode === "presentiel" ? "Inscription enregistrée" : "Vérifiez votre email"}
-            </h1>
+            <h1 className="text-2xl font-bold text-foreground mb-2">Vérifiez votre email</h1>
             <p className="text-muted-foreground mb-2">
               Un email de vérification a été envoyé à :
             </p>
             <p className="font-semibold text-foreground mb-6">{email}</p>
-            {learningMode === "presentiel" ? (
-              <div className="bg-gold/10 border border-gold/30 rounded-lg p-4 text-left mb-4 text-sm text-foreground">
-                Une fois votre email confirmé, votre compte sera <strong>en attente de validation</strong> par un professeur. Vous serez notifié dès l'activation.
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground mb-6">
-                Cliquez sur le lien dans l'email pour activer votre compte. Vérifiez aussi vos spams.
-              </p>
-            )}
+            <p className="text-sm text-muted-foreground mb-6">
+              Cliquez sur le lien dans l'email pour activer votre compte. Vérifiez aussi vos spams.
+            </p>
 
             <div className="space-y-3">
               <Button onClick={handleResendEmail} disabled={resending} variant="outline" className="w-full">
@@ -213,7 +179,7 @@ const Auth = () => {
                 onClick={() => {
                   setShowVerification(false);
                   setIsLogin(true);
-                  setSignupStep("mode");
+                  setSignupStep("info");
                 }}
                 className="w-full gradient-emerald border-0 text-primary-foreground"
               >
@@ -251,81 +217,7 @@ const Auth = () => {
     );
   }
 
-  // Signup step: mode selection (en ligne / présentiel)
-  if (!isLogin && signupStep === "mode") {
-    return (
-      <div className="min-h-screen bg-background geometric-pattern flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary mb-8 transition-colors">
-            <ArrowLeft className="h-4 w-4" /> Retour à l'accueil
-          </Link>
-          <div className="bg-card border border-border rounded-xl p-8 shadow-lg">
-            <div className="flex items-center gap-2 mb-6 justify-center">
-              <BookOpen className="h-7 w-7 text-primary" />
-              <span className="font-display text-xl font-bold text-foreground">
-                ALFASL <span className="text-gradient-gold font-arabic">الفصل</span>
-              </span>
-            </div>
-            <h1 className="text-2xl font-bold text-foreground text-center mb-2">
-              Comment souhaitez-vous apprendre ?
-            </h1>
-            <p className="text-sm text-muted-foreground text-center mb-6">
-              Choisissez votre mode d'apprentissage
-            </p>
 
-            <div className="space-y-3">
-              <button
-                onClick={() => { setLearningMode("en_ligne"); setSignupStep("info"); }}
-                className="w-full p-5 rounded-xl border-2 border-border hover:border-primary hover:bg-primary/5 transition-all text-left group"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-2xl shrink-0">
-                    💻
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-semibold text-foreground flex items-center gap-2">
-                      <Laptop className="h-4 w-4" /> En ligne
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Accès immédiat à tous les cours
-                    </p>
-                  </div>
-                  <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-transform" />
-                </div>
-              </button>
-
-              <button
-                onClick={() => { setLearningMode("presentiel"); setSignupStep("info"); }}
-                className="w-full p-5 rounded-xl border-2 border-border hover:border-gold hover:bg-gold/5 transition-all text-left group"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center text-2xl shrink-0">
-                    🏫
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-semibold text-foreground flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-gold" /> En présentiel
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Validation par un professeur requise
-                    </p>
-                  </div>
-                  <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-gold group-hover:translate-x-1 transition-transform" />
-                </div>
-              </button>
-            </div>
-
-            <p className="text-sm text-muted-foreground text-center mt-6">
-              Déjà inscrit ?{" "}
-              <button onClick={() => setIsLogin(true)} className="text-primary font-medium hover:underline">
-                Se connecter
-              </button>
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background geometric-pattern flex items-center justify-center p-4">
@@ -432,7 +324,7 @@ const Auth = () => {
             <button
               onClick={() => {
                 setIsLogin(!isLogin);
-                setSignupStep("mode");
+                setSignupStep("info");
               }}
               className="text-primary font-medium hover:underline"
             >
