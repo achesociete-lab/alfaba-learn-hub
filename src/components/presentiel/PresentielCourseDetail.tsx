@@ -30,6 +30,7 @@ export interface PresentielCourseV2 {
   dictation_words: string[];
   comprehension_questions?: { question: string; answer: string }[];
   reorder_exercises?: { words: string[]; correct_order: string[] }[];
+  photo_url?: string | null;
   // legacy fields kept for compat
   qcm?: any[];
   translation?: any;
@@ -164,6 +165,17 @@ function LectureStep({ course, onDone }: { course: PresentielCourseV2; onDone: (
           <BookOpen className="h-5 w-5 text-primary" />
           <h3 className="font-semibold text-foreground text-lg">Étape 1 — Lecture</h3>
         </div>
+
+        {/* Photo de la leçon (page du livre) */}
+        {course.photo_url && (
+          <div className="rounded-xl overflow-hidden border border-border bg-muted/20">
+            <img
+              src={course.photo_url}
+              alt="Page de la leçon"
+              className="w-full max-h-[480px] object-contain bg-white"
+            />
+          </div>
+        )}
 
         {/* Texte cible avec highlighting si match */}
         <div
