@@ -78,6 +78,35 @@ const AdminStudents = () => {
     }
   };
 
+  const handleValidate = async (s: StudentProfile) => {
+    setValidating(s.user_id);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ type_eleve: "presentiel" } as any)
+        .eq("user_id", s.user_id);
+      if (error) throw error;
+
+      // Notify the student by email (best-effort)
+      supabase.functions
+        .invoke("notify-presentiel-approved", {
+          body: { studentName: s.first_name, userId: s.user_id },
+        })
+        .catch((err) => console.warn("notify-presentiel-approved fail", err));
+
+      setStudents((prev) =>
+        prev.map((st) =>
+          st.user_id === s.user_id ? { ...st, type_eleve: "presentiel" as any } : st
+        )
+      );
+      toast.success(`${s.first_name} a été validé(e) et notifié(e) par email`);
+    } catch (err: any) {
+      toast.error(err.message || "Erreur lors de la validation");
+    } finally {
+      setValidating(null);
+    }
+  };
+
   const filtered = students.filter((s) => {
     const matchSearch =
       `${s.first_name} ${s.last_name}`.toLowerCase().includes(search.toLowerCase());
