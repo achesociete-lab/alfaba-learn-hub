@@ -56,6 +56,40 @@ const AdminPresentielCourses = () => {
   const [draft, setDraft] = useState<CourseDraft>(emptyDraft());
   const [saving, setSaving] = useState(false);
   const [dictationInput, setDictationInput] = useState("");
+  const [aiTheme, setAiTheme] = useState("");
+  const [generating, setGenerating] = useState(false);
+
+  const handleGenerateAI = async () => {
+    if (!aiTheme.trim()) { toast.error("Indique un thème"); return; }
+    setGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("presentiel-ai-generate", {
+        body: { theme: aiTheme.trim(), level: draft.level },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const c = data.course;
+      setDraft({
+        ...draft,
+        title: c.title || draft.title,
+        lesson_text: c.lesson_text || "",
+        vocabulary: Array.isArray(c.vocabulary) && c.vocabulary.length ? c.vocabulary : [{ arabic: "", french: "" }],
+        dictation_words: Array.isArray(c.dictation_words) ? c.dictation_words : [],
+        comprehension_questions: Array.isArray(c.comprehension_questions) && c.comprehension_questions.length
+          ? c.comprehension_questions : [{ question: "", answer: "" }],
+        reorder_exercises: Array.isArray(c.reorder_exercises) && c.reorder_exercises.length
+          ? c.reorder_exercises.map((r: any) => ({ words: r.correct_order || [], correct_order: r.correct_order || [] }))
+          : [{ words: [], correct_order: [] }],
+      });
+      setDictationInput("");
+      toast.success("Cours généré ! Vérifie et enregistre.");
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e.message || "Erreur génération IA");
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   const fetchData = async () => {
     const { data: c } = await supabase
