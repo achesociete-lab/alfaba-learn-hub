@@ -218,6 +218,36 @@ const AdminPresentielCourses = () => {
             )}
           </div>
 
+          {/* Bloc Génération IA */}
+          <div className="p-4 rounded-lg border-2 border-dashed border-gold/50 bg-gradient-to-br from-gold/5 to-emerald/5 space-y-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-gold" />
+              <h4 className="font-semibold text-foreground">Génération automatique par IA</h4>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Indique un thème et le niveau ci-dessous, l'IA remplira automatiquement le texte arabe, le vocabulaire,
+              la dictée {draft.level === "niveau_2" && "ainsi que les questions de compréhension et phrases à remettre en ordre"}.
+            </p>
+            <div className="flex gap-2">
+              <Input
+                value={aiTheme}
+                onChange={(e) => setAiTheme(e.target.value)}
+                placeholder="Ex: La famille, Les couleurs, Le verbe au présent…"
+                disabled={generating}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleGenerateAI(); } }}
+              />
+              <Button
+                onClick={handleGenerateAI}
+                disabled={generating || !aiTheme.trim()}
+                className="gradient-gold border-0 text-primary-foreground shrink-0"
+              >
+                {generating
+                  ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" />Génération…</>)
+                  : (<><Wand2 className="h-4 w-4 mr-2" />Générer</>)}
+              </Button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="md:col-span-2">
               <Label>Titre du cours</Label>
