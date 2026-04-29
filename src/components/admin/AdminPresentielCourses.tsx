@@ -391,7 +391,6 @@ const AdminPresentielCourses = () => {
                 <input
                   type="file"
                   accept="image/*"
-                  capture="environment"
                   className="hidden"
                   disabled={uploadingPhoto || generating}
                   onChange={(e) => {
