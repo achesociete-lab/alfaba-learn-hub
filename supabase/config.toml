@@ -17,3 +17,5 @@ project_id = "ruqudrizhrrnxowirito"
     verify_jwt = true
   [functions.notify-pending-signup]
     verify_jwt = true
+  [functions.notify-presentiel-approved]
+    verify_jwt = true
