@@ -16,6 +16,8 @@ import { useTeacherAudioClips } from "@/hooks/use-teacher-audio-clips";
 import { useAuth } from "@/contexts/AuthContext";
 import AudioClipRecorder from "@/components/admin/AudioClipRecorder";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { RefreshCw } from "lucide-react";
 
 // ─── Editable field ───
 function EditField({ label, value, onChange, dir, multiline }: { label: string; value: string; onChange: (v: string) => void; dir?: string; multiline?: boolean }) {
@@ -519,6 +521,22 @@ const AdminCourses = () => {
 
   const { lessons: n1Lessons, refetch: refetchN1 } = useNiveau1Lessons();
   const { lessons: n2Lessons, refetch: refetchN2 } = useNiveau2Lessons();
+  const [syncing, setSyncing] = useState(false);
+
+  const handleSyncLessons = async () => {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("seed-lessons");
+      if (error) throw error;
+      toast.success(`Leçons synchronisées : ${data?.seeded?.join(", ") ?? "OK"}`);
+      refetchN1();
+      refetchN2();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Échec de la synchronisation");
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const filteredN1 = n1Lessons.filter(
     (l) => l.title.toLowerCase().includes(search.toLowerCase()) || l.id.toString() === search
@@ -532,9 +550,21 @@ const AdminCourses = () => {
 
   return (
     <div>
-      <div className="flex items-center gap-3 mb-6">
-        <BookOpen className="h-5 w-5 text-primary" />
-        <h2 className="text-xl font-bold text-foreground">Cours & Contenu pédagogique</h2>
+      <div className="flex items-center justify-between gap-3 mb-6">
+        <div className="flex items-center gap-3">
+          <BookOpen className="h-5 w-5 text-primary" />
+          <h2 className="text-xl font-bold text-foreground">Cours & Contenu pédagogique</h2>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleSyncLessons}
+          disabled={syncing}
+          className="gap-2"
+        >
+          <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+          {syncing ? "Synchronisation…" : "Synchroniser leçons"}
+        </Button>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
