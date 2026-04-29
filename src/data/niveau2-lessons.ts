@@ -75,9 +75,9 @@ export const niveau2Lessons: Niveau2Lesson[] = [
         title: "Le Tanwîn — rappel",
         explanation: "Le Tanwîn ajoute un son 'n' à la fin du mot pour indiquer l'indétermination. Il existe trois formes : Tanwîn Fatha (ً), Tanwîn Damma (ٌ), Tanwîn Kasra (ٍ).",
         examples: [
-          { arabic: "كِتَابٌ", transliteration: "kitâbun", meaning: "un livre (nominatif)" },
-          { arabic: "كِتَابًا", transliteration: "kitâban", meaning: "un livre (accusatif)" },
-          { arabic: "كِتَابٍ", transliteration: "kitâbin", meaning: "un livre (génitif)" },
+          { arabic: "كِتَابٌ", transliteration: "kitâbun", meaning: "un livre" },
+          { arabic: "كِتَابًا", transliteration: "kitâban", meaning: "un livre" },
+          { arabic: "كِتَابٍ", transliteration: "kitâbin", meaning: "un livre" },
         ],
       },
       {
@@ -101,7 +101,7 @@ export const niveau2Lessons: Niveau2Lesson[] = [
       ],
     },
     qcm: [
-      { question: "Quel est le Tanwin de 'un livre' au nominatif ?", options: ["كِتَابَ", "كِتَابٌ", "كِتَابِ", "كِتَابُ"], correctIndex: 1, explanation: "Le Tanwin Damma (ٌ) marque l'indéfini au cas nominatif : كِتَابٌ." },
+      { question: "Quelle est la forme correcte avec Tanwîn Damma de كتاب ?", options: ["كِتَابَ", "كِتَابٌ", "كِتَابِ", "كِتَابُ"], correctIndex: 1, explanation: "Le Tanwin Damma (ٌ) marque l'indéfini au marfou' (damma) : كِتَابٌ." },
       { question: "Quelle voyelle longue est formée avec Alif ?", options: ["ou (û)", "i (î)", "a (â)", "Aucune"], correctIndex: 2, explanation: "Alif prolonge la Fatha pour donner le son 'â'." },
       { question: "Comment lit-on كُتُبٌ ?", options: ["kitâbun", "kutubun", "kataba", "kitbun"], correctIndex: 1, explanation: "Deux Damma + Tanwin Damma = kutubun (des livres)." },
       { question: "Quel signe indique l'absence de voyelle ?", options: ["Fatha", "Damma", "Kasra", "Soukoun"], correctIndex: 3, explanation: "Le Soukoun (ْ) indique l'absence de voyelle sur une consonne." },
@@ -296,7 +296,7 @@ export const niveau2Lessons: Niveau2Lesson[] = [
       },
       {
         title: "Le duel",
-        explanation: "Le duel (pour deux) ajoute ان (âni) au nominatif ou يْن (ayni) à l'accusatif/génitif.",
+        explanation: "Le duel (pour deux) ajoute ان (âni) avec damma (-ou) ou يْن (ayni) avec fatha (-a)/génitif.",
         examples: [
           { arabic: "كِتَابَانِ", transliteration: "kitâbâni", meaning: "deux livres" },
           { arabic: "طَالِبَتَانِ", transliteration: "tâlibatâni", meaning: "deux étudiantes" },
@@ -349,7 +349,7 @@ export const niveau2Lessons: Niveau2Lesson[] = [
     grammar: [
       {
         title: "Le Moubtada (المبتدأ)",
-        explanation: "Le Moubtada est le sujet de la phrase nominale. Il est toujours au cas nominatif (marfou') et généralement défini.",
+        explanation: "Le Moubtada est le sujet de la phrase nominale. Il est toujours au marfou' (terminaison damma -ou) et généralement défini.",
         examples: [
           { arabic: "الْوَلَدُ كَبِيرٌ", transliteration: "al-waladu kabîrun", meaning: "Le garçon est grand" },
           { arabic: "الْبَيْتُ جَمِيلٌ", transliteration: "al-baytu jamîlun", meaning: "La maison est belle" },
@@ -380,13 +380,13 @@ export const niveau2Lessons: Niveau2Lesson[] = [
       { question: "Dans الْوَلَدُ كَبِيرٌ, quel est le Moubtada ?", options: ["كَبِيرٌ", "الْوَلَدُ", "Les deux", "Aucun"], correctIndex: 1, explanation: "الْوَلَدُ (le garçon) est le sujet = Moubtada." },
       { question: "Dans الْكِتَابُ عَلَى الطَّاوِلَةِ, quel est le Khabar ?", options: ["الْكِتَابُ", "عَلَى", "الطَّاوِلَةِ", "عَلَى الطَّاوِلَةِ"], correctIndex: 3, explanation: "Le groupe prépositionnel عَلَى الطَّاوِلَةِ est le Khabar." },
       { question: "La phrase nominale commence par :", options: ["Un verbe", "Un nom", "Une préposition", "Un adverbe"], correctIndex: 1, explanation: "La phrase nominale (الجملة الاسمية) commence toujours par un nom." },
-      { question: "Le Moubtada est généralement :", options: ["Indéfini", "Défini", "Au génitif", "Au accusatif"], correctIndex: 1, explanation: "Le Moubtada est généralement défini (avec ال ou un nom propre)." },
+      { question: "Le Moubtada (sujet) est généralement :", options: ["Indéfini", "Défini", "Pluriel", "Singulier"], correctIndex: 1, explanation: "Le Moubtada est généralement défini (avec ال ou un nom propre)." },
       { question: "Le Khabar est généralement :", options: ["Défini", "Indéfini", "Verbal", "Absent"], correctIndex: 1, explanation: "Le Khabar est généralement indéfini quand c'est un adjectif." },
       { question: "Dans السَّمَاءُ زَرْقَاءُ, le Khabar est :", options: ["السَّمَاءُ", "زَرْقَاءُ", "Un verbe", "Absent"], correctIndex: 1, explanation: "زَرْقَاءُ (bleu) est le Khabar/attribut." },
       { question: "En arabe, le verbe 'être' au présent :", options: ["Est obligatoire", "N'existe pas", "Est sous-entendu", "Est au début"], correctIndex: 2, explanation: "Le verbe 'être' au présent est sous-entendu en arabe." },
       { question: "الطَّعَامُ لَذِيذٌ se traduit :", options: ["La nourriture mange", "La nourriture est délicieuse", "Le repas est prêt", "La cuisine est bonne"], correctIndex: 1, explanation: "Moubtada (الطَّعَامُ) + Khabar (لَذِيذٌ) = La nourriture est délicieuse." },
       { question: "Quel type de Khabar est عَلَى الطَّاوِلَةِ ?", options: ["Adjectif", "Groupe prépositionnel", "Verbe", "Nom propre"], correctIndex: 1, explanation: "C'est un groupe prépositionnel (préposition + nom)." },
-      { question: "Le cas du Moubtada est :", options: ["Le génitif", "L'accusatif", "Le nominatif", "Aucun cas"], correctIndex: 2, explanation: "Le Moubtada est au cas nominatif (مرفوع)." },
+      { question: "Le Moubtada se termine par :", options: ["La fatha (ـَ)", "La kasra (ـِ)", "La damma (ـُ)", "Le sukûn (ـْ)"], correctIndex: 2, explanation: "Le Moubtada est au marfou' (damma) (مرفوع)." },
     ],
     dictation: [
       { sentence: "الْوَلَدُ كَبِيرٌ", transliteration: "al-waladu kabîrun (le garçon est grand)", options: ["الْوَلَدُ كَبِيرٌ", "الْوَلَدُ صَغِيرٌ", "الْبِنْتُ كَبِيرَةٌ", "الرَّجُلُ كَبِيرٌ"], correctIndex: 0 },
@@ -692,7 +692,7 @@ export const niveau2Lessons: Niveau2Lesson[] = [
     id: 10,
     title: "Les prépositions",
     subtitle: "في، على، من، إلى et leur usage",
-    description: "Les prépositions (حروف الجر) introduisent des compléments et régissent le cas génitif (majrûr).",
+    description: "Les prépositions (حروف الجر) introduisent des compléments et régissent le majrour (kasra) (majrour, avec kasra).",
     grammar: [
       {
         title: "Les prépositions de lieu",
@@ -735,7 +735,7 @@ export const niveau2Lessons: Niveau2Lesson[] = [
     qcm: [
       { question: "فِي signifie :", options: ["Sur", "Dans", "Vers", "De"], correctIndex: 1, explanation: "فِي = dans." },
       { question: "عَلَى signifie :", options: ["Sous", "Dans", "Sur", "Entre"], correctIndex: 2, explanation: "عَلَى = sur." },
-      { question: "Les prépositions régissent le cas :", options: ["Nominatif", "Accusatif", "Génitif", "Aucun"], correctIndex: 2, explanation: "Les prépositions régissent le cas génitif (majrûr)." },
+      { question: "Après une préposition, le mot suivant prend la voyelle :", options: ["La damma (ـُ)", "La fatha (ـَ)", "La kasra (ـِ)", "Le sukûn (ـْ)"], correctIndex: 2, explanation: "Les prépositions régissent le majrour (kasra) (majrour, avec kasra)." },
       { question: "تَحْتَ signifie :", options: ["Sur", "Devant", "Sous", "Derrière"], correctIndex: 2, explanation: "تَحْتَ = sous." },
       { question: "مِنْ signifie :", options: ["Vers", "De/depuis", "Dans", "Sur"], correctIndex: 1, explanation: "مِنْ = de, depuis." },
       { question: "إِلَى signifie :", options: ["De", "Dans", "Sur", "Vers"], correctIndex: 3, explanation: "إِلَى = vers, à." },
@@ -810,9 +810,9 @@ export const niveau2Lessons: Niveau2Lesson[] = [
       { question: "L'adjectif dans الْمَدِينَةُ كَبِيرَةٌ est :", options: ["الْمَدِينَةُ", "كَبِيرَةٌ", "Les deux", "Aucun"], correctIndex: 1, explanation: "كَبِيرَةٌ = grande, c'est l'adjectif (khabar)." },
       { question: "أَوَّلًا signifie :", options: ["Ensuite", "D'abord", "Enfin", "Puis"], correctIndex: 1, explanation: "أَوَّلًا = d'abord, premièrement." },
       { question: "أَخِيرًا signifie :", options: ["D'abord", "Ensuite", "Enfin", "Peut-être"], correctIndex: 2, explanation: "أَخِيرًا = enfin, finalement." },
-      { question: "Dans la phrase nominale, l'adjectif attribut est :", options: ["Défini", "Indéfini", "Au génitif", "Verbal"], correctIndex: 1, explanation: "L'adjectif attribut (khabar) est indéfini dans la phrase nominale." },
-      { question: "Dans la phrase verbale, le sujet est au cas :", options: ["Génitif", "Accusatif", "Nominatif", "Aucun"], correctIndex: 2, explanation: "Le sujet (fâ'il) est au cas nominatif." },
-      { question: "Le complément d'objet est au cas :", options: ["Nominatif", "Génitif", "Accusatif", "Aucun"], correctIndex: 2, explanation: "Le complément d'objet (maf'ûl bihi) est à l'accusatif." },
+      { question: "Dans la phrase nominale, l'attribut est généralement :", options: ["Défini", "Indéfini", "Au pluriel", "Verbal"], correctIndex: 1, explanation: "Dans la phrase nominale, l'attribut (khabar) est généralement indéfini." },
+      { question: "Dans la phrase verbale, le sujet (fâ'il) prend la voyelle :", options: ["La kasra (ـِ)", "La fatha (ـَ)", "La damma (ـُ)", "Le sukûn (ـْ)"], correctIndex: 2, explanation: "Le sujet (fâ'il) est au marfou' (damma)." },
+      { question: "Le complément d'objet (maf'ûl bihi) prend la voyelle :", options: ["Nominatif", "Génitif", "Accusatif", "Aucun"], correctIndex: 2, explanation: "Le complément d'objet (maf'ûl bihi) est avec fatha (-a)." },
       { question: "فِيهَا signifie :", options: ["Pour elle", "Dans elle / y", "Avec elle", "Sur elle"], correctIndex: 1, explanation: "فِيهَا = dans elle / il y a (préposition + pronom suffixe)." },
       { question: "كَثِيرًا signifie :", options: ["Peu", "Un peu", "Beaucoup", "Parfois"], correctIndex: 2, explanation: "كَثِيرًا = beaucoup." },
     ],
@@ -872,7 +872,7 @@ export const niveau2Lessons: Niveau2Lesson[] = [
       { question: "Dans إِلَى صَدِيقِي, صَدِيقِي signifie :", options: ["Un ami", "L'ami", "Mon ami", "Son ami"], correctIndex: 2, explanation: "Le suffixe ي = mon → صَدِيقِي = mon ami." },
       { question: "Le pluriel de مُعَلِّمٌ est :", options: ["مُعَلِّمَةٌ", "مُعَلِّمُونَ", "مُعَلِّمَاتٌ", "مُعَلِّمَانِ"], correctIndex: 1, explanation: "Le pluriel masculin régulier : مُعَلِّمُونَ." },
       { question: "الشَّمْسُ contient un Lam :", options: ["Lunaire", "Solaire", "Absent", "Double"], correctIndex: 1, explanation: "ش est une lettre solaire." },
-      { question: "فِي الْمَدْرَسَةِ — le nom est au cas :", options: ["Nominatif", "Accusatif", "Génitif", "Aucun"], correctIndex: 2, explanation: "Après la préposition فِي, le nom est au génitif (majrûr)." },
+      { question: "Dans فِي الْمَدْرَسَةِ, la dernière voyelle de المدرسة est :", options: ["La damma (ـُ)", "La fatha (ـَ)", "La kasra (ـِ)", "Le sukûn (ـْ)"], correctIndex: 2, explanation: "Après la préposition فِي, le nom est avec kasra (majrour)." },
       { question: "هَذَا signifie :", options: ["Celle-ci", "Ceci/celui-ci", "Ceux-ci", "Cela"], correctIndex: 1, explanation: "هَذَا = ceci, celui-ci (démonstratif masculin)." },
       { question: "اِسْتَيْقَظَتْ est au :", options: ["Présent féminin", "Passé masculin", "Passé féminin", "Impératif"], correctIndex: 2, explanation: "Le suffixe تْ marque le passé féminin." },
       { question: "جِدًّا signifie :", options: ["Un peu", "Assez", "Très", "Parfois"], correctIndex: 2, explanation: "جِدًّا = très, beaucoup." },

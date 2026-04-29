@@ -560,14 +560,14 @@ const lesson7: Lesson = {
       title: "Le Tanwîn Fatha (-an)",
       content: "Le Tanwîn Fatha donne le son « -an ». On écrit généralement un Alif de support après :",
       arabicExamples: [
-        { arabic: "كِتَابًا", transliteration: "kitâban", meaning: "un livre (accusatif)" },
-        { arabic: "بَيْتًا", transliteration: "baytan", meaning: "une maison (accusatif)" },
-        { arabic: "وَلَدًا", transliteration: "waladan", meaning: "un garçon (accusatif)" },
+        { arabic: "كِتَابًا", transliteration: "kitâban", meaning: "un livre" },
+        { arabic: "بَيْتًا", transliteration: "baytan", meaning: "une maison" },
+        { arabic: "وَلَدًا", transliteration: "waladan", meaning: "un garçon" },
       ],
     },
     {
       title: "Le Tanwîn Damma (-oun)",
-      content: "Le Tanwîn Damma donne le son « -oun » (nominatif indéfini) :",
+      content: "Le Tanwîn Damma donne le son « -oun » :",
       arabicExamples: [
         { arabic: "كِتَابٌ", transliteration: "kitâboun", meaning: "un livre" },
         { arabic: "رَجُلٌ", transliteration: "rajouloun", meaning: "un homme" },
@@ -578,11 +578,11 @@ const lesson7: Lesson = {
     },
     {
       title: "Le Tanwîn Kasra (-in)",
-      content: "Le Tanwîn Kasra donne le son « -in » (génitif indéfini) :",
+      content: "Le Tanwîn Kasra donne le son « -in » :",
       arabicExamples: [
-        { arabic: "كِتَابٍ", transliteration: "kitâbin", meaning: "un livre (génitif)" },
-        { arabic: "رَجُلٍ", transliteration: "rajoulin", meaning: "un homme (génitif)" },
-        { arabic: "بَيْتٍ", transliteration: "baytin", meaning: "une maison (génitif)" },
+        { arabic: "كِتَابٍ", transliteration: "kitâbin", meaning: "un livre" },
+        { arabic: "رَجُلٍ", transliteration: "rajoulin", meaning: "un homme" },
+        { arabic: "بَيْتٍ", transliteration: "baytin", meaning: "une maison" },
       ],
     },
     {
