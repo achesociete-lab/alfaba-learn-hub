@@ -228,6 +228,29 @@ const Auth = () => {
 
   // Signup step: placement test
   if (!isLogin && signupStep === "test") {
+    return (
+      <div className="min-h-screen bg-background geometric-pattern flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="bg-card border border-border rounded-xl p-8 shadow-lg">
+            <div className="flex items-center gap-2 mb-6 justify-center">
+              <BookOpen className="h-7 w-7 text-primary" />
+              <span className="font-display text-xl font-bold text-foreground">
+                Test de <span className="text-gradient-gold">niveau</span>
+              </span>
+            </div>
+            <p className="text-sm text-muted-foreground text-center mb-6">
+              Répondez à ces quelques questions pour déterminer votre niveau.
+            </p>
+            <PlacementTest
+              onComplete={handleTestComplete}
+              onBack={() => setSignupStep("info")}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Signup step: mode selection (en ligne / présentiel)
   if (!isLogin && signupStep === "mode") {
     return (
