@@ -522,7 +522,13 @@ function TraductionStep({ course, onDone }: { course: PresentielCourseV2; onDone
   const handleSelect = (i: number) => {
     if (selected !== null) return;
     setSelected(i);
-    if (options[i] === current.french) setScore((s) => s + 1);
+    const isOk = options[i] === current.french;
+    if (isOk) {
+      setScore((s) => s + 1);
+      playCorrectSound();
+    } else {
+      playWrongSound();
+    }
   };
 
   const next = () => {
