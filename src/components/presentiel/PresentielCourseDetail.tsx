@@ -9,13 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { playCorrectSound, playWrongSound } from "@/utils/sound-feedback";
-const speakNative = (text: string) => {
-  try {
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = "ar-SA";
-    window.speechSynthesis.speak(u);
-  } catch {}
-};
+import { useArabicSpeech } from "@/hooks/use-arabic-speech";
 
 interface Props {
   course: any;
@@ -25,6 +19,7 @@ interface Props {
 
 const PresentielCourseDetail = ({ course, userProgress, onProgressUpdate }: Props) => {
   const { user } = useAuth();
+  const { speak } = useArabicSpeech();
   const [qcmAnswers, setQcmAnswers] = useState<Record<number, number>>({});
   const [qcmSubmitted, setQcmSubmitted] = useState(!!userProgress?.qcm_completed);
   const [dictationAnswers, setDictationAnswers] = useState<Record<number, string>>({});
@@ -163,7 +158,7 @@ const PresentielCourseDetail = ({ course, userProgress, onProgressUpdate }: Prop
               <CardContent className="p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <Label className="text-sm">Phrase {i + 1}</Label>
-                  <Button size="sm" variant="outline" onClick={() => speakNative(s.arabic)}>
+                  <Button size="sm" variant="outline" onClick={() => speak(s.arabic, 0.75)}>
                     <Volume2 className="h-4 w-4 mr-1" /> Écouter
                   </Button>
                 </div>
