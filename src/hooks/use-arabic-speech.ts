@@ -2,12 +2,6 @@ import { useCallback, useRef, useEffect } from "react";
 import { getTeacherClipUrl, preloadTeacherClips } from "./use-teacher-audio-clips";
 // Simple in-memory cache for audio blobs to avoid re-fetching
 const audioCache = new Map<string, string>();
-let isElevenLabsUnavailable = false;
-
-type TtsErrorPayload = {
-  error?: string;
-  code?: string;
-};
 
 /**
  * Clean text before sending to TTS for smoother voice output.
@@ -78,11 +72,6 @@ export function useArabicSpeech() {
 
     const cacheKey = `${text}_${rate}_${voiceId || "default"}`;
 
-    if (isElevenLabsUnavailable) {
-      fallbackSpeak(text, rate);
-      return;
-    }
-
     // Check cache first
     if (audioCache.has(cacheKey)) {
       const audio = new Audio(audioCache.get(cacheKey)!);
@@ -99,71 +88,58 @@ export function useArabicSpeech() {
       return;
     }
 
-    // Fetch from ElevenLabs edge function
+    // Fetch from ElevenLabs edge function with retry (3 attempts, exp backoff)
     const controller = new AbortController();
     abortRef.current = controller;
 
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ text, rate, voiceId }),
-          signal: controller.signal,
-        }
-      );
+    let lastError: unknown = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            },
+            body: JSON.stringify({ text, rate, voiceId }),
+            signal: controller.signal,
+          }
+        );
 
-      if (!response.ok) {
-        let errorPayload: TtsErrorPayload | null = null;
-
-        try {
-          errorPayload = (await response.json()) as TtsErrorPayload;
-        } catch {
-          errorPayload = null;
-        }
-
-        if (
-          response.status === 401 ||
-          errorPayload?.code === "provider_auth_error" ||
-          errorPayload?.code === "provider_unavailable"
-        ) {
-          isElevenLabsUnavailable = true;
+        if (!response.ok) {
+          lastError = new Error(`TTS HTTP ${response.status}`);
+          if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+            // Client error non-retriable
+            break;
+          }
+          await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
+          continue;
         }
 
-        // Fallback to Web Speech API
-        console.warn("ElevenLabs TTS failed, falling back to Web Speech API", {
-          status: response.status,
-          error: errorPayload?.error,
-          code: errorPayload?.code,
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        audioCache.set(cacheKey, audioUrl);
+
+        const audio = new Audio(audioUrl);
+        audioRef.current = audio;
+        await audio.play();
+        await new Promise<void>((resolve) => {
+          audio.addEventListener("ended", () => resolve(), { once: true });
+          audio.addEventListener("error", () => resolve(), { once: true });
         });
-        await fallbackSpeak(text, rate);
         return;
+      } catch (e: unknown) {
+        if (e instanceof DOMException && e.name === "AbortError") return;
+        lastError = e;
+        await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
       }
-
-      const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
-
-      // Cache the URL
-      audioCache.set(cacheKey, audioUrl);
-
-      const audio = new Audio(audioUrl);
-      audioRef.current = audio;
-      await audio.play();
-      await new Promise<void>((resolve) => {
-        audio.addEventListener("ended", () => resolve(), { once: true });
-        audio.addEventListener("error", () => resolve(), { once: true });
-      });
-    } catch (e: unknown) {
-      if (e instanceof DOMException && e.name === "AbortError") return;
-      isElevenLabsUnavailable = true;
-      console.warn("ElevenLabs TTS error, falling back:", e);
-      await fallbackSpeak(text, rate);
     }
+
+    // After all retries: silent failure (no Web Speech fallback)
+    console.error("ElevenLabs TTS failed after 3 retries:", lastError);
   }, []);
 
   const stop = useCallback(() => {
@@ -174,27 +150,9 @@ export function useArabicSpeech() {
     if (abortRef.current) {
       abortRef.current.abort();
     }
-    window.speechSynthesis?.cancel();
   }, []);
 
-  const isSupported = true; // Always supported via edge function
+  const isSupported = true;
 
   return { speak, stop, isSupported };
-}
-
-// Fallback using browser Web Speech API
-function fallbackSpeak(text: string, rate: number): Promise<void> {
-  return new Promise((resolve) => {
-    if (!window.speechSynthesis) { resolve(); return; }
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "ar-SA";
-    utterance.rate = rate;
-    const voices = window.speechSynthesis.getVoices();
-    const arVoice = voices.find((v) => v.lang === "ar-SA") || voices.find((v) => v.lang.startsWith("ar"));
-    if (arVoice) utterance.voice = arVoice;
-    utterance.onend = () => resolve();
-    utterance.onerror = () => resolve();
-    window.speechSynthesis.speak(utterance);
-  });
 }

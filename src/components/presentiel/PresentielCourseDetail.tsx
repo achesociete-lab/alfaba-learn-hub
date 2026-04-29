@@ -9,13 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { playCorrectSound, playWrongSound } from "@/utils/sound-feedback";
-const speakNative = (text: string) => {
-  try {
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = "ar-SA";
-    window.speechSynthesis.speak(u);
-  } catch {}
-};
+import { useArabicSpeech } from "@/hooks/use-arabic-speech";
 
 interface Props {
   course: any;
