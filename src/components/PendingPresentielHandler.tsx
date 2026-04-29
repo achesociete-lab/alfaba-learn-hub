@@ -40,16 +40,10 @@ const PendingPresentielHandler = () => {
           await new Promise((resolve) => setTimeout(resolve, 300));
         }
 
-        if (profile?.type_eleve === "presentiel") {
-          sessionStorage.removeItem(FLAG_KEY);
-          navigate("/cours-presentiel", { replace: true });
-          return;
-        }
-
-        if (profile?.type_eleve !== "en_attente") {
+        if (profile?.type_eleve !== "presentiel") {
           const { error } = await supabase
             .from("profiles")
-            .update({ type_eleve: "en_attente" as any })
+            .update({ type_eleve: "presentiel" as any })
             .eq("user_id", user.id);
 
           if (error) throw error;
@@ -67,7 +61,7 @@ const PendingPresentielHandler = () => {
           .catch((err) => console.warn("notify-pending-signup fail", err));
 
         sessionStorage.removeItem(FLAG_KEY);
-        navigate("/compte-en-attente", { replace: true });
+        navigate("/cours-presentiel", { replace: true });
       } catch (err) {
         console.error("PendingPresentielHandler error", err);
       }

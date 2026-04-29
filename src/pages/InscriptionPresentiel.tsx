@@ -46,7 +46,7 @@ const InscriptionPresentiel = () => {
         return;
       }
       if (result.redirected) return;
-      navigate("/compte-en-attente", { replace: true });
+      navigate("/cours-presentiel", { replace: true });
     } catch (err: any) {
       sessionStorage.removeItem(PRESENTIEL_SIGNUP_FLAG);
       toast.error(err.message || "Erreur Google");
@@ -83,10 +83,10 @@ const InscriptionPresentiel = () => {
         return;
       }
 
-      // Mark as 'en_attente' immediately if user is created (even before email confirm).
+      // Mark directly as 'presentiel' — no validation needed for link-based signups.
       if (data.user) {
-        await supabase.from("profiles").update({ type_eleve: "en_attente" as any }).eq("user_id", data.user.id);
-        // Notifier admin
+        await supabase.from("profiles").update({ type_eleve: "presentiel" as any }).eq("user_id", data.user.id);
+        // Notifier admin (information seulement)
         supabase.functions.invoke("notify-pending-signup", {
           body: { studentName: `${firstName} ${lastName}`, studentEmail: email, userId: data.user.id },
         }).catch((err) => console.warn("notify-pending-signup fail", err));
@@ -113,7 +113,7 @@ const InscriptionPresentiel = () => {
             <p className="font-semibold text-foreground mb-6">{email}</p>
             <div className="bg-gold/10 border border-gold/30 rounded-lg p-4 text-left mb-6">
               <p className="text-sm text-foreground">
-                Une fois votre email confirmé, votre compte sera <strong>en attente de validation</strong> par un professeur. Vous serez notifié dès l'activation.
+                Une fois votre email confirmé, vous pourrez vous connecter et accéder directement à vos <strong>cours en présentiel</strong>.
               </p>
             </div>
             <Link to="/auth">
