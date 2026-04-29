@@ -26,6 +26,7 @@ import CompteEnAttente from "./pages/CompteEnAttente.tsx";
 import CoursPresentiel from "./pages/CoursPresentiel.tsx";
 import Unsubscribe from "./pages/Unsubscribe.tsx";
 import RouteTracker from "./components/RouteTracker";
+import PendingPresentielHandler from "./components/PendingPresentielHandler";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <RouteTracker />
+          <PendingPresentielHandler />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
