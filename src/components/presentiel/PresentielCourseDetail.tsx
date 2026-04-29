@@ -18,6 +18,7 @@ import { compareVerseWords, type WordMatch } from "@/utils/quran-api";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { playCorrectSound, playWrongSound } from "@/utils/sound-feedback";
 
 // ─── Types ───
 export interface PresentielCourseV2 {
