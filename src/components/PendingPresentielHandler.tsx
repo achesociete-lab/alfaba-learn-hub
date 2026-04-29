@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -11,6 +12,7 @@ const FLAG_KEY = "pending_presentiel_signup";
  */
 const PendingPresentielHandler = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const handledRef = useRef(false);
 
   useEffect(() => {
@@ -19,23 +21,39 @@ const PendingPresentielHandler = () => {
     if (!flag) return;
 
     handledRef.current = true;
-    sessionStorage.removeItem(FLAG_KEY);
-
     (async () => {
       try {
-        // Fetch profile to read first/last name (set by handle_new_user trigger)
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("first_name, last_name, type_eleve")
-          .eq("user_id", user.id)
-          .maybeSingle();
+        let profile: { first_name: string | null; last_name: string | null; type_eleve: string | null } | null = null;
 
-        if (profile?.type_eleve === "en_attente") return; // already pending
+        for (let attempt = 0; attempt < 6; attempt += 1) {
+          const { data } = await supabase
+            .from("profiles")
+            .select("first_name, last_name, type_eleve")
+            .eq("user_id", user.id)
+            .maybeSingle();
 
-        await supabase
-          .from("profiles")
-          .update({ type_eleve: "en_attente" as any })
-          .eq("user_id", user.id);
+          if (data) {
+            profile = data as typeof profile;
+            break;
+          }
+
+          await new Promise((resolve) => setTimeout(resolve, 300));
+        }
+
+        if (profile?.type_eleve === "presentiel") {
+          sessionStorage.removeItem(FLAG_KEY);
+          navigate("/cours-presentiel", { replace: true });
+          return;
+        }
+
+        if (profile?.type_eleve !== "en_attente") {
+          const { error } = await supabase
+            .from("profiles")
+            .update({ type_eleve: "en_attente" as any })
+            .eq("user_id", user.id);
+
+          if (error) throw error;
+        }
 
         const fullName = `${profile?.first_name ?? ""} ${profile?.last_name ?? ""}`.trim();
         supabase.functions
@@ -47,11 +65,14 @@ const PendingPresentielHandler = () => {
             },
           })
           .catch((err) => console.warn("notify-pending-signup fail", err));
+
+        sessionStorage.removeItem(FLAG_KEY);
+        navigate("/compte-en-attente", { replace: true });
       } catch (err) {
         console.error("PendingPresentielHandler error", err);
       }
     })();
-  }, [user]);
+  }, [navigate, user]);
 
   return null;
 };
