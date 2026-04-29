@@ -14,7 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import {
   MapPin, Trash2, Loader2, Users, Save, Plus, X, BookOpen, Languages, Headphones,
-  HelpCircle, ListOrdered, Pencil,
+  HelpCircle, ListOrdered, Pencil, Sparkles, Wand2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -56,6 +56,40 @@ const AdminPresentielCourses = () => {
   const [draft, setDraft] = useState<CourseDraft>(emptyDraft());
   const [saving, setSaving] = useState(false);
   const [dictationInput, setDictationInput] = useState("");
+  const [aiTheme, setAiTheme] = useState("");
+  const [generating, setGenerating] = useState(false);
+
+  const handleGenerateAI = async () => {
+    if (!aiTheme.trim()) { toast.error("Indique un thème"); return; }
+    setGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("presentiel-ai-generate", {
+        body: { theme: aiTheme.trim(), level: draft.level },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const c = data.course;
+      setDraft({
+        ...draft,
+        title: c.title || draft.title,
+        lesson_text: c.lesson_text || "",
+        vocabulary: Array.isArray(c.vocabulary) && c.vocabulary.length ? c.vocabulary : [{ arabic: "", french: "" }],
+        dictation_words: Array.isArray(c.dictation_words) ? c.dictation_words : [],
+        comprehension_questions: Array.isArray(c.comprehension_questions) && c.comprehension_questions.length
+          ? c.comprehension_questions : [{ question: "", answer: "" }],
+        reorder_exercises: Array.isArray(c.reorder_exercises) && c.reorder_exercises.length
+          ? c.reorder_exercises.map((r: any) => ({ words: r.correct_order || [], correct_order: r.correct_order || [] }))
+          : [{ words: [], correct_order: [] }],
+      });
+      setDictationInput("");
+      toast.success("Cours généré ! Vérifie et enregistre.");
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e.message || "Erreur génération IA");
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   const fetchData = async () => {
     const { data: c } = await supabase
@@ -182,6 +216,36 @@ const AdminPresentielCourses = () => {
                 <X className="h-4 w-4 mr-1" /> Annuler l'édition
               </Button>
             )}
+          </div>
+
+          {/* Bloc Génération IA */}
+          <div className="p-4 rounded-lg border-2 border-dashed border-gold/50 bg-gradient-to-br from-gold/5 to-emerald/5 space-y-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-gold" />
+              <h4 className="font-semibold text-foreground">Génération automatique par IA</h4>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Indique un thème et le niveau ci-dessous, l'IA remplira automatiquement le texte arabe, le vocabulaire,
+              la dictée {draft.level === "niveau_2" && "ainsi que les questions de compréhension et phrases à remettre en ordre"}.
+            </p>
+            <div className="flex gap-2">
+              <Input
+                value={aiTheme}
+                onChange={(e) => setAiTheme(e.target.value)}
+                placeholder="Ex: La famille, Les couleurs, Le verbe au présent…"
+                disabled={generating}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleGenerateAI(); } }}
+              />
+              <Button
+                onClick={handleGenerateAI}
+                disabled={generating || !aiTheme.trim()}
+                className="gradient-gold border-0 text-primary-foreground shrink-0"
+              >
+                {generating
+                  ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" />Génération…</>)
+                  : (<><Wand2 className="h-4 w-4 mr-2" />Générer</>)}
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
