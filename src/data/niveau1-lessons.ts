@@ -896,7 +896,85 @@ const lesson11: Lesson = {
   ],
 };
 
+// ─── Leçon 12 : Tâ Marbûta, Tâ Mabsûta et les supports de la Hamza ───
+const lesson12: Lesson = {
+  id: 12,
+  title: "Tâ Marbûta, Tâ Mabsûta et la Hamza",
+  subtitle: "Notions fines avant le passage au Niveau 2",
+  icon: "✒️",
+  theory: [
+    {
+      title: "La Tâ Marbûta (ة)",
+      content: "La Tâ Marbûta (ة) est un « tâ' attaché ». Elle se trouve uniquement à la fin d'un mot et indique souvent le féminin.\n\n• Elle se prononce « t » quand on continue à lire (waṣl), et « h » quand on s'arrête sur le mot (waqf).\n• Elle ne s'écrit qu'à la fin du mot.\n\nExemples :\n• مَدْرَسَةٌ (madrasatoun / madrasah) = une école\n• فَاطِمَةُ = Fâṭima (prénom féminin)\n• جَنَّةٌ = un jardin / Paradis",
+      arabicExamples: [
+        { arabic: "مَدْرَسَةٌ", transliteration: "madrasah", meaning: "une école" },
+        { arabic: "فَاطِمَةُ", transliteration: "Fâṭima", meaning: "Fâṭima (prénom)" },
+        { arabic: "جَنَّةٌ", transliteration: "jannah", meaning: "un jardin / Paradis" },
+        { arabic: "صَلَاةٌ", transliteration: "ṣalâh", meaning: "prière" },
+      ],
+      tip: "Astuce : si en s'arrêtant sur le mot on entend un « h », c'est une Tâ Marbûta (ة).",
+    },
+    {
+      title: "La Tâ Mabsûta (ت)",
+      content: "La Tâ Mabsûta (ت) est le « tâ' étalé ». Elle se prononce toujours « t », qu'on continue ou qu'on s'arrête sur le mot.\n\n• Elle peut apparaître au début, au milieu ou à la fin d'un mot.\n• À la fin, elle marque souvent le passé féminin des verbes (ex : كَتَبَتْ = elle a écrit).\n\nExemples :\n• بِنْتٌ = une fille\n• كَتَبَتْ = elle a écrit\n• بَيْتٌ = une maison",
+      arabicExamples: [
+        { arabic: "بِنْتٌ", transliteration: "bint", meaning: "une fille" },
+        { arabic: "كَتَبَتْ", transliteration: "katabat", meaning: "elle a écrit" },
+        { arabic: "أُخْتٌ", transliteration: "oukht", meaning: "une sœur" },
+        { arabic: "وَقْتٌ", transliteration: "waqt", meaning: "un temps" },
+      ],
+      tip: "Règle clé : ة → souvent féminin du nom ; ت → féminin du verbe au passé ou consonne normale.",
+    },
+    {
+      title: "Les supports de la Hamza (ء)",
+      content: "La Hamza (ء) est une consonne à part entière (un coup de glotte). Elle a besoin d'un « siège » qui dépend de la voyelle qui l'entoure :\n\n• ا — Alif comme support (أ avec fatha/damma au-dessus, إ avec kasra au-dessous)\n• و — Wâw comme support (ؤ) : avec damma\n• ي — Yâ' sans points comme support (ئ) : avec kasra\n• ء — Hamza seule, sans support, en milieu/fin de mot\n\nLe choix dépend de la voyelle la plus « forte » : kasra > damma > fatha > soukoun.",
+      arabicExamples: [
+        { arabic: "أَكَلَ", transliteration: "akala", meaning: "il a mangé (Hamza sur Alif, fatha)" },
+        { arabic: "إِيمَانٌ", transliteration: "îmân", meaning: "foi (Hamza sous Alif, kasra)" },
+        { arabic: "أُمٌّ", transliteration: "oumm", meaning: "mère (Hamza sur Alif, damma)" },
+        { arabic: "سُؤَالٌ", transliteration: "sou'âl", meaning: "question (Hamza sur Wâw)" },
+        { arabic: "قَائِمٌ", transliteration: "qâ'im", meaning: "debout (Hamza sur Yâ' sans points)" },
+        { arabic: "مَاءٌ", transliteration: "mâ'", meaning: "eau (Hamza seule en fin)" },
+      ],
+      tip: "À retenir : أ et إ = Alif ; ؤ = Wâw ; ئ = Yâ' sans points ; ء = sans support.",
+    },
+    {
+      title: "Révision avant le Niveau 2",
+      content: "Avant de passer au Niveau 2, vérifiez que vous maîtrisez :\n\n✅ Les 28 lettres et leurs 4 formes (au début, au milieu, à la fin, seule)\n✅ Les voyelles courtes (Fatha, Damma, Kasra, Soukoun) et longues (â, û, î)\n✅ Le Tanwîn et la Shadda\n✅ La Tâ Marbûta (ة) et la Tâ Mabsûta (ت)\n✅ Les supports de la Hamza (أ إ ؤ ئ ء)\n✅ La lecture de mots et de phrases simples\n✅ Le vocabulaire essentiel et quelques mots coraniques\n\nSi un point reste flou, revenez sur la leçon correspondante avant l'évaluation finale.",
+      tip: "Bravo ! Avec ces notions, vous êtes prêt(e) à aborder la grammaire du Niveau 2.",
+    },
+  ],
+  qcm: [
+    { question: "Que représente la lettre ة à la fin d'un mot ?", options: ["Toujours un « h »", "Une Tâ Marbûta, souvent féminin", "Une Hamza", "Un Tanwîn"], correctIndex: 1, explanation: "ة est la Tâ Marbûta : un « tâ' attaché » qui marque souvent le féminin." },
+    { question: "Comment se prononce ة quand on s'arrête sur le mot ?", options: ["« t »", "« h »", "« s »", "Muette"], correctIndex: 1, explanation: "À l'arrêt (waqf), la Tâ Marbûta se prononce « h »." },
+    { question: "Comment se prononce ة quand on continue la lecture ?", options: ["« t »", "« h »", "« n »", "Elle disparaît"], correctIndex: 0, explanation: "En continuation (waṣl), la Tâ Marbûta se prononce « t »." },
+    { question: "Quel mot contient une Tâ Marbûta ?", options: ["بِنْتٌ", "وَقْتٌ", "مَدْرَسَةٌ", "أُخْتٌ"], correctIndex: 2, explanation: "مَدْرَسَةٌ se termine par ة (Tâ Marbûta)." },
+    { question: "Quel mot contient une Tâ Mabsûta (ت) ?", options: ["جَنَّةٌ", "بِنْتٌ", "صَلَاةٌ", "فَاطِمَةُ"], correctIndex: 1, explanation: "بِنْتٌ se termine par ت (Tâ Mabsûta) : on entend toujours « t »." },
+    { question: "كَتَبَتْ contient à la fin :", options: ["Une Tâ Marbûta (ة)", "Une Tâ Mabsûta (ت)", "Une Hamza (ء)", "Un Alif (ا)"], correctIndex: 1, explanation: "كَتَبَتْ = elle a écrit. Le ت final est une Tâ Mabsûta (marque du passé féminin)." },
+    { question: "Quelle est la fonction principale de la Hamza (ء) ?", options: ["Une voyelle longue", "Un coup de glotte (consonne)", "Un signe de doublement", "Une marque du féminin"], correctIndex: 1, explanation: "La Hamza est une consonne : un coup de glotte." },
+    { question: "Le support أ porte généralement :", options: ["Une kasra", "Une fatha ou une damma", "Une shadda", "Aucun signe"], correctIndex: 1, explanation: "أ (Hamza sur Alif) porte généralement une fatha ou une damma." },
+    { question: "Le support إ (Alif avec Hamza dessous) porte :", options: ["Une fatha", "Une damma", "Une kasra", "Un soukoun"], correctIndex: 2, explanation: "إ porte toujours une kasra (la Hamza est sous l'Alif)." },
+    { question: "Sur quel support s'écrit la Hamza dans سُؤَالٌ ?", options: ["Alif (أ)", "Wâw (ؤ)", "Yâ' sans points (ئ)", "Sans support (ء)"], correctIndex: 1, explanation: "Dans سُؤَالٌ, la Hamza est portée par un Wâw : ؤ." },
+    { question: "Sur quel support s'écrit la Hamza dans قَائِمٌ ?", options: ["Alif (أ)", "Wâw (ؤ)", "Yâ' sans points (ئ)", "Sans support (ء)"], correctIndex: 2, explanation: "Dans قَائِمٌ, la Hamza est portée par un Yâ' sans points : ئ." },
+    { question: "Dans مَاءٌ, la Hamza est :", options: ["Sur Alif", "Sur Wâw", "Sur Yâ'", "Sans support, en fin de mot"], correctIndex: 3, explanation: "À la fin de مَاءٌ, la Hamza est seule, sans support : ء." },
+  ],
+  dictation: [
+    { word: "مَدْرَسَةٌ", transliteration: "madrasah (une école)", options: ["مَدْرَسَتٌ", "مَدْرَسَةٌ", "مَدْرَسَهٌ", "مَدَارِسٌ"], correctIndex: 1 },
+    { word: "بِنْتٌ", transliteration: "bint (une fille)", options: ["بِنْةٌ", "بِنْتٌ", "بَنَاتٌ", "بَيْتٌ"], correctIndex: 1 },
+    { word: "فَاطِمَةُ", transliteration: "Fâṭima (prénom)", options: ["فَاطِمَتُ", "فَاطِمَةُ", "فَاطِمَهُ", "فَطِيمَةُ"], correctIndex: 1 },
+    { word: "كَتَبَتْ", transliteration: "katabat (elle a écrit)", options: ["كَتَبَةٌ", "كَتَبَتْ", "كَتَبَ", "كَاتِبَةٌ"], correctIndex: 1 },
+    { word: "جَنَّةٌ", transliteration: "jannah (un jardin)", options: ["جَنَّتٌ", "جَنَّةٌ", "جِنَانٌ", "جَنَنٌ"], correctIndex: 1 },
+    { word: "أُمٌّ", transliteration: "oumm (mère)", options: ["إُمٌّ", "أُمٌّ", "اُمٌّ", "آمٌّ"], correctIndex: 1 },
+    { word: "إِيمَانٌ", transliteration: "îmân (foi)", options: ["أِيمَانٌ", "إِيمَانٌ", "ايمَانٌ", "إٍيمَانٌ"], correctIndex: 1 },
+    { word: "سُؤَالٌ", transliteration: "sou'âl (question)", options: ["سُأَالٌ", "سُؤَالٌ", "سُئَالٌ", "سُوَالٌ"], correctIndex: 1 },
+    { word: "قَائِمٌ", transliteration: "qâ'im (debout)", options: ["قَأِمٌ", "قَائِمٌ", "قَؤِمٌ", "قَايِمٌ"], correctIndex: 1 },
+    { word: "مَاءٌ", transliteration: "mâ' (eau)", options: ["مَأٌ", "مَاءٌ", "مَائٌ", "مَؤٌ"], correctIndex: 1 },
+    { word: "صَلَاةٌ", transliteration: "ṣalâh (prière)", options: ["صَلَاتٌ", "صَلَاةٌ", "صَلَاهٌ", "صَلَوَاتٌ"], correctIndex: 1 },
+    { word: "أُخْتٌ", transliteration: "oukht (une sœur)", options: ["أُخْةٌ", "أُخْتٌ", "اُخْتٌ", "أَخْتٌ"], correctIndex: 1 },
+  ],
+};
+
 export const niveau1Lessons: Lesson[] = [
   lesson1, lesson2, lesson3, lesson4, lesson5,
-  lesson6, lesson7, lesson8, lesson9, lesson10, lesson11,
+  lesson6, lesson7, lesson8, lesson9, lesson10, lesson11, lesson12,
 ];
