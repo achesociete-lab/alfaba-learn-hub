@@ -9,9 +9,9 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
 
   try {
-    const { studentEmail, studentName, userId } = await req.json()
-    if (!studentEmail || !userId) {
-      return new Response(JSON.stringify({ error: 'Missing fields' }), {
+    const { studentName, userId } = await req.json()
+    if (!userId) {
+      return new Response(JSON.stringify({ error: 'Missing userId' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
