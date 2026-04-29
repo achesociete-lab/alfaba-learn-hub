@@ -34,12 +34,22 @@ const AdminStudents = () => {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [togglingType, setTogglingType] = useState<string | null>(null);
 
+  const [validating, setValidating] = useState<string | null>(null);
+
   const fetchStudents = async () => {
     const { data } = await supabase
       .from("profiles")
       .select("user_id, first_name, last_name, level, type_eleve, created_at")
       .order("created_at", { ascending: false });
-    if (data) setStudents(data);
+    if (data) {
+      // Pending first
+      const sorted = [...data].sort((a, b) => {
+        const aPending = a.type_eleve === "en_attente" ? 0 : 1;
+        const bPending = b.type_eleve === "en_attente" ? 0 : 1;
+        return aPending - bPending;
+      });
+      setStudents(sorted);
+    }
   };
 
   useEffect(() => {
