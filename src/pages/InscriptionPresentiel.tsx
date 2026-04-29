@@ -25,7 +25,9 @@ const InscriptionPresentiel = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && user) navigate("/dashboard", { replace: true });
+    if (!authLoading && user && !sessionStorage.getItem(PRESENTIEL_SIGNUP_FLAG)) {
+      navigate("/dashboard", { replace: true });
+    }
   }, [authLoading, user, navigate]);
 
   const handleGoogleSignup = async () => {
@@ -36,6 +38,7 @@ const InscriptionPresentiel = () => {
       sessionStorage.setItem(PRESENTIEL_SIGNUP_FLAG, "1");
       const result = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: window.location.origin,
+        extraParams: { prompt: "select_account" },
       });
       if (result.error) {
         sessionStorage.removeItem(PRESENTIEL_SIGNUP_FLAG);
@@ -43,6 +46,7 @@ const InscriptionPresentiel = () => {
         return;
       }
       if (result.redirected) return;
+      navigate("/compte-en-attente", { replace: true });
     } catch (err: any) {
       sessionStorage.removeItem(PRESENTIEL_SIGNUP_FLAG);
       toast.error(err.message || "Erreur Google");

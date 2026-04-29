@@ -22,18 +22,25 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, serviceKey)
 
-    const { error } = await supabase.functions.invoke('send-transactional-email', {
-      body: {
+    const emailRes = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${serviceKey}`,
+        apikey: serviceKey,
+      },
+      body: JSON.stringify({
         templateName: 'admin-pending-signup',
         recipientEmail: ADMIN_EMAIL,
         idempotencyKey: `pending-signup-${userId}`,
         templateData: { studentName, studentEmail },
-      },
+      }),
     })
 
-    if (error) {
-      console.error('send-transactional-email failed', error)
-      return new Response(JSON.stringify({ ok: false, error: error.message }), {
+    if (!emailRes.ok) {
+      const errorBody = await emailRes.text()
+      console.error('send-transactional-email failed', emailRes.status, errorBody)
+      return new Response(JSON.stringify({ ok: false, error: errorBody }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }

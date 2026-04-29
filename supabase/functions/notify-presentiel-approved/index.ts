@@ -30,18 +30,25 @@ Deno.serve(async (req) => {
     }
     const studentEmail = userData.user.email
 
-    const { error } = await supabase.functions.invoke('send-transactional-email', {
-      body: {
+    const emailRes = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${serviceKey}`,
+        apikey: serviceKey,
+      },
+      body: JSON.stringify({
         templateName: 'presentiel-access-granted',
         recipientEmail: studentEmail,
         idempotencyKey: `presentiel-approved-${userId}`,
         templateData: { studentName },
-      },
+      }),
     })
 
-    if (error) {
-      console.error('send-transactional-email failed', error)
-      return new Response(JSON.stringify({ ok: false, error: error.message }), {
+    if (!emailRes.ok) {
+      const errorBody = await emailRes.text()
+      console.error('send-transactional-email failed', emailRes.status, errorBody)
+      return new Response(JSON.stringify({ ok: false, error: errorBody }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
