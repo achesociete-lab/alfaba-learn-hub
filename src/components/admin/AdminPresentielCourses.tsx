@@ -14,7 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import {
   MapPin, Trash2, Loader2, Users, Save, Plus, X, BookOpen, Languages, Headphones,
-  HelpCircle, ListOrdered, Pencil, Sparkles, Wand2,
+  HelpCircle, ListOrdered, Pencil, Sparkles, Wand2, Image as ImageIcon, Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -35,7 +35,21 @@ interface CourseDraft {
   reorder_exercises: ReorderEx[];
   dictation_words: string[];
   assigned_user_ids: string[];
+  photo_url: string | null;
 }
+
+const emptyDraft = (): CourseDraft => ({
+  title: "",
+  level: "niveau_1",
+  course_date: new Date().toISOString().slice(0, 10),
+  lesson_text: "",
+  vocabulary: [{ arabic: "", french: "" }],
+  comprehension_questions: [{ question: "", answer: "" }],
+  reorder_exercises: [{ words: [], correct_order: [] }],
+  dictation_words: [],
+  assigned_user_ids: [],
+  photo_url: null,
+});
 
 const emptyDraft = (): CourseDraft => ({
   title: "",
