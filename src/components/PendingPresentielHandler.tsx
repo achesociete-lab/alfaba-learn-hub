@@ -2,13 +2,15 @@ import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const FLAG_KEY = "pending_presentiel_signup";
 
 /**
  * Watches for a freshly authenticated user that started signup via the
  * /inscription-presentiel page (Google OAuth flow). Marks their profile
- * as 'en_attente' and notifies the admin.
+ * directly as 'presentiel' (no manual validation needed for link signups)
+ * and notifies the admin for information.
  */
 const PendingPresentielHandler = () => {
   const { user } = useAuth();
@@ -17,7 +19,8 @@ const PendingPresentielHandler = () => {
 
   useEffect(() => {
     if (!user || handledRef.current) return;
-    const flag = sessionStorage.getItem(FLAG_KEY);
+    // Use localStorage so the flag survives the OAuth redirect round-trip
+    const flag = localStorage.getItem(FLAG_KEY) || sessionStorage.getItem(FLAG_KEY);
     if (!flag) return;
 
     handledRef.current = true;
@@ -25,7 +28,8 @@ const PendingPresentielHandler = () => {
       try {
         let profile: { first_name: string | null; last_name: string | null; type_eleve: string | null } | null = null;
 
-        for (let attempt = 0; attempt < 6; attempt += 1) {
+        // Wait for the trigger to create the profile
+        for (let attempt = 0; attempt < 10; attempt += 1) {
           const { data } = await supabase
             .from("profiles")
             .select("first_name, last_name, type_eleve")
@@ -37,7 +41,7 @@ const PendingPresentielHandler = () => {
             break;
           }
 
-          await new Promise((resolve) => setTimeout(resolve, 300));
+          await new Promise((resolve) => setTimeout(resolve, 400));
         }
 
         if (profile?.type_eleve !== "presentiel") {
@@ -60,10 +64,14 @@ const PendingPresentielHandler = () => {
           })
           .catch((err) => console.warn("notify-pending-signup fail", err));
 
+        localStorage.removeItem(FLAG_KEY);
         sessionStorage.removeItem(FLAG_KEY);
+        toast.success("Bienvenue ! Accès aux cours en présentiel activé.");
         navigate("/cours-presentiel", { replace: true });
       } catch (err) {
         console.error("PendingPresentielHandler error", err);
+        localStorage.removeItem(FLAG_KEY);
+        sessionStorage.removeItem(FLAG_KEY);
       }
     })();
   }, [navigate, user]);
