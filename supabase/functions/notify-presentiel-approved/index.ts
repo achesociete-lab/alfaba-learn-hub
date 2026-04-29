@@ -20,6 +20,16 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, serviceKey)
 
+    // Look up student email via admin API
+    const { data: userData, error: userErr } = await supabase.auth.admin.getUserById(userId)
+    if (userErr || !userData?.user?.email) {
+      console.error('Cannot resolve user email', userErr)
+      return new Response(JSON.stringify({ ok: false, error: 'User email not found' }), {
+        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+    const studentEmail = userData.user.email
+
     const { error } = await supabase.functions.invoke('send-transactional-email', {
       body: {
         templateName: 'presentiel-access-granted',
