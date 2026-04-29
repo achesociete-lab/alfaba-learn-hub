@@ -213,7 +213,7 @@ const Auth = () => {
                 onClick={() => {
                   setShowVerification(false);
                   setIsLogin(true);
-                  setSignupStep("info");
+                  setSignupStep("mode");
                 }}
                 className="w-full gradient-emerald border-0 text-primary-foreground"
               >
