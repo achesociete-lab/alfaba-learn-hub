@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { BookOpen, ArrowLeft, MapPin, ArrowRight, Mail, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { PRESENTIEL_SIGNUP_FLAG } from "@/components/PendingPresentielHandler";
 
 const InscriptionPresentiel = () => {
   const { user, loading: authLoading } = useAuth();
@@ -19,9 +22,34 @@ const InscriptionPresentiel = () => {
   const [loading, setLoading] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
 
+  const [googleLoading, setGoogleLoading] = useState(false);
+
   useEffect(() => {
     if (!authLoading && user) navigate("/dashboard", { replace: true });
   }, [authLoading, user, navigate]);
+
+  const handleGoogleSignup = async () => {
+    setGoogleLoading(true);
+    try {
+      // Flag the session so PendingPresentielHandler marks the profile en_attente
+      // and notifies the admin once the OAuth round-trip lands the user back here.
+      sessionStorage.setItem(PRESENTIEL_SIGNUP_FLAG, "1");
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        sessionStorage.removeItem(PRESENTIEL_SIGNUP_FLAG);
+        toast.error("Erreur lors de la connexion avec Google");
+        return;
+      }
+      if (result.redirected) return;
+    } catch (err: any) {
+      sessionStorage.removeItem(PRESENTIEL_SIGNUP_FLAG);
+      toast.error(err.message || "Erreur Google");
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
