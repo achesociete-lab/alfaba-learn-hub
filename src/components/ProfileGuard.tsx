@@ -1,13 +1,22 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/use-profile";
+import { useIsAdmin } from "@/hooks/use-admin";
+
+// Routes autorisées aux élèves "présentiel" (en plus des pages publiques)
+const PRESENTIEL_ALLOWED = new Set<string>([
+  "/cours-presentiel",
+  "/complete-profile",
+  "/compte-en-attente",
+]);
 
 const ProfileGuard = () => {
   const { user, loading: authLoading } = useAuth();
   const { profile, loading: profileLoading, isComplete } = useProfile();
+  const { isAdmin, loading: adminLoading } = useIsAdmin();
   const location = useLocation();
 
-  if (authLoading || profileLoading) {
+  if (authLoading || profileLoading || adminLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -22,17 +31,18 @@ const ProfileGuard = () => {
     return <Navigate to="/compte-en-attente" replace />;
   }
 
-  // Presentiel students get redirected to their course page from /dashboard
-  if (profile?.type_eleve === "presentiel" && location.pathname === "/dashboard") {
-    return <Navigate to="/cours-presentiel" replace />;
-  }
-
   if (!isComplete && profile?.type_eleve !== "en_attente") {
     return <Navigate to="/complete-profile" replace />;
+  }
+
+  // Élèves présentiel : accès UNIQUEMENT à /cours-presentiel (admins exemptés)
+  if (profile?.type_eleve === "presentiel" && !isAdmin) {
+    if (!PRESENTIEL_ALLOWED.has(location.pathname)) {
+      return <Navigate to="/cours-presentiel" replace />;
+    }
   }
 
   return <Outlet />;
 };
 
 export default ProfileGuard;
-
