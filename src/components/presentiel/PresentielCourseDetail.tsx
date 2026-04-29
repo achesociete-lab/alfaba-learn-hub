@@ -168,16 +168,31 @@ function LectureStep({ course, onDone }: { course: PresentielCourseV2; onDone: (
           <h3 className="font-semibold text-foreground text-lg">Étape 1 — Lecture</h3>
         </div>
 
-        {/* Photo de la leçon (page du livre) */}
-        {course.photo_url && (
-          <div className="rounded-xl overflow-hidden border border-border bg-muted/20">
-            <img
-              src={course.photo_url}
-              alt="Page de la leçon"
-              className="w-full max-h-[480px] object-contain bg-white"
-            />
-          </div>
-        )}
+        {(() => {
+          const pages = (course.lesson_photos && course.lesson_photos.length > 0)
+            ? course.lesson_photos
+            : (course.photo_url ? [course.photo_url] : []);
+          if (pages.length === 0) return null;
+          return (
+            <div className="space-y-3">
+              {pages.length > 1 && (
+                <p className="text-xs text-muted-foreground">
+                  📖 {pages.length} pages — faites défiler dans l'ordre
+                </p>
+              )}
+              {pages.map((url, i) => (
+                <div key={i} className="rounded-xl overflow-hidden border border-border bg-muted/20 relative">
+                  {pages.length > 1 && (
+                    <Badge variant="secondary" className="absolute top-2 left-2 z-10">
+                      Page {i + 1}/{pages.length}
+                    </Badge>
+                  )}
+                  <img src={url} alt={`Page ${i + 1} de la leçon`} className="w-full max-h-[480px] object-contain bg-white" />
+                </div>
+              ))}
+            </div>
+          );
+        })()}
 
         {/* Texte cible avec highlighting si match */}
         <div
