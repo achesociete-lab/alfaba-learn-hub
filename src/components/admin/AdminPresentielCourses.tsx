@@ -14,7 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import {
   MapPin, Trash2, Loader2, Users, Save, Plus, X, BookOpen, Languages, Headphones,
-  HelpCircle, ListOrdered, Pencil,
+  HelpCircle, ListOrdered, Pencil, Sparkles, Wand2,
 } from "lucide-react";
 import { toast } from "sonner";
 
