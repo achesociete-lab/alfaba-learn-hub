@@ -14,7 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import {
   MapPin, Trash2, Loader2, Users, Save, Plus, X, BookOpen, Languages, Headphones,
-  HelpCircle, ListOrdered, Pencil, Sparkles, Wand2,
+  HelpCircle, ListOrdered, Pencil, Sparkles, Wand2, Image as ImageIcon, Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -35,6 +35,7 @@ interface CourseDraft {
   reorder_exercises: ReorderEx[];
   dictation_words: string[];
   assigned_user_ids: string[];
+  photo_url: string | null;
 }
 
 const emptyDraft = (): CourseDraft => ({
@@ -47,7 +48,9 @@ const emptyDraft = (): CourseDraft => ({
   reorder_exercises: [{ words: [], correct_order: [] }],
   dictation_words: [],
   assigned_user_ids: [],
+  photo_url: null,
 });
+
 
 const AdminPresentielCourses = () => {
   const { user } = useAuth();
@@ -58,6 +61,30 @@ const AdminPresentielCourses = () => {
   const [dictationInput, setDictationInput] = useState("");
   const [aiTheme, setAiTheme] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+  const handlePhotoUpload = async (file: File) => {
+    if (!user) return;
+    if (!file.type.startsWith("image/")) { toast.error("Fichier image requis"); return; }
+    if (file.size > 10 * 1024 * 1024) { toast.error("Max 10 Mo"); return; }
+    setUploadingPhoto(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${user.id}/${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("presentiel-courses")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) throw upErr;
+      const { data: { publicUrl } } = supabase.storage.from("presentiel-courses").getPublicUrl(path);
+      setDraft((d) => ({ ...d, photo_url: publicUrl }));
+      toast.success("Photo téléchargée");
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e.message || "Erreur upload");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
 
   const handleGenerateAI = async () => {
     if (!aiTheme.trim()) { toast.error("Indique un thème"); return; }
@@ -124,6 +151,7 @@ const AdminPresentielCourses = () => {
         : [{ words: [], correct_order: [] }],
       dictation_words: Array.isArray(c.dictation_words) ? c.dictation_words : [],
       assigned_user_ids: (c.presentiel_course_assignments || []).map((a: any) => a.user_id),
+      photo_url: c.photo_url || null,
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -143,6 +171,7 @@ const AdminPresentielCourses = () => {
         comprehension_questions: draft.comprehension_questions.filter(q => q.question.trim() && q.answer.trim()) as any,
         reorder_exercises: draft.reorder_exercises.filter(r => r.correct_order.length > 0) as any,
         dictation_words: draft.dictation_words.filter(w => w.trim()) as any,
+        photo_url: draft.photo_url,
       };
 
       let courseId = draft.id;
@@ -276,6 +305,51 @@ const AdminPresentielCourses = () => {
               value={draft.course_date}
               onChange={(e) => setDraft({ ...draft, course_date: e.target.value })}
             />
+          </div>
+
+          {/* Photo de la leçon */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <ImageIcon className="h-4 w-4" /> Photo de la leçon (page du livre)
+            </Label>
+            {draft.photo_url ? (
+              <div className="relative rounded-lg border border-border overflow-hidden bg-muted/20">
+                <img
+                  src={draft.photo_url}
+                  alt="Aperçu de la leçon"
+                  className="w-full max-h-72 object-contain bg-white"
+                />
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="absolute top-2 right-2"
+                  onClick={() => setDraft({ ...draft, photo_url: null })}
+                >
+                  <X className="h-4 w-4 mr-1" /> Supprimer
+                </Button>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center gap-2 p-6 rounded-lg border-2 border-dashed border-border hover:border-primary/50 hover:bg-muted/30 cursor-pointer transition">
+                {uploadingPhoto
+                  ? <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  : <Upload className="h-6 w-6 text-muted-foreground" />}
+                <span className="text-sm text-muted-foreground">
+                  {uploadingPhoto ? "Téléchargement…" : "Cliquer pour téléverser une photo"}
+                </span>
+                <span className="text-xs text-muted-foreground">JPG, PNG · max 10 Mo</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploadingPhoto}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) handlePhotoUpload(f);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            )}
           </div>
 
           {/* Lesson text */}
