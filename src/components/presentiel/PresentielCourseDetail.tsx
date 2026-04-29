@@ -773,7 +773,12 @@ function ReorderStep({ course, onDone }: { course: PresentielCourseV2; onDone: (
     const ok = built.length === current.correct_order.length &&
       built.every((w, i) => w === current.correct_order[i]);
     setValidated(ok);
-    if (ok) setScore((s) => s + 1);
+    if (ok) {
+      setScore((s) => s + 1);
+      playCorrectSound();
+    } else {
+      playWrongSound();
+    }
   };
 
   const next = () => {
