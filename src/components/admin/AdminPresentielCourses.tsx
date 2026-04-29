@@ -61,6 +61,30 @@ const AdminPresentielCourses = () => {
   const [dictationInput, setDictationInput] = useState("");
   const [aiTheme, setAiTheme] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+  const handlePhotoUpload = async (file: File) => {
+    if (!user) return;
+    if (!file.type.startsWith("image/")) { toast.error("Fichier image requis"); return; }
+    if (file.size > 10 * 1024 * 1024) { toast.error("Max 10 Mo"); return; }
+    setUploadingPhoto(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${user.id}/${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("presentiel-courses")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) throw upErr;
+      const { data: { publicUrl } } = supabase.storage.from("presentiel-courses").getPublicUrl(path);
+      setDraft((d) => ({ ...d, photo_url: publicUrl }));
+      toast.success("Photo téléchargée");
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e.message || "Erreur upload");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
 
   const handleGenerateAI = async () => {
     if (!aiTheme.trim()) { toast.error("Indique un thème"); return; }
