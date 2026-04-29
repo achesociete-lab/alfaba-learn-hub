@@ -225,6 +225,7 @@ const AdminPresentielCourses = () => {
         reorder_exercises: draft.reorder_exercises.filter(r => r.correct_order.length > 0) as any,
         dictation_words: draft.dictation_words.filter(w => w.trim()) as any,
         photo_url: draft.photo_url,
+        lesson_photos: draft.lesson_photos as any,
       };
 
       let courseId = draft.id;
