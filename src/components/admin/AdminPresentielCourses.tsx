@@ -36,6 +36,7 @@ interface CourseDraft {
   dictation_words: string[];
   assigned_user_ids: string[];
   photo_url: string | null;
+  lesson_photos: string[];
 }
 
 const emptyDraft = (): CourseDraft => ({
@@ -49,6 +50,7 @@ const emptyDraft = (): CourseDraft => ({
   dictation_words: [],
   assigned_user_ids: [],
   photo_url: null,
+  lesson_photos: [],
 });
 
 
