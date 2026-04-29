@@ -25,30 +25,32 @@ const InscriptionPresentiel = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && user && !sessionStorage.getItem(PRESENTIEL_SIGNUP_FLAG)) {
-      navigate("/dashboard", { replace: true });
+    const hasFlag =
+      localStorage.getItem(PRESENTIEL_SIGNUP_FLAG) ||
+      sessionStorage.getItem(PRESENTIEL_SIGNUP_FLAG);
+    if (!authLoading && user && !hasFlag) {
+      navigate("/cours-presentiel", { replace: true });
     }
   }, [authLoading, user, navigate]);
 
   const handleGoogleSignup = async () => {
     setGoogleLoading(true);
     try {
-      // Flag the session so PendingPresentielHandler marks the profile en_attente
-      // and notifies the admin once the OAuth round-trip lands the user back here.
-      sessionStorage.setItem(PRESENTIEL_SIGNUP_FLAG, "1");
+      // Persist flag in localStorage so it survives the OAuth round-trip
+      localStorage.setItem(PRESENTIEL_SIGNUP_FLAG, "1");
       const result = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: window.location.origin,
         extraParams: { prompt: "select_account" },
       });
       if (result.error) {
-        sessionStorage.removeItem(PRESENTIEL_SIGNUP_FLAG);
+        localStorage.removeItem(PRESENTIEL_SIGNUP_FLAG);
         toast.error("Erreur lors de la connexion avec Google");
         return;
       }
       if (result.redirected) return;
-      navigate("/cours-presentiel", { replace: true });
+      // Tokens already set — handler will pick up the flag and redirect
     } catch (err: any) {
-      sessionStorage.removeItem(PRESENTIEL_SIGNUP_FLAG);
+      localStorage.removeItem(PRESENTIEL_SIGNUP_FLAG);
       toast.error(err.message || "Erreur Google");
     } finally {
       setGoogleLoading(false);
