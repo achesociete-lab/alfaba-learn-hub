@@ -6,13 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { BookOpen, ArrowLeft, Mail, CheckCircle, ArrowRight, Laptop, MapPin } from "lucide-react";
+import { BookOpen, ArrowLeft, Mail, CheckCircle, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import PlacementTest from "@/components/PlacementTest";
 import { useAuth } from "@/contexts/AuthContext";
 
-type SignupStep = "mode" | "info" | "test";
-type LearningMode = "en_ligne" | "presentiel";
+type SignupStep = "info" | "test";
 
 const Auth = () => {
   const { user, loading: authLoading } = useAuth();
@@ -27,8 +26,7 @@ const Auth = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
   const [resending, setResending] = useState(false);
-  const [signupStep, setSignupStep] = useState<SignupStep>("mode");
-  const [learningMode, setLearningMode] = useState<LearningMode>("en_ligne");
+  const [signupStep, setSignupStep] = useState<SignupStep>("info");
   const navigate = useNavigate();
 
   useEffect(() => {
