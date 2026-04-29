@@ -1,4 +1,5 @@
-// Génère un cours présentiel complet à partir d'un thème + niveau via Lovable AI
+// Génère un cours présentiel COMPLET à partir d'une photo de leçon (OCR + génération)
+// ou à défaut à partir d'un thème. Utilise Gemini multimodal via Lovable AI Gateway.
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -8,9 +9,15 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { theme, level } = await req.json();
-    if (!theme || !level) {
-      return new Response(JSON.stringify({ error: "theme et level requis" }), {
+    const body = await req.json();
+    const { photo_url, theme, level } = body || {};
+    if (!level) {
+      return new Response(JSON.stringify({ error: "level requis" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (!photo_url && !theme) {
+      return new Response(JSON.stringify({ error: "photo_url ou theme requis" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -20,25 +27,31 @@ Deno.serve(async (req) => {
 
     const isN2 = level === "niveau_2";
 
-    const systemPrompt = `Tu es un professeur d'arabe expérimenté. Tu génères des leçons en arabe Fusha avec harakat (tashkeel) complets.
-RÈGLES STRICTES:
-- TOUT le contenu arabe DOIT contenir les harakat (fatha, kasra, damma, sukun, shadda).
-- Pas de phonétique, pas de translittération.
-- Vocabulaire: 6 à 10 paires arabe/français adaptées au thème.
-- Mots de dictée: 8 à 12 mots issus de la leçon.
-- Niveau 1: texte court (3-5 phrases simples).
-- Niveau 2: texte plus long (6-10 phrases), questions de compréhension (4) et phrases à remettre en ordre (3).`;
+    const systemPrompt = `Tu es un professeur d'arabe expérimenté et un OCR expert pour textes arabes vocalisés.
+
+RÈGLES STRICTES :
+- TOUT le contenu arabe DOIT contenir les harakat complets (fatha, kasra, damma, sukun, shadda, tanwin).
+- AUCUNE phonétique, AUCUNE translittération, AUCUNE parenthèse latine dans le contenu arabe.
+- Si une photo est fournie : tu dois EXTRAIRE FIDÈLEMENT le texte arabe visible sur la page (sans rien inventer, sans rien retirer). Si les harakat sont absents sur la photo, tu les ajoutes correctement. Conserve l'ordre exact des phrases.
+- À partir du texte extrait (ou du thème), tu génères ENSUITE :
+  • un titre court en français résumant la leçon
+  • un vocabulaire de 6 à 10 paires arabe/français tirées du texte
+  • 8 à 12 mots de dictée tirés du texte
+  • ${isN2
+    ? "4 questions de compréhension EN ARABE avec leurs réponses, et 3 phrases de la leçon à remettre en ordre (correct_order)"
+    : "PAS de compréhension ni de remise en ordre (Niveau 1)"}.
+- Le champ lesson_text DOIT être le texte arabe complet de la leçon avec harakat.`;
 
     const tools = [{
       type: "function",
       function: {
         name: "create_presentiel_course",
-        description: "Créer un cours présentiel complet",
+        description: "Créer un cours présentiel complet à partir de la leçon",
         parameters: {
           type: "object",
           properties: {
             title: { type: "string", description: "Titre du cours en français" },
-            lesson_text: { type: "string", description: "Texte arabe avec harakat" },
+            lesson_text: { type: "string", description: "Texte arabe complet de la leçon, avec harakat" },
             vocabulary: {
               type: "array",
               items: {
@@ -78,8 +91,23 @@ RÈGLES STRICTES:
       },
     }];
 
-    const userPrompt = `Génère un cours d'arabe ${isN2 ? "Niveau 2 (intermédiaire)" : "Niveau 1 (débutant)"} sur le thème: "${theme}".
-${isN2 ? "Inclure 4 questions de compréhension (en arabe) et 3 phrases à remettre en ordre." : "Pas de compréhension ni de remise en ordre (Niveau 1)."}`;
+    // Construire le message utilisateur (multimodal si photo)
+    const userContent: any[] = [];
+    if (photo_url) {
+      userContent.push({
+        type: "text",
+        text: `Voici la photo d'une page de leçon d'arabe ${isN2 ? "Niveau 2 (intermédiaire)" : "Niveau 1 (débutant)"}.
+1) Extrais FIDÈLEMENT tout le texte arabe visible (avec harakat complets, ajoute-les si absents).
+2) Génère ensuite le cours complet (titre, vocabulaire, dictée${isN2 ? ", compréhension, remise en ordre" : ""}) basé sur CE texte.
+N'invente rien : le lesson_text doit refléter exactement ce qui est sur la photo.`,
+      });
+      userContent.push({ type: "image_url", image_url: { url: photo_url } });
+    } else {
+      userContent.push({
+        type: "text",
+        text: `Génère un cours d'arabe ${isN2 ? "Niveau 2" : "Niveau 1"} sur le thème : "${theme}".`,
+      });
+    }
 
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -91,7 +119,7 @@ ${isN2 ? "Inclure 4 questions de compréhension (en arabe) et 3 phrases à remet
         model: "google/gemini-2.5-pro",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
+          { role: "user", content: userContent },
         ],
         tools,
         tool_choice: { type: "function", function: { name: "create_presentiel_course" } },
@@ -100,6 +128,7 @@ ${isN2 ? "Inclure 4 questions de compréhension (en arabe) et 3 phrases à remet
 
     if (!aiRes.ok) {
       const t = await aiRes.text();
+      console.error("AI error", aiRes.status, t);
       if (aiRes.status === 429) {
         return new Response(JSON.stringify({ error: "Limite de requêtes atteinte, réessayez dans un instant." }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -110,7 +139,6 @@ ${isN2 ? "Inclure 4 questions de compréhension (en arabe) et 3 phrases à remet
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      console.error("AI error", aiRes.status, t);
       return new Response(JSON.stringify({ error: "Erreur IA" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
