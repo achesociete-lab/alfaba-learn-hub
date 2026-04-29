@@ -66,8 +66,11 @@ const Auth = () => {
         return;
       }
 
+      const { data: sessionData } = await supabase.auth.getSession();
+      const path = sessionData.session?.user?.id
+        ? await getPostLoginPath(sessionData.session.user.id)
+        : "/dashboard";
       toast.success("Connexion réussie !");
-      const path = result.tokens?.user?.id ? await getPostLoginPath(result.tokens.user.id) : "/dashboard";
       navigate(path, { replace: true });
     } catch (err: any) {
       toast.error(err.message || "Erreur lors de la connexion avec Google");
