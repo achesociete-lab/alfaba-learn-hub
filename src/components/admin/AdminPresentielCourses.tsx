@@ -69,8 +69,19 @@ const AdminPresentielCourses = () => {
       const { data, error } = await supabase.functions.invoke("presentiel-ai-generate", {
         body: { photo_url: publicUrl, level: levelOverride || draft.level },
       });
-      if (error) throw error;
+      // Erreur 402 / 429 renvoyée par l'edge function : data peut être null + error présent
+      if (error) {
+        const msg = (error as any).message || "";
+        if (msg.includes("402") || msg.toLowerCase().includes("credit")) {
+          throw new Error("⚠️ Crédits IA épuisés. Ajoute des crédits dans Lovable (Settings → Workspace → Usage) pour relancer l'OCR + génération.");
+        }
+        if (msg.includes("429")) {
+          throw new Error("Trop de requêtes — réessaie dans 30 secondes.");
+        }
+        throw error;
+      }
       if (data?.error) throw new Error(data.error);
+      if (!data?.course) throw new Error("Réponse IA vide — réessaie.");
       const c = data.course;
       setDraft((prev) => ({
         ...prev,
