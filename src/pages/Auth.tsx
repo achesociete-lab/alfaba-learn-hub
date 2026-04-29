@@ -146,7 +146,12 @@ const Auth = () => {
       toast.error("Les mots de passe ne correspondent pas");
       return;
     }
-    setSignupStep("test");
+    // Présentiel : pas de test de niveau, on inscrit directement
+    if (learningMode === "presentiel") {
+      handleSignup("niveau_1");
+    } else {
+      setSignupStep("test");
+    }
   };
 
   const handleTestComplete = (determinedLevel: "niveau_1" | "niveau_2") => {
