@@ -204,6 +204,7 @@ const AdminPresentielCourses = () => {
       dictation_words: Array.isArray(c.dictation_words) ? c.dictation_words : [],
       assigned_user_ids: (c.presentiel_course_assignments || []).map((a: any) => a.user_id),
       photo_url: c.photo_url || null,
+      lesson_photos: Array.isArray(c.lesson_photos) ? c.lesson_photos : [],
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
