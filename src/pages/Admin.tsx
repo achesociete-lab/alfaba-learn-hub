@@ -12,10 +12,11 @@ import AdminAttendance from "@/components/admin/AdminAttendance";
 import AdminCourses from "@/components/admin/AdminCourses";
 import AdminRecitations from "@/components/admin/AdminRecitations";
 import AdminPresentielCourses from "@/components/admin/AdminPresentielCourses";
+import AdminPresentielSubmissions from "@/components/admin/AdminPresentielSubmissions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
-import { Shield, Users, FileText, ClipboardList, BarChart3, BookOpen, Headphones, MapPin } from "lucide-react";
+import { Shield, Users, FileText, ClipboardList, BarChart3, BookOpen, Headphones, MapPin, Image as ImageIcon } from "lucide-react";
 
 const Admin = () => {
   const { user, loading: authLoading } = useAuth();
@@ -87,6 +88,9 @@ const Admin = () => {
               <TabsTrigger value="presentiel" className="flex items-center gap-1.5 text-xs sm:text-sm">
                 <MapPin className="h-4 w-4" /> Présentiel
               </TabsTrigger>
+              <TabsTrigger value="corrections" className="flex items-center gap-1.5 text-xs sm:text-sm">
+                <ImageIcon className="h-4 w-4" /> Corrections
+              </TabsTrigger>
               <TabsTrigger value="homework" className="flex items-center gap-1.5 text-xs sm:text-sm">
                 <FileText className="h-4 w-4" /> Devoirs
               </TabsTrigger>
@@ -102,6 +106,7 @@ const Admin = () => {
             <TabsContent value="courses"><AdminCourses /></TabsContent>
             <TabsContent value="students"><AdminStudents /></TabsContent>
             <TabsContent value="presentiel"><AdminPresentielCourses /></TabsContent>
+            <TabsContent value="corrections"><AdminPresentielSubmissions /></TabsContent>
             <TabsContent value="homework"><AdminHomework /></TabsContent>
             <TabsContent value="attendance"><AdminAttendance /></TabsContent>
             <TabsContent value="recitations"><AdminRecitations /></TabsContent>

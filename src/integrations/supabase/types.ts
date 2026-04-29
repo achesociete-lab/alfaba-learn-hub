@@ -398,43 +398,148 @@ export type Database = {
       }
       presentiel_courses: {
         Row: {
+          comprehension_questions: Json
           course_date: string
           created_at: string
           created_by: string
           dictation: Json | null
+          dictation_words: Json
+          fill_blanks: Json
           id: string
+          lesson_text: string | null
+          level: Database["public"]["Enums"]["class_level"]
           ocr_text: string | null
           photo_url: string | null
           qcm: Json | null
+          reorder_exercises: Json
           title: string
           translation: Json | null
           updated_at: string
+          vocabulary: Json
         }
         Insert: {
+          comprehension_questions?: Json
           course_date?: string
           created_at?: string
           created_by: string
           dictation?: Json | null
+          dictation_words?: Json
+          fill_blanks?: Json
           id?: string
+          lesson_text?: string | null
+          level?: Database["public"]["Enums"]["class_level"]
           ocr_text?: string | null
           photo_url?: string | null
           qcm?: Json | null
+          reorder_exercises?: Json
           title: string
           translation?: Json | null
           updated_at?: string
+          vocabulary?: Json
         }
         Update: {
+          comprehension_questions?: Json
           course_date?: string
           created_at?: string
           created_by?: string
           dictation?: Json | null
+          dictation_words?: Json
+          fill_blanks?: Json
           id?: string
+          lesson_text?: string | null
+          level?: Database["public"]["Enums"]["class_level"]
           ocr_text?: string | null
           photo_url?: string | null
           qcm?: Json | null
+          reorder_exercises?: Json
           title?: string
           translation?: Json | null
           updated_at?: string
+          vocabulary?: Json
+        }
+        Relationships: []
+      }
+      presentiel_reading_scores: {
+        Row: {
+          attempt_number: number
+          correct_words: number
+          course_id: string
+          created_at: string
+          id: string
+          score_percent: number
+          target_text: string
+          total_words: number
+          transcription: string | null
+          user_id: string
+          word_results: Json
+        }
+        Insert: {
+          attempt_number?: number
+          correct_words?: number
+          course_id: string
+          created_at?: string
+          id?: string
+          score_percent?: number
+          target_text: string
+          total_words?: number
+          transcription?: string | null
+          user_id: string
+          word_results?: Json
+        }
+        Update: {
+          attempt_number?: number
+          correct_words?: number
+          course_id?: string
+          created_at?: string
+          id?: string
+          score_percent?: number
+          target_text?: string
+          total_words?: number
+          transcription?: string | null
+          user_id?: string
+          word_results?: Json
+        }
+        Relationships: []
+      }
+      presentiel_submissions: {
+        Row: {
+          course_id: string
+          created_at: string
+          feedback: string | null
+          id: string
+          photo_url: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["presentiel_submission_status"]
+          step_type: Database["public"]["Enums"]["presentiel_step_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          feedback?: string | null
+          id?: string
+          photo_url: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["presentiel_submission_status"]
+          step_type: Database["public"]["Enums"]["presentiel_step_type"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          feedback?: string | null
+          id?: string
+          photo_url?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["presentiel_submission_status"]
+          step_type?: Database["public"]["Enums"]["presentiel_step_type"]
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -954,6 +1059,8 @@ export type Database = {
       app_role: "admin" | "teacher" | "student"
       class_level: "niveau_1" | "niveau_2"
       memorization_status: "en_cours" | "mémorisée" | "à_réviser"
+      presentiel_step_type: "ecriture" | "dictee"
+      presentiel_submission_status: "en_attente" | "validee" | "a_corriger"
       recitation_status: "en_attente" | "corrigée" | "a_refaire"
       student_type: "en_ligne" | "presentiel" | "en_attente"
     }
@@ -1086,6 +1193,8 @@ export const Constants = {
       app_role: ["admin", "teacher", "student"],
       class_level: ["niveau_1", "niveau_2"],
       memorization_status: ["en_cours", "mémorisée", "à_réviser"],
+      presentiel_step_type: ["ecriture", "dictee"],
+      presentiel_submission_status: ["en_attente", "validee", "a_corriger"],
       recitation_status: ["en_attente", "corrigée", "a_refaire"],
       student_type: ["en_ligne", "presentiel", "en_attente"],
     },
