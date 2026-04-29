@@ -27,7 +27,8 @@ const Auth = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
   const [resending, setResending] = useState(false);
-  const [signupStep, setSignupStep] = useState<SignupStep>("info");
+  const [signupStep, setSignupStep] = useState<SignupStep>("mode");
+  const [learningMode, setLearningMode] = useState<LearningMode>("en_ligne");
   const navigate = useNavigate();
 
   useEffect(() => {
