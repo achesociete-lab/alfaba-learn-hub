@@ -968,6 +968,7 @@ const PresentielCourseDetail = ({ course, userProgress, onProgressUpdate }: Prop
               course={course}
               stepType="dictee"
               title="Étape — Dictée"
+              maxPhotos={3}
               instruction={
                 <DicteeInstruction words={course.dictation_words || []} />
               }
