@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { BookOpen, ArrowLeft, Mail, CheckCircle, ArrowRight } from "lucide-react";
+import { BookOpen, ArrowLeft, Mail, CheckCircle, ArrowRight, Laptop, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import PlacementTest from "@/components/PlacementTest";
 import { useAuth } from "@/contexts/AuthContext";
 
-type SignupStep = "info" | "test";
+type SignupStep = "mode" | "info" | "test";
+type LearningMode = "en_ligne" | "presentiel";
 
 const Auth = () => {
   const { user, loading: authLoading } = useAuth();
