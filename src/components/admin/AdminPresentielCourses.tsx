@@ -36,6 +36,7 @@ interface CourseDraft {
   dictation_words: string[];
   assigned_user_ids: string[];
   photo_url: string | null;
+  lesson_photos: string[];
 }
 
 const emptyDraft = (): CourseDraft => ({
@@ -49,6 +50,7 @@ const emptyDraft = (): CourseDraft => ({
   dictation_words: [],
   assigned_user_ids: [],
   photo_url: null,
+  lesson_photos: [],
 });
 
 
@@ -202,6 +204,7 @@ const AdminPresentielCourses = () => {
       dictation_words: Array.isArray(c.dictation_words) ? c.dictation_words : [],
       assigned_user_ids: (c.presentiel_course_assignments || []).map((a: any) => a.user_id),
       photo_url: c.photo_url || null,
+      lesson_photos: Array.isArray(c.lesson_photos) ? c.lesson_photos : [],
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -222,6 +225,7 @@ const AdminPresentielCourses = () => {
         reorder_exercises: draft.reorder_exercises.filter(r => r.correct_order.length > 0) as any,
         dictation_words: draft.dictation_words.filter(w => w.trim()) as any,
         photo_url: draft.photo_url,
+        lesson_photos: draft.lesson_photos as any,
       };
 
       let courseId = draft.id;
@@ -401,6 +405,66 @@ const AdminPresentielCourses = () => {
                 />
               </label>
             )}
+          </div>
+
+          {/* Pages additionnelles de la leçon (max 10) */}
+          <div className="p-4 rounded-lg border border-border bg-muted/20 space-y-3">
+            <Label className="flex items-center gap-2">
+              <ImageIcon className="h-4 w-4" /> Pages additionnelles de la leçon
+              <Badge variant="outline" className="ml-1">{draft.lesson_photos.length}/10</Badge>
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              Ajoutez d'autres pages du livre (affichées dans l'ordre à l'élève). Maximum 10 pages.
+            </p>
+            {draft.lesson_photos.length > 0 && (
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                {draft.lesson_photos.map((url, i) => (
+                  <div key={i} className="relative group">
+                    <img src={url} alt={`Page ${i + 1}`} className="w-full aspect-square object-cover rounded border border-border" />
+                    <span className="absolute top-1 left-1 bg-background/80 text-xs px-1 rounded">{i + 1}</span>
+                    <button
+                      onClick={() => setDraft({ ...draft, lesson_photos: draft.lesson_photos.filter((_, j) => j !== i) })}
+                      className="absolute top-1 right-1 bg-destructive text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <label className="inline-flex items-center gap-2 px-3 py-2 rounded border border-dashed border-border hover:bg-muted cursor-pointer text-sm">
+              <Upload className="h-4 w-4" />
+              Ajouter des pages
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                disabled={draft.lesson_photos.length >= 10 || !user}
+                onChange={async (e) => {
+                  const files = Array.from(e.target.files || []);
+                  e.target.value = "";
+                  if (!user || files.length === 0) return;
+                  const remaining = 10 - draft.lesson_photos.length;
+                  const toUpload = files.slice(0, remaining);
+                  if (files.length > remaining) toast.warning(`Limite 10 pages — ${remaining} ajoutée(s).`);
+                  const newUrls: string[] = [];
+                  for (const f of toUpload) {
+                    if (!f.type.startsWith("image/")) continue;
+                    const ext = f.name.split(".").pop() || "jpg";
+                    const path = `${user.id}/lesson-${Date.now()}-${newUrls.length}.${ext}`;
+                    const { error } = await supabase.storage.from("presentiel-courses").upload(path, f, { contentType: f.type });
+                    if (error) { toast.error(error.message); continue; }
+                    const { data: { publicUrl } } = supabase.storage.from("presentiel-courses").getPublicUrl(path);
+                    newUrls.push(publicUrl);
+                  }
+                  if (newUrls.length > 0) {
+                    setDraft((d) => ({ ...d, lesson_photos: [...d.lesson_photos, ...newUrls] }));
+                    toast.success(`${newUrls.length} page(s) ajoutée(s)`);
+                  }
+                }}
+              />
+            </label>
           </div>
 
           {/* Alternative : génération depuis un thème (sans photo) */}

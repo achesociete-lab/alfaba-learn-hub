@@ -18,6 +18,7 @@ import { compareVerseWords, type WordMatch } from "@/utils/quran-api";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { playCorrectSound, playWrongSound } from "@/utils/sound-feedback";
 
 // ─── Types ───
 export interface PresentielCourseV2 {
@@ -31,6 +32,7 @@ export interface PresentielCourseV2 {
   comprehension_questions?: { question: string; answer: string }[];
   reorder_exercises?: { words: string[]; correct_order: string[] }[];
   photo_url?: string | null;
+  lesson_photos?: string[];
   // legacy fields kept for compat
   qcm?: any[];
   translation?: any;
@@ -166,16 +168,31 @@ function LectureStep({ course, onDone }: { course: PresentielCourseV2; onDone: (
           <h3 className="font-semibold text-foreground text-lg">Étape 1 — Lecture</h3>
         </div>
 
-        {/* Photo de la leçon (page du livre) */}
-        {course.photo_url && (
-          <div className="rounded-xl overflow-hidden border border-border bg-muted/20">
-            <img
-              src={course.photo_url}
-              alt="Page de la leçon"
-              className="w-full max-h-[480px] object-contain bg-white"
-            />
-          </div>
-        )}
+        {(() => {
+          const pages = (course.lesson_photos && course.lesson_photos.length > 0)
+            ? course.lesson_photos
+            : (course.photo_url ? [course.photo_url] : []);
+          if (pages.length === 0) return null;
+          return (
+            <div className="space-y-3">
+              {pages.length > 1 && (
+                <p className="text-xs text-muted-foreground">
+                  📖 {pages.length} pages — faites défiler dans l'ordre
+                </p>
+              )}
+              {pages.map((url, i) => (
+                <div key={i} className="rounded-xl overflow-hidden border border-border bg-muted/20 relative">
+                  {pages.length > 1 && (
+                    <Badge variant="secondary" className="absolute top-2 left-2 z-10">
+                      Page {i + 1}/{pages.length}
+                    </Badge>
+                  )}
+                  <img src={url} alt={`Page ${i + 1} de la leçon`} className="w-full max-h-[480px] object-contain bg-white" />
+                </div>
+              ))}
+            </div>
+          );
+        })()}
 
         {/* Texte cible avec highlighting si match */}
         <div
@@ -274,12 +291,14 @@ function PhotoUploadStep({
   title,
   instruction,
   onDone,
+  maxPhotos = 1,
 }: {
   course: PresentielCourseV2;
   stepType: "ecriture" | "dictee";
   title: string;
   instruction: React.ReactNode;
   onDone: () => void;
+  maxPhotos?: number;
 }) {
   const { user } = useAuth();
   const fileRef = useRef<HTMLInputElement | null>(null);
@@ -287,9 +306,9 @@ function PhotoUploadStep({
   const [submitted, setSubmitted] = useState(false);
   const [previousSubmission, setPreviousSubmission] = useState<any>(null);
 
-  useEffect(() => {
+  const refresh = async () => {
     if (!user) return;
-    supabase
+    const { data } = await supabase
       .from("presentiel_submissions")
       .select("*")
       .eq("course_id", course.id)
@@ -297,29 +316,46 @@ function PhotoUploadStep({
       .eq("step_type", stepType)
       .order("created_at", { ascending: false })
       .limit(1)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) {
-          setPreviousSubmission(data);
-          setSubmitted(true);
-        }
-      });
+      .maybeSingle();
+    if (data) {
+      setPreviousSubmission(data);
+      setSubmitted(true);
+      // Marquer comme vue si correction effectuée
+      if ((data as any).status !== "en_attente" && !(data as any).seen_by_student) {
+        await supabase
+          .from("presentiel_submissions")
+          .update({ seen_by_student: true } as any)
+          .eq("id", (data as any).id);
+      }
+    }
+  };
+
+  useEffect(() => {
+    refresh();
   }, [user, course.id, stepType]);
 
-  const handleFile = async (file: File) => {
+  const handleFiles = async (files: FileList) => {
     if (!user) return;
+    const list = Array.from(files).slice(0, maxPhotos);
+    if (list.length === 0) return;
+    if (files.length > maxPhotos) {
+      toast.warning(`Maximum ${maxPhotos} photo(s) — seules les ${maxPhotos} premières seront envoyées.`);
+    }
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop() || "jpg";
-      const path = `${user.id}/${course.id}/${stepType}-${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage
-        .from("presentiel-submissions")
-        .upload(path, file, { contentType: file.type });
-      if (upErr) throw upErr;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from("presentiel-submissions")
-        .getPublicUrl(path);
+      const urls: string[] = [];
+      for (const file of list) {
+        const ext = file.name.split(".").pop() || "jpg";
+        const path = `${user.id}/${course.id}/${stepType}-${Date.now()}-${urls.length}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from("presentiel-submissions")
+          .upload(path, file, { contentType: file.type });
+        if (upErr) throw upErr;
+        const { data: { publicUrl } } = supabase.storage
+          .from("presentiel-submissions")
+          .getPublicUrl(path);
+        urls.push(publicUrl);
+      }
 
       const { data, error } = await supabase
         .from("presentiel_submissions")
@@ -327,7 +363,8 @@ function PhotoUploadStep({
           course_id: course.id,
           user_id: user.id,
           step_type: stepType,
-          photo_url: publicUrl,
+          photo_url: urls[0],
+          photo_urls: urls as any,
           status: "en_attente",
         })
         .select()
@@ -336,13 +373,17 @@ function PhotoUploadStep({
 
       setPreviousSubmission(data);
       setSubmitted(true);
-      toast.success("Photo envoyée pour correction !");
+      toast.success(urls.length > 1 ? `${urls.length} photos envoyées pour correction !` : "Photo envoyée pour correction !");
     } catch (e: any) {
       toast.error(e.message || "Échec de l'envoi");
     } finally {
       setUploading(false);
     }
   };
+
+  const photos: string[] = (previousSubmission?.photo_urls && Array.isArray(previousSubmission.photo_urls) && previousSubmission.photo_urls.length > 0)
+    ? previousSubmission.photo_urls
+    : (previousSubmission?.photo_url ? [previousSubmission.photo_url] : []);
 
   return (
     <Card>
@@ -360,32 +401,45 @@ function PhotoUploadStep({
 
         {submitted && previousSubmission ? (
           <div className="space-y-3">
-            <div className="p-4 rounded-lg border border-border bg-muted/30 flex items-start gap-3">
-              <img
-                src={previousSubmission.photo_url}
-                alt="Soumission"
-                className="w-24 h-24 object-cover rounded-md border border-border"
-              />
-              <div className="flex-1 text-sm">
-                <Badge
-                  variant={
-                    previousSubmission.status === "validee"
-                      ? "default"
-                      : previousSubmission.status === "a_corriger"
-                      ? "destructive"
-                      : "outline"
-                  }
-                  className="mb-2"
-                >
-                  {previousSubmission.status === "validee" && "✅ Validée"}
-                  {previousSubmission.status === "a_corriger" && "❌ À corriger"}
-                  {previousSubmission.status === "en_attente" && "⏳ En attente de correction"}
-                </Badge>
+            {/* Notification de correction du prof */}
+            {previousSubmission.status !== "en_attente" && (
+              <div className={`p-4 rounded-lg border-2 ${
+                previousSubmission.status === "validee"
+                  ? "border-emerald-500 bg-emerald-500/10"
+                  : "border-destructive bg-destructive/10"
+              }`}>
+                <p className={`font-bold text-lg ${
+                  previousSubmission.status === "validee" ? "text-emerald-700" : "text-destructive"
+                }`}>
+                  {previousSubmission.status === "validee" ? "✅ Validée par votre professeur" : "❌ À corriger"}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Votre professeur a corrigé votre travail.
+                </p>
                 {previousSubmission.feedback && (
-                  <p className="text-foreground italic">« {previousSubmission.feedback} »</p>
+                  <div className="mt-3 p-3 rounded bg-background/60 border border-border">
+                    <p className="text-xs font-semibold mb-1">Commentaire du professeur :</p>
+                    <p className="text-foreground italic">« {previousSubmission.feedback} »</p>
+                  </div>
                 )}
               </div>
+            )}
+            {previousSubmission.status === "en_attente" && (
+              <Badge variant="outline">⏳ En attente de correction</Badge>
+            )}
+
+            <div className="grid grid-cols-3 gap-2">
+              {photos.map((u, i) => (
+                <a key={i} href={u} target="_blank" rel="noreferrer">
+                  <img
+                    src={u}
+                    alt={`Photo ${i + 1}`}
+                    className="w-full aspect-square object-cover rounded-md border border-border"
+                  />
+                </a>
+              ))}
             </div>
+
             <div className="flex flex-wrap gap-2">
               <Button
                 variant="outline"
@@ -393,7 +447,8 @@ function PhotoUploadStep({
                 disabled={uploading}
                 className="gap-2"
               >
-                <Camera className="h-4 w-4" /> Renvoyer une nouvelle photo
+                <Camera className="h-4 w-4" />
+                {maxPhotos > 1 ? `Renvoyer (jusqu'à ${maxPhotos} photos)` : "Renvoyer une photo"}
               </Button>
               <Button onClick={onDone} className="gap-2">
                 Étape suivante <ArrowRight className="h-4 w-4" />
@@ -407,7 +462,11 @@ function PhotoUploadStep({
             className="gap-2 gradient-emerald border-0 text-primary-foreground"
           >
             <Camera className="h-4 w-4" />
-            {uploading ? "Envoi…" : "Prendre / choisir une photo"}
+            {uploading
+              ? "Envoi…"
+              : maxPhotos > 1
+                ? `Choisir jusqu'à ${maxPhotos} photos`
+                : "Choisir une photo"}
           </Button>
         )}
 
@@ -415,11 +474,11 @@ function PhotoUploadStep({
           ref={fileRef}
           type="file"
           accept="image/*"
-          capture="environment"
+          multiple={maxPhotos > 1}
           className="hidden"
           onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) handleFile(f);
+            const files = e.target.files;
+            if (files && files.length > 0) handleFiles(files);
             e.target.value = "";
           }}
         />
@@ -463,7 +522,13 @@ function TraductionStep({ course, onDone }: { course: PresentielCourseV2; onDone
   const handleSelect = (i: number) => {
     if (selected !== null) return;
     setSelected(i);
-    if (options[i] === current.french) setScore((s) => s + 1);
+    const isOk = options[i] === current.french;
+    if (isOk) {
+      setScore((s) => s + 1);
+      playCorrectSound();
+    } else {
+      playWrongSound();
+    }
   };
 
   const next = () => {
@@ -586,7 +651,12 @@ function ComprehensionStep({ course, onDone }: { course: PresentielCourseV2; onD
   const validate = () => {
     const ok = normalize(answer) === normalize(current.answer);
     setValidated(ok);
-    if (ok) setScore((s) => s + 1);
+    if (ok) {
+      setScore((s) => s + 1);
+      playCorrectSound();
+    } else {
+      playWrongSound();
+    }
   };
 
   const next = () => {
@@ -703,7 +773,12 @@ function ReorderStep({ course, onDone }: { course: PresentielCourseV2; onDone: (
     const ok = built.length === current.correct_order.length &&
       built.every((w, i) => w === current.correct_order[i]);
     setValidated(ok);
-    if (ok) setScore((s) => s + 1);
+    if (ok) {
+      setScore((s) => s + 1);
+      playCorrectSound();
+    } else {
+      playWrongSound();
+    }
   };
 
   const next = () => {
@@ -893,6 +968,7 @@ const PresentielCourseDetail = ({ course, userProgress, onProgressUpdate }: Prop
               course={course}
               stepType="dictee"
               title="Étape — Dictée"
+              maxPhotos={3}
               instruction={
                 <DicteeInstruction words={course.dictation_words || []} />
               }

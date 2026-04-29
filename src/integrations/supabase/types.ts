@@ -406,6 +406,7 @@ export type Database = {
           dictation_words: Json
           fill_blanks: Json
           id: string
+          lesson_photos: Json
           lesson_text: string | null
           level: Database["public"]["Enums"]["class_level"]
           ocr_text: string | null
@@ -426,6 +427,7 @@ export type Database = {
           dictation_words?: Json
           fill_blanks?: Json
           id?: string
+          lesson_photos?: Json
           lesson_text?: string | null
           level?: Database["public"]["Enums"]["class_level"]
           ocr_text?: string | null
@@ -446,6 +448,7 @@ export type Database = {
           dictation_words?: Json
           fill_blanks?: Json
           id?: string
+          lesson_photos?: Json
           lesson_text?: string | null
           level?: Database["public"]["Enums"]["class_level"]
           ocr_text?: string | null
@@ -508,8 +511,10 @@ export type Database = {
           feedback: string | null
           id: string
           photo_url: string
+          photo_urls: Json
           reviewed_at: string | null
           reviewed_by: string | null
+          seen_by_student: boolean
           status: Database["public"]["Enums"]["presentiel_submission_status"]
           step_type: Database["public"]["Enums"]["presentiel_step_type"]
           updated_at: string
@@ -521,8 +526,10 @@ export type Database = {
           feedback?: string | null
           id?: string
           photo_url: string
+          photo_urls?: Json
           reviewed_at?: string | null
           reviewed_by?: string | null
+          seen_by_student?: boolean
           status?: Database["public"]["Enums"]["presentiel_submission_status"]
           step_type: Database["public"]["Enums"]["presentiel_step_type"]
           updated_at?: string
@@ -534,8 +541,10 @@ export type Database = {
           feedback?: string | null
           id?: string
           photo_url?: string
+          photo_urls?: Json
           reviewed_at?: string | null
           reviewed_by?: string | null
+          seen_by_student?: boolean
           status?: Database["public"]["Enums"]["presentiel_submission_status"]
           step_type?: Database["public"]["Enums"]["presentiel_step_type"]
           updated_at?: string

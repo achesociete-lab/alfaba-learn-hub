@@ -22,6 +22,7 @@ interface Submission {
   user_id: string;
   step_type: "ecriture" | "dictee";
   photo_url: string;
+  photo_urls?: string[] | null;
   status: "en_attente" | "validee" | "a_corriger";
   feedback: string | null;
   created_at: string;
@@ -246,13 +247,17 @@ function SubmissionCard({
       <Card>
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row gap-4">
-            <a href={sub.photo_url} target="_blank" rel="noreferrer" className="shrink-0">
-              <img
-                src={sub.photo_url}
-                alt="Soumission élève"
-                className="w-full sm:w-48 h-48 object-cover rounded-lg border border-border"
-              />
-            </a>
+            <div className="shrink-0 flex flex-wrap gap-2 sm:w-48">
+              {((sub.photo_urls && sub.photo_urls.length > 0) ? sub.photo_urls : [sub.photo_url]).map((u, i) => (
+                <a key={i} href={u} target="_blank" rel="noreferrer" className="block">
+                  <img
+                    src={u}
+                    alt={`Soumission ${i + 1}`}
+                    className="w-24 h-24 object-cover rounded-lg border border-border"
+                  />
+                </a>
+              ))}
+            </div>
             <div className="flex-1 space-y-2">
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div>
