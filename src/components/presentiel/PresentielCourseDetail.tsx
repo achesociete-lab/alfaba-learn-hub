@@ -6,7 +6,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Mic, Square, Volume2, Camera, CheckCircle2, XCircle,
   ArrowRight, Loader2, RotateCcw, Award, BookOpen, PenLine, Languages, Headphones,
+  HelpCircle, ListOrdered, Send,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +28,8 @@ export interface PresentielCourseV2 {
   lesson_text: string | null;
   vocabulary: { arabic: string; french: string }[];
   dictation_words: string[];
+  comprehension_questions?: { question: string; answer: string }[];
+  reorder_exercises?: { words: string[]; correct_order: string[] }[];
   // legacy fields kept for compat
   qcm?: any[];
   translation?: any;
@@ -38,12 +42,14 @@ interface Props {
   onProgressUpdate?: (p: any) => void;
 }
 
-type Step = "lecture" | "ecriture" | "traduction" | "dictee" | "done";
+type Step = "lecture" | "ecriture" | "traduction" | "comprehension" | "reorder" | "dictee" | "done";
 
 const STEP_LABEL: Record<Exclude<Step, "done">, { label: string; icon: typeof BookOpen }> = {
   lecture: { label: "Lecture", icon: BookOpen },
   ecriture: { label: "Écriture", icon: PenLine },
   traduction: { label: "Traduction", icon: Languages },
+  comprehension: { label: "Compréhension", icon: HelpCircle },
+  reorder: { label: "Remise en ordre", icon: ListOrdered },
   dictee: { label: "Dictée", icon: Headphones },
 };
 
