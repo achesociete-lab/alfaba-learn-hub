@@ -6,7 +6,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Mic, Square, Volume2, Camera, CheckCircle2, XCircle,
   ArrowRight, Loader2, RotateCcw, Award, BookOpen, PenLine, Languages, Headphones,
+  HelpCircle, ListOrdered, Send,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +28,8 @@ export interface PresentielCourseV2 {
   lesson_text: string | null;
   vocabulary: { arabic: string; french: string }[];
   dictation_words: string[];
+  comprehension_questions?: { question: string; answer: string }[];
+  reorder_exercises?: { words: string[]; correct_order: string[] }[];
   // legacy fields kept for compat
   qcm?: any[];
   translation?: any;
@@ -38,12 +42,14 @@ interface Props {
   onProgressUpdate?: (p: any) => void;
 }
 
-type Step = "lecture" | "ecriture" | "traduction" | "dictee" | "done";
+type Step = "lecture" | "ecriture" | "traduction" | "comprehension" | "reorder" | "dictee" | "done";
 
 const STEP_LABEL: Record<Exclude<Step, "done">, { label: string; icon: typeof BookOpen }> = {
   lecture: { label: "Lecture", icon: BookOpen },
   ecriture: { label: "Écriture", icon: PenLine },
   traduction: { label: "Traduction", icon: Languages },
+  comprehension: { label: "Compréhension", icon: HelpCircle },
+  reorder: { label: "Remise en ordre", icon: ListOrdered },
   dictee: { label: "Dictée", icon: Headphones },
 };
 
@@ -539,12 +545,264 @@ function TraductionStep({ course, onDone }: { course: PresentielCourseV2; onDone
   );
 }
 
+// ─── Step 4 (N2): Compréhension — questions/réponses arabes ───
+function ComprehensionStep({ course, onDone }: { course: PresentielCourseV2; onDone: () => void }) {
+  const { speak } = useArabicSpeech();
+  const items = course.comprehension_questions || [];
+  const [idx, setIdx] = useState(0);
+  const [answer, setAnswer] = useState("");
+  const [validated, setValidated] = useState<null | boolean>(null);
+  const [score, setScore] = useState(0);
+  const [finished, setFinished] = useState(false);
+
+  if (items.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center text-muted-foreground space-y-3">
+          Aucune question de compréhension configurée.
+          <div><Button onClick={onDone} variant="outline">Étape suivante</Button></div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const current = items[idx];
+
+  const normalize = (s: string) =>
+    s.replace(/[\u064B-\u0652\u0670]/g, "").replace(/[إأآا]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه").trim();
+
+  const validate = () => {
+    const ok = normalize(answer) === normalize(current.answer);
+    setValidated(ok);
+    if (ok) setScore((s) => s + 1);
+  };
+
+  const next = () => {
+    if (idx + 1 >= items.length) setFinished(true);
+    else { setIdx(idx + 1); setAnswer(""); setValidated(null); }
+  };
+
+  if (finished) {
+    return (
+      <Card>
+        <CardContent className="p-6 text-center space-y-4">
+          <Award className="h-12 w-12 text-gold mx-auto" />
+          <h3 className="text-xl font-bold">Compréhension terminée !</h3>
+          <p className="text-muted-foreground">
+            Score : <span className="font-bold text-foreground">{score}</span> / {items.length}
+          </p>
+          <Button onClick={onDone} className="gap-2">
+            Étape suivante <ArrowRight className="h-4 w-4" />
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardContent className="p-6 space-y-5">
+        <div className="flex items-center gap-2">
+          <HelpCircle className="h-5 w-5 text-primary" />
+          <h3 className="font-semibold text-foreground text-lg">Étape — Compréhension</h3>
+          <Badge variant="outline" className="ml-auto">{idx + 1} / {items.length}</Badge>
+        </div>
+
+        <div dir="rtl" className="p-5 rounded-xl bg-muted/40 border border-border text-2xl font-amiri text-right leading-loose">
+          {current.question}
+        </div>
+
+        <Button variant="ghost" size="sm" onClick={() => speak(current.question)} className="gap-2">
+          <Volume2 className="h-4 w-4" /> Écouter la question
+        </Button>
+
+        <Input
+          dir="rtl"
+          className="font-amiri text-xl text-right"
+          placeholder="اكتب جوابك هنا…"
+          value={answer}
+          onChange={(e) => setAnswer(e.target.value)}
+          disabled={validated !== null}
+        />
+
+        {validated === null ? (
+          <Button onClick={validate} disabled={!answer.trim()} className="gap-2">
+            <Send className="h-4 w-4" /> Valider
+          </Button>
+        ) : (
+          <div className={`p-4 rounded-lg border ${validated ? "border-emerald-500 bg-emerald-500/10" : "border-destructive bg-destructive/10"}`}>
+            <p className={`font-semibold ${validated ? "text-emerald-700" : "text-destructive"}`}>
+              {validated ? "✅ Bonne réponse !" : "❌ Réponse incorrecte"}
+            </p>
+            {!validated && (
+              <p dir="rtl" className="text-right font-amiri text-lg mt-2">
+                Réponse attendue : <strong>{current.answer}</strong>
+              </p>
+            )}
+            <Button onClick={next} className="gap-2 mt-3">
+              {idx + 1 >= items.length ? "Terminer" : "Suivant"} <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Step 5 (N2): Remise en ordre des mots ───
+function ReorderStep({ course, onDone }: { course: PresentielCourseV2; onDone: () => void }) {
+  const items = course.reorder_exercises || [];
+  const [idx, setIdx] = useState(0);
+  const [shuffled, setShuffled] = useState<string[]>([]);
+  const [picked, setPicked] = useState<number[]>([]);
+  const [validated, setValidated] = useState<null | boolean>(null);
+  const [score, setScore] = useState(0);
+  const [finished, setFinished] = useState(false);
+
+  const current = items[idx];
+
+  useEffect(() => {
+    if (current) {
+      const arr = [...current.correct_order].sort(() => Math.random() - 0.5);
+      setShuffled(arr);
+      setPicked([]);
+      setValidated(null);
+    }
+  }, [idx, current]);
+
+  if (items.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center text-muted-foreground space-y-3">
+          Aucun exercice de remise en ordre configuré.
+          <div><Button onClick={onDone} variant="outline">Étape suivante</Button></div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const togglePick = (i: number) => {
+    if (validated !== null) return;
+    setPicked((p) => p.includes(i) ? p.filter(x => x !== i) : [...p, i]);
+  };
+
+  const validate = () => {
+    const built = picked.map((i) => shuffled[i]);
+    const ok = built.length === current.correct_order.length &&
+      built.every((w, i) => w === current.correct_order[i]);
+    setValidated(ok);
+    if (ok) setScore((s) => s + 1);
+  };
+
+  const next = () => {
+    if (idx + 1 >= items.length) setFinished(true);
+    else setIdx(idx + 1);
+  };
+
+  if (finished) {
+    return (
+      <Card>
+        <CardContent className="p-6 text-center space-y-4">
+          <Award className="h-12 w-12 text-gold mx-auto" />
+          <h3 className="text-xl font-bold">Remise en ordre terminée !</h3>
+          <p className="text-muted-foreground">
+            Score : <span className="font-bold text-foreground">{score}</span> / {items.length}
+          </p>
+          <Button onClick={onDone} className="gap-2">
+            Étape suivante <ArrowRight className="h-4 w-4" />
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const isFull = picked.length === shuffled.length;
+
+  return (
+    <Card>
+      <CardContent className="p-6 space-y-5">
+        <div className="flex items-center gap-2">
+          <ListOrdered className="h-5 w-5 text-primary" />
+          <h3 className="font-semibold text-foreground text-lg">Étape — Remise en ordre</h3>
+          <Badge variant="outline" className="ml-auto">{idx + 1} / {items.length}</Badge>
+        </div>
+
+        <p className="text-sm text-muted-foreground">
+          Cliquez sur les mots dans l'ordre correct pour reconstituer la phrase.
+        </p>
+
+        {/* Phrase en construction */}
+        <div dir="rtl" className="min-h-[64px] p-4 rounded-xl bg-muted/40 border border-dashed border-border font-amiri text-2xl text-right space-x-2">
+          {picked.length === 0 ? (
+            <span className="text-muted-foreground text-base">…</span>
+          ) : (
+            picked.map((i, k) => (
+              <span key={k} className="inline-block px-2 py-1 mx-1 bg-primary/10 rounded">
+                {shuffled[i]}
+              </span>
+            ))
+          )}
+        </div>
+
+        {/* Mots disponibles */}
+        <div dir="rtl" className="flex flex-wrap gap-2 justify-end">
+          {shuffled.map((w, i) => (
+            <Button
+              key={i}
+              variant={picked.includes(i) ? "secondary" : "outline"}
+              onClick={() => togglePick(i)}
+              disabled={validated !== null}
+              className="font-amiri text-xl"
+            >
+              {w}
+            </Button>
+          ))}
+        </div>
+
+        {validated === null ? (
+          <div className="flex gap-2">
+            <Button onClick={validate} disabled={!isFull} className="gap-2">
+              <CheckCircle2 className="h-4 w-4" /> Valider
+            </Button>
+            <Button onClick={() => setPicked([])} variant="ghost" disabled={picked.length === 0}>
+              <RotateCcw className="h-4 w-4 mr-1" /> Recommencer
+            </Button>
+          </div>
+        ) : (
+          <div className={`p-4 rounded-lg border ${validated ? "border-emerald-500 bg-emerald-500/10" : "border-destructive bg-destructive/10"}`}>
+            <p className={`font-semibold ${validated ? "text-emerald-700" : "text-destructive"}`}>
+              {validated ? "✅ Phrase correcte !" : "❌ Ordre incorrect"}
+            </p>
+            {!validated && (
+              <p dir="rtl" className="text-right font-amiri text-lg mt-2">
+                Solution : <strong>{current.correct_order.join(" ")}</strong>
+              </p>
+            )}
+            <Button onClick={next} className="gap-2 mt-3">
+              {idx + 1 >= items.length ? "Terminer" : "Suivant"} <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 // ─── Main ───
 const PresentielCourseDetail = ({ course, userProgress, onProgressUpdate }: Props) => {
-  const [step, setStep] = useState<Step>("lecture");
+  const isN2 = course.level === "niveau_2";
+  const stepsOrder: Exclude<Step, "done">[] = isN2
+    ? ["lecture", "ecriture", "traduction", "comprehension", "reorder", "dictee"]
+    : ["lecture", "ecriture", "traduction", "dictee"];
 
-  const stepsOrder: Exclude<Step, "done">[] = ["lecture", "ecriture", "traduction", "dictee"];
+  const [step, setStep] = useState<Step>(stepsOrder[0]);
   const currentIndex = step === "done" ? stepsOrder.length : stepsOrder.indexOf(step);
+
+  const goNext = () => {
+    const i = stepsOrder.indexOf(step as Exclude<Step, "done">);
+    if (i < 0 || i >= stepsOrder.length - 1) setStep("done");
+    else setStep(stepsOrder[i + 1]);
+  };
 
   return (
     <div className="space-y-6">
@@ -552,15 +810,17 @@ const PresentielCourseDetail = ({ course, userProgress, onProgressUpdate }: Prop
         <h2 className="text-2xl font-bold text-foreground mb-1">{course.title}</h2>
         <p className="text-sm text-muted-foreground">
           {new Date(course.course_date).toLocaleDateString("fr-FR", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
+            day: "numeric", month: "long", year: "numeric",
           })}
+          {" · "}
+          <Badge variant="outline" className="ml-1">
+            {isN2 ? "Niveau 2" : "Niveau 1"}
+          </Badge>
         </p>
       </div>
 
       {/* Stepper */}
-      <div className="grid grid-cols-4 gap-2">
+      <div className={`grid gap-2 ${isN2 ? "grid-cols-3 sm:grid-cols-6" : "grid-cols-4"}`}>
         {stepsOrder.map((s, i) => {
           const Icon = STEP_LABEL[s].icon;
           const isCurrent = s === step;
@@ -568,7 +828,7 @@ const PresentielCourseDetail = ({ course, userProgress, onProgressUpdate }: Prop
           return (
             <div
               key={s}
-              className={`p-3 rounded-lg border text-center text-xs ${
+              className={`p-2 rounded-lg border text-center text-xs ${
                 isCurrent
                   ? "border-primary bg-primary/10 text-primary"
                   : isDone
@@ -576,8 +836,8 @@ const PresentielCourseDetail = ({ course, userProgress, onProgressUpdate }: Prop
                   : "border-border bg-muted/30 text-muted-foreground"
               }`}
             >
-              <Icon className="h-5 w-5 mx-auto mb-1" />
-              <p className="font-medium">{STEP_LABEL[s].label}</p>
+              <Icon className="h-4 w-4 mx-auto mb-1" />
+              <p className="font-medium leading-tight">{STEP_LABEL[s].label}</p>
             </div>
           );
         })}
@@ -591,34 +851,40 @@ const PresentielCourseDetail = ({ course, userProgress, onProgressUpdate }: Prop
           exit={{ opacity: 0, x: -30 }}
         >
           {step === "lecture" && (
-            <LectureStep course={course} onDone={() => setStep("ecriture")} />
+            <LectureStep course={course} onDone={goNext} />
           )}
           {step === "ecriture" && (
             <PhotoUploadStep
               course={course}
               stepType="ecriture"
-              title="Étape 2 — Écriture"
+              title="Étape — Écriture"
               instruction={
                 <>
                   Recopiez la leçon <strong>3 fois</strong> à la main sur une feuille,
                   puis prenez une photo lisible et envoyez-la pour correction par votre professeur.
                 </>
               }
-              onDone={() => setStep("traduction")}
+              onDone={goNext}
             />
           )}
           {step === "traduction" && (
-            <TraductionStep course={course} onDone={() => setStep("dictee")} />
+            <TraductionStep course={course} onDone={goNext} />
+          )}
+          {step === "comprehension" && (
+            <ComprehensionStep course={course} onDone={goNext} />
+          )}
+          {step === "reorder" && (
+            <ReorderStep course={course} onDone={goNext} />
           )}
           {step === "dictee" && (
             <PhotoUploadStep
               course={course}
               stepType="dictee"
-              title="Étape 4 — Dictée"
+              title="Étape — Dictée"
               instruction={
                 <DicteeInstruction words={course.dictation_words || []} />
               }
-              onDone={() => setStep("done")}
+              onDone={goNext}
             />
           )}
           {step === "done" && (
@@ -637,6 +903,7 @@ const PresentielCourseDetail = ({ course, userProgress, onProgressUpdate }: Prop
     </div>
   );
 };
+
 
 // Helper: dictée — affiche les mots l'un après l'autre via TTS
 function DicteeInstruction({ words }: { words: string[] }) {
