@@ -24,7 +24,7 @@ const ProfileGuard = () => {
     );
   }
 
-  if (!user) return <Navigate to="/auth" replace />;
+  if (!user) return <Navigate to="/auth" replace state={{ from: location.pathname }} />;
 
   // Pending presentiel students: only allow /compte-en-attente
   if (profile?.type_eleve === "en_attente" && location.pathname !== "/compte-en-attente") {
@@ -37,6 +37,8 @@ const ProfileGuard = () => {
     if (!PRESENTIEL_ALLOWED.has(location.pathname)) {
       return <Navigate to="/cours-presentiel" replace />;
     }
+  } else if (!profile) {
+    return <Navigate to="/auth" replace state={{ from: location.pathname }} />;
   } else if (!isComplete && profile?.type_eleve !== "en_attente") {
     return <Navigate to="/complete-profile" replace />;
   }
