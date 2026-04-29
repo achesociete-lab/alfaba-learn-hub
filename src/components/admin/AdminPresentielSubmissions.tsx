@@ -22,6 +22,7 @@ interface Submission {
   user_id: string;
   step_type: "ecriture" | "dictee";
   photo_url: string;
+  photo_urls?: string[] | null;
   status: "en_attente" | "validee" | "a_corriger";
   feedback: string | null;
   created_at: string;
