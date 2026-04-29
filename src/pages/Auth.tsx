@@ -65,13 +65,19 @@ const Auth = () => {
 
   const handleSignup = async (signupLevel?: "niveau_1" | "niveau_2") => {
     const finalLevel = signupLevel || level;
+    const isPresentiel = learningMode === "presentiel";
     setLoading(true);
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: { first_name: firstName, last_name: lastName, level: finalLevel },
+          data: {
+            first_name: firstName,
+            last_name: lastName,
+            level: finalLevel,
+            pending_presentiel: isPresentiel,
+          },
           emailRedirectTo: `${window.location.origin}/auth`,
         },
       });
@@ -80,8 +86,25 @@ const Auth = () => {
       if (data.user && data.user.identities && data.user.identities.length === 0) {
         toast.error("Un compte existe déjà avec cet email. Connectez-vous.");
         setIsLogin(true);
-        setSignupStep("info");
+        setSignupStep("mode");
         return;
+      }
+
+      // Si présentiel : marquer le profil en attente + notifier admin
+      if (isPresentiel && data.user) {
+        await supabase
+          .from("profiles")
+          .update({ type_eleve: "en_attente" as any })
+          .eq("user_id", data.user.id);
+        supabase.functions
+          .invoke("notify-pending-signup", {
+            body: {
+              studentName: `${firstName} ${lastName}`,
+              studentEmail: email,
+              userId: data.user.id,
+            },
+          })
+          .catch((err) => console.warn("notify-pending-signup fail", err));
       }
 
       setShowVerification(true);
