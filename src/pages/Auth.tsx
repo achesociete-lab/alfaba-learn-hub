@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
@@ -28,10 +28,24 @@ const Auth = () => {
   const [resending, setResending] = useState(false);
   const [signupStep, setSignupStep] = useState<SignupStep>("info");
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const getPostLoginPath = async (userId: string) => {
+    const from = (location.state as { from?: string } | null)?.from;
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("type_eleve")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (profile?.type_eleve === "en_attente") return "/compte-en-attente";
+    if (profile?.type_eleve === "presentiel") return "/cours-presentiel";
+    return from && from !== "/auth" ? from : "/dashboard";
+  };
 
   useEffect(() => {
     if (!authLoading && user) {
-      navigate("/dashboard", { replace: true });
+      getPostLoginPath(user.id).then((path) => navigate(path, { replace: true }));
     }
   }, [authLoading, user, navigate]);
 
@@ -53,7 +67,8 @@ const Auth = () => {
       }
 
       toast.success("Connexion réussie !");
-      navigate("/dashboard", { replace: true });
+      const path = result.tokens?.user?.id ? await getPostLoginPath(result.tokens.user.id) : "/dashboard";
+      navigate(path, { replace: true });
     } catch (err: any) {
       toast.error(err.message || "Erreur lors de la connexion avec Google");
     } finally {
@@ -106,8 +121,12 @@ const Auth = () => {
         }
         throw error;
       }
+      const { data: sessionData } = await supabase.auth.getSession();
+      const path = sessionData.session?.user?.id
+        ? await getPostLoginPath(sessionData.session.user.id)
+        : "/dashboard";
       toast.success("Connexion réussie !");
-      navigate("/dashboard");
+      navigate(path);
     } catch (err: any) {
       toast.error(err.message || "Une erreur est survenue");
     } finally {
