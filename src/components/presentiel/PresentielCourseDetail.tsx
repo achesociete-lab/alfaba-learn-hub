@@ -32,6 +32,7 @@ export interface PresentielCourseV2 {
   comprehension_questions?: { question: string; answer: string }[];
   reorder_exercises?: { words: string[]; correct_order: string[] }[];
   photo_url?: string | null;
+  lesson_photos?: string[];
   // legacy fields kept for compat
   qcm?: any[];
   translation?: any;
