@@ -307,6 +307,51 @@ const AdminPresentielCourses = () => {
             />
           </div>
 
+          {/* Photo de la leçon */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <ImageIcon className="h-4 w-4" /> Photo de la leçon (page du livre)
+            </Label>
+            {draft.photo_url ? (
+              <div className="relative rounded-lg border border-border overflow-hidden bg-muted/20">
+                <img
+                  src={draft.photo_url}
+                  alt="Aperçu de la leçon"
+                  className="w-full max-h-72 object-contain bg-white"
+                />
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="absolute top-2 right-2"
+                  onClick={() => setDraft({ ...draft, photo_url: null })}
+                >
+                  <X className="h-4 w-4 mr-1" /> Supprimer
+                </Button>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center gap-2 p-6 rounded-lg border-2 border-dashed border-border hover:border-primary/50 hover:bg-muted/30 cursor-pointer transition">
+                {uploadingPhoto
+                  ? <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  : <Upload className="h-6 w-6 text-muted-foreground" />}
+                <span className="text-sm text-muted-foreground">
+                  {uploadingPhoto ? "Téléchargement…" : "Cliquer pour téléverser une photo"}
+                </span>
+                <span className="text-xs text-muted-foreground">JPG, PNG · max 10 Mo</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploadingPhoto}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) handlePhotoUpload(f);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            )}
+          </div>
+
           {/* Lesson text */}
           <div>
             <Label className="flex items-center gap-2">
