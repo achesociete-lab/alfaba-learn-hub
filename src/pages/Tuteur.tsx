@@ -17,6 +17,7 @@ import confetti from "canvas-confetti";
 import { playCorrectSound, playWrongSound, playVictorySound, playArrivalSound } from "@/utils/sound-feedback";
 import type { TutorQuestion, TutorPayload } from "@/types/tutor";
 import { getRandomFallbackQuestion } from "@/utils/tutor-fallback-questions";
+import { usePersistentState, userScopedKey } from "@/hooks/use-persistent-state";
 
 interface Session { id: string; started_at: string; ended_at: string | null; summary: string | null; score: number | null; }
 interface Homework { id: string; title: string; content: any; due_date: string | null; status: string; score: number | null; feedback: string | null; created_at: string; }
@@ -37,11 +38,21 @@ const Tuteur = () => {
   const [homework, setHomework] = useState<Homework[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const [currentPayload, setCurrentPayload] = useState<TutorPayload | null>(null);
-  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
-  const [revealed, setRevealed] = useState(false);
-  const [textAnswer, setTextAnswer] = useState("");
+  const [activeSessionId, setActiveSessionId] = usePersistentState<string | null>(
+    userScopedKey(user?.id, "tutor:activeSessionId"), null,
+  );
+  const [currentPayload, setCurrentPayload] = usePersistentState<TutorPayload | null>(
+    userScopedKey(user?.id, "tutor:currentPayload"), null,
+  );
+  const [selectedIdx, setSelectedIdx] = usePersistentState<number | null>(
+    userScopedKey(user?.id, "tutor:selectedIdx"), null,
+  );
+  const [revealed, setRevealed] = usePersistentState<boolean>(
+    userScopedKey(user?.id, "tutor:revealed"), false,
+  );
+  const [textAnswer, setTextAnswer] = usePersistentState<string>(
+    userScopedKey(user?.id, "tutor:textAnswer"), "",
+  );
   const [sending, setSending] = useState(false);
   const [busy, setBusy] = useState(false);
 
