@@ -93,15 +93,20 @@ function Niveau1Lessons({ maxLessons, onLessonChange }: { maxLessons: number; on
 
 // ─── Niveau 2 Progressive Lessons ───
 function Niveau2Lessons() {
-  const [selectedLesson, setSelectedLesson] = useState<Niveau2Lesson | null>(null);
+  const { user } = useAuth();
+  const [selectedLessonId, setSelectedLessonId] = usePersistentState<number | null>(
+    userScopedKey(user?.id, "n2:selectedLessonId"),
+    null,
+  );
   const { completedN2Lessons, completeN2Lesson } = useLessonProgress();
   const { lessons } = useNiveau2Lessons();
+  const selectedLesson = selectedLessonId != null ? lessons.find(l => l.id === selectedLessonId) ?? null : null;
 
   if (selectedLesson) {
     return (
       <Niveau2LessonDetail
         lesson={selectedLesson}
-        onBack={() => setSelectedLesson(null)}
+        onBack={() => setSelectedLessonId(null)}
         onComplete={completeN2Lesson}
       />
     );
@@ -111,7 +116,7 @@ function Niveau2Lessons() {
     <Niveau2LessonSelector
       lessons={lessons}
       completedLessons={completedN2Lessons}
-      onSelectLesson={setSelectedLesson}
+      onSelectLesson={(l) => setSelectedLessonId(l.id)}
     />
   );
 }
