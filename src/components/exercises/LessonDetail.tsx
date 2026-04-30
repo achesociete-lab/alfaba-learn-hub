@@ -12,6 +12,8 @@ import { useArabicSpeech } from "@/hooks/use-arabic-speech";
 import { getIllustration } from "@/utils/vocabulary-illustrations";
 import { useIsAdmin } from "@/hooks/use-admin";
 import { playCorrectSound, playWrongSound } from "@/utils/sound-feedback";
+import { usePersistentState, userScopedKey } from "@/hooks/use-persistent-state";
+import { useAuth } from "@/contexts/AuthContext";
 import LessonAudioPlayer from "./LessonAudioPlayer";
 import Lesson1Screens from "./Lesson1Screens";
 import LessonScreens from "./LessonScreens";
