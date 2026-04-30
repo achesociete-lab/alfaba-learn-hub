@@ -62,14 +62,14 @@ export const ensurePresentielProfile = async (user: User) => {
 
   const { data, error } = await supabase
     .from("profiles")
-    .insert({
+    .upsert({
       user_id: user.id,
       first_name: firstName,
       last_name: lastName,
       level: "niveau_1" as any,
       avatar_url: avatarUrl,
       type_eleve: "presentiel" as any,
-    } as any)
+    } as any, { onConflict: "user_id" })
     .select("id, first_name, last_name, type_eleve")
     .single();
 
