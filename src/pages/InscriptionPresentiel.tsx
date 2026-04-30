@@ -14,7 +14,6 @@ import {
   ensurePresentielProfile,
   hasPresentielSignupIntent,
   markPresentielSignupIntent,
-  PRESENTIEL_SIGNUP_FLAG,
 } from "@/utils/presentiel-signup";
 
 const InscriptionPresentiel = () => {
@@ -42,12 +41,6 @@ const InscriptionPresentiel = () => {
         console.error("Presentiel existing user activation failed", err);
         if (!hasPresentielSignupIntent()) navigate("/cours-presentiel", { replace: true });
       });
-  }, [authLoading, user, navigate]);
-
-  useEffect(() => {
-    if (!authLoading && user && !localStorage.getItem(PRESENTIEL_SIGNUP_FLAG)) {
-      localStorage.setItem(PRESENTIEL_SIGNUP_FLAG, "1");
-    }
   }, [authLoading, user, navigate]);
 
   const handleGoogleSignup = async () => {
