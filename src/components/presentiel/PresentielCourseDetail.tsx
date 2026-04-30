@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { playCorrectSound, playWrongSound } from "@/utils/sound-feedback";
+import { usePersistentState, userScopedKey } from "@/hooks/use-persistent-state";
 
 // ─── Types ───
 export interface PresentielCourseV2 {
@@ -877,12 +878,16 @@ function ReorderStep({ course, onDone }: { course: PresentielCourseV2; onDone: (
 
 // ─── Main ───
 const PresentielCourseDetail = ({ course, userProgress, onProgressUpdate }: Props) => {
+  const { user } = useAuth();
   const isN2 = course.level === "niveau_2";
   const stepsOrder: Exclude<Step, "done">[] = isN2
     ? ["lecture", "ecriture", "traduction", "comprehension", "reorder", "dictee"]
     : ["lecture", "ecriture", "traduction", "dictee"];
 
-  const [step, setStep] = useState<Step>(stepsOrder[0]);
+  const [step, setStep] = usePersistentState<Step>(
+    userScopedKey(user?.id, `presentiel:${course.id}:step`),
+    stepsOrder[0],
+  );
   const currentIndex = step === "done" ? stepsOrder.length : stepsOrder.indexOf(step);
 
   const goNext = () => {
