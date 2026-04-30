@@ -10,6 +10,11 @@ import { BookOpen, ArrowLeft, Mail, CheckCircle, ArrowRight } from "lucide-react
 import { toast } from "sonner";
 import PlacementTest from "@/components/PlacementTest";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  clearPresentielSignupIntent,
+  ensurePresentielProfile,
+  hasPresentielSignupIntent,
+} from "@/utils/presentiel-signup";
 
 type SignupStep = "info" | "test";
 
@@ -45,9 +50,24 @@ const Auth = () => {
 
   useEffect(() => {
     if (!authLoading && user) {
-      getPostLoginPath(user.id).then((path) => navigate(path, { replace: true }));
+      const handleAuthenticatedRedirect = async () => {
+        if (hasPresentielSignupIntent(location.search)) {
+          await ensurePresentielProfile(user);
+          clearPresentielSignupIntent();
+          navigate("/cours-presentiel", { replace: true });
+          return;
+        }
+
+        const path = await getPostLoginPath(user.id);
+        navigate(path, { replace: true });
+      };
+
+      handleAuthenticatedRedirect().catch((err) => {
+        console.error("Post login redirect failed", err);
+        toast.error("Connexion réussie, mais la redirection a échoué.");
+      });
     }
-  }, [authLoading, user, navigate]);
+  }, [authLoading, user, navigate, location.search]);
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
