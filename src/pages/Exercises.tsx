@@ -37,7 +37,7 @@ function Niveau1Lessons({ maxLessons, onLessonChange }: { maxLessons: number; on
       const num = parseInt(lessonParam, 10);
       const found = lessons.find(l => l.id === num);
       if (found) {
-        setSelectedLesson(found);
+        setSelectedLessonId(found.id);
         onLessonChange(found);
         searchParams.delete("lesson");
         setSearchParams(searchParams, { replace: true });
@@ -45,16 +45,21 @@ function Niveau1Lessons({ maxLessons, onLessonChange }: { maxLessons: number; on
     }
   }, [lessons, searchParams]);
 
+  // Notify parent when restored from localStorage
+  useEffect(() => {
+    if (selectedLesson) onLessonChange(selectedLesson);
+  }, [selectedLesson]);
+
   const currentIdx = selectedLesson ? lessons.findIndex(l => l.id === selectedLesson.id) : -1;
   const nextLesson = currentIdx >= 0 && currentIdx < lessons.length - 1 ? lessons[currentIdx + 1] : null;
 
   const handleSelect = (lesson: Lesson) => {
-    setSelectedLesson(lesson);
+    setSelectedLessonId(lesson.id);
     onLessonChange(lesson);
   };
 
   const handleBack = () => {
-    setSelectedLesson(null);
+    setSelectedLessonId(null);
     onLessonChange(null);
   };
 
