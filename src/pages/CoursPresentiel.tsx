@@ -141,7 +141,7 @@ const CoursPresentiel = () => {
                   >
                     <Card
                       className="cursor-pointer hover:border-primary/50 hover:shadow-lg transition-all"
-                      onClick={() => setSelected(c)}
+                      onClick={() => setSelectedId(c.id)}
                     >
                       {c.photo_url && (
                         <div className="aspect-video w-full overflow-hidden rounded-t-lg bg-muted">
