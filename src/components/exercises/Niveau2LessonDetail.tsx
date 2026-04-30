@@ -12,6 +12,8 @@ import { getIllustration } from "@/utils/vocabulary-illustrations";
 import { useIsAdmin } from "@/hooks/use-admin";
 import { playCorrectSound, playWrongSound } from "@/utils/sound-feedback";
 import LessonAudioPlayer from "./LessonAudioPlayer";
+import { usePersistentState, userScopedKey } from "@/hooks/use-persistent-state";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Niveau2LessonDetailProps {
   lesson: Niveau2Lesson;
@@ -142,16 +144,18 @@ function GrammarTab({ lesson }: { lesson: Niveau2Lesson }) {
 
 // ─── QCM + Comprehension Tab ───
 function ExercisesTab({ lesson, onAllCorrect }: { lesson: Niveau2Lesson; onAllCorrect: () => void }) {
+  const { user } = useAuth();
   // Merge comprehension questions and QCM into one exercise flow
   const allQuestions = [
     ...lesson.comprehension.questions.map((q) => ({ ...q, type: "comprehension" as const })),
     ...lesson.qcm.map((q) => ({ ...q, type: "qcm" as const })),
   ];
 
-  const [current, setCurrent] = useState(0);
+  const baseKey = userScopedKey(user?.id, `n2:lesson:${lesson.id}:ex`);
+  const [current, setCurrent] = usePersistentState<number>(`${baseKey}:current`, 0);
   const [selected, setSelected] = useState<number | null>(null);
-  const [score, setScore] = useState(0);
-  const [finished, setFinished] = useState(false);
+  const [score, setScore] = usePersistentState<number>(`${baseKey}:score`, 0);
+  const [finished, setFinished] = usePersistentState<boolean>(`${baseKey}:finished`, false);
 
   const q = allQuestions[current];
 
@@ -247,13 +251,15 @@ function ExercisesTab({ lesson, onAllCorrect }: { lesson: Niveau2Lesson; onAllCo
 
 // ─── Dictation Tab ───
 function DictationTab({ lesson, onAllCorrect }: { lesson: Niveau2Lesson; onAllCorrect: () => void }) {
+  const { user } = useAuth();
   const { speak } = useArabicSpeech();
-  const [current, setCurrent] = useState(0);
+  const baseKey = userScopedKey(user?.id, `n2:lesson:${lesson.id}:dict`);
+  const [current, setCurrent] = usePersistentState<number>(`${baseKey}:current`, 0);
   const [selected, setSelected] = useState<number | null>(null);
-  const [score, setScore] = useState(0);
-  const [finished, setFinished] = useState(false);
+  const [score, setScore] = usePersistentState<number>(`${baseKey}:score`, 0);
+  const [finished, setFinished] = usePersistentState<boolean>(`${baseKey}:finished`, false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [mode, setMode] = useState<"qcm" | "keyboard">("qcm");
+  const [mode, setMode] = usePersistentState<"qcm" | "keyboard">(`${baseKey}:mode`, "qcm");
   const [typedAnswer, setTypedAnswer] = useState("");
   const [answerChecked, setAnswerChecked] = useState(false);
   const [answerCorrect, setAnswerCorrect] = useState(false);
