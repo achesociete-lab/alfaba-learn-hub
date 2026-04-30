@@ -522,10 +522,12 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
 
 // ─── Main Component ───
 const LessonDetail = ({ lesson, onBack, onComplete, nextLessonId, onNextLesson, maxLessons = Infinity }: LessonDetailProps) => {
-  const [exercisesCompleted, setExercisesCompleted] = useState(false);
-  const [dictationCompleted, setDictationCompleted] = useState(false);
-  const [activeTab, setActiveTab] = useState("lesson");
-  const [theoryCompleted, setTheoryCompleted] = useState(false);
+  const { user } = useAuth();
+  const baseKey = userScopedKey(user?.id, `n1:lesson:${lesson.id}`);
+  const [exercisesCompleted, setExercisesCompleted] = usePersistentState<boolean>(`${baseKey}:exDone`, false);
+  const [dictationCompleted, setDictationCompleted] = usePersistentState<boolean>(`${baseKey}:dictDone`, false);
+  const [activeTab, setActiveTab] = usePersistentState<string>(`${baseKey}:tab`, "lesson");
+  const [theoryCompleted, setTheoryCompleted] = usePersistentState<boolean>(`${baseKey}:theoryDone`, false);
   const { isAdmin } = useIsAdmin();
 
   const handleComplete = () => {
