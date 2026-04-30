@@ -9,7 +9,13 @@ import { Separator } from "@/components/ui/separator";
 import { BookOpen, ArrowLeft, MapPin, ArrowRight, Mail, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { PRESENTIEL_SIGNUP_FLAG } from "@/components/PendingPresentielHandler";
+import {
+  clearPresentielSignupIntent,
+  ensurePresentielProfile,
+  hasPresentielSignupIntent,
+  markPresentielSignupIntent,
+  PRESENTIEL_SIGNUP_FLAG,
+} from "@/utils/presentiel-signup";
 
 const InscriptionPresentiel = () => {
   const { user, loading: authLoading } = useAuth();
@@ -25,32 +31,42 @@ const InscriptionPresentiel = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
 
   useEffect(() => {
-    const hasFlag =
-      localStorage.getItem(PRESENTIEL_SIGNUP_FLAG) ||
-      sessionStorage.getItem(PRESENTIEL_SIGNUP_FLAG);
-    if (!authLoading && user && !hasFlag) {
-      navigate("/cours-presentiel", { replace: true });
+    if (authLoading || !user) return;
+    markPresentielSignupIntent();
+    ensurePresentielProfile(user)
+      .then(() => {
+        clearPresentielSignupIntent();
+        navigate("/cours-presentiel", { replace: true });
+      })
+      .catch((err) => {
+        console.error("Presentiel existing user activation failed", err);
+        if (!hasPresentielSignupIntent()) navigate("/cours-presentiel", { replace: true });
+      });
+  }, [authLoading, user, navigate]);
+
+  useEffect(() => {
+    if (!authLoading && user && !localStorage.getItem(PRESENTIEL_SIGNUP_FLAG)) {
+      localStorage.setItem(PRESENTIEL_SIGNUP_FLAG, "1");
     }
   }, [authLoading, user, navigate]);
 
   const handleGoogleSignup = async () => {
     setGoogleLoading(true);
     try {
-      // Persist flag in localStorage so it survives the OAuth round-trip
-      localStorage.setItem(PRESENTIEL_SIGNUP_FLAG, "1");
+      markPresentielSignupIntent();
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+        redirect_uri: `${window.location.origin}/auth?presentiel=1`,
         extraParams: { prompt: "select_account" },
       });
       if (result.error) {
-        localStorage.removeItem(PRESENTIEL_SIGNUP_FLAG);
+        clearPresentielSignupIntent();
         toast.error("Erreur lors de la connexion avec Google");
         return;
       }
       if (result.redirected) return;
       // Tokens already set — handler will pick up the flag and redirect
     } catch (err: any) {
-      localStorage.removeItem(PRESENTIEL_SIGNUP_FLAG);
+      clearPresentielSignupIntent();
       toast.error(err.message || "Erreur Google");
     } finally {
       setGoogleLoading(false);
@@ -70,12 +86,20 @@ const InscriptionPresentiel = () => {
 
     setLoading(true);
     try {
+      markPresentielSignupIntent();
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: { first_name: firstName, last_name: lastName, level: "niveau_1", pending_presentiel: true },
-          emailRedirectTo: `${window.location.origin}/auth`,
+          data: {
+            first_name: firstName,
+            last_name: lastName,
+            level: "niveau_1",
+            pending_presentiel: true,
+            type_eleve: "presentiel",
+            signup_source: "presentiel",
+          },
+          emailRedirectTo: `${window.location.origin}/auth?presentiel=1`,
         },
       });
       if (error) throw error;
@@ -85,14 +109,9 @@ const InscriptionPresentiel = () => {
         return;
       }
 
-      // Mark directly as 'presentiel' — no validation needed for link-based signups.
-      if (data.user) {
-        await supabase.from("profiles").update({ type_eleve: "presentiel" as any }).eq("user_id", data.user.id);
-        // Notifier admin (information seulement)
-        supabase.functions.invoke("notify-pending-signup", {
-          body: { studentName: `${firstName} ${lastName}`, studentEmail: email, userId: data.user.id },
-        }).catch((err) => console.warn("notify-pending-signup fail", err));
-      }
+      supabase.functions.invoke("notify-pending-signup", {
+        body: { studentName: `${firstName} ${lastName}`, studentEmail: email, userId: data.user?.id },
+      }).catch((err) => console.warn("notify-pending-signup fail", err));
 
       setShowVerification(true);
     } catch (err: any) {
