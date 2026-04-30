@@ -444,8 +444,11 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Niveau2Lesson; onAllCo
 
 // ─── Main Component ───
 const Niveau2LessonDetail = ({ lesson, onBack, onComplete }: Niveau2LessonDetailProps) => {
-  const [exercisesCompleted, setExercisesCompleted] = useState(false);
-  const [dictationCompleted, setDictationCompleted] = useState(false);
+  const { user } = useAuth();
+  const baseKey = userScopedKey(user?.id, `n2:lesson:${lesson.id}`);
+  const [exercisesCompleted, setExercisesCompleted] = usePersistentState<boolean>(`${baseKey}:exDone`, false);
+  const [dictationCompleted, setDictationCompleted] = usePersistentState<boolean>(`${baseKey}:dictDone`, false);
+  const [activeTab, setActiveTab] = usePersistentState<string>(`${baseKey}:tab`, "grammar");
 
   const handleComplete = () => {
     onComplete(lesson.id);
@@ -468,7 +471,7 @@ const Niveau2LessonDetail = ({ lesson, onBack, onComplete }: Niveau2LessonDetail
         </div>
       </div>
 
-      <Tabs defaultValue="grammar" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="bg-muted w-full grid grid-cols-3">
           <TabsTrigger value="grammar" className="gap-1.5 text-xs sm:text-sm">
             <BookOpen className="h-4 w-4" /> Leçon
