@@ -300,17 +300,19 @@ function QCMTab({ lesson, onAllCorrect, onSwitchToDictation }: { lesson: Lesson;
 
 // ─── Dictation Tab ───
 function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: () => void }) {
+  const { user } = useAuth();
   const dictList = lesson.dictation || [];
-  const [current, setCurrent] = useState(0);
+  const baseKey = userScopedKey(user?.id, `n1:lesson:${lesson.id}:dict`);
+  const [current, setCurrent] = usePersistentState<number>(`${baseKey}:current`, 0);
   const [selected, setSelected] = useState<number | null>(null);
-  const [score, setScore] = useState(0);
-  const [finished, setFinished] = useState(false);
+  const [score, setScore] = usePersistentState<number>(`${baseKey}:score`, 0);
+  const [finished, setFinished] = usePersistentState<boolean>(`${baseKey}:finished`, false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [mode, setMode] = useState<"qcm" | "keyboard">("qcm");
+  const [mode, setMode] = usePersistentState<"qcm" | "keyboard">(`${baseKey}:mode`, "qcm");
   const [typedAnswer, setTypedAnswer] = useState("");
   const [answerChecked, setAnswerChecked] = useState(false);
   const [answerCorrect, setAnswerCorrect] = useState(false);
-  const [wrongAnswers, setWrongAnswers] = useState<WrongAnswer[]>([]);
+  const [wrongAnswers, setWrongAnswers] = usePersistentState<WrongAnswer[]>(`${baseKey}:wrong`, []);
   const currentRef = useRef(current);
   const { speak, stop: stopSpeech } = useArabicSpeech();
 
