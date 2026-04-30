@@ -3,8 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-
-const FLAG_KEY = "pending_presentiel_signup";
+import {
+  clearPresentielSignupIntent,
+  ensurePresentielProfile,
+  hasPresentielSignupIntent,
+  PRESENTIEL_SIGNUP_FLAG,
+  userHasPresentielMetadata,
+} from "@/utils/presentiel-signup";
 
 /**
  * Watches for a freshly authenticated user that started signup via the
@@ -19,39 +24,12 @@ const PendingPresentielHandler = () => {
 
   useEffect(() => {
     if (!user || handledRef.current) return;
-    // Use localStorage so the flag survives the OAuth redirect round-trip
-    const flag = localStorage.getItem(FLAG_KEY) || sessionStorage.getItem(FLAG_KEY);
-    if (!flag) return;
+    if (!hasPresentielSignupIntent() && !userHasPresentielMetadata(user)) return;
 
     handledRef.current = true;
     (async () => {
       try {
-        let profile: { first_name: string | null; last_name: string | null; type_eleve: string | null } | null = null;
-
-        // Wait for the trigger to create the profile
-        for (let attempt = 0; attempt < 10; attempt += 1) {
-          const { data } = await supabase
-            .from("profiles")
-            .select("first_name, last_name, type_eleve")
-            .eq("user_id", user.id)
-            .maybeSingle();
-
-          if (data) {
-            profile = data as typeof profile;
-            break;
-          }
-
-          await new Promise((resolve) => setTimeout(resolve, 400));
-        }
-
-        if (profile?.type_eleve !== "presentiel") {
-          const { error } = await supabase
-            .from("profiles")
-            .update({ type_eleve: "presentiel" as any })
-            .eq("user_id", user.id);
-
-          if (error) throw error;
-        }
+        const profile = await ensurePresentielProfile(user);
 
         const fullName = `${profile?.first_name ?? ""} ${profile?.last_name ?? ""}`.trim();
         supabase.functions
@@ -64,14 +42,12 @@ const PendingPresentielHandler = () => {
           })
           .catch((err) => console.warn("notify-pending-signup fail", err));
 
-        localStorage.removeItem(FLAG_KEY);
-        sessionStorage.removeItem(FLAG_KEY);
+        clearPresentielSignupIntent();
         toast.success("Bienvenue ! Accès aux cours en présentiel activé.");
         navigate("/cours-presentiel", { replace: true });
       } catch (err) {
         console.error("PendingPresentielHandler error", err);
-        localStorage.removeItem(FLAG_KEY);
-        sessionStorage.removeItem(FLAG_KEY);
+        toast.error("Compte créé, mais l'accès présentiel n'a pas pu être activé automatiquement.");
       }
     })();
   }, [navigate, user]);
@@ -80,4 +56,4 @@ const PendingPresentielHandler = () => {
 };
 
 export default PendingPresentielHandler;
-export const PRESENTIEL_SIGNUP_FLAG = FLAG_KEY;
+export { PRESENTIEL_SIGNUP_FLAG };
