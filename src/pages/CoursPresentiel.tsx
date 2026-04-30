@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import PresentielCourseDetail from "@/components/presentiel/PresentielCourseDetail";
+import { usePersistentState, userScopedKey } from "@/hooks/use-persistent-state";
 
 interface PresentielCourse {
   id: string;
@@ -32,7 +33,8 @@ const CoursPresentiel = () => {
   const [courses, setCourses] = useState<PresentielCourse[]>([]);
   const [progress, setProgress] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState<PresentielCourse | null>(null);
+  const [selectedId, setSelectedId] = usePersistentState<string | null>(userScopedKey(user?.id, "presentiel:selectedCourseId"), null);
+  const selected = selectedId ? courses.find((c) => c.id === selectedId) ?? null : null;
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -81,7 +83,7 @@ const CoursPresentiel = () => {
         <Navbar />
         <main className="pt-24 pb-16">
           <div className="container mx-auto px-4 max-w-4xl">
-            <Button variant="ghost" onClick={() => setSelected(null)} className="mb-4">
+            <Button variant="ghost" onClick={() => setSelectedId(null)} className="mb-4">
               ← Retour aux cours
             </Button>
             <PresentielCourseDetail
