@@ -20,10 +20,15 @@ type Level = "niveau_1" | "niveau_2";
 
 // ─── Niveau 1 Progressive Lessons ───
 function Niveau1Lessons({ maxLessons, onLessonChange }: { maxLessons: number; onLessonChange: (lesson: Lesson | null) => void }) {
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const [selectedLessonId, setSelectedLessonId] = usePersistentState<number | null>(
+    userScopedKey(user?.id, "n1:selectedLessonId"),
+    null,
+  );
   const { completedLessons, completeLesson } = useLessonProgress();
   const { lessons } = useNiveau1Lessons();
+  const selectedLesson = selectedLessonId != null ? lessons.find(l => l.id === selectedLessonId) ?? null : null;
 
   // Auto-select lesson from URL query param
   useEffect(() => {
