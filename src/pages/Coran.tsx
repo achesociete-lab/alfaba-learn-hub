@@ -34,6 +34,7 @@ import { fetchQuranPageAyahs, type QuranPageAyah } from "@/utils/quran-pages";
 import { Slider } from "@/components/ui/slider";
 import SurahMeritSection from "@/components/quran/SurahMeritSection";
 import QuranTest from "@/components/quran/QuranTest";
+import { usePersistentState, userScopedKey } from "@/hooks/use-persistent-state";
 
 type RecitationMode = "read" | "memorize";
 type NavTab = "surah" | "juz" | "search" | "merits" | "test";
@@ -45,7 +46,7 @@ const Coran = () => {
   const navigate = useNavigate();
 
   // Navigation
-  const [navTab, setNavTab] = useState<NavTab>("surah");
+  const [navTab, setNavTab] = usePersistentState<NavTab>(userScopedKey(user?.id, "coran:navTab"), "surah");
   const [allSurahs, setAllSurahs] = useState<SurahInfo[]>([]);
   const [surahSearch, setSurahSearch] = useState("");
   const [verseSearchQuery, setVerseSearchQuery] = useState("");
@@ -53,13 +54,13 @@ const Coran = () => {
   const [searching, setSearching] = useState(false);
 
   // Selected surah & verses
-  const [selectedSurahInfo, setSelectedSurahInfo] = useState<SurahInfo | null>(null);
+  const [selectedSurahInfo, setSelectedSurahInfo] = usePersistentState<SurahInfo | null>(userScopedKey(user?.id, "coran:selectedSurah"), null);
   const [verses, setVerses] = useState<QuranVerse[]>([]);
   const [loadingVerses, setLoadingVerses] = useState(false);
 
   // Mushaf page view
-  const [currentPage, setCurrentPage] = useState(1);
-  const [showMushafPage, setShowMushafPage] = useState(false);
+  const [currentPage, setCurrentPage] = usePersistentState<number>(userScopedKey(user?.id, "coran:currentPage"), 1);
+  const [showMushafPage, setShowMushafPage] = usePersistentState<boolean>(userScopedKey(user?.id, "coran:showMushaf"), false);
   const [loadingMushafPage, setLoadingMushafPage] = useState(false);
   const [mushafPageError, setMushafPageError] = useState<string | null>(null);
   const [mushafPageAyahs, setMushafPageAyahs] = useState<QuranPageAyah[]>([]);
@@ -74,12 +75,12 @@ const Coran = () => {
   const teacherChunksRef = useRef<Blob[]>([]);
 
   // Recitation modes
-  const [mode, setMode] = useState<RecitationMode>("read");
+  const [mode, setMode] = usePersistentState<RecitationMode>(userScopedKey(user?.id, "coran:mode"), "read");
   const [versesHidden, setVersesHidden] = useState(false);
 
   // Voice source
-  const [voiceSource, setVoiceSource] = useState<VoiceSource>("reciter");
-  const [selectedReciter, setSelectedReciter] = useState("mishary");
+  const [voiceSource, setVoiceSource] = usePersistentState<VoiceSource>(userScopedKey(user?.id, "coran:voiceSource"), "reciter");
+  const [selectedReciter, setSelectedReciter] = usePersistentState<string>(userScopedKey(user?.id, "coran:reciter"), "mishary");
   const [isPlayingSequence, setIsPlayingSequence] = useState(false);
   const [playingAyah, setPlayingAyah] = useState<number | null>(null);
   const sequenceRef = useRef<{ stop: () => void } | null>(null);

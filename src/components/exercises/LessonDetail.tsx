@@ -12,6 +12,8 @@ import { useArabicSpeech } from "@/hooks/use-arabic-speech";
 import { getIllustration } from "@/utils/vocabulary-illustrations";
 import { useIsAdmin } from "@/hooks/use-admin";
 import { playCorrectSound, playWrongSound } from "@/utils/sound-feedback";
+import { usePersistentState, userScopedKey } from "@/hooks/use-persistent-state";
+import { useAuth } from "@/contexts/AuthContext";
 import LessonAudioPlayer from "./LessonAudioPlayer";
 import Lesson1Screens from "./Lesson1Screens";
 import LessonScreens from "./LessonScreens";
@@ -167,12 +169,14 @@ interface WrongAnswer {
 
 // ─── QCM Tab ───
 function QCMTab({ lesson, onAllCorrect, onSwitchToDictation }: { lesson: Lesson; onAllCorrect: () => void; onSwitchToDictation?: () => void }) {
+  const { user } = useAuth();
   const qcmList = lesson.qcm || [];
-  const [current, setCurrent] = useState(0);
+  const baseKey = userScopedKey(user?.id, `n1:lesson:${lesson.id}:qcm`);
+  const [current, setCurrent] = usePersistentState<number>(`${baseKey}:current`, 0);
   const [selected, setSelected] = useState<number | null>(null);
-  const [score, setScore] = useState(0);
-  const [finished, setFinished] = useState(false);
-  const [wrongAnswers, setWrongAnswers] = useState<WrongAnswer[]>([]);
+  const [score, setScore] = usePersistentState<number>(`${baseKey}:score`, 0);
+  const [finished, setFinished] = usePersistentState<boolean>(`${baseKey}:finished`, false);
+  const [wrongAnswers, setWrongAnswers] = usePersistentState<WrongAnswer[]>(`${baseKey}:wrong`, []);
 
   if (qcmList.length === 0) return <p className="text-center text-muted-foreground p-4">Aucun exercice disponible.</p>;
   const q = qcmList[current];
@@ -296,17 +300,19 @@ function QCMTab({ lesson, onAllCorrect, onSwitchToDictation }: { lesson: Lesson;
 
 // ─── Dictation Tab ───
 function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: () => void }) {
+  const { user } = useAuth();
   const dictList = lesson.dictation || [];
-  const [current, setCurrent] = useState(0);
+  const baseKey = userScopedKey(user?.id, `n1:lesson:${lesson.id}:dict`);
+  const [current, setCurrent] = usePersistentState<number>(`${baseKey}:current`, 0);
   const [selected, setSelected] = useState<number | null>(null);
-  const [score, setScore] = useState(0);
-  const [finished, setFinished] = useState(false);
+  const [score, setScore] = usePersistentState<number>(`${baseKey}:score`, 0);
+  const [finished, setFinished] = usePersistentState<boolean>(`${baseKey}:finished`, false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [mode, setMode] = useState<"qcm" | "keyboard">("qcm");
+  const [mode, setMode] = usePersistentState<"qcm" | "keyboard">(`${baseKey}:mode`, "qcm");
   const [typedAnswer, setTypedAnswer] = useState("");
   const [answerChecked, setAnswerChecked] = useState(false);
   const [answerCorrect, setAnswerCorrect] = useState(false);
-  const [wrongAnswers, setWrongAnswers] = useState<WrongAnswer[]>([]);
+  const [wrongAnswers, setWrongAnswers] = usePersistentState<WrongAnswer[]>(`${baseKey}:wrong`, []);
   const currentRef = useRef(current);
   const { speak, stop: stopSpeech } = useArabicSpeech();
 
@@ -516,10 +522,12 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
 
 // ─── Main Component ───
 const LessonDetail = ({ lesson, onBack, onComplete, nextLessonId, onNextLesson, maxLessons = Infinity }: LessonDetailProps) => {
-  const [exercisesCompleted, setExercisesCompleted] = useState(false);
-  const [dictationCompleted, setDictationCompleted] = useState(false);
-  const [activeTab, setActiveTab] = useState("lesson");
-  const [theoryCompleted, setTheoryCompleted] = useState(false);
+  const { user } = useAuth();
+  const baseKey = userScopedKey(user?.id, `n1:lesson:${lesson.id}`);
+  const [exercisesCompleted, setExercisesCompleted] = usePersistentState<boolean>(`${baseKey}:exDone`, false);
+  const [dictationCompleted, setDictationCompleted] = usePersistentState<boolean>(`${baseKey}:dictDone`, false);
+  const [activeTab, setActiveTab] = usePersistentState<string>(`${baseKey}:tab`, "lesson");
+  const [theoryCompleted, setTheoryCompleted] = usePersistentState<boolean>(`${baseKey}:theoryDone`, false);
   const { isAdmin } = useIsAdmin();
 
   const handleComplete = () => {

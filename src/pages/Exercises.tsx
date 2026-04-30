@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { usePersistentState, userScopedKey } from "@/hooks/use-persistent-state";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
@@ -19,10 +20,15 @@ type Level = "niveau_1" | "niveau_2";
 
 // ─── Niveau 1 Progressive Lessons ───
 function Niveau1Lessons({ maxLessons, onLessonChange }: { maxLessons: number; onLessonChange: (lesson: Lesson | null) => void }) {
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const [selectedLessonId, setSelectedLessonId] = usePersistentState<number | null>(
+    userScopedKey(user?.id, "n1:selectedLessonId"),
+    null,
+  );
   const { completedLessons, completeLesson } = useLessonProgress();
   const { lessons } = useNiveau1Lessons();
+  const selectedLesson = selectedLessonId != null ? lessons.find(l => l.id === selectedLessonId) ?? null : null;
 
   // Auto-select lesson from URL query param
   useEffect(() => {
@@ -31,7 +37,7 @@ function Niveau1Lessons({ maxLessons, onLessonChange }: { maxLessons: number; on
       const num = parseInt(lessonParam, 10);
       const found = lessons.find(l => l.id === num);
       if (found) {
-        setSelectedLesson(found);
+        setSelectedLessonId(found.id);
         onLessonChange(found);
         searchParams.delete("lesson");
         setSearchParams(searchParams, { replace: true });
@@ -39,16 +45,21 @@ function Niveau1Lessons({ maxLessons, onLessonChange }: { maxLessons: number; on
     }
   }, [lessons, searchParams]);
 
+  // Notify parent when restored from localStorage
+  useEffect(() => {
+    if (selectedLesson) onLessonChange(selectedLesson);
+  }, [selectedLesson]);
+
   const currentIdx = selectedLesson ? lessons.findIndex(l => l.id === selectedLesson.id) : -1;
   const nextLesson = currentIdx >= 0 && currentIdx < lessons.length - 1 ? lessons[currentIdx + 1] : null;
 
   const handleSelect = (lesson: Lesson) => {
-    setSelectedLesson(lesson);
+    setSelectedLessonId(lesson.id);
     onLessonChange(lesson);
   };
 
   const handleBack = () => {
-    setSelectedLesson(null);
+    setSelectedLessonId(null);
     onLessonChange(null);
   };
 
@@ -82,15 +93,20 @@ function Niveau1Lessons({ maxLessons, onLessonChange }: { maxLessons: number; on
 
 // ─── Niveau 2 Progressive Lessons ───
 function Niveau2Lessons() {
-  const [selectedLesson, setSelectedLesson] = useState<Niveau2Lesson | null>(null);
+  const { user } = useAuth();
+  const [selectedLessonId, setSelectedLessonId] = usePersistentState<number | null>(
+    userScopedKey(user?.id, "n2:selectedLessonId"),
+    null,
+  );
   const { completedN2Lessons, completeN2Lesson } = useLessonProgress();
   const { lessons } = useNiveau2Lessons();
+  const selectedLesson = selectedLessonId != null ? lessons.find(l => l.id === selectedLessonId) ?? null : null;
 
   if (selectedLesson) {
     return (
       <Niveau2LessonDetail
         lesson={selectedLesson}
-        onBack={() => setSelectedLesson(null)}
+        onBack={() => setSelectedLessonId(null)}
         onComplete={completeN2Lesson}
       />
     );
@@ -100,7 +116,7 @@ function Niveau2Lessons() {
     <Niveau2LessonSelector
       lessons={lessons}
       completedLessons={completedN2Lessons}
-      onSelectLesson={setSelectedLesson}
+      onSelectLesson={(l) => setSelectedLessonId(l.id)}
     />
   );
 }
