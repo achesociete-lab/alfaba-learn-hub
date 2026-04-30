@@ -169,12 +169,14 @@ interface WrongAnswer {
 
 // ─── QCM Tab ───
 function QCMTab({ lesson, onAllCorrect, onSwitchToDictation }: { lesson: Lesson; onAllCorrect: () => void; onSwitchToDictation?: () => void }) {
+  const { user } = useAuth();
   const qcmList = lesson.qcm || [];
-  const [current, setCurrent] = useState(0);
+  const baseKey = userScopedKey(user?.id, `n1:lesson:${lesson.id}:qcm`);
+  const [current, setCurrent] = usePersistentState<number>(`${baseKey}:current`, 0);
   const [selected, setSelected] = useState<number | null>(null);
-  const [score, setScore] = useState(0);
-  const [finished, setFinished] = useState(false);
-  const [wrongAnswers, setWrongAnswers] = useState<WrongAnswer[]>([]);
+  const [score, setScore] = usePersistentState<number>(`${baseKey}:score`, 0);
+  const [finished, setFinished] = usePersistentState<boolean>(`${baseKey}:finished`, false);
+  const [wrongAnswers, setWrongAnswers] = usePersistentState<WrongAnswer[]>(`${baseKey}:wrong`, []);
 
   if (qcmList.length === 0) return <p className="text-center text-muted-foreground p-4">Aucun exercice disponible.</p>;
   const q = qcmList[current];
