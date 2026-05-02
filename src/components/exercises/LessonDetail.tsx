@@ -1,8 +1,8 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, ArrowRight, BookOpen, Brain, PenTool,
-  CheckCircle, XCircle, Trophy, RotateCcw, Volume2, Play,
+  CheckCircle, XCircle, Trophy, RotateCcw, Volume2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -14,6 +14,7 @@ import { useIsAdmin } from "@/hooks/use-admin";
 import { playCorrectSound, playWrongSound } from "@/utils/sound-feedback";
 import { usePersistentState, userScopedKey } from "@/hooks/use-persistent-state";
 import { useAuth } from "@/contexts/AuthContext";
+import { getOrCreateShuffledOrder, clearShuffledOrder } from "@/utils/shuffle";
 import LessonAudioPlayer from "./LessonAudioPlayer";
 import Lesson1Screens from "./Lesson1Screens";
 import LessonScreens from "./LessonScreens";
@@ -27,97 +28,54 @@ interface LessonDetailProps {
   maxLessons?: number;
 }
 
-// ─── Theory Section Renderer ───
 function TheorySectionView({ section }: { section: TheorySection }) {
   const { speak } = useArabicSpeech();
-
   return (
     <div className="p-4 rounded-xl border border-border bg-card space-y-4">
       <h4 className="font-semibold text-foreground text-lg">{section.title}</h4>
-      
       <div className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
-        {section.content.split(/(\*\*[^*]+\*\*)/).map((part, i) => {
-          if (part.startsWith("**") && part.endsWith("**")) {
-            return <strong key={i} className="text-foreground font-arabic">{part.slice(2, -2)}</strong>;
-          }
-          return <span key={i}>{part}</span>;
-        })}
+        {section.content.split(/(\*\*[^*]+\*\*)/).map((part, i) =>
+          part.startsWith("**") && part.endsWith("**")
+            ? <strong key={i} className="text-foreground font-arabic">{part.slice(2, -2)}</strong>
+            : <span key={i}>{part}</span>
+        )}
       </div>
-
-      {section.tip && (
-        <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
-          <p className="text-sm text-primary">💡 {section.tip}</p>
-        </div>
-      )}
-
+      {section.tip && <div className="p-3 rounded-lg bg-primary/5 border border-primary/20"><p className="text-sm text-primary">💡 {section.tip}</p></div>}
       {section.letterGrid && (
         <div className="grid grid-cols-4 sm:grid-cols-7 gap-2" dir="rtl">
           {section.letterGrid.map((l, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: i * 0.02 }}
-              onClick={() => speak(l.letter)}
-              className="flex flex-col items-center justify-center p-3 rounded-xl border border-border bg-muted hover:border-primary/40 hover:bg-primary/5 transition-all cursor-pointer group"
-            >
-              <span className="font-arabic text-2xl sm:text-3xl text-foreground group-hover:text-primary transition-colors">
-                {l.letter}
-              </span>
+            <motion.div key={i} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.02 }}
+              onClick={() => speak(l.letter)} className="flex flex-col items-center justify-center p-3 rounded-xl border border-border bg-muted hover:border-primary/40 hover:bg-primary/5 transition-all cursor-pointer group">
+              <span className="font-arabic text-2xl sm:text-3xl text-foreground group-hover:text-primary transition-colors">{l.letter}</span>
               <span className="text-[10px] text-muted-foreground mt-1">{l.name}</span>
               <Volume2 className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity mt-0.5" />
             </motion.div>
           ))}
         </div>
       )}
-
       {section.formsTable && (
         <div className="overflow-x-auto">
           <table className="w-full text-center">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="py-2 text-xs text-muted-foreground">Lettre</th>
-                <th className="py-2 text-xs text-muted-foreground">Seule</th>
-                <th className="py-2 text-xs text-muted-foreground">Début</th>
-                <th className="py-2 text-xs text-muted-foreground">Milieu</th>
-                <th className="py-2 text-xs text-muted-foreground">Fin</th>
-              </tr>
-            </thead>
+            <thead><tr className="border-b border-border">{["Lettre","Seule","Début","Milieu","Fin"].map(h => <th key={h} className="py-2 text-xs text-muted-foreground">{h}</th>)}</tr></thead>
             <tbody>
               {section.formsTable.map((row, i) => (
                 <tr key={i} className="border-b border-border/50 hover:bg-muted/50">
                   <td className="py-2 text-xs text-muted-foreground">{row.name}</td>
-                  <td className="py-2 font-arabic text-xl text-foreground">{row.isolated}</td>
-                  <td className="py-2 font-arabic text-xl text-foreground">{row.initial}</td>
-                  <td className="py-2 font-arabic text-xl text-foreground">{row.medial}</td>
-                  <td className="py-2 font-arabic text-xl text-foreground">{row.final}</td>
+                  {[row.isolated, row.initial, row.medial, row.final].map((v, j) => <td key={j} className="py-2 font-arabic text-xl text-foreground">{v}</td>)}
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
-
       {section.arabicExamples && (
         <div className="space-y-2">
           {section.arabicExamples.map((ex, i) => {
             const emoji = getIllustration(ex.meaning);
             return (
-              <div
-                key={i}
-                onClick={() => speak(ex.arabic)}
-                className="flex items-center justify-between p-3 rounded-lg bg-muted cursor-pointer hover:bg-primary/10 transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <Volume2 className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <div>
-                    <p className="font-arabic text-2xl text-foreground">{ex.arabic}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <p className="text-sm text-foreground font-medium">{ex.meaning}</p>
-                  {emoji && <span className="text-2xl" role="img">{emoji}</span>}
-                </div>
+              <div key={i} onClick={() => speak(ex.arabic)} className="flex items-center justify-between p-3 rounded-lg bg-muted cursor-pointer hover:bg-primary/10 transition-colors">
+                <div className="flex items-center gap-2"><Volume2 className="h-4 w-4 text-muted-foreground shrink-0" /><p className="font-arabic text-2xl text-foreground">{ex.arabic}</p></div>
+                <div className="flex items-center gap-2"><p className="text-sm text-foreground font-medium">{ex.meaning}</p>{emoji && <span className="text-2xl" role="img">{emoji}</span>}</div>
               </div>
             );
           })}
@@ -127,104 +85,64 @@ function TheorySectionView({ section }: { section: TheorySection }) {
   );
 }
 
-// ─── Lesson Tab ───
 function LessonTab({ lesson }: { lesson: Lesson }) {
   const { isAdmin } = useIsAdmin();
-
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
       <LessonAudioPlayer level="niveau_1" lessonNumber={lesson.id} isTeacher={isAdmin} />
-
-
       {lesson.videoUrl && (
-        <div className="rounded-xl overflow-hidden border border-border bg-card">
-          <div className="aspect-video">
-            {lesson.videoUrl.includes("youtube.com") || lesson.videoUrl.includes("youtu.be") ? (
-              <iframe
-                src={lesson.videoUrl.replace("watch?v=", "embed/").replace("youtu.be/", "youtube.com/embed/")}
-                className="w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            ) : (
-              <video src={lesson.videoUrl} controls className="w-full h-full object-cover" />
-            )}
-          </div>
-        </div>
+        <div className="rounded-xl overflow-hidden border border-border bg-card"><div className="aspect-video">
+          {lesson.videoUrl.includes("youtube.com") || lesson.videoUrl.includes("youtu.be")
+            ? <iframe src={lesson.videoUrl.replace("watch?v=", "embed/").replace("youtu.be/", "youtube.com/embed/")} className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+            : <video src={lesson.videoUrl} controls className="w-full h-full object-cover" />}
+        </div></div>
       )}
-
-      {(lesson.theory || []).map((section, i) => (
-        <TheorySectionView key={i} section={section} />
-      ))}
+      {(lesson.theory || []).map((section, i) => <TheorySectionView key={i} section={section} />)}
     </motion.div>
   );
 }
 
-// ─── Wrong answer type ───
-interface WrongAnswer {
-  question: string;
-  userAnswer: string;
-  correctAnswer: string;
-}
+interface WrongAnswer { question: string; userAnswer: string; correctAnswer: string; }
 
-// ─── QCM Tab ───
+// BUG 3 FIX: ordre mélangé stable par session via localStorage.
 function QCMTab({ lesson, onAllCorrect, onSwitchToDictation }: { lesson: Lesson; onAllCorrect: () => void; onSwitchToDictation?: () => void }) {
   const { user } = useAuth();
   const qcmList = lesson.qcm || [];
   const baseKey = userScopedKey(user?.id, `n1:lesson:${lesson.id}:qcm`);
+  const shuffleKey = `${baseKey}:order`;
+  const shuffledOrder = useMemo(() => getOrCreateShuffledOrder(shuffleKey, qcmList.length), [shuffleKey, qcmList.length]);
+  const shuffledList = useMemo(() => shuffledOrder.map(i => qcmList[i]), [shuffledOrder, qcmList]);
+
   const [current, setCurrent] = usePersistentState<number>(`${baseKey}:current`, 0);
   const [selected, setSelected] = useState<number | null>(null);
   const [score, setScore] = usePersistentState<number>(`${baseKey}:score`, 0);
   const [finished, setFinished] = usePersistentState<boolean>(`${baseKey}:finished`, false);
   const [wrongAnswers, setWrongAnswers] = usePersistentState<WrongAnswer[]>(`${baseKey}:wrong`, []);
 
-  if (qcmList.length === 0) return <p className="text-center text-muted-foreground p-4">Aucun exercice disponible.</p>;
-  const q = qcmList[current];
+  if (shuffledList.length === 0) return <p className="text-center text-muted-foreground p-4">Aucun exercice disponible.</p>;
+  const q = shuffledList[current];
 
   const handleSelect = (idx: number) => {
     if (selected !== null) return;
     setSelected(idx);
-    const isCorrect = idx === q.correctIndex;
-    if (isCorrect) { setScore(s => s + 1); playCorrectSound(); }
-    else {
-      playWrongSound();
-      setWrongAnswers(prev => [...prev, {
-        question: q.question,
-        userAnswer: q.options[idx],
-        correctAnswer: q.options[q.correctIndex],
-      }]);
-    }
+    if (idx === q.correctIndex) { setScore(s => s + 1); playCorrectSound(); }
+    else { playWrongSound(); setWrongAnswers(prev => [...prev, { question: q.question, userAnswer: q.options[idx], correctAnswer: q.options[q.correctIndex] }]); }
   };
 
-  const next = () => {
-    if (current + 1 >= qcmList.length) {
-      setFinished(true);
-    } else {
-      setCurrent(c => c + 1);
-      setSelected(null);
-    }
-  };
-
-  const reset = () => {
-    setCurrent(0); setSelected(null); setScore(0); setFinished(false); setWrongAnswers([]);
-  };
+  const next = () => { if (current + 1 >= shuffledList.length) setFinished(true); else { setCurrent(c => c + 1); setSelected(null); } };
+  const reset = () => { clearShuffledOrder(shuffleKey); setCurrent(0); setSelected(null); setScore(0); setFinished(false); setWrongAnswers([]); window.location.reload(); };
 
   if (finished) {
-    const pct = Math.round((score / qcmList.length) * 100);
+    const pct = Math.round((score / shuffledList.length) * 100);
     const passed = pct >= 80;
     if (passed) onAllCorrect();
     return (
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="p-8 rounded-xl border border-border bg-card text-center space-y-4">
         <Trophy className="h-16 w-16 mx-auto text-secondary" />
         <h3 className="text-2xl font-bold text-foreground">Exercices terminés !</h3>
-        <p className="text-lg text-muted-foreground">
-          Score : <span className="font-bold text-primary">{score}</span> / {qcmList.length} ({pct}%)
-        </p>
+        <p className="text-lg text-muted-foreground">Score : <span className="font-bold text-primary">{score}</span> / {shuffledList.length} ({pct}%)</p>
         <Progress value={pct} className="h-3 max-w-xs mx-auto" />
-        <p className="text-sm text-muted-foreground">
-          {passed ? (score === qcmList.length ? "Parfait ! 🎉" : "Très bien ! 👏") : "Encore un petit effort ! Il faut 80% pour passer à la suite. 💪"}
-        </p>
-
+        <p className="text-sm text-muted-foreground">{passed ? (score === shuffledList.length ? "Parfait ! 🎉" : "Très bien ! 👏") : "Encore un petit effort ! Il faut 80% pour passer à la suite. 💪"}</p>
         {wrongAnswers.length > 0 && (
           <div className="text-left mt-4 space-y-2">
             <h4 className="text-sm font-semibold text-foreground">❌ Questions ratées :</h4>
@@ -237,28 +155,19 @@ function QCMTab({ lesson, onAllCorrect, onSwitchToDictation }: { lesson: Lesson;
             ))}
           </div>
         )}
-
         <div className="flex flex-wrap justify-center gap-3 pt-2">
           <Button onClick={reset} variant="outline" className="gap-2"><RotateCcw className="h-4 w-4" /> Réessayer</Button>
-          {passed && onSwitchToDictation && (
-            <Button onClick={onSwitchToDictation} className="gap-2"><PenTool className="h-4 w-4" /> Passer à la Dictée</Button>
-          )}
+          {passed && onSwitchToDictation && <Button onClick={onSwitchToDictation} className="gap-2"><PenTool className="h-4 w-4" /> Passer à la Dictée</Button>}
         </div>
       </motion.div>
     );
   }
 
-  // Progress bar for QCM
-  const progressPct = Math.round(((current) / qcmList.length) * 100);
-
   return (
     <div className="space-y-4">
       <div className="space-y-1">
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>Question {current + 1} / {qcmList.length}</span>
-          <span>Score : {score}</span>
-        </div>
-        <Progress value={progressPct} className="h-2" />
+        <div className="flex items-center justify-between text-sm text-muted-foreground"><span>Question {current + 1} / {shuffledList.length}</span><span>Score : {score}</span></div>
+        <Progress value={Math.round((current / shuffledList.length) * 100)} className="h-2" />
       </div>
       <AnimatePresence mode="wait">
         <motion.div key={current} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="p-6 rounded-xl border border-border bg-card">
@@ -266,13 +175,9 @@ function QCMTab({ lesson, onAllCorrect, onSwitchToDictation }: { lesson: Lesson;
           <div className="grid grid-cols-2 gap-3">
             {q.options.map((opt, idx) => {
               let cls = "border border-border bg-background hover:bg-muted";
-              if (selected !== null) {
-                if (idx === q.correctIndex) cls = "border-primary bg-primary/10 text-primary";
-                else if (idx === selected) cls = "border-destructive bg-destructive/10 text-destructive";
-              }
+              if (selected !== null) { if (idx === q.correctIndex) cls = "border-primary bg-primary/10 text-primary"; else if (idx === selected) cls = "border-destructive bg-destructive/10 text-destructive"; }
               return (
-                <button key={idx} onClick={() => handleSelect(idx)} disabled={selected !== null}
-                  className={`p-4 rounded-lg text-base font-medium transition-all ${cls}`}>
+                <button key={idx} onClick={() => handleSelect(idx)} disabled={selected !== null} className={`p-4 rounded-lg text-base font-medium transition-all ${cls}`}>
                   {opt}
                   {selected !== null && idx === q.correctIndex && <CheckCircle className="h-4 w-4 inline ml-2" />}
                   {selected !== null && idx === selected && idx !== q.correctIndex && <XCircle className="h-4 w-4 inline ml-2" />}
@@ -280,29 +185,23 @@ function QCMTab({ lesson, onAllCorrect, onSwitchToDictation }: { lesson: Lesson;
               );
             })}
           </div>
-          {selected !== null && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-4 p-3 rounded-lg bg-muted text-sm text-muted-foreground">
-              {q.explanation}
-            </motion.div>
-          )}
+          {selected !== null && <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-4 p-3 rounded-lg bg-muted text-sm text-muted-foreground">{q.explanation}</motion.div>}
         </motion.div>
       </AnimatePresence>
-      {selected !== null && (
-        <div className="flex justify-end">
-          <Button onClick={next} className="gap-2">
-            {current + 1 >= qcmList.length ? "Voir le résultat" : "Suivant"} <ArrowRight className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
+      {selected !== null && <div className="flex justify-end"><Button onClick={next} className="gap-2">{current + 1 >= shuffledList.length ? "Voir le résultat" : "Suivant"} <ArrowRight className="h-4 w-4" /></Button></div>}
     </div>
   );
 }
 
-// ─── Dictation Tab ───
+// BUG 3 FIX: shuffle pour la dictée.
 function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: () => void }) {
   const { user } = useAuth();
   const dictList = lesson.dictation || [];
   const baseKey = userScopedKey(user?.id, `n1:lesson:${lesson.id}:dict`);
+  const shuffleKey = `${baseKey}:order`;
+  const shuffledOrder = useMemo(() => getOrCreateShuffledOrder(shuffleKey, dictList.length), [shuffleKey, dictList.length]);
+  const shuffledList = useMemo(() => shuffledOrder.map(i => dictList[i]), [shuffledOrder, dictList]);
+
   const [current, setCurrent] = usePersistentState<number>(`${baseKey}:current`, 0);
   const [selected, setSelected] = useState<number | null>(null);
   const [score, setScore] = usePersistentState<number>(`${baseKey}:score`, 0);
@@ -316,93 +215,51 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
   const currentRef = useRef(current);
   const { speak, stop: stopSpeech } = useArabicSpeech();
 
-  if (dictList.length === 0) return <p className="text-center text-muted-foreground p-4">Aucune dictée disponible.</p>;
-  const d = dictList[current];
+  if (shuffledList.length === 0) return <p className="text-center text-muted-foreground p-4">Aucune dictée disponible.</p>;
+  const d = shuffledList[current];
   const correctArabic = d.options[d.correctIndex];
 
   const playDictation = async () => {
     setIsPlaying(true);
-    try {
-      stopSpeech();
-      await speak(correctArabic, 0.75);
-    } catch (e) {
-      console.warn("Dictation playback failed:", e);
-    } finally {
-      setIsPlaying(false);
-    }
+    try { stopSpeech(); await speak(correctArabic, 0.75); } catch (e) { console.warn("Dictation playback failed:", e); } finally { setIsPlaying(false); }
   };
-
-  if (currentRef.current !== current) {
-    currentRef.current = current;
-    setTimeout(() => playDictation(), 400);
-  }
+  if (currentRef.current !== current) { currentRef.current = current; setTimeout(() => playDictation(), 400); }
 
   const handleSelect = (idx: number) => {
-    if (selected !== null) return;
-    setSelected(idx);
-    const isCorrect = idx === d.correctIndex;
-    if (isCorrect) { setScore(s => s + 1); playCorrectSound(); }
-    else {
-      playWrongSound();
-      setWrongAnswers(prev => [...prev, {
-        question: `Mot ${current + 1}`,
-        userAnswer: d.options[idx],
-        correctAnswer: correctArabic,
-      }]);
-    }
+    if (selected !== null) return; setSelected(idx);
+    if (idx === d.correctIndex) { setScore(s => s + 1); playCorrectSound(); }
+    else { playWrongSound(); setWrongAnswers(prev => [...prev, { question: `Mot ${current + 1}`, userAnswer: d.options[idx], correctAnswer: correctArabic }]); }
   };
-
   const handleCheckTyped = () => {
     if (answerChecked) return;
     const isCorrect = typedAnswer.trim() === correctArabic.trim();
-    setAnswerChecked(true);
-    setAnswerCorrect(isCorrect);
+    setAnswerChecked(true); setAnswerCorrect(isCorrect);
     if (isCorrect) { setScore(s => s + 1); playCorrectSound(); }
-    else {
-      playWrongSound();
-      setWrongAnswers(prev => [...prev, {
-        question: `Mot ${current + 1}`,
-        userAnswer: typedAnswer.trim(),
-        correctAnswer: correctArabic,
-      }]);
-    }
+    else { playWrongSound(); setWrongAnswers(prev => [...prev, { question: `Mot ${current + 1}`, userAnswer: typedAnswer.trim(), correctAnswer: correctArabic }]); }
   };
-
   const next = () => {
-    if (current + 1 >= dictList.length) {
-      setFinished(true);
-    } else {
-      setCurrent(c => c + 1);
-      setSelected(null);
-      setTypedAnswer("");
-      setAnswerChecked(false);
-      setAnswerCorrect(false);
-    }
+    if (current + 1 >= shuffledList.length) setFinished(true);
+    else { setCurrent(c => c + 1); setSelected(null); setTypedAnswer(""); setAnswerChecked(false); setAnswerCorrect(false); }
   };
-
   const reset = () => {
+    clearShuffledOrder(shuffleKey);
     setCurrent(0); setSelected(null); setScore(0); setFinished(false);
     setTypedAnswer(""); setAnswerChecked(false); setAnswerCorrect(false); setWrongAnswers([]);
+    window.location.reload();
   };
-
   const canAdvance = mode === "qcm" ? selected !== null : answerChecked;
 
   if (finished) {
-    const pct = Math.round((score / dictList.length) * 100);
+    const pct = Math.round((score / shuffledList.length) * 100);
     const passed = pct >= 80;
     if (passed) onAllCorrect();
     return (
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="p-8 rounded-xl border border-border bg-card text-center space-y-4">
         <Trophy className="h-16 w-16 mx-auto text-secondary" />
         <h3 className="text-2xl font-bold text-foreground">Dictée terminée !</h3>
-        <p className="text-lg text-muted-foreground">
-          Score : <span className="font-bold text-primary">{score}</span> / {dictList.length} ({pct}%)
-        </p>
+        <p className="text-lg text-muted-foreground">Score : <span className="font-bold text-primary">{score}</span> / {shuffledList.length} ({pct}%)</p>
         <Progress value={pct} className="h-3 max-w-xs mx-auto" />
-        <p className="text-sm text-muted-foreground">
-          {passed ? (score === dictList.length ? "Excellent ! 🎉" : "Très bien ! 👏") : "Encore un petit effort ! Il faut 80% pour passer à la suite. 💪"}
-        </p>
-
+        <p className="text-sm text-muted-foreground">{passed ? (score === shuffledList.length ? "Excellent ! 🎉" : "Très bien ! 👏") : "Encore un petit effort ! Il faut 80% pour passer à la suite. 💪"}</p>
         {wrongAnswers.length > 0 && (
           <div className="text-left mt-4 space-y-2">
             <h4 className="text-sm font-semibold text-foreground">❌ Mots ratés :</h4>
@@ -414,60 +271,36 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
             ))}
           </div>
         )}
-
         <Button onClick={reset} className="gap-2"><RotateCcw className="h-4 w-4" /> Recommencer</Button>
       </motion.div>
     );
   }
 
-  const progressPct = Math.round(((current) / dictList.length) * 100);
-
   return (
     <div className="space-y-4">
       <div className="space-y-1">
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>Mot {current + 1} / {dictList.length}</span>
-          <span>Score : {score}</span>
-        </div>
-        <Progress value={progressPct} className="h-2" />
+        <div className="flex items-center justify-between text-sm text-muted-foreground"><span>Mot {current + 1} / {shuffledList.length}</span><span>Score : {score}</span></div>
+        <Progress value={Math.round((current / shuffledList.length) * 100)} className="h-2" />
       </div>
-
       <div className="flex justify-center gap-2">
-        <Button variant={mode === "qcm" ? "default" : "outline"} size="sm" onClick={() => setMode("qcm")} className="gap-1.5 text-xs">
-          <Brain className="h-3.5 w-3.5" /> QCM
-        </Button>
-        <Button variant={mode === "keyboard" ? "default" : "outline"} size="sm" onClick={() => setMode("keyboard")} className="gap-1.5 text-xs">
-          <PenTool className="h-3.5 w-3.5" /> Écriture
-        </Button>
+        <Button variant={mode === "qcm" ? "default" : "outline"} size="sm" onClick={() => setMode("qcm")} className="gap-1.5 text-xs"><Brain className="h-3.5 w-3.5" /> QCM</Button>
+        <Button variant={mode === "keyboard" ? "default" : "outline"} size="sm" onClick={() => setMode("keyboard")} className="gap-1.5 text-xs"><PenTool className="h-3.5 w-3.5" /> Écriture</Button>
       </div>
-
       <AnimatePresence mode="wait">
         <motion.div key={`${current}-${mode}`} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="p-6 rounded-xl border border-border bg-card">
           <p className="text-center text-muted-foreground mb-2 text-sm">Écoutez et {mode === "qcm" ? "choisissez" : "écrivez"} le bon mot :</p>
           <div className="flex justify-center mb-6">
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={playDictation}
-              disabled={isPlaying}
-              className="gap-3 rounded-full px-8 py-6 text-lg border-primary/30 hover:bg-primary/10"
-            >
-              <Volume2 className={`h-6 w-6 ${isPlaying ? "animate-pulse text-primary" : "text-muted-foreground"}`} />
-              {isPlaying ? "Lecture..." : "🔊 Écouter"}
+            <Button variant="outline" size="lg" onClick={playDictation} disabled={isPlaying} className="gap-3 rounded-full px-8 py-6 text-lg border-primary/30 hover:bg-primary/10">
+              <Volume2 className={`h-6 w-6 ${isPlaying ? "animate-pulse text-primary" : "text-muted-foreground"}`} />{isPlaying ? "Lecture..." : "🔊 Écouter"}
             </Button>
           </div>
-
           {mode === "qcm" ? (
             <div className="grid grid-cols-2 gap-3">
               {d.options.map((opt, idx) => {
                 let cls = "border border-border bg-background hover:bg-muted";
-                if (selected !== null) {
-                  if (idx === d.correctIndex) cls = "border-primary bg-primary/10 text-primary";
-                  else if (idx === selected) cls = "border-destructive bg-destructive/10 text-destructive";
-                }
+                if (selected !== null) { if (idx === d.correctIndex) cls = "border-primary bg-primary/10 text-primary"; else if (idx === selected) cls = "border-destructive bg-destructive/10 text-destructive"; }
                 return (
-                  <button key={idx} onClick={() => handleSelect(idx)} disabled={selected !== null}
-                    className={`p-4 rounded-lg font-arabic text-2xl transition-all ${cls}`}>
+                  <button key={idx} onClick={() => handleSelect(idx)} disabled={selected !== null} className={`p-4 rounded-lg font-arabic text-2xl transition-all ${cls}`}>
                     {opt}
                     {selected !== null && idx === d.correctIndex && <CheckCircle className="h-4 w-4 inline ml-2" />}
                     {selected !== null && idx === selected && idx !== d.correctIndex && <XCircle className="h-4 w-4 inline ml-2" />}
@@ -477,50 +310,28 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
             </div>
           ) : (
             <div className="space-y-3">
-              <input
-                type="text"
-                dir="rtl"
-                value={typedAnswer}
-                onChange={(e) => setTypedAnswer(e.target.value)}
-                disabled={answerChecked}
+              <input type="text" dir="rtl" value={typedAnswer} onChange={(e) => setTypedAnswer(e.target.value)} disabled={answerChecked}
                 placeholder="اكتب الإجابة هنا..."
                 className="w-full p-4 rounded-lg border border-border bg-background font-arabic text-3xl text-center focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
-                onKeyDown={(e) => { if (e.key === "Enter" && typedAnswer.trim()) handleCheckTyped(); }}
-              />
-              {!answerChecked && (
-                <Button onClick={handleCheckTyped} disabled={!typedAnswer.trim()} className="w-full gap-2">
-                  <CheckCircle className="h-4 w-4" /> Vérifier
-                </Button>
-              )}
+                onKeyDown={(e) => { if (e.key === "Enter" && typedAnswer.trim()) handleCheckTyped(); }} />
+              {!answerChecked && <Button onClick={handleCheckTyped} disabled={!typedAnswer.trim()} className="w-full gap-2"><CheckCircle className="h-4 w-4" /> Vérifier</Button>}
               {answerChecked && (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                   className={`p-3 rounded-lg text-sm text-center ${answerCorrect ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"}`}>
-                  {answerCorrect ? (
-                    <span className="flex items-center justify-center gap-2"><CheckCircle className="h-4 w-4" /> Correct ! 🎉</span>
-                  ) : (
-                    <span className="flex flex-col items-center gap-1">
-                      <span className="flex items-center gap-2"><XCircle className="h-4 w-4" /> Incorrect</span>
-                      <span className="font-arabic text-xl">Réponse : {correctArabic}</span>
-                    </span>
-                  )}
+                  {answerCorrect
+                    ? <span className="flex items-center justify-center gap-2"><CheckCircle className="h-4 w-4" /> Correct ! 🎉</span>
+                    : <span className="flex flex-col items-center gap-1"><span className="flex items-center gap-2"><XCircle className="h-4 w-4" /> Incorrect</span><span className="font-arabic text-xl">Réponse : {correctArabic}</span></span>}
                 </motion.div>
               )}
             </div>
           )}
         </motion.div>
       </AnimatePresence>
-      {canAdvance && (
-        <div className="flex justify-end">
-          <Button onClick={next} className="gap-2">
-            {current + 1 >= dictList.length ? "Voir le résultat" : "Suivant"} <ArrowRight className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
+      {canAdvance && <div className="flex justify-end"><Button onClick={next} className="gap-2">{current + 1 >= shuffledList.length ? "Voir le résultat" : "Suivant"} <ArrowRight className="h-4 w-4" /></Button></div>}
     </div>
   );
 }
 
-// ─── Main Component ───
 const LessonDetail = ({ lesson, onBack, onComplete, nextLessonId, onNextLesson, maxLessons = Infinity }: LessonDetailProps) => {
   const { user } = useAuth();
   const baseKey = userScopedKey(user?.id, `n1:lesson:${lesson.id}`);
@@ -530,26 +341,10 @@ const LessonDetail = ({ lesson, onBack, onComplete, nextLessonId, onNextLesson, 
   const [theoryCompleted, setTheoryCompleted] = usePersistentState<boolean>(`${baseKey}:theoryDone`, false);
   const { isAdmin } = useIsAdmin();
 
-  const handleComplete = () => {
-    onComplete(lesson.id);
-    if (nextLessonId && onNextLesson) {
-      // Don't go back, offer next lesson
-    } else {
-      onBack();
-    }
-  };
-
-  const adminSkip = () => {
-    setTheoryCompleted(true);
-    setExercisesCompleted(true);
-    setDictationCompleted(true);
-  };
-
+  const handleComplete = () => { onComplete(lesson.id); if (!nextLessonId || !onNextLesson) onBack(); };
+  const adminSkip = () => { setTheoryCompleted(true); setExercisesCompleted(true); setDictationCompleted(true); };
   const allDone = exercisesCompleted && dictationCompleted;
-
-  const steps = [theoryCompleted, exercisesCompleted, dictationCompleted];
-  const completedSteps = steps.filter(Boolean).length;
-  const lessonProgressPct = Math.round((completedSteps / 3) * 100);
+  const completedSteps = [theoryCompleted, exercisesCompleted, dictationCompleted].filter(Boolean).length;
 
   const handleTabChange = (tab: string) => {
     if (!isAdmin) {
@@ -559,104 +354,57 @@ const LessonDetail = ({ lesson, onBack, onComplete, nextLessonId, onNextLesson, 
     setActiveTab(tab);
   };
 
-  const handleTheoryComplete = () => {
-    setTheoryCompleted(true);
-    setActiveTab("exercises");
-  };
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={onBack} className="gap-2">
-          <ArrowLeft className="h-4 w-4" /> Retour
-        </Button>
+        <Button variant="ghost" onClick={onBack} className="gap-2"><ArrowLeft className="h-4 w-4" /> Retour</Button>
         <div className="text-right">
-          <h2 className="text-lg font-bold text-foreground">
-            {lesson.icon} Leçon {lesson.id} : {lesson.title}
-          </h2>
+          <h2 className="text-lg font-bold text-foreground">{lesson.icon} Leçon {lesson.id} : {lesson.title}</h2>
           <p className="text-xs text-muted-foreground">{lesson.subtitle}</p>
         </div>
       </div>
-
       <div className="space-y-1">
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>Progression de la leçon</span>
-          <span>{completedSteps}/3 étapes</span>
-        </div>
-        <Progress value={lessonProgressPct} className="h-2" />
+        <div className="flex items-center justify-between text-xs text-muted-foreground"><span>Progression de la leçon</span><span>{completedSteps}/3 étapes</span></div>
+        <Progress value={Math.round((completedSteps / 3) * 100)} className="h-2" />
       </div>
-
-      {isAdmin && !allDone && (
-        <Button variant="outline" size="sm" onClick={adminSkip} className="text-xs text-muted-foreground border-dashed">
-          ⚡ Passer [admin]
-        </Button>
-      )}
+      {isAdmin && !allDone && <Button variant="outline" size="sm" onClick={adminSkip} className="text-xs text-muted-foreground border-dashed">⚡ Passer [admin]</Button>}
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
         <TabsList className="bg-muted w-full grid grid-cols-3">
-          <TabsTrigger value="lesson" className="gap-1.5 text-xs sm:text-sm">
-            <BookOpen className="h-4 w-4" /> Leçon
-            {theoryCompleted && <CheckCircle className="h-3 w-3 text-primary" />}
-          </TabsTrigger>
-          <TabsTrigger value="exercises" className="gap-1.5 text-xs sm:text-sm" disabled={!isAdmin && !theoryCompleted}>
-            <Brain className="h-4 w-4" /> Exercices
-            {exercisesCompleted && <CheckCircle className="h-3 w-3 text-primary" />}
-          </TabsTrigger>
-          <TabsTrigger value="dictation" className="gap-1.5 text-xs sm:text-sm" disabled={!isAdmin && (!theoryCompleted || !exercisesCompleted)}>
-            <PenTool className="h-4 w-4" /> Dictée
-            {dictationCompleted && <CheckCircle className="h-3 w-3 text-primary" />}
-          </TabsTrigger>
+          <TabsTrigger value="lesson" className="gap-1.5 text-xs sm:text-sm"><BookOpen className="h-4 w-4" /> Leçon {theoryCompleted && <CheckCircle className="h-3 w-3 text-primary" />}</TabsTrigger>
+          <TabsTrigger value="exercises" className="gap-1.5 text-xs sm:text-sm" disabled={!isAdmin && !theoryCompleted}><Brain className="h-4 w-4" /> Exercices {exercisesCompleted && <CheckCircle className="h-3 w-3 text-primary" />}</TabsTrigger>
+          <TabsTrigger value="dictation" className="gap-1.5 text-xs sm:text-sm" disabled={!isAdmin && (!theoryCompleted || !exercisesCompleted)}><PenTool className="h-4 w-4" /> Dictée {dictationCompleted && <CheckCircle className="h-3 w-3 text-primary" />}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="lesson">
-          {!theoryCompleted ? (
-            lesson.id === 1 ? (
-              <Lesson1Screens onComplete={handleTheoryComplete} />
-            ) : (
-              <LessonScreens lesson={lesson} onComplete={handleTheoryComplete} />
-            )
-          ) : (
-            <div className="p-6 rounded-xl border border-primary/30 bg-primary/5 text-center space-y-3">
-              <CheckCircle className="h-10 w-10 mx-auto text-primary" />
-              <p className="text-foreground font-semibold">Leçon terminée ! ✅</p>
-              <p className="text-sm text-muted-foreground">Passe aux exercices pour continuer.</p>
-              <Button onClick={() => setActiveTab("exercises")} className="gap-2">
-                <Brain className="h-4 w-4" /> Aller aux exercices
-              </Button>
-            </div>
-          )}
+          {!theoryCompleted
+            ? lesson.id === 1
+              ? <Lesson1Screens onComplete={() => { setTheoryCompleted(true); setActiveTab("exercises"); }} />
+              : <LessonScreens lesson={lesson} onComplete={() => { setTheoryCompleted(true); setActiveTab("exercises"); }} />
+            : <div className="p-6 rounded-xl border border-primary/30 bg-primary/5 text-center space-y-3">
+                <CheckCircle className="h-10 w-10 mx-auto text-primary" />
+                <p className="text-foreground font-semibold">Leçon terminée ! ✅</p>
+                <p className="text-sm text-muted-foreground">Passe aux exercices pour continuer.</p>
+                <Button onClick={() => setActiveTab("exercises")} className="gap-2"><Brain className="h-4 w-4" /> Aller aux exercices</Button>
+              </div>}
         </TabsContent>
-
         <TabsContent value="exercises">
-          {!theoryCompleted ? (
-            <div className="p-6 rounded-xl border border-border bg-card text-center space-y-3">
-              <p className="text-foreground font-medium">🔒 Terminez la leçon pour débloquer les exercices</p>
-              <Button variant="outline" onClick={() => setActiveTab("lesson")} className="gap-2">
-                <BookOpen className="h-4 w-4" /> Retour à la leçon
-              </Button>
-            </div>
-          ) : (
-            <QCMTab
-              lesson={lesson}
-              onAllCorrect={() => setExercisesCompleted(true)}
-              onSwitchToDictation={() => setActiveTab("dictation")}
-            />
-          )}
+          {!theoryCompleted
+            ? <div className="p-6 rounded-xl border border-border bg-card text-center space-y-3">
+                <p className="text-foreground font-medium">🔒 Terminez la leçon pour débloquer les exercices</p>
+                <Button variant="outline" onClick={() => setActiveTab("lesson")} className="gap-2"><BookOpen className="h-4 w-4" /> Retour à la leçon</Button>
+              </div>
+            : <QCMTab lesson={lesson} onAllCorrect={() => setExercisesCompleted(true)} onSwitchToDictation={() => setActiveTab("dictation")} />}
         </TabsContent>
-
         <TabsContent value="dictation">
-          {!theoryCompleted || !exercisesCompleted ? (
-            <div className="p-6 rounded-xl border border-border bg-card text-center space-y-3">
-              <p className="text-foreground font-medium">
-                {!theoryCompleted ? "🔒 Terminez la leçon pour débloquer la dictée" : "🔒 Obtenez au moins 80% aux exercices pour débloquer la dictée"}
-              </p>
-              <Button variant="outline" onClick={() => setActiveTab(!theoryCompleted ? "lesson" : "exercises")} className="gap-2">
-                {!theoryCompleted ? <><BookOpen className="h-4 w-4" /> Retour à la leçon</> : <><Brain className="h-4 w-4" /> Retour aux exercices</>}
-              </Button>
-            </div>
-          ) : (
-            <DictationTab lesson={lesson} onAllCorrect={() => setDictationCompleted(true)} />
-          )}
+          {!theoryCompleted || !exercisesCompleted
+            ? <div className="p-6 rounded-xl border border-border bg-card text-center space-y-3">
+                <p className="text-foreground font-medium">{!theoryCompleted ? "🔒 Terminez la leçon pour débloquer la dictée" : "🔒 Obtenez au moins 80% aux exercices pour débloquer la dictée"}</p>
+                <Button variant="outline" onClick={() => setActiveTab(!theoryCompleted ? "lesson" : "exercises")} className="gap-2">
+                  {!theoryCompleted ? <><BookOpen className="h-4 w-4" /> Retour à la leçon</> : <><Brain className="h-4 w-4" /> Retour aux exercices</>}
+                </Button>
+              </div>
+            : <DictationTab lesson={lesson} onAllCorrect={() => setDictationCompleted(true)} />}
         </TabsContent>
       </Tabs>
 
@@ -664,23 +412,11 @@ const LessonDetail = ({ lesson, onBack, onComplete, nextLessonId, onNextLesson, 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="p-4 rounded-xl border border-primary bg-primary/10 text-center space-y-3">
           <p className="text-foreground font-semibold">🎉 Leçon complète !</p>
           <div className="flex flex-wrap justify-center gap-3">
-            {nextLessonId && onNextLesson ? (
-              nextLessonId <= maxLessons ? (
-                <Button onClick={() => { handleComplete(); onNextLesson(nextLessonId); }} className="gap-2">
-                  Leçon suivante <ArrowRight className="h-4 w-4" />
-                </Button>
-              ) : (
-                <a href="/tarifs">
-                  <Button variant="secondary" className="gap-2">
-                    🔒 Passez au plan Essentiel pour continuer <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </a>
-              )
-            ) : (
-              <Button onClick={handleComplete} className="gap-2">
-                <CheckCircle className="h-4 w-4" /> Terminer
-              </Button>
-            )}
+            {nextLessonId && onNextLesson
+              ? nextLessonId <= maxLessons
+                ? <Button onClick={() => { handleComplete(); onNextLesson(nextLessonId); }} className="gap-2">Leçon suivante <ArrowRight className="h-4 w-4" /></Button>
+                : <a href="/tarifs"><Button variant="secondary" className="gap-2">🔒 Passez au plan Essentiel pour continuer <ArrowRight className="h-4 w-4" /></Button></a>
+              : <Button onClick={handleComplete} className="gap-2"><CheckCircle className="h-4 w-4" /> Terminer</Button>}
           </div>
         </motion.div>
       )}

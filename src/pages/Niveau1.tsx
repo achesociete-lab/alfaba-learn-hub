@@ -11,6 +11,7 @@ import { useLessonProgress } from "@/hooks/use-lesson-progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useState } from "react";
+import LessonProgressBar from "@/components/LessonProgressBar";
 
 const alphabet = [
   { letter: "أ", name: "Alif", nameAr: "أَلِف", prononciation: "a / â", isolated: "أ", initial: "أ", medial: "ـأ", final: "ـأ" },
@@ -48,12 +49,12 @@ const lessons = [
   { num: 2, title: "Les formes des lettres", desc: "Début, milieu et fin de mot", icon: "✍️" },
   { num: 3, title: "Les voyelles courtes", desc: "Fatha, Damma, Kasra et Soukoun", icon: "🎵" },
   { num: 4, title: "Lecture de syllabes", desc: "Combinaison lettres + voyelles", icon: "🔤" },
-  { num: 5, title: "Les voyelles longues", desc: "Alif, Waw et Ya comme prolongation", icon: "🔊" },
-  { num: 6, title: "Lecture de mots simples", desc: "Premiers mots arabes", icon: "📝" },
-  { num: 7, title: "Le Tanwîn", desc: "Les doubles voyelles", icon: "✨" },
-  { num: 8, title: "La Shadda", desc: "Le redoublement des lettres", icon: "💪" },
-  { num: 9, title: "Lecture de phrases", desc: "Construire et lire des phrases complètes", icon: "💬" },
-  { num: 10, title: "Dictée finale", desc: "Évaluation écrite du niveau 1", icon: "🏆" },
+  { num: 5, title: "Les lettres solaires et lunaires", desc: "Assimilation du Lam de l'article", icon: "☀️" },
+  { num: 6, title: "Lecture de mots simples", desc: "Premier vocabulaire en arabe", icon: "📝" },
+  { num: 7, title: "Les voyelles longues", desc: "Alif, Waw et Ya comme voyelles", icon: "🎶" },
+  { num: 8, title: "La Shadda et le Tanwin", desc: "Redoublement et nunation", icon: "✨" },
+  { num: 9, title: "Lecture de phrases courtes", desc: "Premières phrases complètes", icon: "💬" },
+  { num: 10, title: "Dictée finale Niveau 1", desc: "Évaluation complète de l'alphabet", icon: "🏆" },
 ];
 
 const FREE_LESSON_LIMIT = 3;
@@ -66,14 +67,12 @@ const Niveau1 = () => {
   const [selectedLetter, setSelectedLetter] = useState<typeof alphabet[0] | null>(null);
 
   const shouldLock = !isAdmin && (!user || isFreePlan);
-  const completed = completedLessons.length;
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       <main className="pt-24 pb-16">
         <div className="container mx-auto px-4">
-          {/* Header */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-16">
             <div className="inline-flex items-center gap-2 bg-primary/10 px-4 py-1.5 rounded-full mb-4">
               <span className="text-sm font-semibold text-primary">Niveau 1</span>
@@ -91,18 +90,10 @@ const Niveau1 = () => {
             <h2 className="text-2xl font-bold text-foreground mb-6 text-center">L'Alphabet Arabe</h2>
             <div className="grid grid-cols-4 sm:grid-cols-7 gap-3 max-w-3xl mx-auto" dir="rtl">
               {alphabet.map((a, i) => (
-                <motion.button
-                  key={a.name + i}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.02 }}
-                  onClick={() => setSelectedLetter(a)}
-                  className="flex flex-col items-center justify-center p-3 rounded-xl border border-border bg-card hover:border-primary/40 hover:shadow-md transition-all cursor-pointer group"
-                >
-                  <span className="font-arabic text-2xl sm:text-3xl text-foreground group-hover:text-primary transition-colors">
-                    {a.letter}
-                  </span>
+                <motion.button key={a.name + i} initial={{ opacity: 0, scale: 0.8 }} whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }} transition={{ delay: i * 0.02 }} onClick={() => setSelectedLetter(a)}
+                  className="flex flex-col items-center justify-center p-3 rounded-xl border border-border bg-card hover:border-primary/40 hover:shadow-md transition-all cursor-pointer group">
+                  <span className="font-arabic text-2xl sm:text-3xl text-foreground group-hover:text-primary transition-colors">{a.letter}</span>
                   <span className="text-[10px] text-muted-foreground mt-1">{a.name}</span>
                 </motion.button>
               ))}
@@ -113,18 +104,9 @@ const Niveau1 = () => {
           <section>
             <h2 className="text-2xl font-bold text-foreground mb-6 text-center">Programme des leçons</h2>
 
-            {/* Progress bar */}
-            <div className="max-w-2xl mx-auto mb-6">
-              <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
-                <span>{completed}/10 leçons complétées</span>
-                <span>{Math.round((completed / 10) * 100)}%</span>
-              </div>
-              <div className="w-full bg-muted rounded-full h-2.5">
-                <div
-                  className="bg-primary h-2.5 rounded-full transition-all duration-500"
-                  style={{ width: `${(completed / 10) * 100}%` }}
-                />
-              </div>
+            {/* Progress bar with stars */}
+            <div className="max-w-2xl mx-auto mb-6 p-4 rounded-xl border border-border bg-card">
+              <LessonProgressBar completedLessons={completedLessons} totalLessons={lessons.length} label="Mes leçons" />
             </div>
 
             <TooltipProvider>
@@ -135,75 +117,44 @@ const Niveau1 = () => {
                 const isPrevCompleted = i === 0 || completedLessons.includes(lessons[i - 1].num);
                 const isProgressLocked = !isAdmin && !isPrevCompleted && !isPaywalled;
                 const isLocked = isPaywalled || isProgressLocked;
-
                 const linkTarget = isPaywalled ? (user ? "/tarifs" : "/auth") : isProgressLocked ? "#" : `/exercices?lesson=${lesson.num}`;
 
                 const card = (
                   <div key={lesson.num}>
-                    {/* CTA after lesson 3 */}
                     {lesson.num === 4 && shouldLock && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        className="mb-3 p-5 rounded-xl bg-primary/10 border border-primary/30 text-center"
-                      >
+                      <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+                        className="mb-3 p-5 rounded-xl bg-primary/10 border border-primary/30 text-center">
                         <p className="text-lg font-bold text-foreground mb-1">🔓 Débloquer toutes les leçons</p>
                         {user ? (
                           <>
                             <p className="text-sm text-muted-foreground mb-3">Passez au plan Essentiel pour débloquer toutes les leçons</p>
-                            <Button asChild className="gradient-emerald border-0 text-primary-foreground">
-                              <Link to="/tarifs">Passer à l'Essentiel →</Link>
-                            </Button>
+                            <Button asChild className="gradient-emerald border-0 text-primary-foreground"><Link to="/tarifs">Passer à l'Essentiel →</Link></Button>
                           </>
                         ) : (
                           <>
                             <p className="text-sm text-muted-foreground mb-3">Inscris-toi gratuitement pour continuer ton apprentissage →</p>
-                            <Button asChild className="gradient-emerald border-0 text-primary-foreground">
-                              <Link to="/auth">S'inscrire gratuitement →</Link>
-                            </Button>
+                            <Button asChild className="gradient-emerald border-0 text-primary-foreground"><Link to="/auth">S'inscrire gratuitement →</Link></Button>
                           </>
                         )}
                       </motion.div>
                     )}
-
                     <Link to={linkTarget} onClick={(e) => isProgressLocked && e.preventDefault()}>
-                      <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
+                      <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
                         transition={{ delay: i * 0.05 }}
                         className={`flex items-center gap-4 p-4 rounded-xl border transition-colors ${
-                          isCompleted
-                            ? "border-primary/30 bg-primary/5"
-                            : isLocked
-                            ? "border-border/50 bg-muted/30 opacity-50 cursor-not-allowed"
-                            : "border-border bg-card hover:border-primary/30"
-                        }`}
-                      >
+                          isCompleted ? "border-primary/30 bg-primary/5" : isLocked ? "border-border/50 bg-muted/30 opacity-50 cursor-not-allowed" : "border-border bg-card hover:border-primary/30"
+                        }`}>
                         <div className="h-10 w-10 rounded-lg gradient-emerald flex items-center justify-center shrink-0 text-lg">
-                          {isCompleted ? (
-                            <CheckCircle className="h-5 w-5 text-primary" />
-                          ) : isLocked ? (
-                            <Lock className="h-4 w-4 text-muted-foreground" />
-                          ) : (
-                            lesson.icon
-                          )}
+                          {isCompleted ? <CheckCircle className="h-5 w-5 text-primary" /> : isLocked ? <Lock className="h-4 w-4 text-muted-foreground" /> : lesson.icon}
                         </div>
                         <div className="flex-1">
-                          <h3 className="text-sm font-semibold text-foreground">
-                            Leçon {lesson.num} — {lesson.title}
-                          </h3>
+                          <h3 className="text-sm font-semibold text-foreground">Leçon {lesson.num} — {lesson.title}</h3>
                           <p className="text-xs text-muted-foreground">{lesson.desc}</p>
                           <p className="text-xs text-muted-foreground mt-0.5">⏱️ 15 min</p>
                         </div>
-                        {isCompleted ? (
-                          <CheckCircle className="h-4 w-4 text-primary shrink-0" />
-                        ) : isLocked ? (
-                          <Lock className="h-4 w-4 text-muted-foreground shrink-0" />
-                        ) : (
-                          <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                        )}
+                        {isCompleted ? <CheckCircle className="h-4 w-4 text-primary shrink-0" />
+                          : isLocked ? <Lock className="h-4 w-4 text-muted-foreground shrink-0" />
+                          : <ArrowRight className="h-4 w-4 text-muted-foreground" />}
                       </motion.div>
                     </Link>
                   </div>
@@ -213,13 +164,10 @@ const Niveau1 = () => {
                   return (
                     <Tooltip key={lesson.num}>
                       <TooltipTrigger asChild>{card}</TooltipTrigger>
-                      <TooltipContent>
-                        <p>Termine la leçon précédente pour débloquer</p>
-                      </TooltipContent>
+                      <TooltipContent><p>Termine la leçon précédente pour débloquer</p></TooltipContent>
                     </Tooltip>
                   );
                 }
-
                 return card;
               })}
             </div>
@@ -235,7 +183,6 @@ const Niveau1 = () => {
       </main>
       <Footer />
 
-      {/* Letter detail dialog */}
       <Dialog open={!!selectedLetter} onOpenChange={(open) => !open && setSelectedLetter(null)}>
         <DialogContent className="max-w-sm">
           {selectedLetter && (
@@ -257,12 +204,7 @@ const Niveau1 = () => {
                 <div>
                   <p className="text-xs text-muted-foreground mb-2">Les 4 formes</p>
                   <div className="grid grid-cols-4 gap-2" dir="rtl">
-                    {[
-                      { label: "Isolée", form: selectedLetter.isolated },
-                      { label: "Début", form: selectedLetter.initial },
-                      { label: "Milieu", form: selectedLetter.medial },
-                      { label: "Fin", form: selectedLetter.final },
-                    ].map((f) => (
+                    {[{ label: "Isolée", form: selectedLetter.isolated }, { label: "Début", form: selectedLetter.initial }, { label: "Milieu", form: selectedLetter.medial }, { label: "Fin", form: selectedLetter.final }].map((f) => (
                       <div key={f.label} className="flex flex-col items-center p-2 rounded-lg border border-border bg-card">
                         <span className="font-arabic text-2xl text-foreground">{f.form}</span>
                         <span className="text-[10px] text-muted-foreground mt-1">{f.label}</span>

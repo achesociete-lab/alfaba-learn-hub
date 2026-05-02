@@ -1,9 +1,12 @@
+import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
 import { BookOpen, PenTool, FileText, GraduationCap, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { useLessonProgress } from "@/hooks/use-lesson-progress";
+import LessonProgressBar from "@/components/LessonProgressBar";
 
 const lessons = [
   { num: 1, title: "Révision de l'alphabet et lecture fluide", desc: "Consolidation des acquis du niveau 1", icon: BookOpen },
@@ -30,80 +33,85 @@ const grammarTopics = [
   "L'article défini (ال)",
 ];
 
-const Niveau2 = () => (
-  <div className="min-h-screen bg-background">
-    <Navbar />
-    <main className="pt-24 pb-16">
-      <div className="container mx-auto px-4">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 bg-gold/20 px-4 py-1.5 rounded-full mb-4">
-            <span className="text-sm font-semibold text-gold">Niveau 2</span>
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-3">
-            Approfondissement — <span className="text-gradient-gold">Grammaire & Compréhension</span>
-          </h1>
-          <p className="text-muted-foreground max-w-xl mx-auto">
-            Textes avancés, règles de grammaire et compréhension écrite.
-          </p>
-        </motion.div>
+const Niveau2 = () => {
+  const { completedN2Lessons } = useLessonProgress();
 
-        {/* Grammar topics */}
-        <section className="mb-16">
-          <h2 className="text-2xl font-bold text-foreground mb-6 text-center">Points de grammaire</h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 max-w-3xl mx-auto">
-            {grammarTopics.map((topic, i) => (
-              <motion.div
-                key={topic}
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.05 }}
-                className="flex items-center gap-3 p-4 rounded-xl border border-border bg-card"
-              >
-                <GraduationCap className="h-5 w-5 text-gold shrink-0" />
-                <span className="text-sm text-foreground">{topic}</span>
-              </motion.div>
-            ))}
-          </div>
-        </section>
+  return (
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      <main className="pt-24 pb-16">
+        <div className="container mx-auto px-4">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 bg-gold/20 px-4 py-1.5 rounded-full mb-4">
+              <span className="text-sm font-semibold text-gold">Niveau 2</span>
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-3">
+              Approfondissement — <span className="text-gradient-gold">Grammaire & Compréhension</span>
+            </h1>
+            <p className="text-muted-foreground max-w-xl mx-auto">
+              Textes avancés, règles de grammaire et compréhension écrite.
+            </p>
+          </motion.div>
 
-        {/* Lessons */}
-        <section>
-          <h2 className="text-2xl font-bold text-foreground mb-6 text-center">Programme des leçons</h2>
-          <div className="max-w-2xl mx-auto space-y-3">
-            {lessons.map((lesson, i) => (
-              <motion.div
-                key={lesson.num}
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.05 }}
-                className="flex items-center gap-4 p-4 rounded-xl border border-border bg-card hover:border-gold/30 transition-colors"
-              >
-                <div className="h-10 w-10 rounded-lg gradient-gold flex items-center justify-center shrink-0">
-                  <lesson.icon className="h-5 w-5 text-primary-foreground" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-sm font-semibold text-foreground">
-                    Leçon {lesson.num} — {lesson.title}
-                  </h3>
-                  <p className="text-xs text-muted-foreground">{lesson.desc}</p>
-                </div>
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
-              </motion.div>
-            ))}
-          </div>
-        </section>
+          {/* Grammar topics */}
+          <section className="mb-16">
+            <h2 className="text-2xl font-bold text-foreground mb-6 text-center">Points de grammaire</h2>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 max-w-3xl mx-auto">
+              {grammarTopics.map((topic, i) => (
+                <motion.div key={topic} initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }} transition={{ delay: i * 0.05 }}
+                  className="flex items-center gap-3 p-4 rounded-xl border border-border bg-card">
+                  <GraduationCap className="h-5 w-5 text-gold shrink-0" />
+                  <span className="text-sm text-foreground">{topic}</span>
+                </motion.div>
+              ))}
+            </div>
+          </section>
 
-        <div className="text-center mt-12">
-          <Button asChild size="lg" className="gradient-emerald border-0 text-primary-foreground">
-            <Link to="/dashboard">Accéder à mon espace élève</Link>
-          </Button>
+          {/* Lessons */}
+          <section>
+            <h2 className="text-2xl font-bold text-foreground mb-6 text-center">Programme des leçons</h2>
+
+            {/* Progress bar with stars */}
+            <div className="max-w-2xl mx-auto mb-6 p-4 rounded-xl border border-border bg-card">
+              <LessonProgressBar completedLessons={completedN2Lessons} totalLessons={lessons.length} label="Mes leçons" />
+            </div>
+
+            <div className="max-w-2xl mx-auto space-y-3">
+              {lessons.map((lesson, i) => {
+                const isCompleted = completedN2Lessons.includes(lesson.num);
+                return (
+                  <motion.div key={lesson.num} initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }} transition={{ delay: i * 0.05 }}
+                    className={`flex items-center gap-4 p-4 rounded-xl border transition-colors ${
+                      isCompleted ? "border-gold/30 bg-gold/5" : "border-border bg-card hover:border-gold/30"
+                    }`}>
+                    <div className="h-10 w-10 rounded-lg gradient-gold flex items-center justify-center shrink-0">
+                      <lesson.icon className="h-5 w-5 text-primary-foreground" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-semibold text-foreground">Leçon {lesson.num} — {lesson.title}</h3>
+                      <p className="text-xs text-muted-foreground">{lesson.desc}</p>
+                    </div>
+                    {isCompleted
+                      ? <span className="text-yellow-500 text-lg">★</span>
+                      : <ArrowRight className="h-4 w-4 text-muted-foreground" />}
+                  </motion.div>
+                );
+              })}
+            </div>
+          </section>
+
+          <div className="text-center mt-12">
+            <Button asChild size="lg" className="gradient-emerald border-0 text-primary-foreground">
+              <Link to="/dashboard">Accéder à mon espace élève</Link>
+            </Button>
+          </div>
         </div>
-      </div>
-    </main>
-    <Footer />
-  </div>
-);
+      </main>
+      <Footer />
+    </div>
+  );
+};
 
 export default Niveau2;

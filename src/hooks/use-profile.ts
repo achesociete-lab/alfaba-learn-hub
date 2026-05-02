@@ -16,12 +16,11 @@ export function useProfile() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // BUG 5 FIX: age/gender ne sont pas requis pour les utilisateurs Google OAuth.
   const isComplete =
     !!profile &&
     !!profile.first_name?.trim() &&
-    !!profile.last_name?.trim() &&
-    profile.age != null &&
-    !!profile.gender?.trim();
+    !!profile.last_name?.trim();
 
   const refetch = async () => {
     if (!user) return;
