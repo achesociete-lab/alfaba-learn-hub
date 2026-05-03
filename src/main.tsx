@@ -23,23 +23,7 @@ if (GA_ID && import.meta.env.MODE === "production") {
   (window as any).gtag = gtag;
 }
 
-// ─── Sentry Error Monitoring ──────────────────────────────────────────────────
-const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN;
-if (SENTRY_DSN && import.meta.env.MODE === "production") {
-  import("@sentry/react").then(({ init, browserTracingIntegration, replayIntegration }) => {
-    init({
-      dsn: SENTRY_DSN,
-      environment: import.meta.env.MODE,
-      tracesSampleRate: 0.1,
-      replaysSessionSampleRate: 0.05,
-      replaysOnErrorSampleRate: 1.0,
-      integrations: [
-        browserTracingIntegration(),
-        replayIntegration({ maskAllText: true, blockAllMedia: true }),
-      ],
-    });
-  });
-}
+// ─── Sentry Error Monitoring (disabled — package not installed) ───────────────
 
 // ─── Mount App ────────────────────────────────────────────────────────────────
 createRoot(document.getElementById("root")!).render(<App />);
