@@ -7,6 +7,10 @@ export type Plan = "découverte" | "essentiel" | "premium";
 
 const FREE_LESSON_LIMIT = 3;
 
+// Simple in-memory cache to avoid redundant Supabase calls across renders
+const cache: Record<string, { plan: Plan; at: number }> = {};
+const CACHE_TTL_MS = 60_000; // 1 minute
+
 export function useSubscription() {
   const { user } = useAuth();
   const { isAdmin, loading: adminLoading } = useIsAdmin();
@@ -28,7 +32,15 @@ export function useSubscription() {
       return;
     }
 
-    const fetch = async () => {
+    // Use cache if still fresh
+    const cached = cache[user.id];
+    if (cached && Date.now() - cached.at < CACHE_TTL_MS) {
+      setPlan(cached.plan);
+      setLoading(false);
+      return;
+    }
+
+    const fetchPlan = async () => {
       const { data } = await supabase
         .from("subscriptions")
         .select("plan, status")
@@ -38,19 +50,42 @@ export function useSubscription() {
         .limit(1)
         .maybeSingle();
 
-      if (data) {
-        setPlan(data.plan as Plan);
-      } else {
-        setPlan("découverte");
-      }
+      const resolvedPlan: Plan = data ? (data.plan as Plan) : "découverte";
+      cache[user.id] = { plan: resolvedPlan, at: Date.now() };
+      setPlan(resolvedPlan);
       setLoading(false);
     };
 
-    fetch();
+    fetchPlan();
+
+    // Realtime subscription to catch instant upgrades/cancellations
+    const channel = supabase
+      .channel(`subscription:${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "subscriptions", filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          const row = payload.new as { plan?: string; status?: string } | null;
+          if (row?.status === "active" && row.plan) {
+            const newPlan = row.plan as Plan;
+            cache[user.id] = { plan: newPlan, at: Date.now() };
+            setPlan(newPlan);
+          } else if (payload.eventType === "DELETE" || row?.status === "canceled") {
+            cache[user.id] = { plan: "découverte", at: Date.now() };
+            setPlan("découverte");
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user, isAdmin, adminLoading]);
 
   const isFreePlan = plan === "découverte";
+  const isPremium = plan === "premium";
   const maxLessons = isFreePlan ? FREE_LESSON_LIMIT : Infinity;
 
-  return { plan, isFreePlan, maxLessons, loading: loading || adminLoading };
+  return { plan, isFreePlan, isPremium, maxLessons, loading: loading || adminLoading };
 }
