@@ -47,27 +47,52 @@ async function syncGoogleProfile(user: User) {
   );
 }
 
-// Send one-time welcome email for new users.
-// Fires on:
-//   - EMAIL_CONFIRMED: user clicked the confirmation link (email/password signup)
-//   - SIGNED_IN: any sign-in event (idempotency handled by welcome_email_sent flag in DB)
-// Uses supabase.functions.invoke() which already knows the project URL — no env var needed.
-async function maybeSendWelcomeEmail(event: string) {
+// Send a one-time welcome email via the existing send-transactional-email function
+// (already deployed and managed by Lovable — no new Edge Function needed).
+//
+// Idempotency strategy (two layers):
+//   1. localStorage key `alfasl_welcome_sent_<userId>` — fast client-side guard
+//   2. idempotencyKey passed to the function — server-side dedup via email_send_log
+async function maybeSendWelcomeEmail(user: User, event: string) {
   try {
-    // For regular sign-ins of existing users, the DB flag prevents duplicate sends.
-    // We only skip the call for non-signup events to avoid unnecessary network requests.
     if (event !== "SIGNED_IN" && event !== "EMAIL_CONFIRMED") return;
 
-    const { error } = await supabase.functions.invoke("on-user-signup", {
-      body: {},
+    // Layer 1: localStorage guard (avoids network calls on repeated logins)
+    const lsKey = `alfasl_welcome_sent_${user.id}`;
+    if (localStorage.getItem(lsKey)) return;
+
+    const firstName =
+      user.user_metadata?.given_name ||
+      user.user_metadata?.full_name?.split(" ")[0] ||
+      user.user_metadata?.name?.split(" ")[0] ||
+      user.email?.split("@")[0] ||
+      "";
+
+    // Call the existing send-transactional-email function (already live in Lovable).
+    // supabase.functions.invoke automatically attaches the user's session JWT.
+    const { error } = await supabase.functions.invoke("send-transactional-email", {
+      body: {
+        templateName: "welcome-new-user",
+        recipientEmail: user.email,
+        templateData: {
+          userName: firstName,
+          userEmail: user.email ?? "",
+        },
+        // Layer 2: server-side dedup via email_send_log
+        idempotencyKey: `welcome-${user.id}`,
+      },
     });
 
     if (error) {
-      console.warn("maybeSendWelcomeEmail: edge function error", error);
+      console.warn("maybySendWelcomeEmail: function error", error);
+      return;
     }
+
+    // Mark sent so we skip the call on all future logins
+    localStorage.setItem(lsKey, "1");
   } catch (err) {
     // Non-blocking — email failure must never break the auth flow
-    console.warn("maybeSendWelcomeEmail: non-fatal error", err);
+    console.warn("maybySendWelcomeEmail: non-fatal error", err);
   }
 }
 
@@ -85,8 +110,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // Sync Google profile (non-blocking)
           setTimeout(() => syncGoogleProfile(session.user), 0);
 
-          // Send one-time welcome email — DB flag ensures it's sent only once
-          setTimeout(() => maybeSendWelcomeEmail(event), 0);
+          // Send one-time welcome email — localStorage + server idempotency key
+          setTimeout(() => maybeSendWelcomeEmail(session.user, event), 0);
         }
       }
     );
