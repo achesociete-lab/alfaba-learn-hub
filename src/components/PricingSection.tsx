@@ -1,20 +1,24 @@
 import { motion } from "framer-motion";
-import { Check, Zap, Crown, BookOpen, Headphones, Clock, Loader2 } from "lucide-react";
+import { Check, Zap, Crown, BookOpen, Headphones, Clock, Loader2, Tag, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { toast } from "sonner";
+import { usePromoCode } from "@/hooks/usePromoCode";
 
 export const STRIPE_PLANS = {
   essentiel: {
     price_id: "price_1TLAA8KXotpKdlTPXckHIYZl",
     product_id: "prod_UJnlNTP9hF3J5Q",
+    price: 7,
   },
   premium: {
     price_id: "price_1TLAAUKXotpKdlTP01ELN0ky",
     product_id: "prod_UJnmdJC4o0hInW",
+    price: 15,
   },
 } as const;
 
@@ -22,6 +26,7 @@ const plans = [
   {
     name: "Découverte",
     price: "Gratuit",
+    priceNum: 0,
     period: "",
     subtitle: "Explorez la plateforme librement",
     icon: BookOpen,
@@ -43,6 +48,7 @@ const plans = [
   {
     name: "Essentiel",
     price: "7€",
+    priceNum: 7,
     period: "/mois",
     subtitle: "L'apprentissage à votre rythme",
     icon: Zap,
@@ -63,6 +69,7 @@ const plans = [
   {
     name: "Premium",
     price: "15€",
+    priceNum: 15,
     period: "/mois",
     subtitle: "L'expérience complète",
     icon: Crown,
@@ -110,6 +117,32 @@ const PricingSection = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [promoInput, setPromoInput] = useState("");
+  const [validatingPromo, setValidatingPromo] = useState(false);
+  const { validate, clear, result: promoResult } = usePromoCode();
+
+  const handleValidatePromo = async () => {
+    if (!promoInput.trim()) return;
+    setValidatingPromo(true);
+    const r = await validate(promoInput);
+    if (r.valid) {
+      toast.success(r.message);
+    } else if (r.message) {
+      toast.error(r.message);
+    }
+    setValidatingPromo(false);
+  };
+
+  const clearPromo = () => {
+    setPromoInput("");
+    clear();
+  };
+
+  const getDiscountedPrice = (basePrice: number) => {
+    if (!promoResult?.valid || !promoResult.discount || basePrice === 0) return null;
+    const discounted = basePrice * (1 - promoResult.discount / 100);
+    return discounted.toFixed(2);
+  };
 
   const handleCheckout = async (planKey: "essentiel" | "premium") => {
     if (!user) {
@@ -119,9 +152,12 @@ const PricingSection = () => {
 
     setLoadingPlan(planKey);
     try {
-      const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { priceId: STRIPE_PLANS[planKey].price_id },
-      });
+      const body: Record<string, any> = { priceId: STRIPE_PLANS[planKey].price_id };
+      if (promoResult?.valid && promoResult.codeId) {
+        body.promoCodeId = promoResult.codeId;
+      }
+
+      const { data, error } = await supabase.functions.invoke("create-checkout", { body });
 
       if (error) throw error;
       if (data?.url) {
@@ -167,6 +203,50 @@ const PricingSection = () => {
           </motion.p>
         </div>
 
+        {/* Promo code banner */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="max-w-md mx-auto mb-10"
+        >
+          <div className="flex items-center gap-2 p-3 rounded-xl border border-border bg-card">
+            <Tag className="h-4 w-4 text-primary shrink-0" />
+            <Input
+              placeholder="Code promo (ex: ALFASL30)"
+              value={promoInput}
+              onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
+              onKeyDown={(e) => e.key === "Enter" && handleValidatePromo()}
+              className="border-0 bg-transparent p-0 h-auto font-mono text-sm focus-visible:ring-0 placeholder:font-sans uppercase"
+            />
+            {promoResult?.valid ? (
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="text-xs font-bold text-green-600 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">
+                  -{promoResult.discount}%
+                </span>
+                <button onClick={clearPromo} className="text-muted-foreground hover:text-foreground">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleValidatePromo}
+                disabled={validatingPromo || !promoInput.trim()}
+                className="shrink-0 h-8 text-xs"
+              >
+                {validatingPromo ? <Loader2 className="h-3 w-3 animate-spin" /> : "Appliquer"}
+              </Button>
+            )}
+          </div>
+          {promoResult?.valid && (
+            <p className="text-center text-xs text-green-600 mt-1.5 font-medium">
+              ✓ {promoResult.message} — appliqué à la prochaine étape
+            </p>
+          )}
+        </motion.div>
+
         {/* Stats bar */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -189,6 +269,7 @@ const PricingSection = () => {
           {plans.map((plan, i) => {
             const Icon = plan.icon;
             const isLoading = loadingPlan === plan.planKey;
+            const discountedPrice = plan.priceNum > 0 ? getDiscountedPrice(plan.priceNum) : null;
             return (
               <motion.div
                 key={plan.name}
@@ -220,8 +301,18 @@ const PricingSection = () => {
                 </div>
 
                 <div className="mb-1">
-                  <span className="text-3xl font-extrabold text-foreground">{plan.price}</span>
-                  {plan.period && <span className="text-sm text-muted-foreground">{plan.period}</span>}
+                  {discountedPrice ? (
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-3xl font-extrabold text-primary">€{discountedPrice}</span>
+                      <span className="text-sm text-muted-foreground line-through">{plan.price}</span>
+                      {plan.period && <span className="text-sm text-muted-foreground">{plan.period}</span>}
+                    </div>
+                  ) : (
+                    <>
+                      <span className="text-3xl font-extrabold text-foreground">{plan.price}</span>
+                      {plan.period && <span className="text-sm text-muted-foreground">{plan.period}</span>}
+                    </>
+                  )}
                 </div>
                 <p className="text-sm text-muted-foreground mb-5">{plan.subtitle}</p>
 
@@ -255,11 +346,7 @@ const PricingSection = () => {
                     {isLoading ? "Redirection..." : plan.cta}
                   </Button>
                 ) : (
-                  <Button
-                    asChild
-                    className="w-full h-11 text-sm font-semibold"
-                    variant="outline"
-                  >
+                  <Button asChild className="w-full h-11 text-sm font-semibold" variant="outline">
                     <Link to="/auth">{plan.cta}</Link>
                   </Button>
                 )}
