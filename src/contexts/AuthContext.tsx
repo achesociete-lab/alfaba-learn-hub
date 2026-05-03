@@ -50,31 +50,24 @@ async function syncGoogleProfile(user: User) {
 // Send one-time welcome email for new users.
 // Fires on:
 //   - EMAIL_CONFIRMED: user clicked the confirmation link (email/password signup)
-//   - SIGNED_IN with a very recent created_at: OAuth signup (Google, etc.)
-// The Edge Function is idempotent (checks welcome_email_sent flag in profiles).
-async function maybeSendWelcomeEmail(user: User, accessToken: string, event: string) {
+//   - SIGNED_IN: any sign-in event (idempotency handled by welcome_email_sent flag in DB)
+// Uses supabase.functions.invoke() which already knows the project URL — no env var needed.
+async function maybeSendWelcomeEmail(event: string) {
   try {
-    // For SIGNED_IN events, only send to brand-new accounts (created < 3 min ago)
-    if (event === "SIGNED_IN") {
-      const createdAt = new Date(user.created_at).getTime();
-      const ageMs = Date.now() - createdAt;
-      if (ageMs > 3 * 60 * 1000) return; // not a new signup
-    }
+    // For regular sign-ins of existing users, the DB flag prevents duplicate sends.
+    // We only skip the call for non-signup events to avoid unnecessary network requests.
+    if (event !== "SIGNED_IN" && event !== "EMAIL_CONFIRMED") return;
 
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-    if (!supabaseUrl) return;
-
-    await fetch(`${supabaseUrl}/functions/v1/on-user-signup`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({}),
+    const { error } = await supabase.functions.invoke("on-user-signup", {
+      body: {},
     });
+
+    if (error) {
+      console.warn("maybeSendWelcomeEmail: edge function error", error);
+    }
   } catch (err) {
     // Non-blocking — email failure must never break the auth flow
-    console.warn("maybySendWelcomeEmail: non-fatal error", err);
+    console.warn("maybeSendWelcomeEmail: non-fatal error", err);
   }
 }
 
@@ -92,10 +85,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // Sync Google profile (non-blocking)
           setTimeout(() => syncGoogleProfile(session.user), 0);
 
-          // Send one-time welcome email on first sign-in or email confirmation
-          if (event === "EMAIL_CONFIRMED" || event === "SIGNED_IN") {
-            setTimeout(() => maybySendWelcomeEmail(session.user, session.access_token, event), 0);
-          }
+          // Send one-time welcome email — DB flag ensures it's sent only once
+          setTimeout(() => maybeSendWelcomeEmail(event), 0);
         }
       }
     );
@@ -104,7 +95,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session);
       setLoading(false);
       if (session?.user) setTimeout(() => syncGoogleProfile(session.user), 0);
-      // Do NOT call maybySendWelcomeEmail here — getSession restores existing sessions
+      // Do NOT call maybeSendWelcomeEmail here — getSession restores existing sessions
     });
 
     return () => subscription.unsubscribe();
