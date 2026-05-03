@@ -39,11 +39,52 @@ export function useProfile() {
       return;
     }
     setLoading(true);
-    const fetch = async () => {
-      await refetch();
+    let cancelled = false;
+
+    const fetchWithRetry = async () => {
+      // First attempt
+      const { data } = await supabase
+        .from("profiles")
+        .select("first_name, last_name, level, age, gender, type_eleve")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      if (data) {
+        setProfile(data as Profile);
+        setLoading(false);
+        return;
+      }
+
+      // Profile not found yet — DB trigger (handle_new_user) may still be running.
+      // Retry up to 4 times with exponential back-off: 300ms, 600ms, 1200ms, 2400ms.
+      const delays = [300, 600, 1200, 2400];
+      for (const delay of delays) {
+        await new Promise((r) => setTimeout(r, delay));
+        if (cancelled) return;
+
+        const { data: retryData } = await supabase
+          .from("profiles")
+          .select("first_name, last_name, level, age, gender, type_eleve")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (cancelled) return;
+        if (retryData) {
+          setProfile(retryData as Profile);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // All retries exhausted — profile genuinely doesn't exist
+      setProfile(null);
       setLoading(false);
     };
-    fetch();
+
+    fetchWithRetry();
+    return () => { cancelled = true; };
   }, [user]);
 
   return { profile, loading, isComplete, refetch };
