@@ -13,10 +13,12 @@ import AdminCourses from "@/components/admin/AdminCourses";
 import AdminRecitations from "@/components/admin/AdminRecitations";
 import AdminPresentielCourses from "@/components/admin/AdminPresentielCourses";
 import AdminPresentielSubmissions from "@/components/admin/AdminPresentielSubmissions";
+import AdminRevenueTab from "@/components/admin/AdminRevenueTab";
+import AdminPromoTab from "@/components/admin/AdminPromoTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
-import { Shield, Users, FileText, ClipboardList, BarChart3, BookOpen, Headphones, MapPin, Image as ImageIcon } from "lucide-react";
+import { Shield, Users, FileText, ClipboardList, BarChart3, BookOpen, Headphones, MapPin, Image as ImageIcon, TrendingUp, Tag } from "lucide-react";
 
 const Admin = () => {
   const { user, loading: authLoading } = useAuth();
@@ -66,13 +68,19 @@ const Admin = () => {
               <Shield className="h-6 w-6 text-primary" />
               <h1 className="text-3xl font-bold text-foreground">Espace Professeur</h1>
             </div>
-            <p className="text-muted-foreground">Gérez vos cours, élèves, devoirs et émargement.</p>
+            <p className="text-muted-foreground">Gérez vos cours, élèves, devoirs, émargement et revenus.</p>
           </motion.div>
 
           <Tabs defaultValue="overview" className="space-y-6">
             <TabsList className="bg-muted flex-wrap h-auto gap-1 p-1">
               <TabsTrigger value="overview" className="flex items-center gap-1.5 text-xs sm:text-sm">
                 <BarChart3 className="h-4 w-4" /> Vue d'ensemble
+              </TabsTrigger>
+              <TabsTrigger value="revenue" className="flex items-center gap-1.5 text-xs sm:text-sm">
+                <TrendingUp className="h-4 w-4" /> Revenue
+              </TabsTrigger>
+              <TabsTrigger value="promo" className="flex items-center gap-1.5 text-xs sm:text-sm">
+                <Tag className="h-4 w-4" /> Codes promo
               </TabsTrigger>
               <TabsTrigger value="courses" className="flex items-center gap-1.5 text-xs sm:text-sm">
                 <BookOpen className="h-4 w-4" /> Cours
@@ -103,6 +111,8 @@ const Admin = () => {
             </TabsList>
 
             <TabsContent value="overview"><AdminOverview /></TabsContent>
+            <TabsContent value="revenue"><AdminRevenueTab /></TabsContent>
+            <TabsContent value="promo"><AdminPromoTab /></TabsContent>
             <TabsContent value="courses"><AdminCourses /></TabsContent>
             <TabsContent value="students"><AdminStudents /></TabsContent>
             <TabsContent value="presentiel"><AdminPresentielCourses /></TabsContent>
