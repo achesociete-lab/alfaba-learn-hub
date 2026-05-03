@@ -2,6 +2,54 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
+const PRICE_PLANS: Record<string, string> = {
+  "price_1TLAA8KXotpKdlTPXckHIYZl": "essentiel",
+  "price_1TLAAUKXotpKdlTP01ELN0ky": "premium",
+};
+
+const PLAN_AMOUNTS: Record<string, string> = {
+  "essentiel": "9.99",
+  "premium": "19.99",
+};
+
+async function sendTransactionalEmail(
+  supabaseUrl: string,
+  serviceKey: string,
+  opts: {
+    templateName: string;
+    recipientEmail: string;
+    templateData: Record<string, unknown>;
+    idempotencyKey: string;
+  }
+) {
+  try {
+    const res = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${serviceKey}`,
+      },
+      body: JSON.stringify(opts),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      console.error(`sendTransactionalEmail failed (${opts.templateName}): ${res.status} — ${body}`);
+    } else {
+      console.log(`✉️  Email queued: ${opts.templateName} → ${opts.recipientEmail}`);
+    }
+  } catch (err) {
+    console.error(`sendTransactionalEmail exception (${opts.templateName}):`, err);
+  }
+}
+
+function formatDate(timestamp: number): string {
+  return new Date(timestamp * 1000).toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
 serve(async (req) => {
   const signature = req.headers.get("stripe-signature");
   const body = await req.text();
@@ -23,11 +71,12 @@ serve(async (req) => {
     return new Response(`Webhook Error: ${err instanceof Error ? err.message : "Unknown"}`, { status: 400 });
   }
 
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-    { auth: { persistSession: false } }
-  );
+  const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+
+  const supabase = createClient(supabaseUrl, serviceKey, {
+    auth: { persistSession: false },
+  });
 
   try {
     switch (event.type) {
@@ -37,27 +86,23 @@ serve(async (req) => {
 
         const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
         const priceId = subscription.items.data[0]?.price.id;
-
-        // Map price_id → plan name
-        const PRICE_PLANS: Record<string, string> = {
-          "price_1TLAA8KXotpKdlTPXckHIYZl": "essentiel",
-          "price_1TLAAUKXotpKdlTP01ELN0ky": "premium",
-        };
         const plan = PRICE_PLANS[priceId] ?? "essentiel";
 
-        // Get user_id from customer email
         const customer = await stripe.customers.retrieve(session.customer as string) as Stripe.Customer;
+        const customerEmail = customer.email ?? "";
+        const customerName = (customer.name ?? "").split(" ")[0] || customerEmail.split("@")[0];
+
+        // Resolve user_id
         const { data: profile } = await supabase
           .from("profiles")
           .select("user_id")
-          .eq("email" as any, customer.email)
+          .eq("email" as any, customerEmail)
           .maybeSingle();
 
-        // Also try via auth.users
         let userId = profile?.user_id;
         if (!userId) {
-          const { data: authUser } = await supabase.auth.admin.listUsers();
-          const found = authUser?.users?.find((u) => u.email === customer.email);
+          const { data: authData } = await supabase.auth.admin.listUsers();
+          const found = authData?.users?.find((u) => u.email === customerEmail);
           userId = found?.id;
         }
 
@@ -76,17 +121,42 @@ serve(async (req) => {
 
           console.log(`✅ Subscription activated for user ${userId} — plan: ${plan}`);
         }
+
+        // Send payment confirmation email
+        if (customerEmail) {
+          // Fetch invoice URL if available
+          let invoiceUrl: string | undefined;
+          if (session.invoice) {
+            try {
+              const invoice = await stripe.invoices.retrieve(session.invoice as string);
+              invoiceUrl = invoice.hosted_invoice_url ?? undefined;
+            } catch {
+              // non-blocking
+            }
+          }
+
+          await sendTransactionalEmail(supabaseUrl, serviceKey, {
+            templateName: "payment-confirmation",
+            recipientEmail: customerEmail,
+            idempotencyKey: `payment-${session.id}`,
+            templateData: {
+              userName: customerName,
+              userEmail: customerEmail,
+              planName: plan,
+              amount: PLAN_AMOUNTS[plan] ?? "9.99",
+              currency: "EUR",
+              periodEnd: formatDate(subscription.current_period_end),
+              invoiceUrl,
+              subscriptionId: subscription.id,
+            },
+          });
+        }
         break;
       }
 
       case "customer.subscription.updated": {
         const subscription = event.data.object as Stripe.Subscription;
         const priceId = subscription.items.data[0]?.price.id;
-
-        const PRICE_PLANS: Record<string, string> = {
-          "price_1TLAA8KXotpKdlTPXckHIYZl": "essentiel",
-          "price_1TLAAUKXotpKdlTP01ELN0ky": "premium",
-        };
         const plan = PRICE_PLANS[priceId] ?? "essentiel";
 
         await supabase
