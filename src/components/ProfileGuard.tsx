@@ -38,7 +38,10 @@ const ProfileGuard = () => {
       return <Navigate to="/cours-presentiel" replace />;
     }
   } else if (!profile) {
-    return <Navigate to="/auth" replace state={{ from: location.pathname }} />;
+    // User is authenticated but profile row not yet available (DB trigger race condition
+    // on first Google OAuth signup). Send to complete-profile — NOT back to /auth which
+    // would create an infinite redirect loop (Auth page immediately redirects back here).
+    return <Navigate to="/complete-profile" replace />;
   } else if (!isComplete && profile?.type_eleve !== "en_attente") {
     return <Navigate to="/complete-profile" replace />;
   }
