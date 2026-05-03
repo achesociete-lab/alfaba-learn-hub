@@ -15,38 +15,53 @@ serve(async (req) => {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
   if (!supabaseUrl || !serviceKey) {
-    console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
-    return new Response("Server configuration error", { status: 500 });
+    return new Response("Server configuration error", { status: 500, headers: corsHeaders });
   }
 
-  let payload: Record<string, any>;
-  try {
-    payload = await req.json();
-  } catch {
-    return new Response("Invalid JSON body", { status: 400 });
+  // Extract the caller's JWT to identify the user
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const jwt = authHeader.replace("Bearer ", "").trim();
+
+  // Use a service-role client for DB writes, but verify the caller via their JWT
+  const supabase = createClient(supabaseUrl, serviceKey, {
+    auth: { persistSession: false },
+  });
+
+  // Verify the JWT and get the user
+  const { data: { user }, error: authError } = await supabase.auth.getUser(jwt);
+  if (authError || !user) {
+    console.warn("on-user-signup: invalid or missing JWT");
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   }
 
-  // Support two trigger modes:
-  // 1. Supabase Database Webhook (record in payload.record)
-  // 2. Direct call with { user_id, email, name }
-  const record = payload.record ?? payload;
-  const userId: string | undefined = record.id ?? record.user_id;
-  const email: string | undefined = record.email;
-  const rawName: string | undefined =
-    record.raw_user_meta_data?.full_name ??
-    record.raw_user_meta_data?.name ??
-    record.name ??
-    "";
+  const userId = user.id;
+  const email = user.email ?? "";
 
-  if (!email) {
-    console.warn("on-user-signup: no email in payload, skipping");
-    return new Response(JSON.stringify({ skipped: true, reason: "no email" }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+  // Check idempotency: has the welcome email already been sent?
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("welcome_email_sent, first_name, last_name")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (profile?.welcome_email_sent) {
+    console.log(`on-user-signup: welcome email already sent for ${userId}, skipping`);
+    return new Response(
+      JSON.stringify({ success: true, skipped: true }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   }
 
-  // Derive first name for friendly greeting
-  const firstName = rawName ? rawName.split(" ")[0] : email.split("@")[0];
+  // Derive first name for greeting
+  const firstName =
+    profile?.first_name?.trim() ||
+    user.user_metadata?.given_name ||
+    user.user_metadata?.full_name?.split(" ")[0] ||
+    user.user_metadata?.name?.split(" ")[0] ||
+    email.split("@")[0];
 
   console.log(`on-user-signup: sending welcome email to ${email} (user ${userId})`);
 
@@ -64,7 +79,7 @@ serve(async (req) => {
         userName: firstName,
         userEmail: email,
       },
-      idempotencyKey: `welcome-${userId ?? email}`,
+      idempotencyKey: `welcome-${userId}`,
     }),
   });
 
@@ -76,6 +91,12 @@ serve(async (req) => {
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
+
+  // Mark as sent in the profiles table (idempotency guard)
+  await supabase
+    .from("profiles")
+    .update({ welcome_email_sent: true })
+    .eq("user_id", userId);
 
   console.log(`on-user-signup: welcome email queued for ${email}`);
   return new Response(
