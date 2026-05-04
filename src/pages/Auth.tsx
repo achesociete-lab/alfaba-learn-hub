@@ -72,8 +72,12 @@ const Auth = () => {
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     try {
+      // Always redirect back to /auth so the useEffect redirect logic
+      // runs and sends the user to their correct destination.
+      // Using window.location.origin alone lands them on the homepage
+      // which has no redirect logic for authenticated users.
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+        redirect_uri: `${window.location.origin}/auth`,
       });
 
       if (result.error) {
