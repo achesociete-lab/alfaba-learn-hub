@@ -11,8 +11,14 @@ import { toast } from "sonner";
 const CompleteProfile = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+
+  // Pre-populate with Google metadata if available
+  const meta = user?.user_metadata || {};
+  const googleFirst = meta.given_name || meta.name?.split(" ")[0] || "";
+  const googleLast = meta.family_name || meta.name?.split(" ").slice(1).join(" ") || "";
+
+  const [firstName, setFirstName] = useState(googleFirst);
+  const [lastName, setLastName] = useState(googleLast);
   const [age, setAge] = useState("");
   const [gender, setGender] = useState<"homme" | "femme" | "">("");
   const [loading, setLoading] = useState(false);
@@ -32,15 +38,21 @@ const CompleteProfile = () => {
 
     setLoading(true);
     try {
+      // Use upsert (not update) so that if the DB trigger hasn't created
+      // the profile row yet (race condition on first Google OAuth signup),
+      // we create it ourselves rather than silently updating 0 rows.
       const { error } = await supabase
         .from("profiles")
-        .update({
-          first_name: firstName.trim(),
-          last_name: lastName.trim(),
-          age: ageNum,
-          gender,
-        })
-        .eq("user_id", user.id);
+        .upsert(
+          {
+            user_id: user.id,
+            first_name: firstName.trim(),
+            last_name: lastName.trim(),
+            age: ageNum,
+            gender,
+          },
+          { onConflict: "user_id" }
+        );
 
       if (error) throw error;
       toast.success("Profil complété !");
