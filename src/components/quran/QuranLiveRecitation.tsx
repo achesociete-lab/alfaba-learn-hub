@@ -125,8 +125,13 @@ const QuranLiveRecitation = ({ surah, verses, onClose }: Props) => {
       fd.append("file", blob, "live-recitation.webm");
       fd.append("language_code", "ara");
 
+      // Calls the Quran-specialized edge function which prefers
+      // tarteel-ai/whisper-base-ar-quran (open-source model from the Tarteel
+      // team, fine-tuned on Quranic recitation — does NOT auto-correct
+      // mispronunciations the way generic Arabic STT does), with an
+      // ElevenLabs Scribe fallback if HF is unavailable. Same JSON contract.
       const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-stt`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/quran-stt`,
         {
           method: "POST",
           headers: {
