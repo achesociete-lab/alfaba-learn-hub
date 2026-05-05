@@ -1020,7 +1020,7 @@ const PresentielCourseDetail = ({ course, userProgress, onProgressUpdate }: Prop
     }
   };
 
-  const goToStep = (target: Exclude<Step, "done">, idx: idx_unused) => {
+  const goToStep = (target: Exclude<Step, "done">, idx: number) => {
     if (idx <= maxReached) setStep(target);
   };
 
