@@ -38,9 +38,10 @@ RÈGLES STRICTES :
   • un vocabulaire de 6 à 10 paires arabe/français tirées du texte
   • 8 à 12 mots de dictée tirés du texte
   • ${isN2
-    ? "4 questions de compréhension EN ARABE avec leurs réponses, et 3 phrases de la leçon à remettre en ordre (correct_order)"
-    : "PAS de compréhension ni de remise en ordre (Niveau 1)"}.
-- Le champ lesson_text DOIT être le texte arabe complet de la leçon avec harakat.`;
+    ? "4 à 5 questions de compréhension EN ARABE avec leurs réponses courtes tirées du texte (réponse = segment exact du texte, 2-5 mots), et 3 phrases de la leçon à remettre en ordre (correct_order)"
+    : "2 à 3 questions de compréhension simples EN ARABE avec leurs réponses courtes tirées du texte (réponse = segment exact du texte, 2-4 mots maximum). PAS de remise en ordre pour Niveau 1."}.
+- Le champ lesson_text DOIT être le texte arabe complet de la leçon avec harakat.
+- Les réponses de compréhension doivent être des extraits EXACTS et COURTS du texte (jamais de phrases complètes, toujours des groupes de mots reconnaissables dans le texte).`;
 
     const tools = [{
       type: "function",
