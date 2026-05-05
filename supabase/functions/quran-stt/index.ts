@@ -1,84 +1,88 @@
-// Quran-specialized speech-to-text edge function.
-//
-// Strategy:
-//   1. Try Hugging Face Inference API with `tarteel-ai/whisper-base-ar-quran`
-//      — this is the actual model open-sourced by the Tarteel team, fine-tuned
-//      on Quranic recitation. It does NOT auto-correct mispronounced words
-//      (unlike generic Arabic STT), so it surfaces real errors.
-//   2. If HF fails / not configured / cold-start times out → fall back to
-//      ElevenLabs Scribe v2 so the live recitation never breaks.
-//
-// Returns { text: string, engine: "whisper-quran" | "elevenlabs-scribe" }.
-// Same contract as the previous /elevenlabs-stt function so the frontend
-// only needs to change the URL.
+// Quran-specialized speech-to-text edge function
+// Cascade strategy (best → fallback):
+//   1. Tarteel whisper-base-ar-quran (only works if user sets up paid HF Inference Endpoint)
+//   2. OpenAI whisper-large-v3 on HF Serverless (FREE, transcribes literally — catches mispronunciations)
+//   3. ElevenLabs Scribe v2 (last resort — auto-corrects, hides errors)
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const HF_MODEL = "tarteel-ai/whisper-base-ar-quran";
-const HF_URL = `https://api-inference.huggingface.co/models/${HF_MODEL}`;
+const HF_TARTEEL_MODEL = "tarteel-ai/whisper-base-ar-quran";
+const HF_WHISPER_LARGE = "openai/whisper-large-v3";
 
-async function transcribeWithHF(
-  audioBytes: ArrayBuffer,
+async function callHfInference(
+  model: string,
+  audio: Uint8Array,
   contentType: string,
   hfKey: string,
-): Promise<string | null> {
+  timeoutMs: number,
+): Promise<{ ok: boolean; text?: string; status: number; body?: string }> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetch(HF_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${hfKey}`,
-        "Content-Type": contentType || "audio/webm",
-        // Wait up to ~20s if the model needs to cold-start (otherwise we
-        // get a 503 with "model is loading" on the first call).
-        "x-wait-for-model": "true",
+    const resp = await fetch(
+      `https://api-inference.huggingface.co/models/${model}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${hfKey}`,
+          "Content-Type": contentType,
+          "x-wait-for-model": "true",
+        },
+        body: audio,
+        signal: controller.signal,
       },
-      body: audioBytes,
-    });
-    if (!response.ok) {
-      const body = await response.text();
-      console.warn(`HF Whisper-Quran error [${response.status}]: ${body.slice(0, 300)}`);
-      return null;
+    );
+    clearTimeout(timer);
+    if (!resp.ok) {
+      const body = await resp.text().catch(() => "");
+      return { ok: false, status: resp.status, body: body.slice(0, 200) };
     }
-    const data = await response.json();
-    // HF inference returns either { text: "..." } or [{ text: "..." }] depending on task
-    if (typeof data?.text === "string") return data.text;
-    if (Array.isArray(data) && typeof data[0]?.text === "string") return data[0].text;
-    console.warn("HF Whisper-Quran returned unexpected shape:", JSON.stringify(data).slice(0, 200));
-    return null;
+    const data = await resp.json();
+    const text =
+      typeof data === "string"
+        ? data
+        : data.text ?? data.transcription ?? "";
+    return { ok: true, status: resp.status, text: String(text).trim() };
   } catch (e) {
-    console.warn("HF Whisper-Quran exception:", e);
-    return null;
+    clearTimeout(timer);
+    return { ok: false, status: 0, body: String(e).slice(0, 200) };
   }
 }
 
-async function transcribeWithElevenLabs(
-  audioFile: File,
-  elevenKey: string,
-  lang: string,
-): Promise<string> {
-  const apiFormData = new FormData();
-  apiFormData.append("file", audioFile);
-  apiFormData.append("model_id", "scribe_v2");
-  apiFormData.append("language_code", lang);
-
-  const response = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
-    method: "POST",
-    headers: { "xi-api-key": elevenKey },
-    body: apiFormData,
-  });
-  if (!response.ok) {
-    const body = await response.text();
-    console.error(`ElevenLabs STT error [${response.status}]: ${body.slice(0, 200)}`);
-    throw new Error(`ElevenLabs STT failed [${response.status}]`);
+async function callElevenLabs(
+  audio: Uint8Array,
+  contentType: string,
+  elKey: string,
+): Promise<{ ok: boolean; text?: string; error?: string }> {
+  try {
+    const fd = new FormData();
+    fd.append(
+      "file",
+      new Blob([audio], { type: contentType }),
+      "audio.webm",
+    );
+    fd.append("model_id", "scribe_v1");
+    fd.append("language_code", "ara");
+    const resp = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
+      method: "POST",
+      headers: { "xi-api-key": elKey },
+      body: fd,
+    });
+    if (!resp.ok) {
+      return { ok: false, error: `EL ${resp.status}` };
+    }
+    const data = await resp.json();
+    return { ok: true, text: String(data.text ?? "").trim() };
+  } catch (e) {
+    return { ok: false, error: String(e).slice(0, 100) };
   }
-  const data = await response.json();
-  return typeof data.text === "string" ? data.text : "";
 }
 
 serve(async (req) => {
@@ -87,59 +91,118 @@ serve(async (req) => {
   }
 
   try {
-    const formData = await req.formData();
-    const audioFile = formData.get("file") as File | null;
-
-    if (!audioFile) {
-      return new Response(JSON.stringify({ error: "Audio file is required" }), {
-        status: 400,
+    const contentType = req.headers.get("content-type") || "";
+    if (!contentType) {
+      return new Response(JSON.stringify({ error: "Missing content type" }), {
+        status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const HF_KEY = Deno.env.get("HUGGINGFACE_API_KEY");
-    const ELEVENLABS_KEY = Deno.env.get("ELEVENLABS_API_KEY");
-    const lang = (formData.get("language_code") as string) || "ara";
-
-    let text = "";
-    let engine: "whisper-quran" | "elevenlabs-scribe" | "none" = "none";
-
-    // 1. Try HF Whisper-Quran first (specialized for Quranic recitation)
-    if (HF_KEY) {
-      const audioBytes = await audioFile.arrayBuffer();
-      const contentType = audioFile.type || "audio/webm";
-      const hfText = await transcribeWithHF(audioBytes, contentType, HF_KEY);
-      if (hfText !== null && hfText.trim().length > 0) {
-        text = hfText;
-        engine = "whisper-quran";
-      }
-    }
-
-    // 2. Fallback to ElevenLabs Scribe (or primary if HF not configured)
-    if (!text && ELEVENLABS_KEY) {
-      try {
-        text = await transcribeWithElevenLabs(audioFile, ELEVENLABS_KEY, lang);
-        engine = "elevenlabs-scribe";
-      } catch (e) {
-        console.error("ElevenLabs fallback failed:", e);
-      }
-    }
-
-    if (!text && !HF_KEY && !ELEVENLABS_KEY) {
-      throw new Error(
-        "No STT provider configured. Set HUGGINGFACE_API_KEY (preferred for Quran) and/or ELEVENLABS_API_KEY in Supabase secrets.",
+    const audio = new Uint8Array(await req.arrayBuffer());
+    if (audio.byteLength < 100) {
+      return new Response(
+        JSON.stringify({ error: "Audio too small", text: "" }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
-    return new Response(JSON.stringify({ text, engine }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  } catch (error: unknown) {
-    console.error("quran-stt error:", error);
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    const hfKey = Deno.env.get("HUGGINGFACE_API_KEY");
+    const elKey = Deno.env.get("ELEVENLABS_API_KEY");
+
+    const debug: Record<string, unknown> = {};
+
+    // STAGE 1: try Tarteel specialized model (only works on paid HF Endpoint)
+    if (hfKey) {
+      const r1 = await callHfInference(
+        HF_TARTEEL_MODEL,
+        audio,
+        contentType,
+        hfKey,
+        20000,
+      );
+      debug.tarteel = { status: r1.status, ok: r1.ok };
+      if (r1.ok && r1.text) {
+        return new Response(
+          JSON.stringify({
+            text: r1.text,
+            engine: "whisper-quran-tarteel",
+            debug,
+          }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
+      }
+    } else {
+      debug.tarteel = "no-hf-key";
+    }
+
+    // STAGE 2: OpenAI Whisper-Large-v3 on HF Serverless (FREE, literal transcription)
+    if (hfKey) {
+      const r2 = await callHfInference(
+        HF_WHISPER_LARGE,
+        audio,
+        contentType,
+        hfKey,
+        25000,
+      );
+      debug.whisperLarge = { status: r2.status, ok: r2.ok };
+      if (r2.ok && r2.text) {
+        return new Response(
+          JSON.stringify({
+            text: r2.text,
+            engine: "whisper-large-v3",
+            debug,
+          }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
+      }
+    }
+
+    // STAGE 3: ElevenLabs Scribe (auto-corrects, last resort)
+    if (elKey) {
+      const r3 = await callElevenLabs(audio, contentType, elKey);
+      debug.elevenlabs = { ok: r3.ok };
+      if (r3.ok && r3.text) {
+        return new Response(
+          JSON.stringify({
+            text: r3.text,
+            engine: "elevenlabs-scribe",
+            debug,
+          }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
+      }
+    } else {
+      debug.elevenlabs = "no-el-key";
+    }
+
+    return new Response(
+      JSON.stringify({
+        error: "All STT engines failed",
+        text: "",
+        debug,
+      }),
+      {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
+  } catch (e) {
+    return new Response(
+      JSON.stringify({ error: String(e).slice(0, 200), text: "" }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });
