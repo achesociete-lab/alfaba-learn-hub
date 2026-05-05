@@ -24,7 +24,9 @@ export interface AlignmentResult {
  * - Folds alef variants (إ أ آ ٱ) → ا
  * - Folds ya variants (ى) → ي
  * - Folds ta marbuta (ة) → ه
- * - Folds hamza on waw/ya seats (ؤ ئ) → و / ي
+ * - Folds hamza on waw/ya seats (ؤ ئ) → و / ي  (seat is grapheme noise)
+ * - KEEPS standalone hamza (ء) — it carries phonemic meaning in recitation
+ *   (e.g. سَأَلَ vs سَلَ); a quality model like whisper-quran will output it.
  * - Strips punctuation and zero-width chars
  */
 export function normalizeArabic(text: string): string {
@@ -42,12 +44,11 @@ export function normalizeArabic(text: string): string {
     .replace(/\u0649/g, "\u064A")
     // Ta marbuta → ha (most common transcription confusion)
     .replace(/\u0629/g, "\u0647")
-    // Hamza on waw → waw
+    // Hamza on waw seat → waw  (the seat is just a grapheme convention)
     .replace(/\u0624/g, "\u0648")
-    // Hamza on ya → ya
+    // Hamza on ya seat → ya
     .replace(/\u0626/g, "\u064A")
-    // Standalone hamza removed (often missed in pronunciation/STT)
-    .replace(/\u0621/g, "")
+    // NOTE: standalone hamza (\u0621) intentionally KEPT — see header comment.
     // Punctuation + symbols + Latin chars (some STT may insert)
     .replace(/[^\u0600-\u06FF\s]/g, "")
     .replace(/\s+/g, " ")
@@ -91,20 +92,29 @@ function levenshtein(a: string, b: string): number {
 }
 
 /**
- * Returns true if two normalized words are "close enough" (≤ 1 edit for
- * short words, ≤ 2 edits for longer words). Used as fuzzy match.
+ * Returns true if two normalized words are "close enough".
+ *
+ * Tightened for Quran recitation: every letter matters. We do NOT want a
+ * mispronunciation of a short word to silently pass.
+ *
+ *   maxLen ≤ 4    → exact match required
+ *   maxLen 5–7    → ≤ 1 edit allowed (one letter slip on a longer word)
+ *   maxLen ≥ 8    → ≤ 2 edits allowed (long word, possible STT slip)
  */
 function isCloseMatch(a: string, b: string): boolean {
   if (!a || !b) return false;
   if (a === b) return true;
   const dist = levenshtein(a, b);
   const maxLen = Math.max(a.length, b.length);
-  if (maxLen <= 3) return dist === 0;
-  if (maxLen <= 5) return dist <= 1;
+  if (maxLen <= 4) return dist === 0;
+  if (maxLen <= 7) return dist <= 1;
   return dist <= 2;
 }
 
-const LOOKAHEAD = 4; // how many expected words to look forward when aligning
+const LOOKAHEAD = 3; // how many expected words to look forward when aligning
+                     // (3 is enough — students rarely skip more than 2-3 words
+                     //  in a row; smaller window means fewer false "skipped"
+                     //  classifications when STT just hears garbage)
 
 /**
  * Align expected verse words with what the student actually transcribed.
