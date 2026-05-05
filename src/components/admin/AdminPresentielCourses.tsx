@@ -122,23 +122,29 @@ const AdminPresentielCourses = () => {
     }
   };
 
-  const handlePhotoUpload = async (file: File) => {
+  const handlePhotoUpload = async (files: File[] | File) => {
     if (!user) return;
-    if (!file.type.startsWith("image/")) { toast.error("Fichier image requis"); return; }
-    if (file.size > 10 * 1024 * 1024) { toast.error("Max 10 Mo"); return; }
+    const list = Array.isArray(files) ? files : [files];
+    const valid = list.filter(f => f.type.startsWith("image/") && f.size <= 10 * 1024 * 1024);
+    if (valid.length === 0) { toast.error("Image(s) requise(s), max 10 Mo chacune"); return; }
     setUploadingPhoto(true);
     try {
-      const ext = file.name.split(".").pop() || "jpg";
-      const path = `${user.id}/${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage
-        .from("presentiel-courses")
-        .upload(path, file, { upsert: true, contentType: file.type });
-      if (upErr) throw upErr;
-      const { data: { publicUrl } } = supabase.storage.from("presentiel-courses").getPublicUrl(path);
-      setDraft((d) => ({ ...d, photo_url: publicUrl }));
-      toast.success("Photo téléchargée — extraction du texte en cours…");
-      // Lancer immédiatement OCR + génération
-      await generateFromPhoto(publicUrl);
+      const urls: string[] = [];
+      for (const f of valid) {
+        const ext = f.name.split(".").pop() || "jpg";
+        const path = `${user.id}/${Date.now()}-${urls.length}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from("presentiel-courses")
+          .upload(path, f, { upsert: true, contentType: f.type });
+        if (upErr) { toast.error(upErr.message); continue; }
+        const { data: { publicUrl } } = supabase.storage.from("presentiel-courses").getPublicUrl(path);
+        urls.push(publicUrl);
+      }
+      if (urls.length === 0) return;
+      const [main, ...rest] = urls;
+      setDraft((d) => ({ ...d, photo_url: main, lesson_photos: [...d.lesson_photos, ...rest].slice(0, 10) }));
+      toast.success(`${urls.length} photo(s) téléchargée(s) — extraction en cours…`);
+      await generateFromPhoto(main, undefined, rest);
     } catch (e: any) {
       console.error(e);
       toast.error(e.message || "Erreur upload");
@@ -592,11 +598,12 @@ const AdminPresentielCourses = () => {
                 <input
                   type="file"
                   accept="image/*"
+                  multiple
                   className="hidden"
                   disabled={uploadingPhoto || generating}
                   onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) handlePhotoUpload(f);
+                    const files = Array.from(e.target.files || []);
+                    if (files.length) handlePhotoUpload(files);
                     e.target.value = "";
                   }}
                 />
