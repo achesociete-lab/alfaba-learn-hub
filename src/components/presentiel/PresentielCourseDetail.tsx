@@ -1045,20 +1045,25 @@ const PresentielCourseDetail = ({ course, userProgress, onProgressUpdate }: Prop
           const Icon = STEP_LABEL[s].icon;
           const isCurrent = s === step;
           const isDone = i < currentIndex;
+          const unlocked = i <= maxReached;
           return (
-            <div
+            <button
               key={s}
-              className={`p-2 rounded-lg border text-center text-xs ${
+              type="button"
+              disabled={!unlocked}
+              onClick={() => goToStep(s, i)}
+              className={`p-2 rounded-lg border text-center text-xs transition-colors ${
                 isCurrent
                   ? "border-primary bg-primary/10 text-primary"
                   : isDone
-                  ? "border-emerald-500 bg-emerald-500/10 text-emerald-700"
+                  ? "border-emerald-500 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20"
                   : "border-border bg-muted/30 text-muted-foreground"
-              }`}
+              } ${unlocked ? "cursor-pointer" : "cursor-not-allowed opacity-60"}`}
+              title={unlocked ? `Aller à l'étape : ${STEP_LABEL[s].label}` : "Étape verrouillée"}
             >
               <Icon className="h-4 w-4 mx-auto mb-1" />
               <p className="font-medium leading-tight">{STEP_LABEL[s].label}</p>
-            </div>
+            </button>
           );
         })}
       </div>
