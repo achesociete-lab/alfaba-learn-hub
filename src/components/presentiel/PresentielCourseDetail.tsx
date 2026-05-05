@@ -325,24 +325,6 @@ function LessonReference({ course }: { course: PresentielCourseV2 }) {
               className="w-full rounded border border-border bg-white"
             />
           ))}
-          {course.lesson_text && (
-            <>
-              <div
-                dir="rtl"
-                className="p-4 font-amiri text-xl text-right leading-loose bg-muted/20 rounded-lg border border-border"
-              >
-                {course.lesson_text}
-              </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => speak(course.lesson_text!)}
-                className="gap-2"
-              >
-                <Volume2 className="h-4 w-4" /> Écouter le texte
-              </Button>
-            </>
-          )}
         </div>
       )}
     </div>
