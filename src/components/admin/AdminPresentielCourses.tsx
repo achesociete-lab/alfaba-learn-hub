@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   MapPin, Trash2, Loader2, Users, Save, Plus, X, BookOpen, Languages, Headphones,
   HelpCircle, ListOrdered, Pencil, Sparkles, Wand2, Image as ImageIcon, Upload,
-  MessageCircle, ExternalLink, ChevronDown, ChevronUp, Copy, CheckCircle2,
+  MessageCircle, ExternalLink, ChevronDown, ChevronUp, Copy, CheckCircle2, Mic,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -38,6 +38,7 @@ interface CourseDraft {
   assigned_user_ids: string[];
   photo_url: string | null;
   lesson_photos: string[];
+  audio_url: string | null;
 }
 
 const emptyDraft = (): CourseDraft => ({
@@ -52,6 +53,7 @@ const emptyDraft = (): CourseDraft => ({
   assigned_user_ids: [],
   photo_url: null,
   lesson_photos: [],
+  audio_url: null,
 });
 
 
@@ -65,6 +67,7 @@ const AdminPresentielCourses = () => {
   const [aiTheme, setAiTheme] = useState("");
   const [generating, setGenerating] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadingAudio, setUploadingAudio] = useState(false);
   const [expandedProgress, setExpandedProgress] = useState<string | null>(null);
   const [courseProgressMap, setCourseProgressMap] = useState<Record<string, any[]>>({});
   const [loadingProgress, setLoadingProgress] = useState<string | null>(null);
@@ -134,6 +137,33 @@ const AdminPresentielCourses = () => {
       toast.error(e.message || "Erreur upload");
     } finally {
       setUploadingPhoto(false);
+    }
+  };
+
+  const handleAudioUpload = async (file: File) => {
+    if (!user) return;
+    const allowed = ["audio/mpeg", "audio/mp4", "audio/ogg", "audio/wav", "audio/webm", "audio/x-m4a"];
+    if (!allowed.includes(file.type) && !file.name.match(/\.(mp3|m4a|wav|ogg|webm)$/i)) {
+      toast.error("Format audio non supporté (MP3, M4A, WAV, OGG)");
+      return;
+    }
+    if (file.size > 50 * 1024 * 1024) { toast.error("Max 50 Mo"); return; }
+    setUploadingAudio(true);
+    try {
+      const ext = file.name.split(".").pop() || "mp3";
+      const path = `${user.id}/audio-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("presentiel-courses")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) throw upErr;
+      const { data: { publicUrl } } = supabase.storage.from("presentiel-courses").getPublicUrl(path);
+      setDraft((d) => ({ ...d, audio_url: publicUrl }));
+      toast.success("Audio téléchargé ! Les élèves entendront votre voix.");
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e.message || "Erreur upload audio");
+    } finally {
+      setUploadingAudio(false);
     }
   };
 
@@ -209,6 +239,7 @@ const AdminPresentielCourses = () => {
       assigned_user_ids: (c.presentiel_course_assignments || []).map((a: any) => a.user_id),
       photo_url: c.photo_url || null,
       lesson_photos: Array.isArray(c.lesson_photos) ? c.lesson_photos : [],
+      audio_url: c.audio_url || null,
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -230,6 +261,7 @@ const AdminPresentielCourses = () => {
         dictation_words: draft.dictation_words.filter(w => w.trim()) as any,
         photo_url: draft.photo_url,
         lesson_photos: draft.lesson_photos as any,
+        audio_url: draft.audio_url,
       };
 
       let courseId = draft.id;
@@ -532,6 +564,48 @@ const AdminPresentielCourses = () => {
                 }}
               />
             </label>
+          </div>
+
+          {/* Audio du professeur pour la lecture */}
+          <div className="p-4 rounded-lg border border-dashed border-emerald-500/40 bg-emerald-50/30 dark:bg-emerald-950/20 space-y-3">
+            <Label className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
+              <Mic className="h-4 w-4" /> Enregistrement audio de la leçon (votre voix)
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              Uploadez votre propre lecture de la leçon (MP3, M4A, WAV…). Les élèves entendront <strong>votre voix</strong> au lieu de la synthèse vocale — bien plus pédagogique !
+            </p>
+            {draft.audio_url ? (
+              <div className="space-y-2">
+                <audio controls src={draft.audio_url} className="w-full rounded" style={{ height: "44px" }} />
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-destructive"
+                    onClick={() => setDraft((d) => ({ ...d, audio_url: null }))}
+                  >
+                    <X className="h-4 w-4 mr-1" /> Supprimer l'audio
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <label className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-dashed border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 cursor-pointer transition text-sm font-medium">
+                {uploadingAudio
+                  ? <><Loader2 className="h-4 w-4 animate-spin" /> Téléchargement…</>
+                  : <><Upload className="h-4 w-4" /> Choisir un fichier audio</>}
+                <input
+                  type="file"
+                  accept="audio/*"
+                  className="hidden"
+                  disabled={uploadingAudio}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) handleAudioUpload(f);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            )}
           </div>
 
           {/* Alternative : génération depuis un thème (sans photo) */}
