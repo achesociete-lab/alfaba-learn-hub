@@ -998,50 +998,175 @@ const PresentielCourseDetail = ({ course, userProgress, onProgressUpdate }: Prop
 };
 
 
-// Helper: dictée — affiche les mots l'un après l'autre via TTS
+// Helper: dictée guidée mot par mot (le mot reste masqué — vraie dictée)
 function DicteeInstruction({ words }: { words: string[] }) {
   const { speak } = useArabicSpeech();
+  const [mode, setMode] = useState<"intro" | "guided" | "list">("intro");
   const [idx, setIdx] = useState(0);
+  const [played, setPlayed] = useState<boolean[]>([]);
+  const [allDone, setAllDone] = useState(false);
 
   if (words.length === 0) {
     return <span>Aucun mot configuré pour la dictée.</span>;
   }
 
-  const playOne = (w: string) => speak(w);
-  const playAll = async () => {
-    for (const w of words) {
-      await speak(w);
-      await new Promise((r) => setTimeout(r, 800));
+  const startGuided = () => {
+    setMode("guided");
+    setIdx(0);
+    setPlayed(new Array(words.length).fill(false));
+    setAllDone(false);
+  };
+
+  const handleListen = async () => {
+    await speak(words[idx]);
+    setPlayed((p) => { const n = [...p]; n[idx] = true; return n; });
+  };
+
+  const handleNext = () => {
+    if (idx + 1 >= words.length) {
+      setAllDone(true);
+    } else {
+      setIdx((i) => i + 1);
     }
   };
 
-  return (
-    <div className="space-y-3">
-      <p>
-        Écoutez chaque mot, écrivez-le à la main sans regarder, puis envoyez la photo de votre dictée
-        pour correction.
-      </p>
-      <div className="flex flex-wrap gap-2">
-        <Button size="sm" variant="outline" onClick={playAll} className="gap-2">
-          <Volume2 className="h-4 w-4" /> Écouter tous les mots
-        </Button>
-        {words.map((w, i) => (
-          <Button
-            key={i}
-            size="sm"
-            variant="ghost"
-            onClick={() => {
-              setIdx(i);
-              playOne(w);
-            }}
-            className={`gap-1 ${idx === i ? "ring-1 ring-primary" : ""}`}
-          >
-            <Volume2 className="h-3 w-3" /> Mot {i + 1}
+  // ── Mode intro ──
+  if (mode === "intro") {
+    return (
+      <div className="space-y-3">
+        <p className="text-sm">
+          Écoutez chaque mot et écrivez-le à la main sans regarder l'écran.
+          Envoyez ensuite la photo pour correction par votre professeur.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={startGuided} className="gap-2 gradient-emerald border-0 text-primary-foreground">
+            <Headphones className="h-4 w-4" /> Dictée guidée (mot par mot)
           </Button>
-        ))}
+          <Button variant="outline" size="sm" onClick={() => setMode("list")} className="gap-1">
+            Voir la liste des mots
+          </Button>
+        </div>
       </div>
+    );
+  }
+
+  // ── Mode liste (révision) ──
+  if (mode === "list") {
+    return (
+      <div className="space-y-3">
+        <p className="text-sm text-muted-foreground">Liste de révision — cliquez pour écouter :</p>
+        <div className="flex flex-wrap gap-2">
+          {words.map((w, i) => (
+            <Button key={i} size="sm" variant="ghost" onClick={() => speak(w)} className="gap-1 font-amiri text-lg">
+              <Volume2 className="h-3 w-3" /> {i + 1}
+            </Button>
+          ))}
+        </div>
+        <Button variant="outline" size="sm" onClick={startGuided} className="gap-1">
+          <Headphones className="h-3 w-3" /> Passer en mode guidé
+        </Button>
+      </div>
+    );
+  }
+
+  // ── Mode guidé ──
+  if (allDone) {
+    return (
+      <div className="space-y-3">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 text-center"
+        >
+          <CheckCircle2 className="h-8 w-8 text-emerald-600 mx-auto mb-2" />
+          <p className="font-bold text-emerald-700 dark:text-emerald-400">
+            Tous les {words.length} mots dictés !
+          </p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Prenez une photo de votre feuille et envoyez-la pour correction.
+          </p>
+        </motion.div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={startGuided}>
+            ↩ Recommencer
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setMode("list")}>
+            Voir les mots
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const currentPlayed = played[idx] ?? false;
+
+  return (
+    <div className="space-y-4">
+      {/* Progress dots */}
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-semibold text-muted-foreground">
+          Mot {idx + 1} / {words.length}
+        </span>
+        <div className="flex gap-1 flex-1">
+          {words.map((_, i) => (
+            <div
+              key={i}
+              className={`flex-1 h-1.5 rounded-full transition-all ${
+                i < idx
+                  ? "bg-emerald-500"
+                  : i === idx
+                  ? "bg-primary"
+                  : "bg-muted"
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Word hidden until listened */}
+      <div className="p-6 rounded-xl bg-muted/40 border border-border text-center">
+        {currentPlayed ? (
+          <p className="text-xs text-muted-foreground">Mot écouté — écrivez-le sur votre feuille</p>
+        ) : (
+          <p className="text-sm text-muted-foreground italic">
+            Cliquez sur "Écouter" pour entendre le mot — ne regardez pas la liste !
+          </p>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex flex-col gap-2">
+        <Button
+          onClick={handleListen}
+          className={`w-full gap-2 ${currentPlayed ? "variant-outline" : "gradient-emerald border-0 text-primary-foreground"}`}
+          variant={currentPlayed ? "outline" : "default"}
+        >
+          <Volume2 className="h-5 w-5" />
+          {currentPlayed ? "Réécouter le mot" : `▶ Écouter le mot n°${idx + 1}`}
+        </Button>
+
+        {currentPlayed && (
+          <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}>
+            <Button
+              onClick={handleNext}
+              className="w-full gap-2 gradient-emerald border-0 text-primary-foreground"
+            >
+              ✏️ J'ai écrit →{" "}
+              {idx + 1 < words.length
+                ? `Mot suivant (${idx + 2}/${words.length})`
+                : "Terminé 🎉"}
+            </Button>
+          </motion.div>
+        )}
+      </div>
+
+      <Button variant="ghost" size="sm" onClick={() => setMode("intro")} className="text-xs">
+        ← Retour
+      </Button>
     </div>
   );
 }
+
+// Re-export CheckCircle2 used in DicteeInstruction (already imported above)
 
 export default PresentielCourseDetail;
