@@ -75,6 +75,7 @@ const AdminPresentielCourses = () => {
   const [expandedProgress, setExpandedProgress] = useState<string | null>(null);
   const [courseProgressMap, setCourseProgressMap] = useState<Record<string, any[]>>({});
   const [loadingProgress, setLoadingProgress] = useState<string | null>(null);
+  const [listLevelFilter, setListLevelFilter] = useState<"all" | Level>("all");
 
   const generateFromPhoto = async (publicUrl: string, levelOverride?: Level) => {
     setGenerating(true);
