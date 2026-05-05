@@ -33,8 +33,27 @@ const AdminStudents = () => {
   const [filterLevel, setFilterLevel] = useState<string>("all");
   const [deleting, setDeleting] = useState<string | null>(null);
   const [togglingType, setTogglingType] = useState<string | null>(null);
+  const [togglingLevel, setTogglingLevel] = useState<string | null>(null);
 
   const [validating, setValidating] = useState<string | null>(null);
+
+  const handleToggleLevel = async (s: StudentProfile) => {
+    setTogglingLevel(s.user_id);
+    const newLevel = s.level === "niveau_1" ? "niveau_2" : "niveau_1";
+    const { error } = await supabase
+      .from("profiles")
+      .update({ level: newLevel } as any)
+      .eq("user_id", s.user_id);
+    if (error) {
+      toast.error("Erreur lors du changement de niveau");
+    } else {
+      setStudents((prev) =>
+        prev.map((st) => (st.user_id === s.user_id ? { ...st, level: newLevel as any } : st))
+      );
+      toast.success(`${s.first_name} est maintenant en ${newLevel === "niveau_1" ? "Niveau 1" : "Niveau 2"}`);
+    }
+    setTogglingLevel(null);
+  };
 
   const fetchStudents = async () => {
     const { data } = await supabase
