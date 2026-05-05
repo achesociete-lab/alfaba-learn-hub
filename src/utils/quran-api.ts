@@ -161,16 +161,29 @@ export function compareVerseWords(expected: string, spoken: string): WordMatch[]
   const expectedWords = normalizeArabic(expected).split(" ").filter(Boolean);
   const spokenWords = normalizeArabic(spoken).split(" ").filter(Boolean);
 
+  // If nothing was spoken, mark all as pending
+  if (spokenWords.length === 0) {
+    return expectedWords.map((word) => ({ expected: word, status: "pending" as const }));
+  }
+
+  // Windowed search: for each expected word, look ±WINDOW positions in spoken
+  // This tolerates STT inserting/dropping words without cascading wrong matches
+  const WINDOW = 5;
+
   return expectedWords.map((word, i) => {
-    if (i >= spokenWords.length) {
-      return { expected: word, status: "pending" as const };
+    const start = Math.max(0, i - WINDOW);
+    const end = Math.min(spokenWords.length, i + WINDOW + 1);
+    let bestSim = 0;
+    let bestSpoken = "";
+    for (let j = start; j < end; j++) {
+      const sim = word === spokenWords[j] ? 1 : levenshteinSimilarity(word, spokenWords[j]);
+      if (sim > bestSim) { bestSim = sim; bestSpoken = spokenWords[j]; }
     }
-    const spokenWord = spokenWords[i];
-    const isMatch = word === spokenWord || levenshteinSimilarity(word, spokenWord) > 0.6;
+    const isMatch = bestSim >= 0.65;
     return {
       expected: word,
       status: isMatch ? ("correct" as const) : ("wrong" as const),
-      spoken: spokenWord,
+      spoken: bestSpoken,
     };
   });
 }
