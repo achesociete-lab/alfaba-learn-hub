@@ -41,6 +41,12 @@ interface Props {
 const STT_INTERVAL_MS = 2500;
 // Minimum bytes before sending to STT (avoids transcribing pure silence chunks).
 const MIN_AUDIO_BYTES = 4000;
+// Hard cap on a single live session. Beyond this the audio blob sent to STT
+// becomes too large/slow and ElevenLabs latency degrades. The user can simply
+// stop, score, and start a new session.
+const MAX_SESSION_SECONDS = 180; // 3 minutes
+// When the elapsed time crosses this many seconds we display a soft warning.
+const WARN_SESSION_SECONDS = 150;
 
 const QuranLiveRecitation = ({ surah, verses, onClose }: Props) => {
   const { user } = useAuth();
@@ -71,6 +77,14 @@ const QuranLiveRecitation = ({ surah, verses, onClose }: Props) => {
   const elapsedTimerRef = useRef<number | null>(null);
   const sttInFlightRef = useRef<boolean>(false);
   const cursorElRef = useRef<HTMLSpanElement | null>(null);
+  // Mount tracking + abort: prevents setState after unmount and cancels
+  // in-flight STT requests when the user closes the panel mid-recitation.
+  const mountedRef = useRef(true);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  // Mirror of `statuses` so we can compute the final score in `stop` without
+  // having to put side-effects inside a setStatuses updater (anti-pattern).
+  const statusesRef = useRef<WordStatus[]>(statuses);
+  useEffect(() => { statusesRef.current = statuses; }, [statuses]);
 
   // Reset when verses change
   useEffect(() => {
@@ -92,6 +106,7 @@ const QuranLiveRecitation = ({ surah, verses, onClose }: Props) => {
   const processChunk = useCallback(async () => {
     if (sttInFlightRef.current) return;
     if (chunksRef.current.length === 0) return;
+    if (!mountedRef.current) return;
 
     // Build cumulative blob (entire audio so far)
     const blob = new Blob(chunksRef.current, { type: chunksRef.current[0].type || "audio/webm" });
@@ -99,6 +114,11 @@ const QuranLiveRecitation = ({ surah, verses, onClose }: Props) => {
 
     sttInFlightRef.current = true;
     setIsProcessing(true);
+
+    // Cancel any older in-flight request and arm a fresh AbortController
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
     try {
       const fd = new FormData();
@@ -114,11 +134,14 @@ const QuranLiveRecitation = ({ surah, verses, onClose }: Props) => {
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
           body: fd,
+          signal: controller.signal,
         },
       );
 
+      if (!mountedRef.current) return;
       if (!res.ok) throw new Error("STT failed");
       const data = await res.json();
+      if (!mountedRef.current) return;
       const txt: string = data.text || "";
 
       const transcribedWords = tokenizeArabic(txt);
@@ -127,12 +150,13 @@ const QuranLiveRecitation = ({ surah, verses, onClose }: Props) => {
       setStatuses(aligned.statuses);
       setCursorIndex(aligned.cursorIndex);
       setTranscription(txt);
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.name === "AbortError") return; // expected on cleanup
       // Silent: chunks fail occasionally, next one will succeed
       console.warn("STT chunk error", err);
     } finally {
       sttInFlightRef.current = false;
-      setIsProcessing(false);
+      if (mountedRef.current) setIsProcessing(false);
     }
   }, [expectedWords]);
 
@@ -179,15 +203,29 @@ const QuranLiveRecitation = ({ surah, verses, onClose }: Props) => {
         void processChunk();
       }, STT_INTERVAL_MS);
 
-      // Elapsed counter
+      // Elapsed counter — also enforces hard cap to keep audio blob bounded
       const startedAt = Date.now();
+      let warnedAtSoftLimit = false;
       elapsedTimerRef.current = window.setInterval(() => {
-        setElapsed(Math.floor((Date.now() - startedAt) / 1000));
+        const e = Math.floor((Date.now() - startedAt) / 1000);
+        setElapsed(e);
+        if (!warnedAtSoftLimit && e >= WARN_SESSION_SECONDS) {
+          warnedAtSoftLimit = true;
+          toast("La session live se terminera automatiquement à 3 minutes.", { duration: 4000 });
+        }
+        if (e >= MAX_SESSION_SECONDS) {
+          toast.success("Limite de 3 min atteinte — calcul du score…");
+          void stopRef.current?.();
+        }
       }, 500);
     } catch (err: any) {
       toast.error("Impossible d'accéder au micro: " + (err?.message ?? "permission refusée"));
     }
   }, [expectedWords, processChunk, stopSpeak]);
+
+  // Forward-ref so the elapsed-timer auto-stop can call stop() without a
+  // circular useCallback dependency.
+  const stopRef = useRef<(() => Promise<void>) | null>(null);
 
   // ── Stop recording + final scoring ──────────────────────────────────────
   const stop = useCallback(async () => {
@@ -203,17 +241,23 @@ const QuranLiveRecitation = ({ surah, verses, onClose }: Props) => {
     await new Promise((r) => setTimeout(r, 600));
     await processChunk();
 
-    // Compute final score from latest statuses (use ref via setter)
-    setStatuses((current) => {
-      const correct = current.filter((s) => s === "correct").length;
-      const errors = current.filter((s) => s === "incorrect").length;
-      const skipped = current.filter((s) => s === "skipped").length;
-      const pct = totalWords > 0 ? Math.round((correct / totalWords) * 100) : 0;
-      setFinalScore({ correct, errors, skipped, pct });
-      // Persist to DB (best-effort)
-      if (user && totalWords > 0) {
-        setSavingResult(true);
-        supabase.from("quran_recitations").insert({
+    if (!mountedRef.current) return;
+
+    // Compute final score from the up-to-date ref (avoids putting side
+    // effects inside a setState updater)
+    const current = statusesRef.current;
+    const correct = current.filter((s) => s === "correct").length;
+    const errors = current.filter((s) => s === "incorrect").length;
+    const skipped = current.filter((s) => s === "skipped").length;
+    const pct = totalWords > 0 ? Math.round((correct / totalWords) * 100) : 0;
+
+    setFinalScore({ correct, errors, skipped, pct });
+
+    // Persist to DB (best-effort, fire-and-forget)
+    if (user && totalWords > 0) {
+      setSavingResult(true);
+      try {
+        await supabase.from("quran_recitations").insert({
           user_id: user.id,
           surah_number: surah.number,
           ayah_start: verses[0]?.number ?? 1,
@@ -221,11 +265,14 @@ const QuranLiveRecitation = ({ surah, verses, onClose }: Props) => {
           score: pct,
           notes: `Live: ${correct}/${totalWords} mots corrects, ${errors} erreurs, ${skipped} sautés`,
           mode: "live",
-        }).then(() => setSavingResult(false), () => setSavingResult(false));
-      }
-      return current;
-    });
+        });
+      } catch { /* swallow — non-critical */ }
+      if (mountedRef.current) setSavingResult(false);
+    }
   }, [processChunk, surah.number, totalWords, user, verses]);
+
+  // Keep the ref in sync so elapsed-timer auto-stop can call stop() safely
+  useEffect(() => { stopRef.current = stop; }, [stop]);
 
   const reset = useCallback(() => {
     setStatuses(expectedWords.map(() => "pending"));
@@ -236,9 +283,12 @@ const QuranLiveRecitation = ({ surah, verses, onClose }: Props) => {
   }, [expectedWords]);
 
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
+      mountedRef.current = false;
       if (intervalRef.current) clearInterval(intervalRef.current);
       if (elapsedTimerRef.current) clearInterval(elapsedTimerRef.current);
+      abortControllerRef.current?.abort();
       streamRef.current?.getTracks().forEach((t) => t.stop());
       try { mediaRecorderRef.current?.stop(); } catch { /* noop */ }
     };
@@ -375,7 +425,10 @@ const QuranLiveRecitation = ({ surah, verses, onClose }: Props) => {
             </Button>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span className="inline-block h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-              {Math.floor(elapsed / 60).toString().padStart(2, "0")}:{(elapsed % 60).toString().padStart(2, "0")}
+              <span className={elapsed >= WARN_SESSION_SECONDS ? "text-amber-600 font-semibold" : ""}>
+                {Math.floor(elapsed / 60).toString().padStart(2, "0")}:{(elapsed % 60).toString().padStart(2, "0")}
+                <span className="text-[10px] opacity-60"> / 03:00</span>
+              </span>
               {isProcessing && <Loader2 className="h-3 w-3 animate-spin ms-1" />}
               <span className="text-xs">Mot {Math.min(cursorIndex + 1, totalWords)}/{totalWords}</span>
             </div>
