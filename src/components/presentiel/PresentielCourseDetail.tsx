@@ -60,7 +60,6 @@ const STEP_LABEL: Record<Exclude<Step, "done">, { label: string; icon: typeof Bo
 // ─── Step 1: Lecture (audio prof + STT compare) ───
 function LectureStep({ course, onDone }: { course: PresentielCourseV2; onDone: () => void }) {
   const { user } = useAuth();
-  const { speak } = useArabicSpeech();
   const [recording, setRecording] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [matches, setMatches] = useState<WordMatch[] | null>(null);
@@ -71,11 +70,6 @@ function LectureStep({ course, onDone }: { course: PresentielCourseV2; onDone: (
 
   const lessonText = (course.lesson_text || "").trim();
   const hasTeacherAudio = !!(course.audio_url);
-
-  const handleListen = async () => {
-    if (!lessonText) return;
-    await speak(lessonText);
-  };
 
   const startRecording = async () => {
     try {
@@ -223,8 +217,8 @@ function LectureStep({ course, onDone }: { course: PresentielCourseV2; onDone: (
           )}
         </div>
 
-        {/* Audio du professeur ou TTS fallback */}
-        {hasTeacherAudio ? (
+        {/* Audio du professeur (optionnel) — pas de TTS : la photo suffit */}
+        {hasTeacherAudio && (
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
               <Volume2 className="h-3 w-3" /> Voix de votre professeur — écoutez, puis lisez à voix haute
@@ -236,10 +230,6 @@ function LectureStep({ course, onDone }: { course: PresentielCourseV2; onDone: (
               style={{ height: "44px" }}
             />
           </div>
-        ) : (
-          <Button onClick={handleListen} variant="outline" className="gap-2">
-            <Volume2 className="h-4 w-4" /> Écouter (synthèse vocale)
-          </Button>
         )}
 
         <div className="flex flex-wrap gap-2">
