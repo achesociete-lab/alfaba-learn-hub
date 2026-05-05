@@ -1,12 +1,10 @@
-// Interface admin : correction des photos manuscrites des élèves présentiel
+// Interface admin : correction MANUELLE des photos manuscrites des élèves présentiel
 // + visualisation des scores de lecture
-// + Correction IA automatique via Gemini (presentiel-auto-correct)
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   CheckCircle2, XCircle, Loader2, MessageSquare, Image as ImageIcon, Mic, Search,
-  Sparkles, Star,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -46,8 +44,6 @@ interface ReadingScore {
 interface CourseLite {
   id: string;
   title: string;
-  lesson_text?: string;
-  dictation_words?: string[];
 }
 interface StudentLite { user_id: string; first_name: string; last_name: string }
 
@@ -56,15 +52,6 @@ const STATUS_LABEL: Record<Submission["status"], { label: string; variant: "defa
   validee: { label: "✅ Validée", variant: "default" },
   a_corriger: { label: "❌ À corriger", variant: "destructive" },
 };
-
-interface AiResult {
-  score_label?: string;
-  score_num?: number;
-  total_num?: number;
-  feedback?: string;
-  suggestions?: string[];
-  quality?: string;
-}
 
 const AdminPresentielSubmissions = () => {
   const { user } = useAuth();
@@ -76,15 +63,13 @@ const AdminPresentielSubmissions = () => {
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<string | null>(null);
   const [feedbackDraft, setFeedbackDraft] = useState("");
-  const [aiCorrecting, setAiCorrecting] = useState<string | null>(null);
-  const [aiResults, setAiResults] = useState<Record<string, AiResult>>({});
 
   const load = async () => {
     setLoading(true);
     const [{ data: subs }, { data: scs }, { data: cs }, { data: ps }] = await Promise.all([
       supabase.from("presentiel_submissions").select("*").order("created_at", { ascending: false }),
       supabase.from("presentiel_reading_scores").select("*").order("created_at", { ascending: false }),
-      supabase.from("presentiel_courses").select("id, title, lesson_text, dictation_words"),
+      supabase.from("presentiel_courses").select("id, title"),
       supabase.from("profiles").select("user_id, first_name, last_name"),
     ]);
     setSubmissions((subs as any[]) || []);
@@ -118,36 +103,6 @@ const AdminPresentielSubmissions = () => {
       setEditing(null);
       setFeedbackDraft("");
       load();
-    }
-  };
-
-  const handleAiCorrect = async (sub: Submission) => {
-    const course = courses[sub.course_id];
-    if (!course) { toast.error("Cours introuvable"); return; }
-    setAiCorrecting(sub.id);
-    try {
-      const { data, error } = await supabase.functions.invoke("presentiel-auto-correct", {
-        body: {
-          photo_url: sub.photo_url,
-          step_type: sub.step_type,
-          lesson_text: course.lesson_text,
-          dictation_words: course.dictation_words,
-        },
-      });
-      if (error || data?.error) throw new Error(error?.message || data?.error || "Erreur IA");
-      setAiResults((prev) => ({ ...prev, [sub.id]: data as AiResult }));
-      const fb = [
-        data.score_label ? `Score : ${data.score_label}` : "",
-        data.feedback || "",
-        data.suggestions?.length ? `Suggestions : ${data.suggestions.join(" · ")}` : "",
-      ].filter(Boolean).join("\n");
-      setFeedbackDraft(fb);
-      setEditing(sub.id);
-      toast.success("Correction IA terminée — vérifiez et validez !");
-    } catch (e: any) {
-      toast.error(e.message || "Erreur lors de la correction IA");
-    } finally {
-      setAiCorrecting(null);
     }
   };
 
@@ -221,13 +176,10 @@ const AdminPresentielSubmissions = () => {
                   student={students[s.user_id]}
                   editing={editing === s.id}
                   feedbackDraft={feedbackDraft}
-                  aiResult={aiResults[s.id]}
-                  aiCorrecting={aiCorrecting === s.id}
                   onEdit={() => { setEditing(s.id); setFeedbackDraft(s.feedback || ""); }}
                   onChangeFeedback={setFeedbackDraft}
                   onValidate={() => updateStatus(s, "validee", feedbackDraft || undefined)}
                   onReject={() => updateStatus(s, "a_corriger", feedbackDraft || undefined)}
-                  onAiCorrect={() => handleAiCorrect(s)}
                 />
               ))
             )}
@@ -240,7 +192,6 @@ const AdminPresentielSubmissions = () => {
                 sub={s}
                 course={courses[s.course_id]}
                 student={students[s.user_id]}
-                aiResult={aiResults[s.id]}
                 readonly
               />
             ))}
@@ -283,21 +234,18 @@ const AdminPresentielSubmissions = () => {
 };
 
 function SubmissionCard({
-  sub, course, student, editing, feedbackDraft, aiResult, aiCorrecting,
-  onEdit, onChangeFeedback, onValidate, onReject, onAiCorrect, readonly,
+  sub, course, student, editing, feedbackDraft,
+  onEdit, onChangeFeedback, onValidate, onReject, readonly,
 }: {
   sub: Submission;
   course?: CourseLite;
   student?: StudentLite;
   editing?: boolean;
   feedbackDraft?: string;
-  aiResult?: AiResult;
-  aiCorrecting?: boolean;
   onEdit?: () => void;
   onChangeFeedback?: (v: string) => void;
   onValidate?: () => void;
   onReject?: () => void;
-  onAiCorrect?: () => void;
   readonly?: boolean;
 }) {
   const photos: string[] = (sub.photo_urls && Array.isArray(sub.photo_urls) && sub.photo_urls.length > 0)
@@ -338,37 +286,6 @@ function SubmissionCard({
                 </Badge>
               </div>
 
-              {/* AI result display */}
-              {aiResult && (
-                <motion.div
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="p-3 rounded-lg border border-amber-200 bg-amber-50/60 dark:bg-amber-950/20 space-y-1.5"
-                >
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-amber-600" />
-                    <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">Correction IA</span>
-                    {aiResult.score_label && (
-                      <Badge variant="outline" className="ml-auto text-base">
-                        <Star className="h-3 w-3 mr-1 text-gold" />
-                        {aiResult.score_label}
-                      </Badge>
-                    )}
-                  </div>
-                  {aiResult.score_num != null && aiResult.total_num != null && (
-                    <Progress value={(aiResult.score_num / aiResult.total_num) * 100} className="h-1.5" />
-                  )}
-                  {aiResult.feedback && (
-                    <p className="text-xs text-foreground">{aiResult.feedback}</p>
-                  )}
-                  {aiResult.suggestions && aiResult.suggestions.length > 0 && (
-                    <ul className="text-xs text-muted-foreground space-y-0.5">
-                      {aiResult.suggestions.map((s, i) => <li key={i}>• {s}</li>)}
-                    </ul>
-                  )}
-                </motion.div>
-              )}
-
               {/* Feedback field */}
               {!readonly && editing ? (
                 <Textarea
@@ -387,19 +304,6 @@ function SubmissionCard({
               {/* Action buttons */}
               {!readonly && (
                 <div className="flex flex-wrap gap-2 pt-2">
-                  {/* AI correction button — star of the show */}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={onAiCorrect}
-                    disabled={aiCorrecting}
-                    className="gap-1.5 border-amber-300 text-amber-700 hover:bg-amber-50"
-                  >
-                    {aiCorrecting
-                      ? <><Loader2 className="h-3 w-3 animate-spin" /> Analyse…</>
-                      : <><Sparkles className="h-3 w-3" /> Correction IA</>}
-                  </Button>
-
                   {!editing && (
                     <Button size="sm" variant="outline" onClick={onEdit} className="gap-1">
                       <MessageSquare className="h-3 w-3" /> Commentaire
