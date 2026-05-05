@@ -1,0 +1,1 @@
+ALTER TABLE public.presentiel_courses ADD COLUMN IF NOT EXISTS audio_url TEXT;
