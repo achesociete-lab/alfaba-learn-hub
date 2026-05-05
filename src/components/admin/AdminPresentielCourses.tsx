@@ -75,6 +75,7 @@ const AdminPresentielCourses = () => {
   const [expandedProgress, setExpandedProgress] = useState<string | null>(null);
   const [courseProgressMap, setCourseProgressMap] = useState<Record<string, any[]>>({});
   const [loadingProgress, setLoadingProgress] = useState<string | null>(null);
+  const [listLevelFilter, setListLevelFilter] = useState<"all" | Level>("all");
 
   const generateFromPhoto = async (publicUrl: string, levelOverride?: Level) => {
     setGenerating(true);
@@ -1058,8 +1059,27 @@ const AdminPresentielCourses = () => {
       </Card>
 
       <div className="space-y-3">
-        <h3 className="font-semibold text-foreground">Cours existants ({courses.length})</h3>
-        {courses.map((c) => {
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <h3 className="font-semibold text-foreground">
+            Cours existants ({courses.filter(c => listLevelFilter === "all" || c.level === listLevelFilter).length})
+          </h3>
+          <div className="flex gap-2">
+            {(["all", "niveau_1", "niveau_2"] as const).map((l) => (
+              <button
+                key={l}
+                onClick={() => setListLevelFilter(l)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                  listLevelFilter === l
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border text-muted-foreground hover:border-primary/30"
+                }`}
+              >
+                {l === "all" ? "Tous" : l === "niveau_1" ? "Niveau 1" : "Niveau 2"}
+              </button>
+            ))}
+          </div>
+        </div>
+        {courses.filter(c => listLevelFilter === "all" || c.level === listLevelFilter).map((c) => {
           const isExpanded = expandedProgress === c.id;
           const progress = courseProgressMap[c.id];
           const assignedCount = c.presentiel_course_assignments?.length || 0;
