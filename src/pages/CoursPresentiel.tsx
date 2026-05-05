@@ -56,13 +56,13 @@ const CoursPresentiel = () => {
         return;
       }
 
-      // Tri chronologique : plus ancien en premier (ordre des leçons données par le prof).
-      // course_date d'abord (date de la leçon), puis created_at en cas d'égalité.
+      // Ordre voulu = ordre d'ajout par le professeur (created_at croissant).
+      // La date du cours peut être identique ou rétroactive — c'est l'ordre
+      // de création qui reflète la séquence pédagogique.
       const { data: coursesData } = await supabase
         .from("presentiel_courses")
         .select("*")
         .in("id", ids)
-        .order("course_date", { ascending: true })
         .order("created_at", { ascending: true });
 
       const { data: progressData } = await supabase
