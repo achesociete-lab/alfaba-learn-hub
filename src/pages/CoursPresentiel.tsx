@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { MapPin, BookOpen, FileText, Headphones, CheckCircle2, ChevronRight, Loader2 } from "lucide-react";
+import { MapPin, BookOpen, FileText, Headphones, CheckCircle2, ChevronRight, Loader2, Lock } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
@@ -55,11 +56,14 @@ const CoursPresentiel = () => {
         return;
       }
 
+      // Tri chronologique : plus ancien en premier (ordre des leçons données par le prof).
+      // course_date d'abord (date de la leçon), puis created_at en cas d'égalité.
       const { data: coursesData } = await supabase
         .from("presentiel_courses")
         .select("*")
         .in("id", ids)
-        .order("course_date", { ascending: false });
+        .order("course_date", { ascending: true })
+        .order("created_at", { ascending: true });
 
       const { data: progressData } = await supabase
         .from("presentiel_course_progress")
@@ -128,53 +132,91 @@ const CoursPresentiel = () => {
             </Card>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2">
-              {courses.map((c, i) => {
-                const p = progress[c.id] || {};
-                const total = (p.qcm_completed ? 1 : 0) + (p.translation_completed ? 1 : 0) + (p.dictation_completed ? 1 : 0);
-                const done = total === 3;
-                return (
-                  <motion.div
-                    key={c.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.04 }}
-                  >
-                    <Card
-                      className="cursor-pointer hover:border-primary/50 hover:shadow-lg transition-all"
-                      onClick={() => setSelectedId(c.id)}
+              {(() => {
+                // Un cours est terminé quand QCM + traduction + dictée sont validés
+                const isDone = (c: PresentielCourse) => {
+                  const p = progress[c.id] || {};
+                  return p.qcm_completed && p.translation_completed && p.dictation_completed;
+                };
+                // Verrou progressif : on déverrouille jusqu'au 1er cours non terminé inclus.
+                // Tous les cours suivants restent verrouillés.
+                const firstUnfinishedIdx = courses.findIndex((c) => !isDone(c));
+                const isLocked = (idx: number) =>
+                  firstUnfinishedIdx !== -1 && idx > firstUnfinishedIdx;
+
+                return courses.map((c, i) => {
+                  const p = progress[c.id] || {};
+                  const done = isDone(c);
+                  const locked = isLocked(i);
+                  return (
+                    <motion.div
+                      key={c.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.04 }}
                     >
-                      {c.photo_url && (
-                        <div className="aspect-video w-full overflow-hidden rounded-t-lg bg-muted">
-                          <img src={c.photo_url} alt={c.title} className="w-full h-full object-cover" />
-                        </div>
-                      )}
-                      <CardContent className="p-5">
-                        <div className="flex items-start justify-between mb-2">
-                          <h3 className="font-semibold text-foreground line-clamp-2 flex-1">{c.title}</h3>
-                          {done && <CheckCircle2 className="h-5 w-5 text-primary shrink-0 ml-2" />}
-                        </div>
-                        <p className="text-xs text-muted-foreground mb-3">
-                          {new Date(c.course_date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
-                        </p>
-                        <div className="flex flex-wrap gap-1.5 mb-3">
-                          <Badge variant={p.qcm_completed ? "default" : "outline"} className="text-xs">
-                            <FileText className="h-3 w-3 mr-1" /> QCM {p.qcm_completed && p.qcm_score != null ? `${p.qcm_score}/10` : ""}
-                          </Badge>
-                          <Badge variant={p.translation_completed ? "default" : "outline"} className="text-xs">
-                            Traduction
-                          </Badge>
-                          <Badge variant={p.dictation_completed ? "default" : "outline"} className="text-xs">
-                            <Headphones className="h-3 w-3 mr-1" /> Dictée
-                          </Badge>
-                        </div>
-                        <div className="flex items-center text-primary text-sm font-medium">
-                          Ouvrir le cours <ChevronRight className="h-4 w-4 ml-1" />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                );
-              })}
+                      <Card
+                        className={`transition-all ${
+                          locked
+                            ? "opacity-60 cursor-not-allowed grayscale-[0.4]"
+                            : "cursor-pointer hover:border-primary/50 hover:shadow-lg"
+                        }`}
+                        onClick={() => {
+                          if (locked) {
+                            toast.info("Termine d'abord la leçon précédente pour débloquer celle-ci.");
+                            return;
+                          }
+                          setSelectedId(c.id);
+                        }}
+                      >
+                        {c.photo_url && (
+                          <div className="aspect-video w-full overflow-hidden rounded-t-lg bg-muted relative">
+                            <img src={c.photo_url} alt={c.title} className="w-full h-full object-cover" />
+                            {locked && (
+                              <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
+                                <Lock className="h-10 w-10 text-muted-foreground" />
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        <CardContent className="p-5">
+                          <div className="flex items-start justify-between mb-2 gap-2">
+                            <h3 className="font-semibold text-foreground line-clamp-2 flex-1">
+                              <span className="text-muted-foreground mr-1">#{i + 1}</span>
+                              {c.title}
+                            </h3>
+                            {done && <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />}
+                            {locked && !done && <Lock className="h-4 w-4 text-muted-foreground shrink-0" />}
+                          </div>
+                          <p className="text-xs text-muted-foreground mb-3">
+                            {new Date(c.course_date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
+                          </p>
+                          <div className="flex flex-wrap gap-1.5 mb-3">
+                            <Badge variant={p.qcm_completed ? "default" : "outline"} className="text-xs">
+                              <FileText className="h-3 w-3 mr-1" /> QCM {p.qcm_completed && p.qcm_score != null ? `${p.qcm_score}/10` : ""}
+                            </Badge>
+                            <Badge variant={p.translation_completed ? "default" : "outline"} className="text-xs">
+                              Traduction
+                            </Badge>
+                            <Badge variant={p.dictation_completed ? "default" : "outline"} className="text-xs">
+                              <Headphones className="h-3 w-3 mr-1" /> Dictée
+                            </Badge>
+                          </div>
+                          {locked ? (
+                            <div className="flex items-center text-muted-foreground text-sm font-medium">
+                              <Lock className="h-4 w-4 mr-1" /> Verrouillé — termine la leçon précédente
+                            </div>
+                          ) : (
+                            <div className="flex items-center text-primary text-sm font-medium">
+                              {done ? "Revoir le cours" : "Ouvrir le cours"} <ChevronRight className="h-4 w-4 ml-1" />
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  );
+                });
+              })()}
             </div>
           )}
         </div>
