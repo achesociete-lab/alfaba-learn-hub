@@ -398,6 +398,7 @@ export type Database = {
       }
       presentiel_courses: {
         Row: {
+          audio_url: string | null
           comprehension_questions: Json
           course_date: string
           created_at: string
@@ -419,6 +420,7 @@ export type Database = {
           vocabulary: Json
         }
         Insert: {
+          audio_url?: string | null
           comprehension_questions?: Json
           course_date?: string
           created_at?: string
@@ -440,6 +442,7 @@ export type Database = {
           vocabulary?: Json
         }
         Update: {
+          audio_url?: string | null
           comprehension_questions?: Json
           course_date?: string
           created_at?: string
