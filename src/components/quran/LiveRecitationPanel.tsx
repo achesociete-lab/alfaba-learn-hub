@@ -10,7 +10,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { BookOpen, Loader2, Sparkles, ChevronRight } from "lucide-react";
+import { BookOpen, Loader2, Sparkles, ChevronRight, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -89,6 +89,33 @@ const LiveRecitationPanel = ({ allSurahs }: Props) => {
               <span className="text-red-600 font-medium"> rouge si erreur</span>,
               <span className="text-amber-600 font-medium"> orange si sauté</span>.
               La correction se fait en temps réel, mot par mot.
+            </p>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Honest disclosure of detection capabilities + premium teaser */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="p-3.5 sm:p-4 rounded-xl border border-amber-200/60 dark:border-amber-900/40 bg-amber-50/60 dark:bg-amber-950/20"
+      >
+        <div className="flex items-start gap-2.5">
+          <Info className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <div className="space-y-1.5 text-[12px] sm:text-[13px] leading-relaxed">
+            <p className="text-foreground">
+              <strong>Ce que la correction automatique détecte bien&nbsp;:</strong>
+              {" "}mots oubliés, mots ajoutés, ordre incorrect, et les substitutions de mots clairement différents.
+            </p>
+            <p className="text-muted-foreground">
+              <strong className="text-foreground">Ce qu'elle ne peut pas garantir&nbsp;:</strong>
+              {" "}les nuances phonétiques fines (<span className="font-arabic text-base">ع</span> vs <span className="font-arabic text-base">غ</span>,{" "}
+              <span className="font-arabic text-base">ح</span> vs <span className="font-arabic text-base">خ</span>,{" "}
+              <span className="font-arabic text-base">د</span> vs <span className="font-arabic text-base">ض</span>,{" "}
+              <span className="font-arabic text-base">س</span> vs <span className="font-arabic text-base">ص</span>,{" "}
+              <span className="font-arabic text-base">ت</span> vs <span className="font-arabic text-base">ط</span>) ainsi que les règles de tajwid (madd, ghunnah, qalqalah).
+              Pour ces points, une vérification humaine ou le mode <strong>Tarteel Pro</strong> (à venir) est nécessaire.
             </p>
           </div>
         </div>
