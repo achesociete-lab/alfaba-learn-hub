@@ -10,7 +10,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { photo_url, photo_urls, theme, level, mode } = body || {};
+    const { photo_url, photo_urls, additional_photo_urls, theme, level, mode } = body || {};
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY manquant");
