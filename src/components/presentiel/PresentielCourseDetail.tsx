@@ -301,7 +301,7 @@ function LessonReference({ course }: { course: PresentielCourseV2 }) {
       : course.photo_url
       ? [course.photo_url]
       : [];
-  if (!course.lesson_text && photos.length === 0) return null;
+  if (photos.length === 0) return null;
   return (
     <div className="border border-border rounded-lg overflow-hidden">
       <button
