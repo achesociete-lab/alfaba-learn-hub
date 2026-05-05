@@ -10,7 +10,90 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { photo_url, theme, level } = body || {};
+    const { photo_url, photo_urls, theme, level, mode } = body || {};
+
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY manquant");
+
+    // ── MODE: dictation_only — extraire des mots de dictée depuis des leçons précédentes ──
+    if (mode === "dictation_only") {
+      const urls: string[] = Array.isArray(photo_urls)
+        ? photo_urls
+        : photo_url ? [photo_url] : [];
+      if (urls.length === 0) {
+        return new Response(JSON.stringify({ error: "Au moins une photo requise" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const systemPrompt = `Tu es un professeur d'arabe expert. Tu extrais du vocabulaire arabe de pages de manuel scolaire.
+RÈGLES ABSOLUES :
+- Chaque mot extrait DOIT avoir ses harakat complets (fatha, kasra, damma, sukun, shadda, tanwin).
+- Uniquement des mots isolés — jamais de phrases.
+- Varie les types de mots : noms, verbes, adjectifs.
+- Si les harakat sont absents sur la photo, tu les ajoutes correctement selon les règles de la langue arabe classique.`;
+
+      const userContent: any[] = [
+        {
+          type: "text",
+          text: `Voici ${urls.length} photo(s) de leçons d'arabe précédentes.
+Extrais entre 10 et 15 mots de vocabulaire arabes bien vocalisés (avec harakat complets) de ces pages.
+Ces mots seront utilisés pour une dictée de révision : choisis les mots les plus représentatifs et utiles.`,
+        },
+        ...urls.map((url) => ({ type: "image_url", image_url: { url } })),
+      ];
+
+      const dictationTool = [{
+        type: "function",
+        function: {
+          name: "extract_dictation_words",
+          description: "Extraire les mots de dictée vocalisés depuis les photos de leçons précédentes",
+          parameters: {
+            type: "object",
+            properties: {
+              dictation_words: {
+                type: "array",
+                items: { type: "string" },
+                description: "Liste de mots arabes avec harakat complets pour la dictée",
+              },
+            },
+            required: ["dictation_words"],
+          },
+        },
+      }];
+
+      const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-pro",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userContent },
+          ],
+          tools: dictationTool,
+          tool_choice: { type: "function", function: { name: "extract_dictation_words" } },
+        }),
+      });
+
+      if (!aiRes.ok) {
+        const t = await aiRes.text();
+        console.error("AI error (dictation_only)", aiRes.status, t);
+        if (aiRes.status === 429) return new Response(JSON.stringify({ error: "Limite de requêtes atteinte, réessayez dans un instant." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (aiRes.status === 402) return new Response(JSON.stringify({ error: "Crédits IA épuisés, ajoutez des crédits dans Lovable." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        return new Response(JSON.stringify({ error: "Erreur IA" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      const data = await aiRes.json();
+      const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+      if (!toolCall) throw new Error("Aucun tool_call dans la réponse IA");
+      const result = JSON.parse(toolCall.function.arguments);
+      return new Response(JSON.stringify({ dictation_words: result.dictation_words || [] }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── MODE: génération complète du cours ──
     if (!level) {
       return new Response(JSON.stringify({ error: "level requis" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -21,9 +104,6 @@ Deno.serve(async (req) => {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY manquant");
 
     const isN2 = level === "niveau_2";
 
@@ -92,7 +172,6 @@ RÈGLES STRICTES :
       },
     }];
 
-    // Construire le message utilisateur (multimodal si photo)
     const userContent: any[] = [];
     if (photo_url) {
       userContent.push({
