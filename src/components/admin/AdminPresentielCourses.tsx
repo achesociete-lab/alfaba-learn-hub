@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   MapPin, Trash2, Loader2, Users, Save, Plus, X, BookOpen, Languages, Headphones,
   HelpCircle, ListOrdered, Pencil, Sparkles, Wand2, Image as ImageIcon, Upload,
+  MessageCircle, ExternalLink, ChevronDown, ChevronUp, Copy, CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -64,6 +65,9 @@ const AdminPresentielCourses = () => {
   const [aiTheme, setAiTheme] = useState("");
   const [generating, setGenerating] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [expandedProgress, setExpandedProgress] = useState<string | null>(null);
+  const [courseProgressMap, setCourseProgressMap] = useState<Record<string, any[]>>({});
+  const [loadingProgress, setLoadingProgress] = useState<string | null>(null);
 
   const generateFromPhoto = async (publicUrl: string, levelOverride?: Level) => {
     setGenerating(true);
@@ -274,6 +278,69 @@ const AdminPresentielCourses = () => {
     await supabase.from("presentiel_courses").delete().eq("id", id);
     toast.success("Cours supprimé");
     fetchData();
+  };
+
+  const loadProgress = async (courseId: string) => {
+    setLoadingProgress(courseId);
+    const course = courses.find((c) => c.id === courseId);
+    const assigned: any[] = course?.presentiel_course_assignments || [];
+    const userIds: string[] = assigned.map((a: any) => a.user_id);
+    if (userIds.length === 0) {
+      setCourseProgressMap((prev) => ({ ...prev, [courseId]: [] }));
+      setLoadingProgress(null);
+      return;
+    }
+    const [{ data: progressData }, { data: readingData }, { data: subsData }] = await Promise.all([
+      supabase.from("presentiel_course_progress").select("*").eq("course_id", courseId).in("user_id", userIds),
+      supabase.from("presentiel_reading_scores").select("user_id, score_percent").eq("course_id", courseId).in("user_id", userIds).order("score_percent", { ascending: false }),
+      supabase.from("presentiel_submissions").select("user_id, step_type, status").eq("course_id", courseId).in("user_id", userIds),
+    ]);
+    const byUser = Object.fromEntries((progressData || []).map((p: any) => [p.user_id, p]));
+    const readingBest: Record<string, number> = {};
+    (readingData || []).forEach((r: any) => { if (!readingBest[r.user_id]) readingBest[r.user_id] = r.score_percent; });
+    const subsByUser: Record<string, Record<string, string>> = {};
+    (subsData || []).forEach((s: any) => {
+      if (!subsByUser[s.user_id]) subsByUser[s.user_id] = {};
+      subsByUser[s.user_id][s.step_type] = s.status;
+    });
+    const result = userIds.map((uid: string) => {
+      const stu = students.find((s) => s.user_id === uid);
+      const prog = byUser[uid] || {};
+      const subs = subsByUser[uid] || {};
+      return {
+        userId: uid,
+        name: stu ? `${stu.first_name} ${stu.last_name}` : "Élève inconnu",
+        lectureScore: readingBest[uid] ?? null,
+        ecritureStatus: subs["ecriture"] || null,
+        dicteeStatus: subs["dictee"] || null,
+        vocabDone: !!(prog.qcm_completed || prog.translation_completed),
+      };
+    });
+    setCourseProgressMap((prev) => ({ ...prev, [courseId]: result }));
+    setLoadingProgress(null);
+  };
+
+  const buildWhatsAppUrl = (course: any): string => {
+    const dateStr = new Date(course.course_date).toLocaleDateString("fr-FR", {
+      day: "numeric", month: "long",
+    });
+    const isN2 = course.level === "niveau_2";
+    const steps = isN2
+      ? "📖 Lecture orale\n✏️ Écriture (×3)\n📝 Vocabulaire\n💬 Compréhension\n🔤 Remise en ordre\n🎧 Dictée"
+      : "📖 Lecture orale\n✏️ Écriture (×3)\n📝 Vocabulaire\n🎧 Dictée";
+    const msg = `📚 *Devoir Alfasl*\n\n*${course.title}*\n📅 Cours du ${dateStr}\n\n*Exercices à compléter :*\n${steps}\n\n👉 Connectez-vous sur *alfasl.fr* → "Cours en présentiel"\n\nBonne étude ! 🌟`;
+    return `https://wa.me/?text=${encodeURIComponent(msg)}`;
+  };
+
+  const copyHomeworkText = async (course: any) => {
+    const dateStr = new Date(course.course_date).toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
+    const isN2 = course.level === "niveau_2";
+    const steps = isN2
+      ? "📖 Lecture · ✏️ Écriture · 📝 Vocabulaire · 💬 Compréhension · 🔤 Remise en ordre · 🎧 Dictée"
+      : "📖 Lecture · ✏️ Écriture · 📝 Vocabulaire · 🎧 Dictée";
+    const text = `Devoir Alfasl — ${course.title} (${dateStr})\n${steps}\n→ alfasl.fr`;
+    await navigator.clipboard.writeText(text);
+    toast.success("Texte copié ! Collez-le dans votre groupe WhatsApp.");
   };
 
   // Filter students by selected level
@@ -722,31 +789,140 @@ const AdminPresentielCourses = () => {
         </CardContent>
       </Card>
 
-      <div className="space-y-2">
+      <div className="space-y-3">
         <h3 className="font-semibold text-foreground">Cours existants ({courses.length})</h3>
-        {courses.map((c) => (
-          <Card key={c.id}>
-            <CardContent className="p-4 flex items-center gap-3">
-              <Badge variant={c.level === "niveau_2" ? "default" : "outline"}>
-                {c.level === "niveau_2" ? "N2" : "N1"}
-              </Badge>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-foreground truncate">{c.title}</p>
-                <p className="text-xs text-muted-foreground">
-                  {new Date(c.course_date).toLocaleDateString("fr-FR")}
-                  {" · "}
-                  {(c.presentiel_course_assignments?.length || 0)} élève(s)
-                </p>
-              </div>
-              <Button size="icon" variant="ghost" onClick={() => startEdit(c)}>
-                <Pencil className="h-4 w-4" />
-              </Button>
-              <Button size="icon" variant="ghost" onClick={() => handleDelete(c.id)} className="text-destructive">
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
+        {courses.map((c) => {
+          const isExpanded = expandedProgress === c.id;
+          const progress = courseProgressMap[c.id];
+          const assignedCount = c.presentiel_course_assignments?.length || 0;
+
+          return (
+            <Card key={c.id} className="overflow-hidden">
+              <CardContent className="p-4 space-y-0">
+                {/* Course header row */}
+                <div className="flex items-center gap-3">
+                  <Badge variant={c.level === "niveau_2" ? "default" : "outline"}>
+                    {c.level === "niveau_2" ? "N2" : "N1"}
+                  </Badge>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-foreground truncate">{c.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(c.course_date).toLocaleDateString("fr-FR")} · {assignedCount} élève(s)
+                    </p>
+                  </div>
+                  {/* Action buttons */}
+                  <div className="flex items-center gap-1 shrink-0">
+                    {/* WhatsApp — envoyer les devoirs */}
+                    <a
+                      href={buildWhatsAppUrl(c)}
+                      target="_blank"
+                      rel="noreferrer"
+                      title="Envoyer les devoirs via WhatsApp"
+                    >
+                      <Button size="icon" variant="ghost" className="text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700">
+                        <MessageCircle className="h-4 w-4" />
+                      </Button>
+                    </a>
+                    {/* Copy homework text */}
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      title="Copier le résumé des devoirs"
+                      onClick={() => copyHomeworkText(c)}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    {/* Progress toggle */}
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      title="Voir les progrès des élèves"
+                      onClick={() => {
+                        if (isExpanded) {
+                          setExpandedProgress(null);
+                        } else {
+                          setExpandedProgress(c.id);
+                          if (!courseProgressMap[c.id]) loadProgress(c.id);
+                        }
+                      }}
+                    >
+                      {isExpanded
+                        ? <ChevronUp className="h-4 w-4" />
+                        : <ChevronDown className="h-4 w-4 text-primary" />}
+                    </Button>
+                    <Button size="icon" variant="ghost" onClick={() => startEdit(c)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button size="icon" variant="ghost" onClick={() => handleDelete(c.id)} className="text-destructive">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Progress panel */}
+                {isExpanded && (
+                  <div className="mt-3 border-t border-border pt-3">
+                    {loadingProgress === c.id ? (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
+                        <Loader2 className="h-3 w-3 animate-spin" /> Chargement des progrès…
+                      </div>
+                    ) : !progress || progress.length === 0 ? (
+                      <p className="text-xs text-muted-foreground py-2">Aucun élève assigné ou aucune activité enregistrée.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                          Progression des élèves
+                        </p>
+                        {/* Header row */}
+                        <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-2 items-center text-[10px] font-semibold text-muted-foreground px-1">
+                          <span>Élève</span>
+                          <span className="text-center">📖 Lecture</span>
+                          <span className="text-center">✏️ Écriture</span>
+                          <span className="text-center">📝 Vocab</span>
+                          <span className="text-center">🎧 Dictée</span>
+                        </div>
+                        {progress.map((p) => (
+                          <div
+                            key={p.userId}
+                            className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-2 items-center p-2 rounded-lg bg-muted/30 hover:bg-muted/50 text-sm"
+                          >
+                            <span className="font-medium text-foreground truncate">{p.name}</span>
+                            {/* Lecture */}
+                            <span className="text-center">
+                              {p.lectureScore !== null
+                                ? <Badge variant={p.lectureScore >= 70 ? "default" : "outline"} className="text-[10px] h-5 px-1">{p.lectureScore}%</Badge>
+                                : <span className="text-muted-foreground text-xs">—</span>}
+                            </span>
+                            {/* Écriture */}
+                            <span className="text-center text-base">
+                              {p.ecritureStatus === "validee" ? "✅" : p.ecritureStatus === "a_corriger" ? "❌" : p.ecritureStatus === "en_attente" ? "⏳" : "—"}
+                            </span>
+                            {/* Vocabulaire */}
+                            <span className="text-center text-base">
+                              {p.vocabDone ? "✅" : "—"}
+                            </span>
+                            {/* Dictée */}
+                            <span className="text-center text-base">
+                              {p.dicteeStatus === "validee" ? "✅" : p.dicteeStatus === "a_corriger" ? "❌" : p.dicteeStatus === "en_attente" ? "⏳" : "—"}
+                            </span>
+                          </div>
+                        ))}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-xs text-primary gap-1 mt-1"
+                          onClick={() => loadProgress(c.id)}
+                        >
+                          <CheckCircle2 className="h-3 w-3" /> Actualiser
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );
