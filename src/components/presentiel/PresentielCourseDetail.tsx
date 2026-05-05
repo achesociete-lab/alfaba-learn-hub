@@ -33,6 +33,7 @@ export interface PresentielCourseV2 {
   reorder_exercises?: { words: string[]; correct_order: string[] }[];
   photo_url?: string | null;
   lesson_photos?: string[];
+  audio_url?: string | null;
   // legacy fields kept for compat
   qcm?: any[];
   translation?: any;
@@ -56,7 +57,7 @@ const STEP_LABEL: Record<Exclude<Step, "done">, { label: string; icon: typeof Bo
   dictee: { label: "Dictée", icon: Headphones },
 };
 
-// ─── Step 1: Lecture (TTS + STT compare) ───
+// ─── Step 1: Lecture (audio prof + STT compare) ───
 function LectureStep({ course, onDone }: { course: PresentielCourseV2; onDone: () => void }) {
   const { user } = useAuth();
   const { speak } = useArabicSpeech();
@@ -69,6 +70,7 @@ function LectureStep({ course, onDone }: { course: PresentielCourseV2; onDone: (
   const chunksRef = useRef<Blob[]>([]);
 
   const lessonText = (course.lesson_text || "").trim();
+  const hasTeacherAudio = !!(course.audio_url);
 
   const handleListen = async () => {
     if (!lessonText) return;
@@ -221,11 +223,26 @@ function LectureStep({ course, onDone }: { course: PresentielCourseV2; onDone: (
           )}
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        {/* Audio du professeur ou TTS fallback */}
+        {hasTeacherAudio ? (
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+              <Volume2 className="h-3 w-3" /> Voix de votre professeur — écoutez, puis lisez à voix haute
+            </p>
+            <audio
+              controls
+              src={course.audio_url!}
+              className="w-full rounded-lg"
+              style={{ height: "44px" }}
+            />
+          </div>
+        ) : (
           <Button onClick={handleListen} variant="outline" className="gap-2">
-            <Volume2 className="h-4 w-4" /> Écouter le professeur
+            <Volume2 className="h-4 w-4" /> Écouter (synthèse vocale)
           </Button>
+        )}
 
+        <div className="flex flex-wrap gap-2">
           {!recording ? (
             <Button
               onClick={startRecording}
