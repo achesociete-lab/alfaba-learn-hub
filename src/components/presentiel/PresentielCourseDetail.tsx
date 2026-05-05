@@ -6,9 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Mic, Square, Volume2, Camera, CheckCircle2, XCircle,
   ArrowRight, Loader2, RotateCcw, Award, BookOpen, PenLine, Languages, Headphones,
-  HelpCircle, ListOrdered, Send,
+  HelpCircle, ListOrdered, ChevronDown, ChevronUp,
 } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -285,6 +284,64 @@ function LectureStep({ course, onDone }: { course: PresentielCourseV2; onDone: (
   );
 }
 
+// ─── Helper : Référence leçon dépliable (utilisée dans Écriture) ───
+function LessonReference({ course }: { course: PresentielCourseV2 }) {
+  const [open, setOpen] = useState(false);
+  const { speak } = useArabicSpeech();
+  const photos =
+    course.lesson_photos && course.lesson_photos.length > 0
+      ? course.lesson_photos
+      : course.photo_url
+      ? [course.photo_url]
+      : [];
+  if (!course.lesson_text && photos.length === 0) return null;
+  return (
+    <div className="border border-border rounded-lg overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between px-4 py-2.5 bg-muted/40 hover:bg-muted text-sm font-medium transition-colors"
+      >
+        <span className="flex items-center gap-2">
+          <BookOpen className="h-4 w-4 text-primary" />
+          📖 Voir la leçon à recopier
+        </span>
+        {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+      </button>
+      {open && (
+        <div className="p-4 space-y-3 bg-background/60">
+          {photos.map((url, i) => (
+            <img
+              key={i}
+              src={url}
+              alt={`Leçon page ${i + 1}`}
+              className="w-full rounded border border-border bg-white"
+            />
+          ))}
+          {course.lesson_text && (
+            <>
+              <div
+                dir="rtl"
+                className="p-4 font-amiri text-xl text-right leading-loose bg-muted/20 rounded-lg border border-border"
+              >
+                {course.lesson_text}
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => speak(course.lesson_text!)}
+                className="gap-2"
+              >
+                <Volume2 className="h-4 w-4" /> Écouter le texte
+              </Button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Step 2 (écriture) & 4 (dictée) : photo upload ───
 function PhotoUploadStep({
   course,
@@ -400,6 +457,8 @@ function PhotoUploadStep({
 
         <div className="text-sm text-muted-foreground">{instruction}</div>
 
+        {stepType === "ecriture" && <LessonReference course={course} />}
+
         {submitted && previousSubmission ? (
           <div className="space-y-3">
             {/* Notification de correction du prof */}
@@ -491,6 +550,7 @@ function PhotoUploadStep({
 // ─── Step 3: Traduction (QCM vocab) ───
 function TraductionStep({ course, onDone }: { course: PresentielCourseV2; onDone: () => void }) {
   const { speak } = useArabicSpeech();
+  const { user } = useAuth();
   const items = course.vocabulary || [];
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
@@ -532,9 +592,15 @@ function TraductionStep({ course, onDone }: { course: PresentielCourseV2; onDone
     }
   };
 
-  const next = () => {
+  const next = async () => {
     if (idx + 1 >= items.length) {
       setFinished(true);
+      if (user) {
+        await supabase.from("presentiel_course_progress").upsert(
+          { course_id: course.id, user_id: user.id, qcm_completed: true, translation_completed: true } as any,
+          { onConflict: "course_id,user_id" }
+        );
+      }
     } else {
       setIdx(idx + 1);
       setSelected(null);
@@ -623,46 +689,73 @@ function TraductionStep({ course, onDone }: { course: PresentielCourseV2; onDone
   );
 }
 
-// ─── Step 4 (N2): Compréhension — questions/réponses arabes ───
+// ─── Step 4: Compréhension — QCM (choix multiples, pas de saisie libre) ───
 function ComprehensionStep({ course, onDone }: { course: PresentielCourseV2; onDone: () => void }) {
   const { speak } = useArabicSpeech();
+  const { user } = useAuth();
   const items = course.comprehension_questions || [];
   const [idx, setIdx] = useState(0);
-  const [answer, setAnswer] = useState("");
-  const [validated, setValidated] = useState<null | boolean>(null);
+  const [selected, setSelected] = useState<number | null>(null);
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
+
+  const current = items[idx];
+
+  // Build QCM: bonne réponse + 3 distracteurs tirés des autres réponses
+  const options = useMemo(() => {
+    if (!current) return [];
+    const otherAnswers = items
+      .filter((_, i) => i !== idx)
+      .map((q) => q.answer)
+      .filter((a) => a && a !== current.answer);
+    const pool = [...otherAnswers].sort(() => Math.random() - 0.5).slice(0, 3);
+    // Si pas assez, extraire des mots du texte de la leçon
+    const lessonWords = (course.lesson_text || "")
+      .split(/[\s،,\.\n]+/)
+      .filter((w) => w.length > 2 && w !== current.answer && !pool.includes(w));
+    while (pool.length < 3 && lessonWords.length > 0) {
+      const w = lessonWords.splice(Math.floor(Math.random() * lessonWords.length), 1)[0];
+      if (!pool.includes(w)) pool.push(w);
+    }
+    // Dernier recours : génériques
+    const generics = ["لَمْ يُذْكَرْ", "لَيْسَ فِي النَّصِّ", "غَيْرُ صَحِيحٍ"];
+    let gi = 0;
+    while (pool.length < 3) pool.push(generics[gi++ % generics.length]);
+    return [current.answer, ...pool].sort(() => Math.random() - 0.5);
+  }, [idx, current, items, course.lesson_text]);
 
   if (items.length === 0) {
     return (
       <Card>
         <CardContent className="py-8 text-center text-muted-foreground space-y-3">
-          Aucune question de compréhension configurée.
-          <div><Button onClick={onDone} variant="outline">Étape suivante</Button></div>
+          <p>Aucune question de compréhension pour ce cours.</p>
+          <Button onClick={onDone} variant="outline">Étape suivante</Button>
         </CardContent>
       </Card>
     );
   }
 
-  const current = items[idx];
-
-  const normalize = (s: string) =>
-    s.replace(/[\u064B-\u0652\u0670]/g, "").replace(/[إأآا]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه").trim();
-
-  const validate = () => {
-    const ok = normalize(answer) === normalize(current.answer);
-    setValidated(ok);
-    if (ok) {
-      setScore((s) => s + 1);
-      playCorrectSound();
-    } else {
-      playWrongSound();
-    }
+  const handleSelect = (i: number) => {
+    if (selected !== null) return;
+    setSelected(i);
+    const isOk = options[i] === current.answer;
+    if (isOk) { setScore((s) => s + 1); playCorrectSound(); }
+    else playWrongSound();
   };
 
-  const next = () => {
-    if (idx + 1 >= items.length) setFinished(true);
-    else { setIdx(idx + 1); setAnswer(""); setValidated(null); }
+  const next = async () => {
+    if (idx + 1 >= items.length) {
+      setFinished(true);
+      if (user) {
+        await supabase.from("presentiel_course_progress").upsert(
+          { course_id: course.id, user_id: user.id, comprehension_completed: true } as any,
+          { onConflict: "course_id,user_id" }
+        );
+      }
+    } else {
+      setIdx(idx + 1);
+      setSelected(null);
+    }
   };
 
   if (finished) {
@@ -682,6 +775,8 @@ function ComprehensionStep({ course, onDone }: { course: PresentielCourseV2; onD
     );
   }
 
+  const isCorrect = selected !== null && options[selected] === current.answer;
+
   return (
     <Card>
       <CardContent className="p-6 space-y-5">
@@ -691,6 +786,7 @@ function ComprehensionStep({ course, onDone }: { course: PresentielCourseV2; onD
           <Badge variant="outline" className="ml-auto">{idx + 1} / {items.length}</Badge>
         </div>
 
+        {/* Question */}
         <div dir="rtl" className="p-5 rounded-xl bg-muted/40 border border-border text-2xl font-amiri text-right leading-loose">
           {current.question}
         </div>
@@ -699,33 +795,58 @@ function ComprehensionStep({ course, onDone }: { course: PresentielCourseV2; onD
           <Volume2 className="h-4 w-4" /> Écouter la question
         </Button>
 
-        <Input
-          dir="rtl"
-          className="font-amiri text-xl text-right"
-          placeholder="اكتب جوابك هنا…"
-          value={answer}
-          onChange={(e) => setAnswer(e.target.value)}
-          disabled={validated !== null}
-        />
+        {/* Choix multiples */}
+        <div className="grid grid-cols-1 gap-3">
+          {options.map((opt, i) => {
+            let cls = "border-border bg-background hover:bg-muted";
+            if (selected !== null) {
+              if (opt === current.answer) cls = "border-emerald-500 bg-emerald-500/10 text-emerald-700";
+              else if (i === selected) cls = "border-destructive bg-destructive/10 text-destructive";
+            }
+            return (
+              <button
+                key={i}
+                dir="rtl"
+                onClick={() => handleSelect(i)}
+                disabled={selected !== null}
+                className={`p-4 rounded-lg border font-amiri text-xl font-medium transition-all text-right w-full ${cls}`}
+              >
+                {opt}
+                {selected !== null && opt === current.answer && (
+                  <CheckCircle2 className="h-4 w-4 inline mr-2" />
+                )}
+                {selected === i && opt !== current.answer && (
+                  <XCircle className="h-4 w-4 inline mr-2" />
+                )}
+              </button>
+            );
+          })}
+        </div>
 
-        {validated === null ? (
-          <Button onClick={validate} disabled={!answer.trim()} className="gap-2">
-            <Send className="h-4 w-4" /> Valider
-          </Button>
-        ) : (
-          <div className={`p-4 rounded-lg border ${validated ? "border-emerald-500 bg-emerald-500/10" : "border-destructive bg-destructive/10"}`}>
-            <p className={`font-semibold ${validated ? "text-emerald-700" : "text-destructive"}`}>
-              {validated ? "✅ Bonne réponse !" : "❌ Réponse incorrecte"}
-            </p>
-            {!validated && (
-              <p dir="rtl" className="text-right font-amiri text-lg mt-2">
-                Réponse attendue : <strong>{current.answer}</strong>
-              </p>
+        {selected !== null && (
+          <motion.div
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`p-4 rounded-lg border ${
+              isCorrect
+                ? "border-emerald-500 bg-emerald-500/10"
+                : "border-amber-400 bg-amber-50/60 dark:bg-amber-950/20"
+            }`}
+          >
+            {isCorrect ? (
+              <p className="font-semibold text-emerald-700">✅ Bonne réponse !</p>
+            ) : (
+              <>
+                <p className="font-semibold text-amber-700 dark:text-amber-400">❌ Pas tout à fait</p>
+                <div dir="rtl" className="mt-2 p-3 rounded bg-background/60 font-amiri text-lg text-right">
+                  Réponse correcte : <strong>{current.answer}</strong>
+                </div>
+              </>
             )}
             <Button onClick={next} className="gap-2 mt-3">
               {idx + 1 >= items.length ? "Terminer" : "Suivant"} <ArrowRight className="h-4 w-4" />
             </Button>
-          </div>
+          </motion.div>
         )}
       </CardContent>
     </Card>
@@ -882,7 +1003,7 @@ const PresentielCourseDetail = ({ course, userProgress, onProgressUpdate }: Prop
   const isN2 = course.level === "niveau_2";
   const stepsOrder: Exclude<Step, "done">[] = isN2
     ? ["lecture", "ecriture", "traduction", "comprehension", "reorder", "dictee"]
-    : ["lecture", "ecriture", "traduction", "dictee"];
+    : ["lecture", "ecriture", "traduction", "comprehension", "dictee"];
 
   const [step, setStep] = usePersistentState<Step>(
     userScopedKey(user?.id, `presentiel:${course.id}:step`),
@@ -912,7 +1033,7 @@ const PresentielCourseDetail = ({ course, userProgress, onProgressUpdate }: Prop
       </div>
 
       {/* Stepper */}
-      <div className={`grid gap-2 ${isN2 ? "grid-cols-3 sm:grid-cols-6" : "grid-cols-4"}`}>
+      <div className={`grid gap-2 ${isN2 ? "grid-cols-3 sm:grid-cols-6" : "grid-cols-5"}`}>
         {stepsOrder.map((s, i) => {
           const Icon = STEP_LABEL[s].icon;
           const isCurrent = s === step;
