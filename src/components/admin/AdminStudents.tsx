@@ -185,11 +185,18 @@ const AdminStudents = () => {
                 Inscrit le {new Date(s.created_at).toLocaleDateString("fr-FR")}
               </p>
             </div>
-            <Badge variant={s.level === "niveau_1" ? "default" : "secondary"} className={
-              s.level === "niveau_1" ? "bg-primary/10 text-primary border-0" : "bg-gold/10 text-gold border-0"
-            }>
-              {s.level === "niveau_1" ? "Niveau 1" : "Niveau 2"}
-            </Badge>
+            <button
+              disabled={togglingLevel === s.user_id}
+              onClick={() => handleToggleLevel(s)}
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${
+                s.level === "niveau_1"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-gold bg-gold/10 text-gold"
+              }`}
+              title="Cliquer pour changer de niveau"
+            >
+              {togglingLevel === s.user_id ? "…" : s.level === "niveau_1" ? "Niveau 1" : "Niveau 2"}
+            </button>
             {s.type_eleve === "en_attente" ? (
               <>
                 <Badge variant="destructive" className="gap-1">
