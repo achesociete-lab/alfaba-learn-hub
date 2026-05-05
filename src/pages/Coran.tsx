@@ -34,10 +34,11 @@ import { fetchQuranPageAyahs, type QuranPageAyah } from "@/utils/quran-pages";
 import { Slider } from "@/components/ui/slider";
 import SurahMeritSection from "@/components/quran/SurahMeritSection";
 import QuranTest from "@/components/quran/QuranTest";
+import LiveRecitationPanel from "@/components/quran/LiveRecitationPanel";
 import { usePersistentState, userScopedKey } from "@/hooks/use-persistent-state";
 
 type RecitationMode = "read" | "memorize";
-type NavTab = "surah" | "juz" | "search" | "merits" | "test";
+type NavTab = "surah" | "juz" | "search" | "merits" | "test" | "live";
 type VoiceSource = "reciter" | "teacher";
 
 const Coran = () => {
@@ -478,8 +479,9 @@ const Coran = () => {
           {!selectedSurahInfo && !showMushafPage && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
               <Tabs value={navTab} onValueChange={(v) => setNavTab(v as NavTab)} className="w-full">
-                <TabsList className="w-full grid grid-cols-5 mb-6">
+                <TabsList className="w-full grid grid-cols-3 sm:grid-cols-6 mb-6">
                   <TabsTrigger value="surah" className="gap-1.5 text-xs"><BookOpen className="h-3.5 w-3.5" /> Sourates</TabsTrigger>
+                  <TabsTrigger value="live" className="gap-1.5 text-xs relative"><Mic className="h-3.5 w-3.5" /> Live <span className="absolute -top-1.5 -right-1.5 text-[8px] bg-gold text-gold-foreground px-1 py-0.5 rounded-full font-bold leading-none">NEW</span></TabsTrigger>
                   <TabsTrigger value="test" className="gap-1.5 text-xs"><GraduationCap className="h-3.5 w-3.5" /> Test</TabsTrigger>
                   <TabsTrigger value="merits" className="gap-1.5 text-xs"><Sparkles className="h-3.5 w-3.5" /> Mérites</TabsTrigger>
                   <TabsTrigger value="juz" className="gap-1.5 text-xs"><Layers className="h-3.5 w-3.5" /> Juz</TabsTrigger>
@@ -586,6 +588,10 @@ const Coran = () => {
 
                 <TabsContent value="test">
                   <QuranTest allSurahs={allSurahs} />
+                </TabsContent>
+
+                <TabsContent value="live">
+                  <LiveRecitationPanel allSurahs={allSurahs} />
                 </TabsContent>
               </Tabs>
 
