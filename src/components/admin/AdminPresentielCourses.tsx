@@ -732,12 +732,13 @@ const AdminPresentielCourses = () => {
             </Button>
           </div>
 
-          {/* Compréhension — N1 et N2 */}
+          {/* Compréhension — Niveau 2 uniquement */}
+          {draft.level === "niveau_2" && (
           <div className="space-y-2 p-4 rounded-lg border border-dashed border-primary/40 bg-primary/5">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <Label className="flex items-center gap-2">
-                <HelpCircle className="h-4 w-4" /> Questions de compréhension
-                <Badge variant="outline" className="text-xs">{draft.level === "niveau_1" ? "N1 — questions courtes" : "N2 — questions détaillées"}</Badge>
+                <HelpCircle className="h-4 w-4" /> Questions de compréhension (Niveau 2)
+                <Badge variant="outline" className="text-xs">Niveau 2</Badge>
               </Label>
               {/* Génération depuis une photo d'exercice */}
               <label className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-primary/50 hover:bg-primary/10 cursor-pointer transition text-xs font-medium ${generatingComprehension ? "opacity-60 pointer-events-none" : ""}`}>
@@ -807,6 +808,8 @@ const AdminPresentielCourses = () => {
               <Plus className="h-4 w-4 mr-1" /> Ajouter une question manuellement
             </Button>
           </div>
+
+          )}
 
           {/* Niveau 2 only — Reorder */}
           {draft.level === "niveau_2" && (
