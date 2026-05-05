@@ -69,6 +69,9 @@ const AdminPresentielCourses = () => {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingAudio, setUploadingAudio] = useState(false);
   const [generatingComprehension, setGeneratingComprehension] = useState(false);
+  const [dictationRefPhotos, setDictationRefPhotos] = useState<string[]>([]);
+  const [uploadingDictationPhoto, setUploadingDictationPhoto] = useState(false);
+  const [generatingDictation, setGeneratingDictation] = useState(false);
   const [expandedProgress, setExpandedProgress] = useState<string | null>(null);
   const [courseProgressMap, setCourseProgressMap] = useState<Record<string, any[]>>({});
   const [loadingProgress, setLoadingProgress] = useState<string | null>(null);
@@ -138,6 +141,59 @@ const AdminPresentielCourses = () => {
       toast.error(e.message || "Erreur upload");
     } finally {
       setUploadingPhoto(false);
+    }
+  };
+
+  const handleDictationPhotoUpload = async (files: FileList) => {
+    if (!user) return;
+    const remaining = 5 - dictationRefPhotos.length;
+    const toUpload = Array.from(files).filter(f => f.type.startsWith("image/")).slice(0, remaining);
+    if (toUpload.length === 0) return;
+    if (Array.from(files).length > remaining) toast.warning(`Maximum 5 photos — ${remaining} ajoutée(s).`);
+    setUploadingDictationPhoto(true);
+    try {
+      const newUrls: string[] = [];
+      for (const f of toUpload) {
+        const ext = f.name.split(".").pop() || "jpg";
+        const path = `${user.id}/dictref-${Date.now()}-${newUrls.length}.${ext}`;
+        const { error } = await supabase.storage.from("presentiel-courses").upload(path, f, { contentType: f.type });
+        if (error) { toast.error(error.message); continue; }
+        const { data: { publicUrl } } = supabase.storage.from("presentiel-courses").getPublicUrl(path);
+        newUrls.push(publicUrl);
+      }
+      if (newUrls.length > 0) {
+        setDictationRefPhotos(prev => [...prev, ...newUrls]);
+        toast.success(`${newUrls.length} photo(s) ajoutée(s) — clique "Générer les mots" pour lancer l'IA.`);
+      }
+    } finally {
+      setUploadingDictationPhoto(false);
+    }
+  };
+
+  const generateDictationFromPreviousLessons = async () => {
+    if (dictationRefPhotos.length === 0) { toast.error("Ajoute au moins une photo de leçon précédente"); return; }
+    setGeneratingDictation(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("presentiel-ai-generate", {
+        body: { mode: "dictation_only", photo_urls: dictationRefPhotos },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const words: string[] = data?.dictation_words || [];
+      if (words.length === 0) { toast.error("L'IA n'a pas trouvé de mots dans ces photos."); return; }
+      setDraft(d => ({ ...d, dictation_words: words }));
+      setDictationInput(words.join("، "));
+      toast.success(`${words.length} mots de dictée générés depuis ${dictationRefPhotos.length} leçon(s) précédente(s) !`);
+    } catch (e: any) {
+      console.error(e);
+      const msg = e.message || "";
+      if (msg.includes("402") || msg.toLowerCase().includes("credit")) {
+        toast.error("Crédits IA épuisés — ajoute des crédits dans Lovable.", { duration: 8000 });
+      } else {
+        toast.error(msg || "Erreur génération dictée");
+      }
+    } finally {
+      setGeneratingDictation(false);
     }
   };
 
@@ -859,29 +915,104 @@ const AdminPresentielCourses = () => {
             </div>
           )}
 
-          {/* Dictation */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <Headphones className="h-4 w-4" /> Mots de la dictée (séparés par virgule)
-            </Label>
-            <Textarea
-              dir="rtl"
-              className="font-amiri text-lg text-right min-h-[80px]"
-              value={dictationInput || draft.dictation_words.join("، ")}
-              onChange={(e) => {
-                setDictationInput(e.target.value);
-                const words = e.target.value.split(/[,،]/).map(w => w.trim()).filter(Boolean);
-                setDraft({ ...draft, dictation_words: words });
-              }}
-              placeholder="كلمة، كلمة، كلمة"
-            />
-            {draft.dictation_words.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {draft.dictation_words.map((w, i) => (
-                  <Badge key={i} variant="secondary" className="font-amiri text-base">{w}</Badge>
-                ))}
+          {/* Dictation — depuis leçons précédentes OU saisie manuelle */}
+          <div className="space-y-3">
+            {/* Bloc photo → IA → mots */}
+            <div className="p-4 rounded-lg border border-dashed border-blue-400/50 bg-blue-50/30 dark:bg-blue-950/20 space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <Label className="flex items-center gap-2 text-blue-700 dark:text-blue-400">
+                  <Headphones className="h-4 w-4" /> Dictée depuis les leçons précédentes
+                </Label>
+                <Badge variant="outline" className="text-xs">{dictationRefPhotos.length}/5 photos</Badge>
               </div>
-            )}
+              <p className="text-xs text-muted-foreground">
+                Photographie les pages des leçons précédentes — l'IA sélectionne 10 à 15 mots représentatifs pour la dictée de révision.
+              </p>
+
+              {/* Miniatures des photos uploadées */}
+              {dictationRefPhotos.length > 0 && (
+                <div className="grid grid-cols-5 gap-2">
+                  {dictationRefPhotos.map((url, i) => (
+                    <div key={i} className="relative group">
+                      <img src={url} alt={`Leçon ${i + 1}`} className="w-full aspect-square object-cover rounded border border-border" />
+                      <span className="absolute bottom-0.5 left-0.5 bg-background/80 text-[10px] px-1 rounded">{i + 1}</span>
+                      <button
+                        onClick={() => setDictationRefPhotos(prev => prev.filter((_, j) => j !== i))}
+                        className="absolute top-0.5 right-0.5 bg-destructive text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex gap-2 flex-wrap items-center">
+                {/* Upload multi-photos */}
+                <label className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-dashed border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 cursor-pointer transition text-sm font-medium ${uploadingDictationPhoto || dictationRefPhotos.length >= 5 ? "opacity-50 pointer-events-none" : ""}`}>
+                  {uploadingDictationPhoto
+                    ? <><Loader2 className="h-4 w-4 animate-spin" /> Téléchargement…</>
+                    : <><Upload className="h-4 w-4" /> Ajouter des photos</>}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    disabled={uploadingDictationPhoto || dictationRefPhotos.length >= 5}
+                    onChange={(e) => {
+                      if (e.target.files?.length) handleDictationPhotoUpload(e.target.files);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+
+                {/* Bouton génération */}
+                {dictationRefPhotos.length > 0 && (
+                  <Button
+                    size="sm"
+                    onClick={generateDictationFromPreviousLessons}
+                    disabled={generatingDictation}
+                    className="gradient-emerald border-0 text-primary-foreground"
+                  >
+                    {generatingDictation
+                      ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Génération en cours…</>
+                      : <><Wand2 className="h-4 w-4 mr-1" /> Générer les mots de dictée</>}
+                  </Button>
+                )}
+
+                {dictationRefPhotos.length > 0 && (
+                  <Button size="sm" variant="ghost" className="text-muted-foreground text-xs"
+                    onClick={() => setDictationRefPhotos([])}>
+                    <X className="h-3 w-3 mr-1" /> Effacer les photos
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Textarea manuelle */}
+            <div className="space-y-1">
+              <Label className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Headphones className="h-4 w-4" /> Mots de la dictée (modifiables, séparés par virgule)
+              </Label>
+              <Textarea
+                dir="rtl"
+                className="font-amiri text-lg text-right min-h-[80px]"
+                value={dictationInput || draft.dictation_words.join("، ")}
+                onChange={(e) => {
+                  setDictationInput(e.target.value);
+                  const words = e.target.value.split(/[,،]/).map(w => w.trim()).filter(Boolean);
+                  setDraft({ ...draft, dictation_words: words });
+                }}
+                placeholder="كلمة، كلمة، كلمة — ou génère depuis les photos ci-dessus"
+              />
+              {draft.dictation_words.length > 0 && (
+                <div className="flex flex-wrap gap-1 pt-1">
+                  {draft.dictation_words.map((w, i) => (
+                    <Badge key={i} variant="secondary" className="font-amiri text-base">{w}</Badge>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Assignations */}
