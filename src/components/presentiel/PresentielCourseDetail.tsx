@@ -1020,7 +1020,7 @@ const PresentielCourseDetail = ({ course, userProgress, onProgressUpdate }: Prop
   const isN2 = course.level === "niveau_2";
   const stepsOrder: Exclude<Step, "done">[] = isN2
     ? ["lecture", "ecriture", "traduction", "comprehension", "reorder", "dictee"]
-    : ["lecture", "ecriture", "traduction", "comprehension", "dictee"];
+    : ["lecture", "ecriture", "traduction", "dictee"];
 
   const [step, setStep] = usePersistentState<Step>(
     userScopedKey(user?.id, `presentiel:${course.id}:step`),
