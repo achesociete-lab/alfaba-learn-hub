@@ -77,11 +77,13 @@ const AdminPresentielCourses = () => {
   const [loadingProgress, setLoadingProgress] = useState<string | null>(null);
   const [listLevelFilter, setListLevelFilter] = useState<"all" | Level>("all");
 
-  const generateFromPhoto = async (publicUrl: string, levelOverride?: Level) => {
+  const generateFromPhoto = async (publicUrl: string, levelOverride?: Level, extraPhotos?: string[]) => {
     setGenerating(true);
     try {
+      const lvl = levelOverride || draft.level;
+      const additional = lvl === "niveau_2" ? (extraPhotos ?? draft.lesson_photos ?? []) : [];
       const { data, error } = await supabase.functions.invoke("presentiel-ai-generate", {
-        body: { photo_url: publicUrl, level: levelOverride || draft.level },
+        body: { photo_url: publicUrl, level: lvl, additional_photo_urls: additional },
       });
       // Erreur 402 / 429 renvoyée par l'edge function : data peut être null + error présent
       if (error) {

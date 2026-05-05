@@ -10,7 +10,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { photo_url, photo_urls, theme, level, mode } = body || {};
+    const { photo_url, photo_urls, additional_photo_urls, theme, level, mode } = body || {};
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY manquant");
@@ -173,15 +173,20 @@ RÈGLES STRICTES :
     }];
 
     const userContent: any[] = [];
+    const extraUrls: string[] = Array.isArray(additional_photo_urls) ? additional_photo_urls.filter((u: any) => typeof u === "string" && u) : [];
     if (photo_url) {
+      const totalPages = 1 + extraUrls.length;
       userContent.push({
         type: "text",
-        text: `Voici la photo d'une page de leçon d'arabe ${isN2 ? "Niveau 2 (intermédiaire)" : "Niveau 1 (débutant)"}.
-1) Extrais FIDÈLEMENT tout le texte arabe visible (avec harakat complets, ajoute-les si absents).
-2) Génère ensuite le cours complet (titre, vocabulaire, dictée${isN2 ? ", compréhension, remise en ordre" : ""}) basé sur CE texte.
-N'invente rien : le lesson_text doit refléter exactement ce qui est sur la photo.`,
+        text: `Voici ${totalPages > 1 ? `${totalPages} photos` : "la photo"} d'une leçon d'arabe ${isN2 ? "Niveau 2 (intermédiaire)" : "Niveau 1 (débutant)"}${totalPages > 1 ? ` (page principale + ${extraUrls.length} page(s) additionnelle(s), dans l'ordre)` : ""}.
+1) Extrais FIDÈLEMENT tout le texte arabe visible sur ${totalPages > 1 ? "TOUTES les pages, dans l'ordre" : "la page"} (avec harakat complets, ajoute-les si absents).
+2) Génère ensuite le cours complet (titre, vocabulaire, dictée${isN2 ? ", compréhension, remise en ordre" : ""}) basé sur l'ENSEMBLE du texte extrait${totalPages > 1 ? " (toutes les pages combinées, pas seulement la première)" : ""}.
+N'invente rien : le lesson_text doit refléter exactement ce qui est sur ${totalPages > 1 ? "les photos" : "la photo"}.`,
       });
       userContent.push({ type: "image_url", image_url: { url: photo_url } });
+      for (const url of extraUrls) {
+        userContent.push({ type: "image_url", image_url: { url } });
+      }
     } else {
       userContent.push({
         type: "text",
