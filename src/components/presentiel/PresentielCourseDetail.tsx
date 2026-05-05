@@ -998,12 +998,30 @@ const PresentielCourseDetail = ({ course, userProgress, onProgressUpdate }: Prop
     userScopedKey(user?.id, `presentiel:${course.id}:step`),
     stepsOrder[0],
   );
+  const [maxReached, setMaxReached] = usePersistentState<number>(
+    userScopedKey(user?.id, `presentiel:${course.id}:maxReached`),
+    0,
+  );
   const currentIndex = step === "done" ? stepsOrder.length : stepsOrder.indexOf(step);
+
+  useEffect(() => {
+    if (currentIndex > maxReached) setMaxReached(currentIndex);
+  }, [currentIndex, maxReached, setMaxReached]);
 
   const goNext = () => {
     const i = stepsOrder.indexOf(step as Exclude<Step, "done">);
-    if (i < 0 || i >= stepsOrder.length - 1) setStep("done");
-    else setStep(stepsOrder[i + 1]);
+    if (i < 0 || i >= stepsOrder.length - 1) {
+      setStep("done");
+      setMaxReached(Math.max(maxReached, stepsOrder.length));
+    } else {
+      const nextIdx = i + 1;
+      setStep(stepsOrder[nextIdx]);
+      setMaxReached(Math.max(maxReached, nextIdx));
+    }
+  };
+
+  const goToStep = (target: Exclude<Step, "done">, idx: idx_unused) => {
+    if (idx <= maxReached) setStep(target);
   };
 
   return (
