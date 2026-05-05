@@ -598,11 +598,12 @@ const AdminPresentielCourses = () => {
                 <input
                   type="file"
                   accept="image/*"
+                  multiple
                   className="hidden"
                   disabled={uploadingPhoto || generating}
                   onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) handlePhotoUpload(f);
+                    const files = Array.from(e.target.files || []);
+                    if (files.length) handlePhotoUpload(files);
                     e.target.value = "";
                   }}
                 />
