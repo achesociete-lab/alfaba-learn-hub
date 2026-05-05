@@ -68,6 +68,7 @@ const AdminPresentielCourses = () => {
   const [generating, setGenerating] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingAudio, setUploadingAudio] = useState(false);
+  const [generatingComprehension, setGeneratingComprehension] = useState(false);
   const [expandedProgress, setExpandedProgress] = useState<string | null>(null);
   const [courseProgressMap, setCourseProgressMap] = useState<Record<string, any[]>>({});
   const [loadingProgress, setLoadingProgress] = useState<string | null>(null);
@@ -137,6 +138,44 @@ const AdminPresentielCourses = () => {
       toast.error(e.message || "Erreur upload");
     } finally {
       setUploadingPhoto(false);
+    }
+  };
+
+  const generateComprehensionFromPhoto = async (file: File) => {
+    if (!user) return;
+    if (!file.type.startsWith("image/")) { toast.error("Image requise"); return; }
+    setGeneratingComprehension(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${user.id}/comp-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("presentiel-courses")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) throw upErr;
+      const { data: { publicUrl } } = supabase.storage.from("presentiel-courses").getPublicUrl(path);
+      toast.info("Photo envoyée — génération des questions…");
+      const { data, error } = await supabase.functions.invoke("presentiel-ai-generate", {
+        body: { photo_url: publicUrl, level: draft.level },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const qs = data?.course?.comprehension_questions;
+      if (Array.isArray(qs) && qs.length > 0) {
+        setDraft((d) => ({ ...d, comprehension_questions: qs }));
+        toast.success(`${qs.length} question(s) générée(s) depuis la photo !`);
+      } else {
+        toast.error("L'IA n'a pas pu extraire de questions depuis cette photo.");
+      }
+    } catch (e: any) {
+      console.error(e);
+      const msg = (e.message || "");
+      if (msg.includes("402") || msg.toLowerCase().includes("credit")) {
+        toast.error("Crédits IA épuisés — ajoute des crédits dans Lovable.", { duration: 8000 });
+      } else {
+        toast.error(msg || "Erreur génération compréhension");
+      }
+    } finally {
+      setGeneratingComprehension(false);
     }
   };
 
@@ -693,60 +732,81 @@ const AdminPresentielCourses = () => {
             </Button>
           </div>
 
-          {/* Niveau 2 only — Comprehension */}
-          {draft.level === "niveau_2" && (
-            <div className="space-y-2 p-4 rounded-lg border border-dashed border-primary/40 bg-primary/5">
+          {/* Compréhension — N1 et N2 */}
+          <div className="space-y-2 p-4 rounded-lg border border-dashed border-primary/40 bg-primary/5">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <Label className="flex items-center gap-2">
-                <HelpCircle className="h-4 w-4" /> Questions de compréhension (Niveau 2)
+                <HelpCircle className="h-4 w-4" /> Questions de compréhension
+                <Badge variant="outline" className="text-xs">{draft.level === "niveau_1" ? "N1 — questions courtes" : "N2 — questions détaillées"}</Badge>
               </Label>
-              {draft.comprehension_questions.map((q, i) => (
-                <div key={i} className="flex gap-2">
-                  <Input
-                    dir="rtl"
-                    className="font-amiri text-right"
-                    value={q.question}
-                    onChange={(e) => {
-                      const arr = [...draft.comprehension_questions];
-                      arr[i] = { ...arr[i], question: e.target.value };
-                      setDraft({ ...draft, comprehension_questions: arr });
-                    }}
-                    placeholder="السؤال…"
-                  />
-                  <Input
-                    dir="rtl"
-                    className="font-amiri text-right"
-                    value={q.answer}
-                    onChange={(e) => {
-                      const arr = [...draft.comprehension_questions];
-                      arr[i] = { ...arr[i], answer: e.target.value };
-                      setDraft({ ...draft, comprehension_questions: arr });
-                    }}
-                    placeholder="الجواب الصحيح"
-                  />
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => setDraft({
-                      ...draft,
-                      comprehension_questions: draft.comprehension_questions.filter((_, j) => j !== i),
-                    })}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </div>
-              ))}
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setDraft({
-                  ...draft,
-                  comprehension_questions: [...draft.comprehension_questions, { question: "", answer: "" }],
-                })}
-              >
-                <Plus className="h-4 w-4 mr-1" /> Ajouter une question
-              </Button>
+              {/* Génération depuis une photo d'exercice */}
+              <label className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-primary/50 hover:bg-primary/10 cursor-pointer transition text-xs font-medium ${generatingComprehension ? "opacity-60 pointer-events-none" : ""}`}>
+                {generatingComprehension
+                  ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Génération…</>
+                  : <><Wand2 className="h-3.5 w-3.5" /> Générer depuis une photo</>}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={generatingComprehension}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) generateComprehensionFromPhoto(f);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
             </div>
-          )}
+            <p className="text-xs text-muted-foreground">
+              Tu peux photographier un exercice du livre et l'IA génère les questions automatiquement, ou les saisir manuellement.
+            </p>
+            {draft.comprehension_questions.map((q, i) => (
+              <div key={i} className="flex gap-2">
+                <Input
+                  dir="rtl"
+                  className="font-amiri text-right"
+                  value={q.question}
+                  onChange={(e) => {
+                    const arr = [...draft.comprehension_questions];
+                    arr[i] = { ...arr[i], question: e.target.value };
+                    setDraft({ ...draft, comprehension_questions: arr });
+                  }}
+                  placeholder="السؤال…"
+                />
+                <Input
+                  dir="rtl"
+                  className="font-amiri text-right"
+                  value={q.answer}
+                  onChange={(e) => {
+                    const arr = [...draft.comprehension_questions];
+                    arr[i] = { ...arr[i], answer: e.target.value };
+                    setDraft({ ...draft, comprehension_questions: arr });
+                  }}
+                  placeholder="الجواب الصحيح"
+                />
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => setDraft({
+                    ...draft,
+                    comprehension_questions: draft.comprehension_questions.filter((_, j) => j !== i),
+                  })}
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+            ))}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setDraft({
+                ...draft,
+                comprehension_questions: [...draft.comprehension_questions, { question: "", answer: "" }],
+              })}
+            >
+              <Plus className="h-4 w-4 mr-1" /> Ajouter une question manuellement
+            </Button>
+          </div>
 
           {/* Niveau 2 only — Reorder */}
           {draft.level === "niveau_2" && (
