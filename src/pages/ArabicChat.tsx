@@ -14,6 +14,7 @@ import { useChatHistory } from "@/hooks/use-chat-history";
 import { useLessonProgress } from "@/hooks/use-lesson-progress";
 import { useProfile } from "@/hooks/use-profile";
 import { useFormality } from "@/hooks/use-formality";
+import { useUserPersona } from "@/hooks/use-user-persona";
 import { toast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,10 +29,14 @@ type Msg = { role: "user" | "assistant"; content: string };
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/arabic-chat`;
 
 async function streamChat({
-  messages, level, completedLessons, formality, onDelta, onDone, signal,
+  messages, level, completedLessons, formality, age, gender, firstName, onDelta, onDone, signal,
 }: {
   messages: Msg[]; level: string; completedLessons: number[];
-  formality: string; onDelta: (t: string) => void; onDone: () => void; signal?: AbortSignal;
+  formality: string;
+  age?: number | null;
+  gender?: string | null;
+  firstName?: string;
+  onDelta: (t: string) => void; onDone: () => void; signal?: AbortSignal;
 }) {
   const resp = await fetch(CHAT_URL, {
     method: "POST",
@@ -39,7 +44,7 @@ async function streamChat({
       "Content-Type": "application/json",
       Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
     },
-    body: JSON.stringify({ messages, level, completedLessons, formality }),
+    body: JSON.stringify({ messages, level, completedLessons, formality, age, gender, firstName }),
     signal,
   });
   if (!resp.ok) {
@@ -123,6 +128,7 @@ const ArabicChat = () => {
   const { user, loading } = useAuth();
   const { profile } = useProfile();
   const { isTu } = useFormality();
+  const persona = useUserPersona();
   const { completedLessons, completedN2Lessons } = useLessonProgress();
   const navigate = useNavigate();
 
@@ -337,6 +343,9 @@ const ArabicChat = () => {
         level: userLevel,
         completedLessons: currentCompleted,
         formality,
+        age: persona.age,
+        gender: persona.gender,
+        firstName: persona.firstName,
         onDelta: update,
         onDone: () => {
           speakNewSentencesFrom(assistantSoFar, true);
@@ -353,7 +362,7 @@ const ArabicChat = () => {
       setIsLoading(false);
       toast({ variant: "destructive", title: "Erreur de connexion", description: e.message });
     }
-  }, [input, isLoading, messages, history, userLevel, formality, completedLessons, completedN2Lessons, speakNewSentencesFrom]);
+  }, [input, isLoading, messages, history, userLevel, formality, completedLessons, completedN2Lessons, speakNewSentencesFrom, persona.age, persona.gender, persona.firstName]);
 
   useEffect(() => { sendMessageRef.current = sendMessage; }, [sendMessage]);
 
