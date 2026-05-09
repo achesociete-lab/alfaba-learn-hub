@@ -21,14 +21,21 @@ interface Submission {
   id: string;
   course_id: string;
   user_id: string;
-  step_type: "ecriture" | "dictee";
-  photo_url: string;
+  step_type: "ecriture" | "dictee" | "lecture";
+  photo_url: string | null;
   photo_urls?: string[] | null;
+  audio_url?: string | null;
   status: "en_attente" | "validee" | "a_corriger";
   feedback: string | null;
   created_at: string;
   reviewed_at: string | null;
 }
+
+const STEP_LABEL: Record<Submission["step_type"], string> = {
+  lecture: "Lecture",
+  ecriture: "Écriture",
+  dictee: "Dictée",
+};
 
 interface ReadingScore {
   id: string;
