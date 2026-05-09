@@ -264,7 +264,7 @@ function SubmissionCard({
       <Card>
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row gap-4">
-            {/* Photos */}
+            {/* Media */}
             <div className="shrink-0 flex flex-wrap gap-2 sm:w-48">
               {photos.map((u, i) => (
                 <a key={i} href={u} target="_blank" rel="noreferrer" className="block">
@@ -275,6 +275,11 @@ function SubmissionCard({
                   />
                 </a>
               ))}
+              {sub.audio_url && (
+                <div className="w-full">
+                  <audio controls src={sub.audio_url} className="w-full" style={{ height: "40px" }} />
+                </div>
+              )}
             </div>
 
             <div className="flex-1 space-y-2">
@@ -284,7 +289,7 @@ function SubmissionCard({
                     {student ? `${student.first_name} ${student.last_name}` : "Élève inconnu"}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {course?.title || "Cours"} · {sub.step_type === "ecriture" ? "Écriture" : "Dictée"} ·{" "}
+                    {course?.title || "Cours"} · {STEP_LABEL[sub.step_type] || sub.step_type} ·{" "}
                     {new Date(sub.created_at).toLocaleString("fr-FR")}
                   </p>
                 </div>
