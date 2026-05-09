@@ -57,19 +57,40 @@ const STEP_LABEL: Record<Exclude<Step, "done">, { label: string; icon: typeof Bo
   dictee: { label: "Dictée", icon: Headphones },
 };
 
-// ─── Step 1: Lecture (audio prof + STT compare) ───
+// ─── Step 1: Lecture (enregistrement soumis au professeur humain) ───
 function LectureStep({ course, onDone }: { course: PresentielCourseV2; onDone: () => void }) {
   const { user } = useAuth();
   const [recording, setRecording] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [matches, setMatches] = useState<WordMatch[] | null>(null);
-  const [score, setScore] = useState<{ correct: number; total: number; pct: number } | null>(null);
-  const [attempts, setAttempts] = useState(0);
+  const [uploading, setUploading] = useState(false);
+  const [submission, setSubmission] = useState<any>(null);
   const mediaRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
-  const lessonText = (course.lesson_text || "").trim();
   const hasTeacherAudio = !!(course.audio_url);
+
+  const refresh = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("presentiel_submissions")
+      .select("*")
+      .eq("course_id", course.id)
+      .eq("user_id", user.id)
+      .eq("step_type", "lecture" as any)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (data) {
+      setSubmission(data);
+      if ((data as any).status !== "en_attente" && !(data as any).seen_by_student) {
+        await supabase
+          .from("presentiel_submissions")
+          .update({ seen_by_student: true } as any)
+          .eq("id", (data as any).id);
+      }
+    }
+  };
+
+  useEffect(() => { refresh(); }, [user, course.id]);
 
   const startRecording = async () => {
     try {
@@ -80,7 +101,7 @@ function LectureStep({ course, onDone }: { course: PresentielCourseV2; onDone: (
       mr.onstop = async () => {
         stream.getTracks().forEach((t) => t.stop());
         const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-        await analyzeRecording(blob);
+        await uploadRecording(blob);
       };
       mr.start();
       mediaRef.current = mr;
@@ -95,66 +116,45 @@ function LectureStep({ course, onDone }: { course: PresentielCourseV2; onDone: (
     setRecording(false);
   };
 
-  const analyzeRecording = async (blob: Blob) => {
-    setAnalyzing(true);
+  const uploadRecording = async (blob: Blob) => {
+    if (!user) return;
+    setUploading(true);
     try {
-      const fd = new FormData();
-      fd.append("file", blob, "recording.webm");
-      fd.append("language_code", "ara");
+      const path = `${user.id}/${course.id}/lecture-${Date.now()}.webm`;
+      const { error: upErr } = await supabase.storage
+        .from("presentiel-submissions")
+        .upload(path, blob, { contentType: "audio/webm" });
+      if (upErr) throw upErr;
+      const { data: { publicUrl } } = supabase.storage
+        .from("presentiel-submissions")
+        .getPublicUrl(path);
 
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-stt`,
-        { method: "POST", body: fd }
-      );
-      if (!res.ok) throw new Error("Échec transcription");
-      const data = await res.json();
-      const transcription: string = data.text || "";
-
-      const wordMatches = compareVerseWords(lessonText, transcription);
-      const correct = wordMatches.filter((w) => w.status === "correct").length;
-      const total = wordMatches.length;
-      const pct = total ? Math.round((correct / total) * 100) : 0;
-
-      setMatches(wordMatches);
-      setScore({ correct, total, pct });
-      const newAttempt = attempts + 1;
-      setAttempts(newAttempt);
-
-      // Persistence
-      if (user) {
-        await supabase.from("presentiel_reading_scores").insert({
+      const { data, error } = await supabase
+        .from("presentiel_submissions")
+        .insert({
           course_id: course.id,
           user_id: user.id,
-          attempt_number: newAttempt,
-          target_text: lessonText,
-          transcription,
-          correct_words: correct,
-          total_words: total,
-          score_percent: pct,
-          word_results: wordMatches as any,
-        });
-      }
+          step_type: "lecture" as any,
+          audio_url: publicUrl,
+          photo_url: null as any,
+          photo_urls: [] as any,
+          status: "en_attente",
+        } as any)
+        .select()
+        .single();
+      if (error) throw error;
+      setSubmission(data);
+      toast.success("Lecture envoyée à votre professeur ✅");
     } catch (e: any) {
-      toast.error(e.message || "Erreur d'analyse");
+      toast.error(e.message || "Échec de l'envoi");
     } finally {
-      setAnalyzing(false);
+      setUploading(false);
     }
   };
 
-  const reset = () => {
-    setMatches(null);
-    setScore(null);
-  };
-
-  if (!lessonText) {
-    return (
-      <Card>
-        <CardContent className="py-8 text-center text-muted-foreground">
-          Aucun texte de leçon n'a été configuré pour ce cours.
-        </CardContent>
-      </Card>
-    );
-  }
+  const pages = (course.lesson_photos && course.lesson_photos.length > 0)
+    ? course.lesson_photos
+    : (course.photo_url ? [course.photo_url] : []);
 
   return (
     <Card>
@@ -164,121 +164,100 @@ function LectureStep({ course, onDone }: { course: PresentielCourseV2; onDone: (
           <h3 className="font-semibold text-foreground text-lg">Étape 1 — Lecture</h3>
         </div>
 
-        {(() => {
-          const pages = (course.lesson_photos && course.lesson_photos.length > 0)
-            ? course.lesson_photos
-            : (course.photo_url ? [course.photo_url] : []);
-          if (pages.length === 0) return null;
-          return (
-            <div className="space-y-3">
-              {pages.length > 1 && (
-                <p className="text-xs text-muted-foreground">
-                  📖 {pages.length} pages — faites défiler dans l'ordre
-                </p>
-              )}
-              {pages.map((url, i) => (
-                <div key={i} className="rounded-xl overflow-hidden border border-border bg-muted/20 relative">
-                  {pages.length > 1 && (
-                    <Badge variant="secondary" className="absolute top-2 left-2 z-10">
-                      Page {i + 1}/{pages.length}
-                    </Badge>
-                  )}
-                  <img src={url} alt={`Page ${i + 1} de la leçon`} className="w-full max-h-[480px] object-contain bg-white" />
-                </div>
-              ))}
-            </div>
-          );
-        })()}
+        {pages.length > 0 && (
+          <div className="space-y-3">
+            {pages.length > 1 && (
+              <p className="text-xs text-muted-foreground">
+                📖 {pages.length} pages — lisez la leçon directement depuis la photo
+              </p>
+            )}
+            {pages.map((url, i) => (
+              <div key={i} className="rounded-xl overflow-hidden border border-border bg-muted/20 relative">
+                {pages.length > 1 && (
+                  <Badge variant="secondary" className="absolute top-2 left-2 z-10">
+                    Page {i + 1}/{pages.length}
+                  </Badge>
+                )}
+                <img src={url} alt={`Page ${i + 1} de la leçon`} className="w-full max-h-[480px] object-contain bg-white" />
+              </div>
+            ))}
+          </div>
+        )}
 
-        {/* Texte cible avec highlighting si match */}
-        <div
-          dir="rtl"
-          className="p-5 rounded-xl bg-muted/40 border border-border text-2xl leading-loose font-amiri text-right"
-        >
-          {matches ? (
-            <span className="space-x-2">
-              {matches.map((m, i) => (
-                <span
-                  key={i}
-                  className={
-                    m.status === "correct"
-                      ? "text-emerald-600 font-semibold"
-                      : m.status === "wrong"
-                      ? "text-destructive font-semibold underline decoration-wavy"
-                      : "text-muted-foreground"
-                  }
-                >
-                  {m.expected}
-                </span>
-              ))}
-            </span>
-          ) : (
-            lessonText
-          )}
-        </div>
-
-        {/* Audio du professeur (optionnel) — pas de TTS : la photo suffit */}
         {hasTeacherAudio && (
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
               <Volume2 className="h-3 w-3" /> Voix de votre professeur — écoutez, puis lisez à voix haute
             </p>
-            <audio
-              controls
-              src={course.audio_url!}
-              className="w-full rounded-lg"
-              style={{ height: "44px" }}
-            />
+            <audio controls src={course.audio_url!} className="w-full rounded-lg" style={{ height: "44px" }} />
           </div>
         )}
+
+        <div className="p-4 rounded-lg border border-dashed border-border bg-muted/20 text-sm text-muted-foreground">
+          🎙️ Lisez la leçon à voix haute, puis envoyez votre enregistrement à votre professeur pour validation.
+        </div>
 
         <div className="flex flex-wrap gap-2">
           {!recording ? (
             <Button
               onClick={startRecording}
-              disabled={analyzing}
+              disabled={uploading}
               className="gap-2 gradient-emerald border-0 text-primary-foreground"
             >
               <Mic className="h-4 w-4" />
-              {analyzing ? "Analyse…" : "Lire à voix haute"}
+              {uploading ? "Envoi…" : submission ? "Réenregistrer" : "Enregistrer ma lecture"}
             </Button>
           ) : (
             <Button onClick={stopRecording} variant="destructive" className="gap-2 animate-pulse">
               <Square className="h-4 w-4" /> Arrêter
             </Button>
           )}
-
-          {matches && (
-            <Button onClick={reset} variant="ghost" className="gap-2">
-              <RotateCcw className="h-4 w-4" /> Réessayer
-            </Button>
-          )}
         </div>
 
-        {analyzing && (
+        {uploading && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> Analyse de votre lecture…
+            <Loader2 className="h-4 w-4 animate-spin" /> Envoi de votre enregistrement…
           </div>
         )}
 
-        {score && (
+        {submission && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="p-4 rounded-lg border border-border bg-card space-y-3"
+            className="space-y-3"
           >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Score de lecture</p>
-                <p className="text-2xl font-bold text-foreground">
-                  {score.correct} / {score.total} mots ({score.pct}%)
+            {submission.audio_url && (
+              <audio controls src={submission.audio_url} className="w-full rounded-lg" style={{ height: "44px" }} />
+            )}
+
+            {submission.status === "en_attente" && (
+              <div className="p-3 rounded-lg border border-border bg-muted/40">
+                <Badge variant="outline">⏳ En attente de validation par votre professeur</Badge>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Vous pouvez continuer la leçon en attendant la correction.
                 </p>
               </div>
-              <Badge variant={score.pct >= 70 ? "default" : "outline"}>
-                Tentative {attempts}
-              </Badge>
-            </div>
-            <Progress value={score.pct} className="h-2" />
+            )}
+            {submission.status !== "en_attente" && (
+              <div className={`p-4 rounded-lg border-2 ${
+                submission.status === "validee"
+                  ? "border-emerald-500 bg-emerald-500/10"
+                  : "border-destructive bg-destructive/10"
+              }`}>
+                <p className={`font-bold text-lg ${
+                  submission.status === "validee" ? "text-emerald-700" : "text-destructive"
+                }`}>
+                  {submission.status === "validee" ? "✅ Validée par votre professeur" : "❌ À refaire"}
+                </p>
+                {submission.feedback && (
+                  <div className="mt-3 p-3 rounded bg-background/60 border border-border">
+                    <p className="text-xs font-semibold mb-1">Commentaire du professeur :</p>
+                    <p className="text-foreground italic">« {submission.feedback} »</p>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="flex justify-end">
               <Button onClick={onDone} className="gap-2">
                 Étape suivante <ArrowRight className="h-4 w-4" />
