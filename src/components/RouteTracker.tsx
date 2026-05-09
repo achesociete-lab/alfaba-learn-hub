@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 
 const STORAGE_KEY = "alfasl:lastRoute";
 
@@ -59,31 +59,6 @@ try {
 
 const RouteTracker = () => {
   const location = useLocation();
-  const navigate = useNavigate();
-  const restoredRef = useRef(false);
-
-  // Au premier mount sur "/", restaurer la dernière route si elle est whitelistée
-  useEffect(() => {
-    if (restoredRef.current) return;
-    restoredRef.current = true;
-    if (location.pathname !== "/") return;
-    try {
-      const last = localStorage.getItem(STORAGE_KEY);
-      if (!last) return;
-      const lastPath = last.split("?")[0];
-      if (isBlocked(lastPath)) {
-        localStorage.removeItem(STORAGE_KEY);
-        navigate("/dashboard", { replace: true });
-        return;
-      }
-      if (isAllowed(lastPath)) {
-        navigate(last, { replace: true });
-      } else {
-        localStorage.removeItem(STORAGE_KEY);
-      }
-    } catch {}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Sauvegarder uniquement les pages whitelistées (et jamais les blacklistées)
   useEffect(() => {
