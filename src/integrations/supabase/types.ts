@@ -509,11 +509,12 @@ export type Database = {
       }
       presentiel_submissions: {
         Row: {
+          audio_url: string | null
           course_id: string
           created_at: string
           feedback: string | null
           id: string
-          photo_url: string
+          photo_url: string | null
           photo_urls: Json
           reviewed_at: string | null
           reviewed_by: string | null
@@ -524,11 +525,12 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          audio_url?: string | null
           course_id: string
           created_at?: string
           feedback?: string | null
           id?: string
-          photo_url: string
+          photo_url?: string | null
           photo_urls?: Json
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -539,11 +541,12 @@ export type Database = {
           user_id: string
         }
         Update: {
+          audio_url?: string | null
           course_id?: string
           created_at?: string
           feedback?: string | null
           id?: string
-          photo_url?: string
+          photo_url?: string | null
           photo_urls?: Json
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -1071,7 +1074,7 @@ export type Database = {
       app_role: "admin" | "teacher" | "student"
       class_level: "niveau_1" | "niveau_2"
       memorization_status: "en_cours" | "mémorisée" | "à_réviser"
-      presentiel_step_type: "ecriture" | "dictee"
+      presentiel_step_type: "ecriture" | "dictee" | "lecture"
       presentiel_submission_status: "en_attente" | "validee" | "a_corriger"
       recitation_status: "en_attente" | "corrigée" | "a_refaire"
       student_type: "en_ligne" | "presentiel" | "en_attente"
@@ -1205,7 +1208,7 @@ export const Constants = {
       app_role: ["admin", "teacher", "student"],
       class_level: ["niveau_1", "niveau_2"],
       memorization_status: ["en_cours", "mémorisée", "à_réviser"],
-      presentiel_step_type: ["ecriture", "dictee"],
+      presentiel_step_type: ["ecriture", "dictee", "lecture"],
       presentiel_submission_status: ["en_attente", "validee", "a_corriger"],
       recitation_status: ["en_attente", "corrigée", "a_refaire"],
       student_type: ["en_ligne", "presentiel", "en_attente"],
