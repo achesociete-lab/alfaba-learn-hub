@@ -959,8 +959,8 @@ const lesson12: Lesson = {
     { question: "Dans مَاءٌ, la Hamza est :", options: ["Sur Alif", "Sur Wâw", "Sur Yâ'", "Sans support, en fin de mot"], correctIndex: 3, explanation: "À la fin de مَاءٌ, la Hamza est seule, sans support : ء." },
   ],
   dictation: [
-    { word: "مَدْرَسَةٌ", transliteration: "madrasah (une école)", options: ["مَدْرَسَتٌ", "مَدْرَسَةٌ", "مَدْرَسَهٌ", "مَدَارِسٌ"], correctIndex: 1 },
-    { word: "بِنْتٌ", transliteration: "bint (une fille)", options: ["بِنْةٌ", "بِنْتٌ", "بَنَاتٌ", "بَيْتٌ"], correctIndex: 1 },
+    { word: "مَكْتَبَةٌ", transliteration: "maktabah (une bibliothèque)", options: ["مَكْتَبَتٌ", "مَكْتَبَةٌ", "مَكْتَبَهٌ", "مَكْتَبَاتٌ"], correctIndex: 1 },
+    { word: "زَيْتٌ", transliteration: "zayt (huile)", options: ["زَيْةٌ", "زَيْتٌ", "زَيْتُونٌ", "زَيَّتَ"], correctIndex: 1 },
     { word: "فَاطِمَةُ", transliteration: "Fâṭima (prénom)", options: ["فَاطِمَتُ", "فَاطِمَةُ", "فَاطِمَهُ", "فَطِيمَةُ"], correctIndex: 1 },
     { word: "كَتَبَتْ", transliteration: "katabat (elle a écrit)", options: ["كَتَبَةٌ", "كَتَبَتْ", "كَتَبَ", "كَاتِبَةٌ"], correctIndex: 1 },
     { word: "جَنَّةٌ", transliteration: "jannah (un jardin)", options: ["جَنَّتٌ", "جَنَّةٌ", "جِنَانٌ", "جَنَنٌ"], correctIndex: 1 },
