@@ -170,7 +170,7 @@ const InscriptionPresentiel = () => {
           </div>
           <div className="flex items-center justify-center gap-2 mb-6">
             <MapPin className="h-4 w-4 text-gold" />
-            <span className="text-sm font-semibold text-gold">Inscription Présentiel</span>
+            <span className="text-sm font-semibold text-gold">Inscription Présentiel — {levelLabel}</span>
           </div>
 
           <h1 className="text-2xl font-bold text-foreground text-center mb-2">Créez votre compte</h1>
