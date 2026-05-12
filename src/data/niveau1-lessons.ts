@@ -455,7 +455,7 @@ const lesson5: Lesson = {
     { word: "نُور", transliteration: "nûr (lumière)", options: ["نَار", "نِير", "نُور", "نَوْر"], correctIndex: 2 },
     { word: "كَبِير", transliteration: "kabîr (grand)", options: ["كَبَر", "كَبُور", "كَبِير", "كُبُر"], correctIndex: 2 },
     { word: "قَالَ", transliteration: "qâla (il a dit)", options: ["قَلَ", "قَالَ", "قُولَ", "قِيلَ"], correctIndex: 1 },
-    { word: "رَسُول", transliteration: "rasûl (messager)", options: ["رَسَل", "رَسِيل", "رَسُول", "رُسُل"], correctIndex: 2 },
+    { word: "نُجُوم", transliteration: "nujûm (étoiles)", options: ["نَجَم", "نُجُوم", "نَجِيم", "نُجَم"], correctIndex: 1 },
     { word: "جَمِيل", transliteration: "jamîl (beau)", options: ["جَمَل", "جَمُول", "جَمِيل", "جُمُل"], correctIndex: 2 },
     { word: "نَام", transliteration: "nâm (il a dormi)", options: ["نَمْ", "نَام", "نُوم", "نِيم"], correctIndex: 1 },
     { word: "طَرِيق", transliteration: "ṭarîq (chemin)", options: ["طَرَق", "طَرُوق", "طَرِيق", "طُرُق"], correctIndex: 2 },
