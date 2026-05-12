@@ -18,7 +18,6 @@ const getAuthNavLinks = (level: string | null, typeEleve: string | null) => {
   // Présentiel : accès limité
   if (typeEleve === "presentiel") {
     return [
-      { to: "/coran", label: "Coran" },
       { to: "/cours-presentiel", label: "Espace Élève" },
     ];
   }
