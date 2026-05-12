@@ -277,12 +277,12 @@ function LectureStep({ course, onDone }: { course: PresentielCourseV2; onDone: (
 function LessonReference({ course }: { course: PresentielCourseV2 }) {
   const [open, setOpen] = useState(false);
   const { speak } = useArabicSpeech();
-  const photos =
-    course.lesson_photos && course.lesson_photos.length > 0
-      ? course.lesson_photos
-      : course.photo_url
-      ? [course.photo_url]
-      : [];
+  const photos = Array.from(
+    new Set([
+      ...(course.photo_url ? [course.photo_url] : []),
+      ...(Array.isArray(course.lesson_photos) ? course.lesson_photos : []),
+    ])
+  );
   if (photos.length === 0) return null;
   return (
     <div className="border border-border rounded-lg overflow-hidden">
