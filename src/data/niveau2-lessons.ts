@@ -113,7 +113,7 @@ export const niveau2Lessons: Niveau2Lesson[] = [
       { question: "L'arabe s'écrit de :", options: ["Gauche à droite", "Droite à gauche", "Haut en bas", "Bas en haut"], correctIndex: 1, explanation: "L'arabe s'écrit de droite à gauche." },
     ],
     dictation: [
-      { sentence: "كِتَابٌ", transliteration: "kitâbun (un livre)", options: ["كِتَابٌ", "كَتَبَ", "كُتُبٌ", "كَاتِبٌ"], correctIndex: 0 },
+      { sentence: "دَفْتَرٌ", transliteration: "daftarun (un cahier)", options: ["دَفْتَرٌ", "كِتَابٌ", "دَفَاتِرُ", "كَاتِبٌ"], correctIndex: 0 },
       { sentence: "مَدْرَسَةٌ", transliteration: "madrasatun (une école)", options: ["مُدَرِّسٌ", "مَدْرَسَةٌ", "دَرْسٌ", "دِرَاسَةٌ"], correctIndex: 1 },
       { sentence: "تِلْمِيذٌ", transliteration: "tilmîdhun (un élève)", options: ["تَلَامِيذٌ", "تَعْلِيمٌ", "تِلْمِيذٌ", "مُعَلِّمٌ"], correctIndex: 2 },
       { sentence: "مُعَلِّمٌ", transliteration: "mu'allimun (un enseignant)", options: ["مُعَلِّمٌ", "مَعْلُومٌ", "عِلْمٌ", "عَالِمٌ"], correctIndex: 0 },
@@ -327,11 +327,11 @@ export const niveau2Lessons: Niveau2Lesson[] = [
       { question: "طَالِبَتَانِ signifie :", options: ["Des étudiantes", "Deux étudiantes", "L'étudiante", "Une étudiante"], correctIndex: 1, explanation: "Le suffixe تان marque le duel féminin." },
     ],
     dictation: [
-      { sentence: "مُعَلِّمَةٌ", transliteration: "mu'allimatun (une enseignante)", options: ["مُعَلِّمٌ", "مُعَلِّمَةٌ", "مُعَلِّمُونَ", "مُعَلِّمَاتٌ"], correctIndex: 1 },
-      { sentence: "طَالِبَاتٌ", transliteration: "tâlibâtun (des étudiantes)", options: ["طَالِبٌ", "طَالِبَةٌ", "طَالِبَاتٌ", "طُلَّابٌ"], correctIndex: 2 },
+      { sentence: "دَرَّاجَةٌ", transliteration: "darrâjatun (un vélo)", options: ["دَرَّاجٌ", "دَرَّاجَةٌ", "دَرَّاجَاتٌ", "دَرَّاجَتَانِ"], correctIndex: 1 },
+      { sentence: "سَيَّارَاتٌ", transliteration: "sayyârâtun (des voitures)", options: ["سَيَّارَةٌ", "سَيَّارَتَانِ", "سَيَّارَاتٌ", "سَيَّارٌ"], correctIndex: 2 },
       { sentence: "خَمْسَةُ طُلَّابٍ", transliteration: "khamsatu tullâbin (cinq élèves)", options: ["عَشَرَةُ طُلَّابٍ", "خَمْسَةُ طُلَّابٍ", "ثَلَاثَةُ طُلَّابٍ", "سَبْعَةُ طُلَّابٍ"], correctIndex: 1 },
       { sentence: "كِتَابَانِ", transliteration: "kitâbâni (deux livres)", options: ["كِتَابٌ", "كُتُبٌ", "كِتَابَانِ", "الْكِتَابُ"], correctIndex: 2 },
-      { sentence: "مُعَلِّمُونَ", transliteration: "mu'allimûna (des enseignants)", options: ["مُعَلِّمٌ", "مُعَلِّمُونَ", "مُعَلِّمَاتٌ", "مُعَلِّمَةٌ"], correctIndex: 1 },
+      { sentence: "مُهَنْدِسُونَ", transliteration: "muhandisûna (des ingénieurs)", options: ["مُهَنْدِسٌ", "مُهَنْدِسَةٌ", "مُهَنْدِسُونَ", "مُهَنْدِسَاتٌ"], correctIndex: 2 },
       { sentence: "وَلَدَانِ صَغِيرَانِ", transliteration: "waladâni saghîrâni (deux petits garçons)", options: ["وَلَدٌ صَغِيرٌ", "أَوْلَادٌ صِغَارٌ", "وَلَدَانِ صَغِيرَانِ", "وَلَدَانِ كَبِيرَانِ"], correctIndex: 2 },
       { sentence: "بِنْتٌ جَمِيلَةٌ", transliteration: "bintun jamîlatun (une belle fille)", options: ["بِنْتٌ كَبِيرَةٌ", "بِنْتٌ جَمِيلَةٌ", "بِنْتٌ صَغِيرَةٌ", "وَلَدٌ جَمِيلٌ"], correctIndex: 1 },
       { sentence: "طَالِبَتَانِ", transliteration: "tâlibatâni (deux étudiantes)", options: ["طَالِبٌ", "طَالِبَةٌ", "طَالِبَاتٌ", "طَالِبَتَانِ"], correctIndex: 3 },
