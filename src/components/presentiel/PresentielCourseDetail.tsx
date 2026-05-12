@@ -1105,7 +1105,15 @@ const PresentielCourseDetail = ({ course, userProgress, onProgressUpdate }: Prop
               instruction={
                 <DicteeInstruction words={course.dictation_words || []} />
               }
-              onDone={goNext}
+              onDone={async () => {
+                if (user) {
+                  await supabase.from("presentiel_course_progress").upsert(
+                    { course_id: course.id, user_id: user.id, dictation_completed: true } as any,
+                    { onConflict: "course_id,user_id" }
+                  );
+                }
+                goNext();
+              }}
             />
           )}
           {step === "done" && (
