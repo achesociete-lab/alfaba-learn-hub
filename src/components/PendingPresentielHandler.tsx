@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import {
   clearPresentielSignupIntent,
   ensurePresentielProfile,
+  getPresentielSignupLevel,
   hasPresentielSignupIntent,
   PRESENTIEL_SIGNUP_FLAG,
   userHasPresentielMetadata,
@@ -29,7 +30,8 @@ const PendingPresentielHandler = () => {
     handledRef.current = true;
     (async () => {
       try {
-        const profile = await ensurePresentielProfile(user);
+        const level = getPresentielSignupLevel();
+        const profile = await ensurePresentielProfile(user, level);
 
         const fullName = `${profile?.first_name ?? ""} ${profile?.last_name ?? ""}`.trim();
         supabase.functions
