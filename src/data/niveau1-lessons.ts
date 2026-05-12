@@ -226,7 +226,7 @@ const lesson2: Lesson = {
     { question: "Quelle information reste constante quelle que soit la forme d'une lettre ?", options: ["La taille", "Les points", "La largeur", "La couleur"], correctIndex: 1, explanation: "Les points (nombre et position) restent toujours les mêmes, c'est ce qui permet d'identifier la lettre." },
   ],
   dictation: [
-    { word: "بـ", transliteration: "Bâ' au début", options: ["بـ", "ب", "ـبـ", "ـب"], correctIndex: 0 },
+    { word: "لـ", transliteration: "Lâm initiale", options: ["لـ", "ل", "ـلـ", "ـل"], correctIndex: 0 },
     { word: "ـتـ", transliteration: "Tâ' au milieu", options: ["تـ", "ت", "ـتـ", "ـت"], correctIndex: 2 },
     { word: "ـج", transliteration: "Jîm finale", options: ["جـ", "ج", "ـجـ", "ـج"], correctIndex: 3 },
     { word: "سـ", transliteration: "Sîn initiale", options: ["ـسـ", "سـ", "ـس", "س"], correctIndex: 1 },
