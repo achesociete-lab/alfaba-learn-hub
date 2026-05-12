@@ -1060,22 +1060,33 @@ const PresentielCourseDetail = ({ course, userProgress, onProgressUpdate }: Prop
           {step === "lecture" && (
             <LectureStep course={course} onDone={goNext} />
           )}
-          {step === "ecriture" && (
-            <PhotoUploadStep
-              course={course}
-              stepType="ecriture"
-              title="Étape — Écriture"
-              maxPhotos={3}
-              instruction={
-                <>
-                  Recopiez la leçon <strong>3 fois</strong> à la main sur votre cahier.
-                  Envoyez <strong>jusqu'à 3 photos</strong> (une par page/série) pour que votre
-                  professeur puisse voir votre travail complet.
-                </>
-              }
-              onDone={goNext}
-            />
-          )}
+          {step === "ecriture" && (() => {
+            const isN2 = course.level === "niveau_2";
+            return (
+              <PhotoUploadStep
+                course={course}
+                stepType="ecriture"
+                title="Étape — Écriture"
+                maxPhotos={3}
+                instruction={
+                  isN2 ? (
+                    <>
+                      Recopiez la leçon <strong>une fois</strong> à la main sur votre cahier.
+                      Envoyez <strong>jusqu'à 3 photos</strong> (une par page) pour que votre
+                      professeur puisse voir votre travail complet.
+                    </>
+                  ) : (
+                    <>
+                      Recopiez la leçon <strong>3 fois</strong> à la main sur votre cahier.
+                      Envoyez <strong>jusqu'à 3 photos</strong> (une par page/série) pour que votre
+                      professeur puisse voir votre travail complet.
+                    </>
+                  )
+                }
+                onDone={goNext}
+              />
+            );
+          })()}
           {step === "traduction" && (
             <TraductionStep course={course} onDone={goNext} />
           )}
