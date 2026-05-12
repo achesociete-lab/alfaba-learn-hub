@@ -61,6 +61,12 @@ const Dashboard = () => {
   }, [user, authLoading, navigate]);
 
   useEffect(() => {
+    if (isPresentiel) {
+      navigate("/cours-presentiel", { replace: true });
+    }
+  }, [isPresentiel, navigate]);
+
+  useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
       const [hwRes, attRes, assignRes] = await Promise.all([
