@@ -5,6 +5,28 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const normalizeCorrectOrder = (exercise: any): string[] => {
+  const raw = Array.isArray(exercise?.correct_order)
+    ? exercise.correct_order
+    : Array.isArray(exercise?.words)
+      ? exercise.words
+      : [];
+
+  return raw
+    .flatMap((part: unknown) => typeof part === "string" ? part.split(/\s+/) : [])
+    .map((word: string) => word.replace(/^[\s،,.;:؟!]+|[\s،,.;:؟!]+$/g, ""))
+    .filter(Boolean);
+};
+
+const isStandaloneStatement = (words: string[]): boolean => {
+  const first = words[0]?.replace(/^وَ/, "");
+  const forbiddenStarts = new Set([
+    "هَلْ", "أَيْنَ", "مَتَى", "مَا", "مَاذَا", "لِمَاذَا", "كَيْفَ", "كَمْ", "مَنْ",
+    "هِيَ", "هُوَ", "فِيهِ", "فِيهَا", "بِهِ", "بِهَا", "لَهُ", "لَهَا", "مِنْهُ", "مِنْهَا",
+  ]);
+  return words.length >= 3 && words.length <= 8 && !forbiddenStarts.has(first || "");
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
