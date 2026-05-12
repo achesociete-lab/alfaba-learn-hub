@@ -886,13 +886,13 @@ const lesson11: Lesson = {
     { question: "Quel verbe signifie « Lire » ?", options: ["كَتَبَ", "قَرَأَ", "ذَهَبَ", "أَكَلَ"], correctIndex: 1, explanation: "قَرَأَ = il a lu. C'est de la même racine que قُرْآن (Coran)." },
   ],
   dictation: [
-    { word: "بَيْت", transliteration: "", options: ["بَاب", "بَيْت", "بِنْت", "بَيْن"], correctIndex: 1 },
-    { word: "كِتَاب", transliteration: "", options: ["كَاتِب", "كِتَاب", "مَكْتَب", "كُتُب"], correctIndex: 1 },
-    { word: "شَمْس", transliteration: "", options: ["شَمْس", "قَمَر", "سَمَاء", "شَمَّ"], correctIndex: 0 },
+    { word: "بَاب", transliteration: "", options: ["بَاب", "بَيْت", "بَاتَ", "بَيْن"], correctIndex: 0 },
+    { word: "قَلَم", transliteration: "", options: ["قَلَم", "قَلْب", "كَلْب", "قَلَّ"], correctIndex: 0 },
+    { word: "قَمَر", transliteration: "", options: ["قَمَر", "قُمْرَة", "أَقْمَار", "قَمْح"], correctIndex: 0 },
     { word: "قَلْب", transliteration: "", options: ["كَلْب", "قَلَم", "قَلْب", "قَالَ"], correctIndex: 2 },
     { word: "مَسْجِد", transliteration: "", options: ["مَسْجِد", "سَجَدَ", "مَسَاجِد", "مُسْجِد"], correctIndex: 0 },
     { word: "كَتَبَ", transliteration: "", options: ["كِتَاب", "كَاتِب", "كَتَبَ", "مَكْتُوب"], correctIndex: 2 },
-    { word: "قَرَأَ", transliteration: "", options: ["قُرْآن", "قَارِئ", "قَرَأَ", "قِرَاءَة"], correctIndex: 2 },
+    { word: "جَلَسَ", transliteration: "", options: ["جَلَسَ", "جَالِس", "جُلُوس", "مَجْلِس"], correctIndex: 0 },
   ],
 };
 
