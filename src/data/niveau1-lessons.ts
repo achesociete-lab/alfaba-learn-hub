@@ -132,7 +132,7 @@ const lesson1: Lesson = {
   dictation: [
     { word: "و", transliteration: "Wâw", options: ["و", "ر", "ز", "د"], correctIndex: 0 },
     { word: "ب", transliteration: "Bâ'", options: ["ت", "ب", "ث", "ن"], correctIndex: 1 },
-    { word: "د", transliteration: "Dâl", options: ["ذ", "د", "ر", "ز"], correctIndex: 1 },
+    { word: "ر", transliteration: "Râ'", options: ["ز", "د", "ر", "و"], correctIndex: 2 },
     { word: "ح", transliteration: "Hâ' (guttural)", options: ["خ", "ج", "ح", "ه"], correctIndex: 2 },
     { word: "س", transliteration: "Sîn", options: ["ش", "ص", "س", "ض"], correctIndex: 2 },
     { word: "ش", transliteration: "Shîn", options: ["س", "ش", "ص", "ث"], correctIndex: 1 },
