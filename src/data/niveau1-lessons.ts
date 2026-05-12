@@ -232,7 +232,7 @@ const lesson2: Lesson = {
     { word: "سـ", transliteration: "Sîn initiale", options: ["ـسـ", "سـ", "ـس", "س"], correctIndex: 1 },
     { word: "ـكـ", transliteration: "Kâf médiane", options: ["كـ", "ك", "ـكـ", "ـك"], correctIndex: 2 },
     { word: "ـن", transliteration: "Nûn finale", options: ["نـ", "ن", "ـنـ", "ـن"], correctIndex: 3 },
-    { word: "عـ", transliteration: "'Ayn initiale", options: ["عـ", "ع", "ـعـ", "ـع"], correctIndex: 0 },
+    { word: "هـ", transliteration: "Hâ' initiale", options: ["هـ", "ه", "ـهـ", "ـه"], correctIndex: 0 },
     { word: "ـمـ", transliteration: "Mîm médiane", options: ["مـ", "م", "ـمـ", "ـم"], correctIndex: 2 },
     { word: "فـ", transliteration: "Fâ' au début", options: ["ـف", "ف", "فـ", "ـفـ"], correctIndex: 2 },
     { word: "ـي", transliteration: "Yâ' à la fin", options: ["يـ", "ي", "ـيـ", "ـي"], correctIndex: 3 },
