@@ -21,6 +21,7 @@ import {
 const InscriptionPresentiel = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -31,10 +32,21 @@ const InscriptionPresentiel = () => {
 
   const [googleLoading, setGoogleLoading] = useState(false);
 
+  const signupLevel: PresentielLevel = useMemo(() => {
+    return getPresentielSignupLevel(`?${searchParams.toString()}`) ?? "niveau_1";
+  }, [searchParams]);
+  const levelLabel = signupLevel === "niveau_2" ? "Niveau 2" : "Niveau 1";
+  const redirectQuery = `presentiel=1&niveau=${signupLevel === "niveau_2" ? "2" : "1"}`;
+
+  // Persist intent + level as soon as the page is opened so OAuth round-trip keeps it.
+  useEffect(() => {
+    markPresentielSignupIntent(signupLevel);
+  }, [signupLevel]);
+
   useEffect(() => {
     if (authLoading || !user) return;
-    markPresentielSignupIntent();
-    ensurePresentielProfile(user)
+    markPresentielSignupIntent(signupLevel);
+    ensurePresentielProfile(user, signupLevel)
       .then(() => {
         clearPresentielSignupIntent();
         navigate("/cours-presentiel", { replace: true });
@@ -43,14 +55,14 @@ const InscriptionPresentiel = () => {
         console.error("Presentiel existing user activation failed", err);
         if (!hasPresentielSignupIntent()) navigate("/cours-presentiel", { replace: true });
       });
-  }, [authLoading, user, navigate]);
+  }, [authLoading, user, navigate, signupLevel]);
 
   const handleGoogleSignup = async () => {
     setGoogleLoading(true);
     try {
-      markPresentielSignupIntent();
+      markPresentielSignupIntent(signupLevel);
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: `${window.location.origin}/auth?presentiel=1`,
+        redirect_uri: `${window.location.origin}/auth?${redirectQuery}`,
         extraParams: { prompt: "select_account" },
       });
       if (result.error) {
@@ -59,7 +71,6 @@ const InscriptionPresentiel = () => {
         return;
       }
       if (result.redirected) return;
-      // Tokens already set — handler will pick up the flag and redirect
     } catch (err: any) {
       clearPresentielSignupIntent();
       toast.error(err.message || "Erreur Google");
@@ -81,7 +92,7 @@ const InscriptionPresentiel = () => {
 
     setLoading(true);
     try {
-      markPresentielSignupIntent();
+      markPresentielSignupIntent(signupLevel);
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -89,12 +100,12 @@ const InscriptionPresentiel = () => {
           data: {
             first_name: firstName,
             last_name: lastName,
-            level: "niveau_1",
+            level: signupLevel,
             pending_presentiel: true,
             type_eleve: "presentiel",
             signup_source: "presentiel",
           },
-          emailRedirectTo: `${window.location.origin}/auth?presentiel=1`,
+          emailRedirectTo: `${window.location.origin}/auth?${redirectQuery}`,
         },
       });
       if (error) throw error;
