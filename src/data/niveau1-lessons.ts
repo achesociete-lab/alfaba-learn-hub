@@ -536,7 +536,7 @@ const lesson6: Lesson = {
     { word: "بَيْتٌ", transliteration: "bayt (maison)", options: ["بَيْتٌ", "بَاتَ", "بِنْتٌ", "بُيُوتٌ"], correctIndex: 0 },
     { word: "شَمْسٌ", transliteration: "shams (soleil)", options: ["شَمْسٌ", "قَمَرٌ", "شَمَسَ", "شُمُسٌ"], correctIndex: 0 },
     { word: "مَاءٌ", transliteration: "mâ' (eau)", options: ["مَعَ", "مَاءٌ", "مَا", "مُوءٌ"], correctIndex: 1 },
-    { word: "خُبْزٌ", transliteration: "khubz (pain)", options: ["حُبْزٌ", "خُبْزٌ", "خَبَزَ", "خُبُزٌ"], correctIndex: 1 },
+    { word: "جَمَلٌ", transliteration: "jamal (chameau)", options: ["جَمَلٌ", "جِمَالٌ", "جَمِيلٌ", "جَمَّلَ"], correctIndex: 0 },
     { word: "وَلَدٌ", transliteration: "walad (garçon)", options: ["وَلَدٌ", "وَالِدٌ", "وِلَادَةٌ", "أَوْلَادٌ"], correctIndex: 0 },
     { word: "قَلَمٌ", transliteration: "qalam (stylo)", options: ["كَلَمٌ", "قَلَمٌ", "قَلِمَ", "قُلُمٌ"], correctIndex: 1 },
     { word: "بِنْتٌ", transliteration: "bint (fille)", options: ["بَنَتَ", "بِنْتٌ", "بَيْتٌ", "بُنُتٌ"], correctIndex: 1 },
