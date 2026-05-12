@@ -14,7 +14,14 @@ const publicNavLinks = [
   { to: "/coran", label: "Coran" },
 ];
 
-const getAuthNavLinks = (level: string | null) => {
+const getAuthNavLinks = (level: string | null, typeEleve: string | null) => {
+  // Présentiel : accès limité
+  if (typeEleve === "presentiel") {
+    return [
+      { to: "/cours-presentiel", label: "Espace Élève" },
+    ];
+  }
+
   const links: { to: string; label: string }[] = [
     { to: "/dashboard", label: "Accueil" },
   ];
@@ -39,14 +46,20 @@ const Navbar = () => {
   const { user, signOut } = useAuth();
   const { isAdmin } = useIsAdmin();
   const [userLevel, setUserLevel] = useState<string | null>(null);
+  const [userType, setUserType] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) { setUserLevel(null); return; }
-    supabase.from("profiles").select("level").eq("user_id", user.id).single()
-      .then(({ data }) => { if (data) setUserLevel(data.level); });
+    if (!user) { setUserLevel(null); setUserType(null); return; }
+    supabase.from("profiles").select("level,type_eleve").eq("user_id", user.id).single()
+      .then(({ data }) => {
+        if (data) {
+          setUserLevel(data.level);
+          setUserType(data.type_eleve);
+        }
+      });
   }, [user]);
 
-  const navLinks = user ? getAuthNavLinks(userLevel) : publicNavLinks;
+  const navLinks = user ? getAuthNavLinks(userLevel, userType) : publicNavLinks;
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
