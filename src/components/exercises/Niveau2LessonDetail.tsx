@@ -15,6 +15,7 @@ import LessonAudioPlayer from "./LessonAudioPlayer";
 import { usePersistentState, userScopedKey } from "@/hooks/use-persistent-state";
 import { useAuth } from "@/contexts/AuthContext";
 import { getOrCreateShuffledOrder, clearShuffledOrder } from "@/utils/shuffle";
+import { dedupeNiveau2 } from "@/utils/lesson-dedupe";
 
 interface Niveau2LessonDetailProps {
   lesson: Niveau2Lesson;
@@ -270,8 +271,23 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Niveau2Lesson; onAllCo
   );
 }
 
-const Niveau2LessonDetail = ({ lesson, onBack, onComplete }: Niveau2LessonDetailProps) => {
+const Niveau2LessonDetail = ({ lesson: rawLesson, onBack, onComplete }: Niveau2LessonDetailProps) => {
   const { user } = useAuth();
+  // Dédup inter-modules : compréhension → QCM → dictée
+  const lesson = useMemo(() => {
+    const compQuestions = rawLesson.comprehension?.questions || [];
+    const { comprehension, qcm, dictation } = dedupeNiveau2(
+      compQuestions as any,
+      (rawLesson.qcm || []) as any,
+      (rawLesson.dictation || []) as any,
+    );
+    return {
+      ...rawLesson,
+      comprehension: { ...rawLesson.comprehension, questions: comprehension },
+      qcm,
+      dictation,
+    } as Niveau2Lesson;
+  }, [rawLesson]);
   const baseKey = userScopedKey(user?.id, `n2:lesson:${lesson.id}`);
   const [exercisesCompleted, setExercisesCompleted] = usePersistentState<boolean>(`${baseKey}:exDone`, false);
   const [dictationCompleted, setDictationCompleted] = usePersistentState<boolean>(`${baseKey}:dictDone`, false);

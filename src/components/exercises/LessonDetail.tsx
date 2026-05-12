@@ -18,6 +18,7 @@ import { getOrCreateShuffledOrder, clearShuffledOrder } from "@/utils/shuffle";
 import LessonAudioPlayer from "./LessonAudioPlayer";
 import Lesson1Screens from "./Lesson1Screens";
 import LessonScreens from "./LessonScreens";
+import { dedupeNiveau1 } from "@/utils/lesson-dedupe";
 
 interface LessonDetailProps {
   lesson: Lesson;
@@ -332,8 +333,13 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
   );
 }
 
-const LessonDetail = ({ lesson, onBack, onComplete, nextLessonId, onNextLesson, maxLessons = Infinity }: LessonDetailProps) => {
+const LessonDetail = ({ lesson: rawLesson, onBack, onComplete, nextLessonId, onNextLesson, maxLessons = Infinity }: LessonDetailProps) => {
   const { user } = useAuth();
+  // Dédup inter-modules : une même question / mot ne doit apparaître qu'une seule fois
+  const lesson = useMemo(() => {
+    const { qcm, dictation } = dedupeNiveau1(rawLesson.qcm || [], rawLesson.dictation || []);
+    return { ...rawLesson, qcm, dictation } as Lesson;
+  }, [rawLesson]);
   const baseKey = userScopedKey(user?.id, `n1:lesson:${lesson.id}`);
   const [exercisesCompleted, setExercisesCompleted] = usePersistentState<boolean>(`${baseKey}:exDone`, false);
   const [dictationCompleted, setDictationCompleted] = usePersistentState<boolean>(`${baseKey}:dictDone`, false);
