@@ -228,7 +228,7 @@ const lesson2: Lesson = {
   dictation: [
     { word: "لـ", transliteration: "Lâm initiale", options: ["لـ", "ل", "ـلـ", "ـل"], correctIndex: 0 },
     { word: "ـتـ", transliteration: "Tâ' au milieu", options: ["تـ", "ت", "ـتـ", "ـت"], correctIndex: 2 },
-    { word: "ـج", transliteration: "Jîm finale", options: ["جـ", "ج", "ـجـ", "ـج"], correctIndex: 3 },
+    { word: "ـحـ", transliteration: "Hâ' médiane", options: ["حـ", "ح", "ـحـ", "ـح"], correctIndex: 2 },
     { word: "سـ", transliteration: "Sîn initiale", options: ["ـسـ", "سـ", "ـس", "س"], correctIndex: 1 },
     { word: "ـكـ", transliteration: "Kâf médiane", options: ["كـ", "ك", "ـكـ", "ـك"], correctIndex: 2 },
     { word: "ـن", transliteration: "Nûn finale", options: ["نـ", "ن", "ـنـ", "ـن"], correctIndex: 3 },
