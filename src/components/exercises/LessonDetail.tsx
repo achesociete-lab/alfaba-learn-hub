@@ -18,6 +18,7 @@ import { getOrCreateShuffledOrder, clearShuffledOrder } from "@/utils/shuffle";
 import LessonAudioPlayer from "./LessonAudioPlayer";
 import Lesson1Screens from "./Lesson1Screens";
 import LessonScreens from "./LessonScreens";
+import { dedupeNiveau1 } from "@/utils/lesson-dedupe";
 
 interface LessonDetailProps {
   lesson: Lesson;
