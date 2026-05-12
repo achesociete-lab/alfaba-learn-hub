@@ -113,7 +113,7 @@ export const niveau2Lessons: Niveau2Lesson[] = [
       { question: "L'arabe s'écrit de :", options: ["Gauche à droite", "Droite à gauche", "Haut en bas", "Bas en haut"], correctIndex: 1, explanation: "L'arabe s'écrit de droite à gauche." },
     ],
     dictation: [
-      { sentence: "كِتَابٌ", transliteration: "kitâbun (un livre)", options: ["كِتَابٌ", "كَتَبَ", "كُتُبٌ", "كَاتِبٌ"], correctIndex: 0 },
+      { sentence: "دَفْتَرٌ", transliteration: "daftarun (un cahier)", options: ["دَفْتَرٌ", "كِتَابٌ", "دَفَاتِرُ", "كَاتِبٌ"], correctIndex: 0 },
       { sentence: "مَدْرَسَةٌ", transliteration: "madrasatun (une école)", options: ["مُدَرِّسٌ", "مَدْرَسَةٌ", "دَرْسٌ", "دِرَاسَةٌ"], correctIndex: 1 },
       { sentence: "تِلْمِيذٌ", transliteration: "tilmîdhun (un élève)", options: ["تَلَامِيذٌ", "تَعْلِيمٌ", "تِلْمِيذٌ", "مُعَلِّمٌ"], correctIndex: 2 },
       { sentence: "مُعَلِّمٌ", transliteration: "mu'allimun (un enseignant)", options: ["مُعَلِّمٌ", "مَعْلُومٌ", "عِلْمٌ", "عَالِمٌ"], correctIndex: 0 },
