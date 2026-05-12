@@ -257,6 +257,26 @@ N'invente rien : le lesson_text doit refléter exactement ce qui est sur ${total
     if (!toolCall) throw new Error("Aucun tool_call dans la réponse IA");
     const course = JSON.parse(toolCall.function.arguments);
 
+    if (isN2) {
+      const normalizedExercises = Array.isArray(course.reorder_exercises)
+        ? course.reorder_exercises
+            .map((exercise: any) => ({ correct_order: normalizeCorrectOrder(exercise) }))
+            .filter((exercise: { correct_order: string[] }) => isStandaloneStatement(exercise.correct_order))
+            .slice(0, 3)
+        : [];
+
+      if (normalizedExercises.length < 3) {
+        return new Response(JSON.stringify({
+          error: "Les phrases générées pour la remise en ordre ne sont pas assez cohérentes. Relance la génération ou saisis 3 phrases déclaratives complètes tirées du texte.",
+        }), {
+          status: 422,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      course.reorder_exercises = normalizedExercises;
+    }
+
     return new Response(JSON.stringify({ course }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
