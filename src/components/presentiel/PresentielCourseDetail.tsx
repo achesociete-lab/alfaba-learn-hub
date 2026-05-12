@@ -1141,24 +1141,15 @@ function waitMs(ms: number): Promise<void> {
 
 const DICTEE_PAUSE_SEC = 6; // secondes d'écriture entre chaque mot
 
-// Helper: dictée — 2 modes : guidé (clic par clic) ou automatique (comme en classe)
+// Helper: dictée — mode mot par mot (clic par clic)
 function DicteeInstruction({ words }: { words: string[] }) {
   const { speak } = useArabicSpeech();
-  const [mode, setMode] = useState<"intro" | "guided" | "auto" | "list">("intro");
+  const [mode, setMode] = useState<"intro" | "guided" | "list">("intro");
 
   // Guided state
   const [idx, setIdx] = useState(0);
   const [played, setPlayed] = useState<boolean[]>([]);
   const [guidedDone, setGuidedDone] = useState(false);
-
-  // Auto state
-  const [autoPhase, setAutoPhase] = useState<"countdown" | "speaking" | "writing" | "done">("countdown");
-  const [autoIdx, setAutoIdx] = useState(0);
-  const [autoCountdown, setAutoCountdown] = useState(3);
-  const [writeTimeLeft, setWriteTimeLeft] = useState(DICTEE_PAUSE_SEC);
-  const stopRef = useRef(false);
-
-  useEffect(() => { return () => { stopRef.current = true; }; }, []);
 
   if (words.length === 0) {
     return <span>Aucun mot configuré pour la dictée.</span>;
@@ -1182,44 +1173,6 @@ function DicteeInstruction({ words }: { words: string[] }) {
     else setIdx((i) => i + 1);
   };
 
-  // ── Auto mode ──
-  const startAuto = async () => {
-    stopRef.current = false;
-    setMode("auto");
-    setAutoIdx(0);
-    setAutoPhase("countdown");
-
-    // Compte à rebours 3-2-1
-    for (let c = 3; c >= 1; c--) {
-      if (stopRef.current) return;
-      setAutoCountdown(c);
-      await waitMs(1000);
-    }
-
-    // Dictée automatique
-    for (let i = 0; i < words.length; i++) {
-      if (stopRef.current) return;
-      setAutoIdx(i);
-      setAutoPhase("speaking");
-      await speak(words[i]);
-
-      if (stopRef.current) return;
-      setAutoPhase("writing");
-      for (let t = DICTEE_PAUSE_SEC; t >= 1; t--) {
-        if (stopRef.current) return;
-        setWriteTimeLeft(t);
-        await waitMs(1000);
-      }
-    }
-
-    if (!stopRef.current) setAutoPhase("done");
-  };
-
-  const stopAuto = () => {
-    stopRef.current = true;
-    setMode("intro");
-  };
-
   // ════ RENDU ════
 
   // ── Mode intro ──
@@ -1232,18 +1185,15 @@ function DicteeInstruction({ words }: { words: string[] }) {
         </p>
         <div className="flex flex-col gap-2">
           <Button
-            onClick={startAuto}
+            onClick={startGuided}
             className="gap-2 gradient-emerald border-0 text-primary-foreground w-full"
           >
-            <Headphones className="h-4 w-4" /> Dictée automatique — comme en classe
+            <Headphones className="h-4 w-4" /> Dictée mot par mot
           </Button>
           <p className="text-xs text-muted-foreground text-center">
-            Les mots sont lus automatiquement avec {DICTEE_PAUSE_SEC}s de pause pour écrire
+            Cliquez sur "Écouter" pour entendre chaque mot, puis sur "J'ai écrit" pour passer au suivant.
           </p>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={startGuided} className="gap-1 flex-1">
-              Mot par mot (à mon rythme)
-            </Button>
             <Button variant="outline" size="sm" onClick={() => setMode("list")} className="gap-1 flex-1">
               Voir la liste
             </Button>
@@ -1274,109 +1224,7 @@ function DicteeInstruction({ words }: { words: string[] }) {
     );
   }
 
-  // ── Mode automatique ──
-  if (mode === "auto") {
-    if (autoPhase === "countdown") {
-      return (
-        <div className="text-center space-y-3 py-2">
-          <p className="text-sm text-muted-foreground">Préparez votre stylo…</p>
-          <motion.div
-            key={autoCountdown}
-            initial={{ scale: 1.4, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="text-6xl font-bold text-primary"
-          >
-            {autoCountdown}
-          </motion.div>
-          <Button variant="ghost" size="sm" onClick={stopAuto} className="text-xs text-muted-foreground">
-            Annuler
-          </Button>
-        </div>
-      );
-    }
-
-    if (autoPhase === "done") {
-      return (
-        <div className="space-y-3">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 text-center"
-          >
-            <CheckCircle2 className="h-8 w-8 text-emerald-600 mx-auto mb-2" />
-            <p className="font-bold text-emerald-700 dark:text-emerald-400">
-              Dictée terminée — {words.length} mots !
-            </p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Prenez une photo de votre feuille et envoyez-la pour correction.
-            </p>
-          </motion.div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={startAuto}>↩ Recommencer</Button>
-            <Button variant="outline" size="sm" onClick={() => setMode("intro")}>← Menu</Button>
-          </div>
-        </div>
-      );
-    }
-
-    // speaking / writing
-    return (
-      <div className="space-y-4">
-        {/* Barre de progression */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-muted-foreground">
-            Mot {autoIdx + 1} / {words.length}
-          </span>
-          <div className="flex gap-1 flex-1">
-            {words.map((_, i) => (
-              <div
-                key={i}
-                className={`flex-1 h-1.5 rounded-full transition-all ${
-                  i < autoIdx ? "bg-emerald-500" : i === autoIdx ? "bg-primary animate-pulse" : "bg-muted"
-                }`}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Zone centrale */}
-        <motion.div
-          key={`${autoIdx}-${autoPhase}`}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={`p-6 rounded-xl border text-center space-y-2 ${
-            autoPhase === "speaking"
-              ? "bg-primary/10 border-primary"
-              : "bg-muted/40 border-border"
-          }`}
-        >
-          {autoPhase === "speaking" ? (
-            <>
-              <Volume2 className="h-8 w-8 text-primary mx-auto animate-pulse" />
-              <p className="font-semibold text-foreground">Écoutez le mot n°{autoIdx + 1}…</p>
-              <p className="text-xs text-muted-foreground">Ne regardez pas la liste !</p>
-            </>
-          ) : (
-            <>
-              <p className="text-4xl font-bold text-primary">{writeTimeLeft}</p>
-              <p className="text-sm font-medium text-foreground">✏️ Écrivez le mot</p>
-              <p className="text-xs text-muted-foreground">
-                {autoIdx + 1 < words.length
-                  ? `Mot suivant dans ${writeTimeLeft}s…`
-                  : `Dictée terminée dans ${writeTimeLeft}s`}
-              </p>
-            </>
-          )}
-        </motion.div>
-
-        <Button variant="ghost" size="sm" onClick={stopAuto} className="text-xs w-full text-muted-foreground">
-          ⏹ Arrêter la dictée
-        </Button>
-      </div>
-    );
-  }
-
-  // ── Mode guidé ──
+  // ── Mode guidé terminé ──
   if (guidedDone) {
     return (
       <div className="space-y-3">
