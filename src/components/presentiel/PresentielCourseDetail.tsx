@@ -968,9 +968,73 @@ function ReorderStep({ course, onDone }: { course: PresentielCourseV2; onDone: (
   );
 }
 
+// ─── Déduplication inter-modules ───
+// Une même question/mot ne doit apparaître qu'une seule fois dans tout le cours.
+// Ordre de priorité (l'élément reste dans le 1er module où il apparaît) :
+// vocabulaire → compréhension → remise en ordre → dictée.
+function normKey(s: string): string {
+  if (!s) return "";
+  return s
+    .normalize("NFD")
+    .replace(/[\u064B-\u065F\u0670]/g, "") // tashkeel
+    .replace(/[\u0610-\u061A]/g, "")
+    .replace(/[إأآا]/g, "ا")
+    .replace(/ى/g, "ي")
+    .replace(/ة/g, "ه")
+    .replace(/[^\p{L}\p{N}]/gu, "")
+    .toLowerCase()
+    .trim();
+}
+
+function dedupeCourse(course: PresentielCourseV2): PresentielCourseV2 {
+  const seen = new Set<string>();
+
+  // 1. Vocabulaire (traduction) — clé = mot arabe
+  const vocabulary = (course.vocabulary || []).filter((v) => {
+    const k = normKey(v?.arabic || "");
+    if (!k || seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+
+  // 2. Compréhension — clé = question
+  const comprehension_questions = (course.comprehension_questions || []).filter((q) => {
+    const k = normKey(q?.question || "");
+    if (!k || seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+
+  // 3. Remise en ordre — clé = phrase reconstituée
+  const reorder_exercises = (course.reorder_exercises || []).filter((r) => {
+    const phrase = Array.isArray(r?.correct_order) ? r.correct_order.join(" ") : "";
+    const k = normKey(phrase);
+    if (!k || seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+
+  // 4. Dictée — clé = mot
+  const dictation_words = (course.dictation_words || []).filter((w) => {
+    const k = normKey(w || "");
+    if (!k || seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+
+  return {
+    ...course,
+    vocabulary,
+    comprehension_questions,
+    reorder_exercises,
+    dictation_words,
+  };
+}
+
 // ─── Main ───
-const PresentielCourseDetail = ({ course, userProgress, onProgressUpdate }: Props) => {
+const PresentielCourseDetail = ({ course: rawCourse, userProgress, onProgressUpdate }: Props) => {
   const { user } = useAuth();
+  const course = useMemo(() => dedupeCourse(rawCourse), [rawCourse]);
   const isN2 = course.level === "niveau_2";
   const stepsOrder: Exclude<Step, "done">[] = isN2
     ? ["lecture", "ecriture", "traduction", "comprehension", "reorder", "dictee"]
