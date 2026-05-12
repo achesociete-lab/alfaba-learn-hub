@@ -740,7 +740,7 @@ const lesson9: Lesson = {
     { question: "Que signifie هٰذِهِ بِنْتٌ ?", options: ["Cette fille est belle", "Ceci est une fille", "La fille est grande", "Où est la fille ?"], correctIndex: 1, explanation: "هٰذِهِ بِنْتٌ = Ceci est une fille." },
   ],
   dictation: [
-    { word: "الكِتَابُ", transliteration: "al-kitâbou (le livre)", options: ["كِتَابٌ", "الكِتَابُ", "كِتَابًا", "كُتُبٌ"], correctIndex: 1 },
+    { word: "الْمَدْرَسَةُ", transliteration: "al-madrasatu (l'école)", options: ["مَدْرَسَةٌ", "الْمَدْرَسَةُ", "مَدَارِسُ", "مَدْرَسَتَانِ"], correctIndex: 1 },
     { word: "البَيْتُ", transliteration: "al-baytou (la maison)", options: ["بَيْتٌ", "البَيْتُ", "بُيُوتٌ", "بَيْتًا"], correctIndex: 1 },
     { word: "الشَّمْسُ", transliteration: "ash-shamsou (le soleil)", options: ["شَمْسٌ", "الشَّمْسُ", "شُمُوسٌ", "شَمْسًا"], correctIndex: 1 },
     { word: "هٰذَا", transliteration: "hâdhâ (ceci, masc.)", options: ["هٰذِهِ", "هٰذَا", "ذٰلِكَ", "هُوَ"], correctIndex: 1 },
