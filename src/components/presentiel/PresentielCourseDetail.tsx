@@ -152,9 +152,12 @@ function LectureStep({ course, onDone }: { course: PresentielCourseV2; onDone: (
     }
   };
 
-  const pages = (course.lesson_photos && course.lesson_photos.length > 0)
-    ? course.lesson_photos
-    : (course.photo_url ? [course.photo_url] : []);
+  const pages = Array.from(
+    new Set([
+      ...(course.photo_url ? [course.photo_url] : []),
+      ...(Array.isArray(course.lesson_photos) ? course.lesson_photos : []),
+    ])
+  );
 
   return (
     <Card>
