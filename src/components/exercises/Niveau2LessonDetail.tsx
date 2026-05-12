@@ -15,6 +15,7 @@ import LessonAudioPlayer from "./LessonAudioPlayer";
 import { usePersistentState, userScopedKey } from "@/hooks/use-persistent-state";
 import { useAuth } from "@/contexts/AuthContext";
 import { getOrCreateShuffledOrder, clearShuffledOrder } from "@/utils/shuffle";
+import { dedupeNiveau2 } from "@/utils/lesson-dedupe";
 
 interface Niveau2LessonDetailProps {
   lesson: Niveau2Lesson;
