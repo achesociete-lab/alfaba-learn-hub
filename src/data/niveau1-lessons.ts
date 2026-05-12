@@ -130,7 +130,7 @@ const lesson1: Lesson = {
     { question: "Combien y a-t-il de lettres qui ne s'attachent pas ?", options: ["4", "5", "6", "8"], correctIndex: 2, explanation: "Il y a 6 lettres qui ne s'attachent pas : ا د ذ ر ز و." },
   ],
   dictation: [
-    { word: "ا", transliteration: "Alif", options: ["ا", "ل", "د", "و"], correctIndex: 0 },
+    { word: "و", transliteration: "Wâw", options: ["و", "ر", "ز", "د"], correctIndex: 0 },
     { word: "ب", transliteration: "Bâ'", options: ["ت", "ب", "ث", "ن"], correctIndex: 1 },
     { word: "ج", transliteration: "Jîm", options: ["ج", "ح", "خ", "ع"], correctIndex: 0 },
     { word: "ح", transliteration: "Hâ' (guttural)", options: ["خ", "ج", "ح", "ه"], correctIndex: 2 },
