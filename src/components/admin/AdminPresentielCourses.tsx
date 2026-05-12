@@ -879,15 +879,29 @@ const AdminPresentielCourses = () => {
 
           {/* Niveau 2 only — Reorder */}
           {draft.level === "niveau_2" && (
-            <div className="space-y-2 p-4 rounded-lg border border-dashed border-primary/40 bg-primary/5">
+            <div className="space-y-3 p-4 rounded-lg border border-dashed border-primary/40 bg-primary/5">
               <Label className="flex items-center gap-2">
                 <ListOrdered className="h-4 w-4" /> Exercices de remise en ordre (Niveau 2)
               </Label>
               <p className="text-xs text-muted-foreground">
-                Saisissez la phrase correcte. Les mots seront mélangés automatiquement pour l'élève.
+                Saisissez la phrase correcte OU éditez chaque mot individuellement. Les mots seront mélangés pour l'élève.
               </p>
               {draft.reorder_exercises.map((r, i) => (
-                <div key={i} className="flex gap-2">
+                <div key={i} className="space-y-2 p-3 rounded-md border bg-background">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-muted-foreground">Phrase {i + 1}</span>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => setDraft({
+                        ...draft,
+                        reorder_exercises: draft.reorder_exercises.filter((_, j) => j !== i),
+                      })}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+
                   <Input
                     dir="rtl"
                     className="font-amiri text-lg text-right"
@@ -900,16 +914,57 @@ const AdminPresentielCourses = () => {
                     }}
                     placeholder="ذهبَ الطّالبُ إلى المدرسةِ"
                   />
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => setDraft({
-                      ...draft,
-                      reorder_exercises: draft.reorder_exercises.filter((_, j) => j !== i),
-                    })}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+
+                  {r.correct_order.length > 0 && (
+                    <div className="space-y-1">
+                      <p className="text-[11px] text-muted-foreground">Édition mot par mot (ordre correct, droite → gauche) :</p>
+                      <div className="flex flex-wrap gap-2" dir="rtl">
+                        {r.correct_order.map((w, wi) => (
+                          <div key={wi} className="flex items-center gap-1">
+                            <Input
+                              dir="rtl"
+                              className="font-amiri text-base text-right h-9 w-28"
+                              value={w}
+                              onChange={(e) => {
+                                const newWords = [...r.correct_order];
+                                newWords[wi] = e.target.value.trim();
+                                const cleaned = newWords.filter(Boolean);
+                                const arr = [...draft.reorder_exercises];
+                                arr[i] = { words: cleaned, correct_order: cleaned };
+                                setDraft({ ...draft, reorder_exercises: arr });
+                              }}
+                            />
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7"
+                              onClick={() => {
+                                const newWords = r.correct_order.filter((_, j) => j !== wi);
+                                const arr = [...draft.reorder_exercises];
+                                arr[i] = { words: newWords, correct_order: newWords };
+                                setDraft({ ...draft, reorder_exercises: arr });
+                              }}
+                            >
+                              <Trash2 className="h-3 w-3 text-destructive" />
+                            </Button>
+                          </div>
+                        ))}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-9"
+                          onClick={() => {
+                            const newWords = [...r.correct_order, ""];
+                            const arr = [...draft.reorder_exercises];
+                            arr[i] = { words: newWords, correct_order: newWords };
+                            setDraft({ ...draft, reorder_exercises: arr });
+                          }}
+                        >
+                          <Plus className="h-3 w-3 mr-1" /> Mot
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
               <Button
