@@ -10,23 +10,110 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-// Contenu enrichi de la Leçon 10 (Dictée finale)
+// Contenu enrichi de la Leçon 10 (Récapitulatif + Dictée finale)
 const LESSON_10 = {
   id: 10,
-  title: "Dictée finale",
-  subtitle: "Évaluation écrite du niveau 1",
+  title: "Récapitulatif & dictée finale",
+  subtitle: "Synthèse complète du Niveau 1 et évaluation",
   icon: "🏆",
   theory: [
     {
-      title: "Bravo, vous y êtes !",
+      title: "Récap 1 — L'alphabet (Leçon 1)",
       content:
-        "Cette dernière leçon est une évaluation complète de tout ce que vous avez appris au Niveau 1 :\n\n✅ Les 28 lettres de l'alphabet\n✅ Les 4 formes de chaque lettre\n✅ Les voyelles courtes (Fatha, Damma, Kasra, Soukoun)\n✅ La lecture de syllabes\n✅ Les voyelles longues (â, û, î)\n✅ La lecture de mots\n✅ Le Tanwîn\n✅ La Shadda\n✅ La lecture de phrases\n\nLes exercices et la dictée qui suivent couvrent l'ensemble de ces notions.",
+        "L'alphabet arabe compte 28 lettres, qui s'écrivent et se lisent de droite à gauche.\n\n• Toutes les lettres sont des consonnes.\n• 6 lettres ne s'attachent jamais à la lettre suivante : ا د ذ ر ز و.\n• Les autres s'attachent des deux côtés.",
+      arabicExamples: [
+        { arabic: "ا ب ت ث", transliteration: "alif, bâ, tâ, thâ", meaning: "les 4 premières lettres" },
+        { arabic: "د ذ ر ز و", transliteration: "dâl, dhâl, râ, zây, wâw", meaning: "lettres qui ne s'attachent pas à gauche" },
+      ],
+      tip: "Sens de lecture et d'écriture : de droite ← à gauche.",
     },
     {
-      title: "Conseils pour l'évaluation",
+      title: "Récap 2 — Les 4 formes des lettres (Leçon 2)",
       content:
-        "• Lisez chaque question attentivement\n• Pour la dictée, écoutez bien le mot avant de répondre\n• Prenez votre temps : la précision est plus importante que la vitesse\n• Si vous obtenez un score parfait, vous êtes prêt(e) pour le Niveau 2 !",
-      tip: "N'hésitez pas à revenir sur les leçons précédentes si certains points ne sont pas clairs.",
+        "Chaque lettre peut prendre 4 formes selon sa position : isolée, initiale, médiane, finale. C'est l'assemblage de ces formes qui crée le mot.",
+      arabicExamples: [
+        { arabic: "ب  بـ  ـبـ  ـب", transliteration: "bâ : isolée / initiale / médiane / finale", meaning: "les 4 formes du bâ" },
+        { arabic: "كَتَبَ", transliteration: "kataba", meaning: "il a écrit (ك + ت + ب)" },
+      ],
+    },
+    {
+      title: "Récap 3 — Les voyelles courtes (Leçon 3)",
+      content:
+        "• Fatha ( َ ) → « a »\n• Damma ( ُ ) → « ou »\n• Kasra ( ِ ) → « i »\n• Soukoun ( ْ ) → absence de voyelle",
+      arabicExamples: [
+        { arabic: "بَ", transliteration: "ba", meaning: "Fatha" },
+        { arabic: "بُ", transliteration: "bou", meaning: "Damma" },
+        { arabic: "بِ", transliteration: "bi", meaning: "Kasra" },
+        { arabic: "بْ", transliteration: "b", meaning: "Soukoun" },
+      ],
+    },
+    {
+      title: "Récap 4 — Syllabes & voyelles longues (Leçons 4-5)",
+      content:
+        "Les voyelles longues prolongent le son grâce à ا و ي :\n• ـَا → â\n• ـُو → û\n• ـِي → î",
+      arabicExamples: [
+        { arabic: "بَا", transliteration: "bâ", meaning: "â long" },
+        { arabic: "بُو", transliteration: "bû", meaning: "û long" },
+        { arabic: "بِي", transliteration: "bî", meaning: "î long" },
+        { arabic: "كِتَاب", transliteration: "kitâb", meaning: "livre" },
+      ],
+    },
+    {
+      title: "Récap 5 — Lecture de mots (Leçon 6)",
+      content:
+        "Pour lire un mot : identifier les lettres et leurs formes, lire la voyelle attachée, puis enchaîner les syllabes de droite à gauche.",
+      arabicExamples: [
+        { arabic: "قَلَم", transliteration: "qalam", meaning: "stylo" },
+        { arabic: "بَيْت", transliteration: "bayt", meaning: "maison" },
+        { arabic: "شَمْس", transliteration: "shams", meaning: "soleil" },
+      ],
+    },
+    {
+      title: "Récap 6 — Le Tanwîn (Leçon 7)",
+      content:
+        "Doublement de voyelle ajoutant le son « n » à la fin d'un nom indéfini :\n• ً → -an\n• ٌ → -oun\n• ٍ → -in",
+      arabicExamples: [
+        { arabic: "كِتَابًا", transliteration: "kitâban", meaning: "un livre" },
+        { arabic: "كِتَابٌ", transliteration: "kitâboun", meaning: "un livre" },
+        { arabic: "كِتَابٍ", transliteration: "kitâbin", meaning: "un livre" },
+      ],
+    },
+    {
+      title: "Récap 7 — La Shadda (Leçon 8)",
+      content:
+        "La Shadda ( ّ ) double la lettre. Elle peut changer le sens du mot.",
+      arabicExamples: [
+        { arabic: "دَرَسَ", transliteration: "darasa", meaning: "il a étudié" },
+        { arabic: "دَرَّسَ", transliteration: "darrasa", meaning: "il a enseigné" },
+        { arabic: "رَبّ", transliteration: "rabb", meaning: "Seigneur" },
+      ],
+    },
+    {
+      title: "Récap 8 — Lettres solaires & lunaires (Leçon 9)",
+      content:
+        "L'article ال :\n• Devant une lunaire → on prononce « al ».\n• Devant une solaire → le « l » est muet et la lettre est doublée.",
+      arabicExamples: [
+        { arabic: "القَمَر", transliteration: "al-qamar", meaning: "la lune (lunaire)" },
+        { arabic: "الشَّمْس", transliteration: "ash-shams", meaning: "le soleil (solaire)" },
+        { arabic: "البَيْت", transliteration: "al-bayt", meaning: "la maison" },
+        { arabic: "النُّور", transliteration: "an-noûr", meaning: "la lumière" },
+      ],
+    },
+    {
+      title: "Récap 9 — Lecture de phrases simples",
+      content:
+        "• Phrase nominale : Sujet + Attribut.\n• Phrase verbale : Verbe + Sujet + Complément.",
+      arabicExamples: [
+        { arabic: "البَيْتُ كَبِيرٌ", transliteration: "al-baytou kabîr", meaning: "la maison est grande" },
+        { arabic: "ذَهَبَ الوَلَدُ", transliteration: "dhahaba al-waladou", meaning: "le garçon est parti" },
+        { arabic: "هٰذَا قَلَمٌ", transliteration: "hâdhâ qalamoun", meaning: "ceci est un stylo" },
+      ],
+    },
+    {
+      title: "Évaluation finale",
+      content:
+        "Les exercices et la dictée qui suivent couvrent tout le Niveau 1. Lisez attentivement, écoutez bien la dictée, et vous serez prêt(e) pour le Niveau 2 !",
+      tip: "Revenez sur les leçons précédentes si une notion n'est pas claire.",
     },
   ],
   qcm: [
