@@ -753,21 +753,102 @@ const lesson9: Lesson = {
   ],
 };
 
-// ─── Leçon 10 : Dictée finale ───
+// ─── Leçon 10 : Récapitulatif & dictée finale ───
 const lesson10: Lesson = {
   id: 10,
-  title: "Dictée finale",
-  subtitle: "Évaluation écrite du niveau 1",
+  title: "Récapitulatif & dictée finale",
+  subtitle: "Synthèse complète du Niveau 1 et évaluation",
   icon: "🏆",
   theory: [
     {
-      title: "Bravo, vous y êtes !",
-      content: "Cette dernière leçon est une évaluation complète de tout ce que vous avez appris au Niveau 1 :\n\n✅ Les 28 lettres de l'alphabet\n✅ Les 4 formes de chaque lettre\n✅ Les voyelles courtes (Fatha, Damma, Kasra, Soukoun)\n✅ La lecture de syllabes\n✅ Les voyelles longues (â, û, î)\n✅ La lecture de mots\n✅ Le Tanwîn\n✅ La Shadda\n✅ La lecture de phrases\n\nLes exercices et la dictée qui suivent couvrent l'ensemble de ces notions.",
+      title: "Récap 1 — L'alphabet (Leçon 1)",
+      content: "L'alphabet arabe compte 28 lettres, qui s'écrivent et se lisent de droite à gauche.\n\n• Toutes les lettres sont des consonnes.\n• 6 lettres ne s'attachent jamais à la lettre suivante : ا د ذ ر ز و.\n• Les autres s'attachent des deux côtés.",
+      arabicExamples: [
+        { arabic: "ا ب ت ث", transliteration: "alif, bâ, tâ, thâ", meaning: "les 4 premières lettres" },
+        { arabic: "د ذ ر ز و", transliteration: "dâl, dhâl, râ, zây, wâw", meaning: "lettres qui ne s'attachent pas à gauche" },
+      ],
+      tip: "Sens de lecture et d'écriture : de droite ← à gauche.",
     },
     {
-      title: "Conseils pour l'évaluation",
-      content: "• Lisez chaque question attentivement\n• Pour la dictée, écoutez bien le mot avant de répondre\n• Prenez votre temps : la précision est plus importante que la vitesse\n• Si vous obtenez un score parfait, vous êtes prêt(e) pour le Niveau 2 !",
-      tip: "N'hésitez pas à revenir sur les leçons précédentes si certains points ne sont pas clairs. La révision fait partie de l'apprentissage !",
+      title: "Récap 2 — Les 4 formes des lettres (Leçon 2)",
+      content: "Chaque lettre peut prendre 4 formes selon sa position dans le mot :\n\n• Isolée\n• Initiale (au début)\n• Médiane (au milieu)\n• Finale (à la fin)\n\nC'est l'assemblage de ces formes qui crée le mot.",
+      arabicExamples: [
+        { arabic: "ب  بـ  ـبـ  ـب", transliteration: "bâ : isolée / initiale / médiane / finale", meaning: "les 4 formes du bâ" },
+        { arabic: "كَتَبَ", transliteration: "kataba", meaning: "il a écrit (assemblage de ك + ت + ب)" },
+      ],
+    },
+    {
+      title: "Récap 3 — Les voyelles courtes (Leçon 3)",
+      content: "Les voyelles courtes sont de petits signes placés au-dessus ou en dessous de la lettre :\n\n• Fatha ( َ ) → son « a »\n• Damma ( ُ ) → son « ou »\n• Kasra ( ِ ) → son « i »\n• Soukoun ( ْ ) → absence de voyelle",
+      arabicExamples: [
+        { arabic: "بَ", transliteration: "ba", meaning: "Fatha" },
+        { arabic: "بُ", transliteration: "bou", meaning: "Damma" },
+        { arabic: "بِ", transliteration: "bi", meaning: "Kasra" },
+        { arabic: "بْ", transliteration: "b", meaning: "Soukoun" },
+      ],
+    },
+    {
+      title: "Récap 4 — Syllabes & voyelles longues (Leçons 4-5)",
+      content: "En combinant consonnes et voyelles, on forme des syllabes.\n\nLes voyelles longues prolongent le son grâce aux lettres ا و ي :\n• ـَا → â long\n• ـُو → û long\n• ـِي → î long",
+      arabicExamples: [
+        { arabic: "بَا", transliteration: "bâ", meaning: "voyelle longue â" },
+        { arabic: "بُو", transliteration: "bû", meaning: "voyelle longue û" },
+        { arabic: "بِي", transliteration: "bî", meaning: "voyelle longue î" },
+        { arabic: "كِتَاب", transliteration: "kitâb", meaning: "livre" },
+      ],
+    },
+    {
+      title: "Récap 5 — Lecture de mots (Leçon 6)",
+      content: "Pour lire un mot arabe :\n\n1. Identifier chaque lettre et sa forme.\n2. Lire la voyelle (courte ou longue) attachée.\n3. Enchaîner les syllabes de droite à gauche.",
+      arabicExamples: [
+        { arabic: "قَلَم", transliteration: "qalam", meaning: "stylo" },
+        { arabic: "بَيْت", transliteration: "bayt", meaning: "maison" },
+        { arabic: "شَمْس", transliteration: "shams", meaning: "soleil" },
+      ],
+      tip: "Découper le mot en syllabes aide énormément à la lecture.",
+    },
+    {
+      title: "Récap 6 — Le Tanwîn (Leçon 7)",
+      content: "Le Tanwîn est un doublement de voyelle à la fin d'un nom indéfini. Il ajoute le son « n » :\n\n• Tanwîn Fatha ( ً ) → « -an »\n• Tanwîn Damma ( ٌ ) → « -oun »\n• Tanwîn Kasra ( ٍ ) → « -in »",
+      arabicExamples: [
+        { arabic: "كِتَابًا", transliteration: "kitâban", meaning: "un livre (cas direct)" },
+        { arabic: "كِتَابٌ", transliteration: "kitâboun", meaning: "un livre (cas sujet)" },
+        { arabic: "كِتَابٍ", transliteration: "kitâbin", meaning: "un livre (cas indirect)" },
+      ],
+    },
+    {
+      title: "Récap 7 — La Shadda (Leçon 8)",
+      content: "La Shadda ( ّ ) indique le doublement d'une lettre. Elle se place au-dessus de la consonne doublée.\n\nElle change parfois complètement le sens du mot.",
+      arabicExamples: [
+        { arabic: "دَرَسَ", transliteration: "darasa", meaning: "il a étudié" },
+        { arabic: "دَرَّسَ", transliteration: "darrasa", meaning: "il a enseigné (avec Shadda)" },
+        { arabic: "رَبّ", transliteration: "rabb", meaning: "Seigneur" },
+      ],
+    },
+    {
+      title: "Récap 8 — Lettres solaires & lunaires (Leçon 9)",
+      content: "L'article défini ال (« le / la ») se comporte de deux façons :\n\n• Devant une lettre lunaire → on prononce le « l ». Ex : القَمَر (al-qamar).\n• Devant une lettre solaire → le « l » devient muet et la lettre est doublée. Ex : الشَّمْس (ash-shams).",
+      arabicExamples: [
+        { arabic: "القَمَر", transliteration: "al-qamar", meaning: "la lune (lunaire)" },
+        { arabic: "الشَّمْس", transliteration: "ash-shams", meaning: "le soleil (solaire)" },
+        { arabic: "البَيْت", transliteration: "al-bayt", meaning: "la maison (lunaire)" },
+        { arabic: "النُّور", transliteration: "an-noûr", meaning: "la lumière (solaire)" },
+      ],
+      tip: "14 lettres solaires, 14 lettres lunaires.",
+    },
+    {
+      title: "Récap 9 — Lecture de phrases simples",
+      content: "En combinant tout ce que vous avez vu, vous pouvez maintenant lire de courtes phrases :\n\n• Phrase nominale : Sujet + Attribut.\n• Phrase verbale : Verbe + Sujet + Complément.",
+      arabicExamples: [
+        { arabic: "البَيْتُ كَبِيرٌ", transliteration: "al-baytou kabîr", meaning: "la maison est grande (nominale)" },
+        { arabic: "ذَهَبَ الوَلَدُ", transliteration: "dhahaba al-waladou", meaning: "le garçon est parti (verbale)" },
+        { arabic: "هٰذَا قَلَمٌ", transliteration: "hâdhâ qalamoun", meaning: "ceci est un stylo" },
+      ],
+    },
+    {
+      title: "Évaluation finale",
+      content: "Les exercices et la dictée qui suivent couvrent l'ensemble du Niveau 1 :\n\n✅ Alphabet et formes des lettres\n✅ Voyelles courtes et longues\n✅ Tanwîn et Shadda\n✅ Lettres solaires et lunaires\n✅ Lecture de mots et de phrases\n\n• Lisez chaque question attentivement.\n• Pour la dictée, écoutez bien le mot avant de répondre.\n• Si vous obtenez un score solide, vous êtes prêt(e) pour le Niveau 2 !",
+      tip: "N'hésitez pas à revenir sur les leçons précédentes si une notion n'est pas claire.",
     },
   ],
   qcm: [
