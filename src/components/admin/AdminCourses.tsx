@@ -538,6 +538,31 @@ const AdminCourses = () => {
     }
   };
 
+  const notifyLesson = async (
+    moduleLevel: "niveau_1" | "niveau_2",
+    lessonNumber: number,
+    lessonTitle: string,
+  ) => {
+    try {
+      toast.loading("Envoi des notifications...", { id: "notify-lesson" });
+      const { data, error } = await supabase.functions.invoke("notify-new-lesson", {
+        body: {
+          module: moduleLevel,
+          level: moduleLevel,
+          lessonNumber,
+          lessonTitle,
+        },
+      });
+      if (error) throw error;
+      toast.success(
+        `Notifications envoyées (${data?.sent ?? 0}/${data?.total ?? 0})`,
+        { id: "notify-lesson" },
+      );
+    } catch (e: any) {
+      toast.error(e?.message ?? "Échec de l'envoi", { id: "notify-lesson" });
+    }
+  };
+
   const filteredN1 = n1Lessons.filter(
     (l) => l.title.toLowerCase().includes(search.toLowerCase()) || l.id.toString() === search
   );
