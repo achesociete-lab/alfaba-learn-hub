@@ -384,6 +384,19 @@ const AdminPresentielCourses = () => {
           .single();
         if (error) throw error;
         courseId = data.id;
+
+        // Notifie les élèves concernés du nouveau cours présentiel
+        try {
+          await supabase.functions.invoke("notify-new-lesson", {
+            body: {
+              module: "presentiel",
+              courseId,
+              lessonTitle: payload.title,
+            },
+          });
+        } catch (notifyErr) {
+          console.warn("Notification non envoyée", notifyErr);
+        }
       }
 
       if (draft.assigned_user_ids.length > 0 && courseId) {
