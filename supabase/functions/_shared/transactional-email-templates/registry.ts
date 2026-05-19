@@ -14,6 +14,7 @@ import { template as tutorWeeklyReport } from './tutor-weekly-report.tsx'
 import { template as presentielAccessGranted } from './presentiel-access-granted.tsx'
 import { template as welcomeNewUser } from './welcome-new-user.tsx'
 import { template as paymentConfirmation } from './payment-confirmation.tsx'
+import { template as newLessonPublished } from './new-lesson-published.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'admin-pending-signup': adminPendingSignup,
@@ -21,4 +22,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'presentiel-access-granted': presentielAccessGranted,
   'welcome-new-user': welcomeNewUser,
   'payment-confirmation': paymentConfirmation,
+  'new-lesson-published': newLessonPublished,
 }

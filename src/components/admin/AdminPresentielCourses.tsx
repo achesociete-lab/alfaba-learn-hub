@@ -396,6 +396,21 @@ const AdminPresentielCourses = () => {
         if (aErr) throw aErr;
       }
 
+      // Notifie les élèves concernés (uniquement à la création)
+      if (!draft.id && courseId) {
+        try {
+          await supabase.functions.invoke("notify-new-lesson", {
+            body: {
+              module: "presentiel",
+              courseId,
+              lessonTitle: payload.title,
+            },
+          });
+        } catch (notifyErr) {
+          console.warn("Notification non envoyée", notifyErr);
+        }
+      }
+
       toast.success(draft.id ? "Cours mis à jour" : "Cours créé");
       setDraft(emptyDraft());
       setDictationInput("");

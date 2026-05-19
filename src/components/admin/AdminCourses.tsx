@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   BookOpen, CheckCircle, Volume2, Mic,
-  Search, ArrowLeft, Edit, Save, X, Plus, Trash2, Video
+  Search, ArrowLeft, Edit, Save, X, Plus, Trash2, Video, Bell
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -538,6 +538,31 @@ const AdminCourses = () => {
     }
   };
 
+  const notifyLesson = async (
+    moduleLevel: "niveau_1" | "niveau_2",
+    lessonNumber: number,
+    lessonTitle: string,
+  ) => {
+    try {
+      toast.loading("Envoi des notifications...", { id: "notify-lesson" });
+      const { data, error } = await supabase.functions.invoke("notify-new-lesson", {
+        body: {
+          module: moduleLevel,
+          level: moduleLevel,
+          lessonNumber,
+          lessonTitle,
+        },
+      });
+      if (error) throw error;
+      toast.success(
+        `Notifications envoyées (${data?.sent ?? 0}/${data?.total ?? 0})`,
+        { id: "notify-lesson" },
+      );
+    } catch (e: any) {
+      toast.error(e?.message ?? "Échec de l'envoi", { id: "notify-lesson" });
+    }
+  };
+
   const filteredN1 = n1Lessons.filter(
     (l) => l.title.toLowerCase().includes(search.toLowerCase()) || l.id.toString() === search
   );
@@ -632,6 +657,13 @@ const AdminCourses = () => {
               <div className="flex items-center gap-2 shrink-0">
                 {lesson.videoUrl && <Video className="h-4 w-4 text-primary" />}
                 <span className="text-xs text-muted-foreground">{lesson.qcm.length} QCM</span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); notifyLesson("niveau_1", lesson.id, lesson.title); }}
+                  title="Notifier les élèves"
+                  className="p-1.5 rounded-md hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                >
+                  <Bell className="h-4 w-4" />
+                </button>
                 <Edit className="h-4 w-4 text-muted-foreground" />
               </div>
             </motion.div>
@@ -654,6 +686,13 @@ const AdminCourses = () => {
               <div className="flex items-center gap-2 shrink-0">
                 {(lesson as any).videoUrl && <Video className="h-4 w-4 text-primary" />}
                 <span className="text-xs text-muted-foreground">{lesson.qcm.length + lesson.comprehension.questions.length} Q</span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); notifyLesson("niveau_2", lesson.id, lesson.title); }}
+                  title="Notifier les élèves"
+                  className="p-1.5 rounded-md hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                >
+                  <Bell className="h-4 w-4" />
+                </button>
                 <Edit className="h-4 w-4 text-muted-foreground" />
               </div>
             </motion.div>
