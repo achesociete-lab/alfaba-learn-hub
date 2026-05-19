@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   BookOpen, CheckCircle, Volume2, Mic,
-  Search, ArrowLeft, Edit, Save, X, Plus, Trash2, Video
+  Search, ArrowLeft, Edit, Save, X, Plus, Trash2, Video, Bell
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
