@@ -686,6 +686,13 @@ const AdminCourses = () => {
               <div className="flex items-center gap-2 shrink-0">
                 {(lesson as any).videoUrl && <Video className="h-4 w-4 text-primary" />}
                 <span className="text-xs text-muted-foreground">{lesson.qcm.length + lesson.comprehension.questions.length} Q</span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); notifyLesson("niveau_2", lesson.id, lesson.title); }}
+                  title="Notifier les élèves"
+                  className="p-1.5 rounded-md hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                >
+                  <Bell className="h-4 w-4" />
+                </button>
                 <Edit className="h-4 w-4 text-muted-foreground" />
               </div>
             </motion.div>
