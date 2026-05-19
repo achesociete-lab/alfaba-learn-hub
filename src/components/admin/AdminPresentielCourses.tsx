@@ -384,8 +384,20 @@ const AdminPresentielCourses = () => {
           .single();
         if (error) throw error;
         courseId = data.id;
+      }
 
-        // Notifie les élèves concernés du nouveau cours présentiel
+      if (draft.assigned_user_ids.length > 0 && courseId) {
+        const rows = draft.assigned_user_ids.map((uid) => ({
+          course_id: courseId!,
+          user_id: uid,
+          assigned_by: user.id,
+        }));
+        const { error: aErr } = await supabase.from("presentiel_course_assignments").insert(rows);
+        if (aErr) throw aErr;
+      }
+
+      // Notifie les élèves concernés (uniquement à la création)
+      if (!draft.id && courseId) {
         try {
           await supabase.functions.invoke("notify-new-lesson", {
             body: {
@@ -397,16 +409,6 @@ const AdminPresentielCourses = () => {
         } catch (notifyErr) {
           console.warn("Notification non envoyée", notifyErr);
         }
-      }
-
-      if (draft.assigned_user_ids.length > 0 && courseId) {
-        const rows = draft.assigned_user_ids.map((uid) => ({
-          course_id: courseId!,
-          user_id: uid,
-          assigned_by: user.id,
-        }));
-        const { error: aErr } = await supabase.from("presentiel_course_assignments").insert(rows);
-        if (aErr) throw aErr;
       }
 
       toast.success(draft.id ? "Cours mis à jour" : "Cours créé");
