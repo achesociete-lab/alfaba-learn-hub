@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import ProfileGuard from "@/components/ProfileGuard";
 import RouteTracker from "./components/RouteTracker";
 import PendingPresentielHandler from "./components/PendingPresentielHandler";
+import PagePersistenceTracker from "./components/PagePersistenceTracker";
 
 // Eager-loaded (small, critical path)
 import Index from "./pages/Index.tsx";
@@ -59,6 +60,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <RouteTracker />
+          <PagePersistenceTracker />
           <PendingPresentielHandler />
           <Suspense fallback={<PageLoader />}>
             <Routes>
