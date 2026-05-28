@@ -289,7 +289,7 @@ const AdminPresentielSubmissions = () => {
 
 function SubmissionCard({
   sub, course, student, editing, feedbackDraft,
-  onEdit, onChangeFeedback, onValidate, onReject, onAnnotate, readonly,
+  onEdit, onChangeFeedback, onValidate, onReject, onAnnotate, onReload, readonly,
 }: {
   sub: Submission;
   course?: CourseLite;
@@ -301,6 +301,7 @@ function SubmissionCard({
   onValidate?: () => void;
   onReject?: () => void;
   onAnnotate?: (photoIndex: number, url: string) => void;
+  onReload?: () => void;
   readonly?: boolean;
 }) {
   const photos: string[] = (sub.photo_urls && Array.isArray(sub.photo_urls) && sub.photo_urls.length > 0)
