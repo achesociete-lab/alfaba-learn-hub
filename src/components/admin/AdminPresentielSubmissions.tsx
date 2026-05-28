@@ -30,6 +30,7 @@ interface Submission {
   audio_url?: string | null;
   status: "en_attente" | "validee" | "a_corriger";
   feedback: string | null;
+  feedback_audio_url?: string | null;
   created_at: string;
   reviewed_at: string | null;
 }
