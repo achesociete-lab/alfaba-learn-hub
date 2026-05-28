@@ -384,6 +384,24 @@ function SubmissionCard({
                 </div>
               ) : null}
 
+              {/* Voice correction — primarily useful for lecture step */}
+              {!readonly && sub.step_type === "lecture" && onReload && (
+                <VoiceFeedbackRecorder
+                  submissionId={sub.id}
+                  userId={sub.user_id}
+                  existingUrl={sub.feedback_audio_url}
+                  onSaved={onReload}
+                />
+              )}
+              {readonly && sub.feedback_audio_url && (
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+                    <Mic className="h-3 w-3" /> Correction vocale envoyée
+                  </p>
+                  <audio controls src={sub.feedback_audio_url} className="w-full" style={{ height: 36 }} />
+                </div>
+              )}
+
               {/* Action buttons */}
               {!readonly && (
                 <div className="flex flex-wrap gap-2 pt-2">
