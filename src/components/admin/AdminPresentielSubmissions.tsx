@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  CheckCircle2, XCircle, Loader2, MessageSquare, Image as ImageIcon, Mic, Search,
+  CheckCircle2, XCircle, Loader2, MessageSquare, Image as ImageIcon, Mic, Search, Pencil,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import PhotoAnnotator from "./PhotoAnnotator";
 
 interface Submission {
   id: string;
@@ -24,6 +25,7 @@ interface Submission {
   step_type: "ecriture" | "dictee" | "lecture";
   photo_url: string | null;
   photo_urls?: string[] | null;
+  annotated_photo_urls?: string[] | null;
   audio_url?: string | null;
   status: "en_attente" | "validee" | "a_corriger";
   feedback: string | null;
