@@ -290,6 +290,7 @@ function SubmissionCard({
   const photos: string[] = (sub.photo_urls && Array.isArray(sub.photo_urls) && sub.photo_urls.length > 0)
     ? sub.photo_urls
     : (sub.photo_url ? [sub.photo_url] : []);
+  const annotated: string[] = Array.isArray(sub.annotated_photo_urls) ? sub.annotated_photo_urls : [];
 
   return (
     <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
@@ -297,16 +298,37 @@ function SubmissionCard({
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row gap-4">
             {/* Media */}
-            <div className="shrink-0 flex flex-wrap gap-2 sm:w-48">
-              {photos.map((u, i) => (
-                <a key={i} href={u} target="_blank" rel="noreferrer" className="block">
-                  <img
-                    src={u}
-                    alt={`Soumission ${i + 1}`}
-                    className="w-24 h-24 object-cover rounded-lg border border-border hover:opacity-80 transition"
-                  />
-                </a>
-              ))}
+            <div className="shrink-0 flex flex-wrap gap-2 sm:w-56">
+              {photos.map((u, i) => {
+                const ann = annotated[i];
+                const display = ann || u;
+                return (
+                  <div key={i} className="relative group">
+                    <a href={display} target="_blank" rel="noreferrer" className="block">
+                      <img
+                        src={display}
+                        alt={`Soumission ${i + 1}`}
+                        className="w-24 h-24 object-cover rounded-lg border border-border hover:opacity-80 transition"
+                      />
+                    </a>
+                    {ann && (
+                      <Badge className="absolute -top-1 -left-1 text-[9px] px-1 py-0 h-4 bg-primary text-primary-foreground">✏️</Badge>
+                    )}
+                    {!readonly && onAnnotate && (
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="secondary"
+                        onClick={() => onAnnotate(i, u)}
+                        className="absolute bottom-1 right-1 h-6 w-6 shadow"
+                        title={ann ? "Modifier l'annotation" : "Annoter cette photo"}
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
               {sub.audio_url && (
                 <div className="w-full">
                   <audio controls src={sub.audio_url} className="w-full" style={{ height: "40px" }} />
