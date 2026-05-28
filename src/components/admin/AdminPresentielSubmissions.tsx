@@ -72,6 +72,36 @@ const AdminPresentielSubmissions = () => {
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<string | null>(null);
   const [feedbackDraft, setFeedbackDraft] = useState("");
+  const [annotating, setAnnotating] = useState<{ subId: string; photoIndex: number; url: string } | null>(null);
+
+  // Upload annotated photo and persist URL at the same index in annotated_photo_urls
+  const saveAnnotation = async (blob: Blob) => {
+    if (!annotating) return;
+    const sub = submissions.find((s) => s.id === annotating.subId);
+    if (!sub) return;
+    const path = `annotations/${sub.user_id}/${sub.id}-${annotating.photoIndex}-${Date.now()}.jpg`;
+    const { error: upErr } = await supabase.storage
+      .from("presentiel-submissions")
+      .upload(path, blob, { contentType: "image/jpeg", upsert: true });
+    if (upErr) { toast.error(upErr.message); return; }
+    const { data: { publicUrl } } = supabase.storage.from("presentiel-submissions").getPublicUrl(path);
+
+    const photos: string[] = (sub.photo_urls && sub.photo_urls.length > 0)
+      ? sub.photo_urls
+      : (sub.photo_url ? [sub.photo_url] : []);
+    const next = [...(sub.annotated_photo_urls || [])];
+    while (next.length < photos.length) next.push("");
+    next[annotating.photoIndex] = publicUrl;
+
+    const { error } = await supabase
+      .from("presentiel_submissions")
+      .update({ annotated_photo_urls: next as any })
+      .eq("id", sub.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Annotation enregistrée ✏️");
+    setAnnotating(null);
+    load();
+  };
 
   const load = async () => {
     setLoading(true);
