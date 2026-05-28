@@ -252,6 +252,14 @@ function LectureStep({ course, onDone }: { course: PresentielCourseV2; onDone: (
                 }`}>
                   {submission.status === "validee" ? "✅ Validée par votre professeur" : "❌ À refaire"}
                 </p>
+                {submission.feedback_audio_url && (
+                  <div className="mt-3 p-3 rounded bg-background/60 border border-border space-y-1">
+                    <p className="text-xs font-semibold flex items-center gap-1">
+                      <Mic className="h-3 w-3" /> Correction vocale du professeur
+                    </p>
+                    <audio controls src={submission.feedback_audio_url} className="w-full" style={{ height: 40 }} />
+                  </div>
+                )}
                 {submission.feedback && (
                   <div className="mt-3 p-3 rounded bg-background/60 border border-border">
                     <p className="text-xs font-semibold mb-1">Commentaire du professeur :</p>

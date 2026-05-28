@@ -17,6 +17,7 @@ import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import PhotoAnnotator from "./PhotoAnnotator";
+import VoiceFeedbackRecorder from "./VoiceFeedbackRecorder";
 
 interface Submission {
   id: string;
@@ -29,6 +30,7 @@ interface Submission {
   audio_url?: string | null;
   status: "en_attente" | "validee" | "a_corriger";
   feedback: string | null;
+  feedback_audio_url?: string | null;
   created_at: string;
   reviewed_at: string | null;
 }
@@ -220,6 +222,7 @@ const AdminPresentielSubmissions = () => {
                   onValidate={() => updateStatus(s, "validee", feedbackDraft || undefined)}
                   onReject={() => updateStatus(s, "a_corriger", feedbackDraft || undefined)}
                   onAnnotate={(idx, url) => setAnnotating({ subId: s.id, photoIndex: idx, url })}
+                  onReload={load}
                 />
               ))
             )}
@@ -233,6 +236,7 @@ const AdminPresentielSubmissions = () => {
                 course={courses[s.course_id]}
                 student={students[s.user_id]}
                 onAnnotate={(idx, url) => setAnnotating({ subId: s.id, photoIndex: idx, url })}
+                onReload={load}
                 readonly
               />
             ))}
@@ -285,7 +289,7 @@ const AdminPresentielSubmissions = () => {
 
 function SubmissionCard({
   sub, course, student, editing, feedbackDraft,
-  onEdit, onChangeFeedback, onValidate, onReject, onAnnotate, readonly,
+  onEdit, onChangeFeedback, onValidate, onReject, onAnnotate, onReload, readonly,
 }: {
   sub: Submission;
   course?: CourseLite;
@@ -297,6 +301,7 @@ function SubmissionCard({
   onValidate?: () => void;
   onReject?: () => void;
   onAnnotate?: (photoIndex: number, url: string) => void;
+  onReload?: () => void;
   readonly?: boolean;
 }) {
   const photos: string[] = (sub.photo_urls && Array.isArray(sub.photo_urls) && sub.photo_urls.length > 0)
@@ -378,6 +383,24 @@ function SubmissionCard({
                   <MessageSquare className="h-3 w-3 inline mr-1" /> {sub.feedback}
                 </div>
               ) : null}
+
+              {/* Voice correction — primarily useful for lecture step */}
+              {!readonly && sub.step_type === "lecture" && onReload && (
+                <VoiceFeedbackRecorder
+                  submissionId={sub.id}
+                  userId={sub.user_id}
+                  existingUrl={sub.feedback_audio_url}
+                  onSaved={onReload}
+                />
+              )}
+              {readonly && sub.feedback_audio_url && (
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+                    <Mic className="h-3 w-3" /> Correction vocale envoyée
+                  </p>
+                  <audio controls src={sub.feedback_audio_url} className="w-full" style={{ height: 36 }} />
+                </div>
+              )}
 
               {/* Action buttons */}
               {!readonly && (
