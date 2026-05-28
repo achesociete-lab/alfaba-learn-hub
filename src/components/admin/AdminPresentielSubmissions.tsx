@@ -317,7 +317,7 @@ function SubmissionCard({
                     {ann && (
                       <Badge className="absolute -top-1 -left-1 text-[9px] px-1 py-0 h-4 bg-primary text-primary-foreground">✏️</Badge>
                     )}
-                    {!readonly && onAnnotate && (
+                    {onAnnotate && (
                       <Button
                         type="button"
                         size="icon"
