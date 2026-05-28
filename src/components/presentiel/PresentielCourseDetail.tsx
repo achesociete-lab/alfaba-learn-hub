@@ -413,6 +413,10 @@ function PhotoUploadStep({
   const photos: string[] = (previousSubmission?.photo_urls && Array.isArray(previousSubmission.photo_urls) && previousSubmission.photo_urls.length > 0)
     ? previousSubmission.photo_urls
     : (previousSubmission?.photo_url ? [previousSubmission.photo_url] : []);
+  const annotatedPhotos: string[] = Array.isArray((previousSubmission as any)?.annotated_photo_urls)
+    ? (previousSubmission as any).annotated_photo_urls
+    : [];
+  const hasAnyAnnotation = annotatedPhotos.some(Boolean);
 
   return (
     <Card>
