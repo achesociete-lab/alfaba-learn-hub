@@ -270,6 +270,15 @@ const AdminPresentielSubmissions = () => {
           </TabsContent>
         </Tabs>
       )}
+
+      {annotating && (
+        <PhotoAnnotator
+          open={!!annotating}
+          onOpenChange={(o) => !o && setAnnotating(null)}
+          imageUrl={annotating.url}
+          onSave={saveAnnotation}
+        />
+      )}
     </div>
   );
 };
