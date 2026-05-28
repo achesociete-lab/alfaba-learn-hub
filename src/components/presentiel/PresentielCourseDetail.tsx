@@ -413,6 +413,10 @@ function PhotoUploadStep({
   const photos: string[] = (previousSubmission?.photo_urls && Array.isArray(previousSubmission.photo_urls) && previousSubmission.photo_urls.length > 0)
     ? previousSubmission.photo_urls
     : (previousSubmission?.photo_url ? [previousSubmission.photo_url] : []);
+  const annotatedPhotos: string[] = Array.isArray((previousSubmission as any)?.annotated_photo_urls)
+    ? (previousSubmission as any).annotated_photo_urls
+    : [];
+  const hasAnyAnnotation = annotatedPhotos.some(Boolean);
 
   return (
     <Card>
@@ -459,16 +463,42 @@ function PhotoUploadStep({
               <Badge variant="outline">⏳ En attente de correction</Badge>
             )}
 
+            {hasAnyAnnotation && (
+              <div className="p-2 rounded-md bg-primary/10 border border-primary/30 text-sm text-foreground">
+                ✏️ Votre professeur a annoté vos photos pour signaler vos erreurs.
+              </div>
+            )}
             <div className="grid grid-cols-3 gap-2">
-              {photos.map((u, i) => (
-                <a key={i} href={u} target="_blank" rel="noreferrer">
-                  <img
-                    src={u}
-                    alt={`Photo ${i + 1}`}
-                    className="w-full aspect-square object-cover rounded-md border border-border"
-                  />
-                </a>
-              ))}
+              {photos.map((u, i) => {
+                const ann = annotatedPhotos[i];
+                const display = ann || u;
+                return (
+                  <div key={i} className="relative">
+                    <a href={display} target="_blank" rel="noreferrer">
+                      <img
+                        src={display}
+                        alt={`Photo ${i + 1}${ann ? " (annotée)" : ""}`}
+                        className={`w-full aspect-square object-cover rounded-md border ${ann ? "border-primary" : "border-border"}`}
+                      />
+                    </a>
+                    {ann && (
+                      <>
+                        <Badge className="absolute top-1 left-1 text-[10px] px-1.5 py-0.5 bg-primary text-primary-foreground">
+                          Corrigée
+                        </Badge>
+                        <a
+                          href={u}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="absolute bottom-1 right-1 text-[10px] bg-background/90 px-1.5 py-0.5 rounded border border-border hover:bg-background"
+                        >
+                          Original
+                        </a>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
             <div className="flex flex-wrap gap-2">

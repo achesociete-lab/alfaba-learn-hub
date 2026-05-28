@@ -509,6 +509,7 @@ export type Database = {
       }
       presentiel_submissions: {
         Row: {
+          annotated_photo_urls: Json
           audio_url: string | null
           course_id: string
           created_at: string
@@ -525,6 +526,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          annotated_photo_urls?: Json
           audio_url?: string | null
           course_id: string
           created_at?: string
@@ -541,6 +543,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          annotated_photo_urls?: Json
           audio_url?: string | null
           course_id?: string
           created_at?: string

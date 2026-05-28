@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  CheckCircle2, XCircle, Loader2, MessageSquare, Image as ImageIcon, Mic, Search,
+  CheckCircle2, XCircle, Loader2, MessageSquare, Image as ImageIcon, Mic, Search, Pencil,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import PhotoAnnotator from "./PhotoAnnotator";
 
 interface Submission {
   id: string;
@@ -24,6 +25,7 @@ interface Submission {
   step_type: "ecriture" | "dictee" | "lecture";
   photo_url: string | null;
   photo_urls?: string[] | null;
+  annotated_photo_urls?: string[] | null;
   audio_url?: string | null;
   status: "en_attente" | "validee" | "a_corriger";
   feedback: string | null;
@@ -70,6 +72,36 @@ const AdminPresentielSubmissions = () => {
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<string | null>(null);
   const [feedbackDraft, setFeedbackDraft] = useState("");
+  const [annotating, setAnnotating] = useState<{ subId: string; photoIndex: number; url: string } | null>(null);
+
+  // Upload annotated photo and persist URL at the same index in annotated_photo_urls
+  const saveAnnotation = async (blob: Blob) => {
+    if (!annotating) return;
+    const sub = submissions.find((s) => s.id === annotating.subId);
+    if (!sub) return;
+    const path = `annotations/${sub.user_id}/${sub.id}-${annotating.photoIndex}-${Date.now()}.jpg`;
+    const { error: upErr } = await supabase.storage
+      .from("presentiel-submissions")
+      .upload(path, blob, { contentType: "image/jpeg", upsert: true });
+    if (upErr) { toast.error(upErr.message); return; }
+    const { data: { publicUrl } } = supabase.storage.from("presentiel-submissions").getPublicUrl(path);
+
+    const photos: string[] = (sub.photo_urls && sub.photo_urls.length > 0)
+      ? sub.photo_urls
+      : (sub.photo_url ? [sub.photo_url] : []);
+    const next = [...(sub.annotated_photo_urls || [])];
+    while (next.length < photos.length) next.push("");
+    next[annotating.photoIndex] = publicUrl;
+
+    const { error } = await supabase
+      .from("presentiel_submissions")
+      .update({ annotated_photo_urls: next as any })
+      .eq("id", sub.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Annotation enregistrée ✏️");
+    setAnnotating(null);
+    load();
+  };
 
   const load = async () => {
     setLoading(true);
@@ -187,6 +219,7 @@ const AdminPresentielSubmissions = () => {
                   onChangeFeedback={setFeedbackDraft}
                   onValidate={() => updateStatus(s, "validee", feedbackDraft || undefined)}
                   onReject={() => updateStatus(s, "a_corriger", feedbackDraft || undefined)}
+                  onAnnotate={(idx, url) => setAnnotating({ subId: s.id, photoIndex: idx, url })}
                 />
               ))
             )}
@@ -199,6 +232,7 @@ const AdminPresentielSubmissions = () => {
                 sub={s}
                 course={courses[s.course_id]}
                 student={students[s.user_id]}
+                onAnnotate={(idx, url) => setAnnotating({ subId: s.id, photoIndex: idx, url })}
                 readonly
               />
             ))}
@@ -236,13 +270,22 @@ const AdminPresentielSubmissions = () => {
           </TabsContent>
         </Tabs>
       )}
+
+      {annotating && (
+        <PhotoAnnotator
+          open={!!annotating}
+          onOpenChange={(o) => !o && setAnnotating(null)}
+          imageUrl={annotating.url}
+          onSave={saveAnnotation}
+        />
+      )}
     </div>
   );
 };
 
 function SubmissionCard({
   sub, course, student, editing, feedbackDraft,
-  onEdit, onChangeFeedback, onValidate, onReject, readonly,
+  onEdit, onChangeFeedback, onValidate, onReject, onAnnotate, readonly,
 }: {
   sub: Submission;
   course?: CourseLite;
@@ -253,11 +296,13 @@ function SubmissionCard({
   onChangeFeedback?: (v: string) => void;
   onValidate?: () => void;
   onReject?: () => void;
+  onAnnotate?: (photoIndex: number, url: string) => void;
   readonly?: boolean;
 }) {
   const photos: string[] = (sub.photo_urls && Array.isArray(sub.photo_urls) && sub.photo_urls.length > 0)
     ? sub.photo_urls
     : (sub.photo_url ? [sub.photo_url] : []);
+  const annotated: string[] = Array.isArray(sub.annotated_photo_urls) ? sub.annotated_photo_urls : [];
 
   return (
     <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
@@ -265,16 +310,37 @@ function SubmissionCard({
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row gap-4">
             {/* Media */}
-            <div className="shrink-0 flex flex-wrap gap-2 sm:w-48">
-              {photos.map((u, i) => (
-                <a key={i} href={u} target="_blank" rel="noreferrer" className="block">
-                  <img
-                    src={u}
-                    alt={`Soumission ${i + 1}`}
-                    className="w-24 h-24 object-cover rounded-lg border border-border hover:opacity-80 transition"
-                  />
-                </a>
-              ))}
+            <div className="shrink-0 flex flex-wrap gap-2 sm:w-56">
+              {photos.map((u, i) => {
+                const ann = annotated[i];
+                const display = ann || u;
+                return (
+                  <div key={i} className="relative group">
+                    <a href={display} target="_blank" rel="noreferrer" className="block">
+                      <img
+                        src={display}
+                        alt={`Soumission ${i + 1}`}
+                        className="w-24 h-24 object-cover rounded-lg border border-border hover:opacity-80 transition"
+                      />
+                    </a>
+                    {ann && (
+                      <Badge className="absolute -top-1 -left-1 text-[9px] px-1 py-0 h-4 bg-primary text-primary-foreground">✏️</Badge>
+                    )}
+                    {onAnnotate && (
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="secondary"
+                        onClick={() => onAnnotate(i, u)}
+                        className="absolute bottom-1 right-1 h-6 w-6 shadow"
+                        title={ann ? "Modifier l'annotation" : "Annoter cette photo"}
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
               {sub.audio_url && (
                 <div className="w-full">
                   <audio controls src={sub.audio_url} className="w-full" style={{ height: "40px" }} />
