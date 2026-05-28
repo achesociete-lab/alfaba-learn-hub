@@ -285,6 +285,7 @@ function SubmissionCard({
   onChangeFeedback?: (v: string) => void;
   onValidate?: () => void;
   onReject?: () => void;
+  onAnnotate?: (photoIndex: number, url: string) => void;
   readonly?: boolean;
 }) {
   const photos: string[] = (sub.photo_urls && Array.isArray(sub.photo_urls) && sub.photo_urls.length > 0)
