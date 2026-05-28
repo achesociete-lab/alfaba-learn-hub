@@ -219,6 +219,7 @@ const AdminPresentielSubmissions = () => {
                   onChangeFeedback={setFeedbackDraft}
                   onValidate={() => updateStatus(s, "validee", feedbackDraft || undefined)}
                   onReject={() => updateStatus(s, "a_corriger", feedbackDraft || undefined)}
+                  onAnnotate={(idx, url) => setAnnotating({ subId: s.id, photoIndex: idx, url })}
                 />
               ))
             )}
@@ -231,6 +232,7 @@ const AdminPresentielSubmissions = () => {
                 sub={s}
                 course={courses[s.course_id]}
                 student={students[s.user_id]}
+                onAnnotate={(idx, url) => setAnnotating({ subId: s.id, photoIndex: idx, url })}
                 readonly
               />
             ))}
