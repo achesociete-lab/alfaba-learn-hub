@@ -1,0 +1,1 @@
+ALTER TABLE public.presentiel_submissions ADD COLUMN IF NOT EXISTS annotated_photo_urls jsonb NOT NULL DEFAULT '[]'::jsonb;
