@@ -514,6 +514,7 @@ export type Database = {
           course_id: string
           created_at: string
           feedback: string | null
+          feedback_audio_url: string | null
           id: string
           photo_url: string | null
           photo_urls: Json
@@ -531,6 +532,7 @@ export type Database = {
           course_id: string
           created_at?: string
           feedback?: string | null
+          feedback_audio_url?: string | null
           id?: string
           photo_url?: string | null
           photo_urls?: Json
@@ -548,6 +550,7 @@ export type Database = {
           course_id?: string
           created_at?: string
           feedback?: string | null
+          feedback_audio_url?: string | null
           id?: string
           photo_url?: string | null
           photo_urls?: Json

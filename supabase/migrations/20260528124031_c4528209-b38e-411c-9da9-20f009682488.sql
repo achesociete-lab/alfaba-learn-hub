@@ -1,0 +1,1 @@
+ALTER TABLE public.presentiel_submissions ADD COLUMN IF NOT EXISTS feedback_audio_url text;
