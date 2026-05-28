@@ -17,6 +17,7 @@ import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import PhotoAnnotator from "./PhotoAnnotator";
+import VoiceFeedbackRecorder from "./VoiceFeedbackRecorder";
 
 interface Submission {
   id: string;
