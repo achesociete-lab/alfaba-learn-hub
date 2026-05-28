@@ -274,7 +274,7 @@ const AdminPresentielSubmissions = () => {
 
 function SubmissionCard({
   sub, course, student, editing, feedbackDraft,
-  onEdit, onChangeFeedback, onValidate, onReject, readonly,
+  onEdit, onChangeFeedback, onValidate, onReject, onAnnotate, readonly,
 }: {
   sub: Submission;
   course?: CourseLite;
