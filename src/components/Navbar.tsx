@@ -33,6 +33,7 @@ const getAuthNavLinks = (level: string | null, typeEleve: string | null) => {
   }
 
   links.push({ to: "/coran", label: "Coran" });
+  links.push({ to: "/hifz", label: "📖 Hifd" });
   links.push({ to: "/conversation", label: "🎙️ مساعد المعلم" });
   links.push({ to: "/tuteur", label: "🎓 مساري" });
   links.push({ to: "/dashboard", label: "Espace Élève" });
