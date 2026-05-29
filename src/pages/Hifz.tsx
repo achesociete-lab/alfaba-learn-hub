@@ -79,19 +79,7 @@ export default function Hifz() {
 
   useEffect(() => { if (user && plan === "premium") fetchAll(); }, [user, plan]);
 
-  // ─── Gates ─────────────────────────────────────────────────
-  if (authLoading || subLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#fdf8ef]">
-        <Loader2 className="h-8 w-8 animate-spin text-emerald-700" />
-      </div>
-    );
-  }
-  if (!user) return null;
-
-  if (plan !== "premium") return <UpsellPage />;
-
-  // ─── Program generation ────────────────────────────────────
+  // ─── Derived data (hooks must run before any conditional return) ───
   const remainingHizb = config ? Math.max(0, TOTAL_HIZB - (config.hizb_already_memo || 0)) : 0;
   const remainingPages = remainingHizb * PAGES_PER_HIZB;
   const pacePerDay = config ? +(remainingPages / Math.max(1, config.duration_months * 30)).toFixed(2) : 0;
@@ -123,6 +111,27 @@ export default function Hifz() {
     return map;
   }, [evaluations]);
 
+  const slotsByDay = useMemo(() => {
+    const m: Record<string, Slot[]> = {};
+    for (const s of slots) (m[s.slot_date] ||= []).push(s);
+    return m;
+  }, [slots]);
+
+  const daysOfMonth = useMemo(() => eachDayOfInterval({ start: startOfMonth(calMonth), end: endOfMonth(calMonth) }), [calMonth]);
+
+  // ─── Gates ─────────────────────────────────────────────────
+  if (authLoading || subLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#fdf8ef]">
+        <Loader2 className="h-8 w-8 animate-spin text-emerald-700" />
+      </div>
+    );
+  }
+  if (!user) return null;
+
+  if (plan !== "premium") return <UpsellPage />;
+
+  // ─── Program generation ────────────────────────────────────
   const handleGenerate = async () => {
     if (!user) return;
     setSubmitting(true);
@@ -147,14 +156,6 @@ export default function Hifz() {
   };
 
   // ─── Booking ──────────────────────────────────────────────
-  const slotsByDay = useMemo(() => {
-    const m: Record<string, Slot[]> = {};
-    for (const s of slots) (m[s.slot_date] ||= []).push(s);
-    return m;
-  }, [slots]);
-
-  const daysOfMonth = useMemo(() => eachDayOfInterval({ start: startOfMonth(calMonth), end: endOfMonth(calMonth) }), [calMonth]);
-
   const confirmBooking = async () => {
     if (!user || !selectedSlot) return;
     setBooking(true);
