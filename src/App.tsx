@@ -36,6 +36,7 @@ const CoursPresentiel = lazy(() => import("./pages/CoursPresentiel.tsx"));
 const SubscriptionManagement = lazy(() => import("./pages/SubscriptionManagement.tsx"));
 const AdminPromoManagement = lazy(() => import("./pages/AdminPromoManagement.tsx"));
 const AdminRevenueMetrics = lazy(() => import("./pages/AdminRevenueMetrics.tsx"));
+const Hifz = lazy(() => import("./pages/Hifz.tsx"));
 
 const PageLoader = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
@@ -92,6 +93,7 @@ const App = () => (
                 <Route path="/abonnement" element={<SubscriptionManagement />} />
                 <Route path="/admin/promo" element={<AdminPromoManagement />} />
                 <Route path="/admin/revenue" element={<AdminRevenueMetrics />} />
+                <Route path="/hifz" element={<Hifz />} />
               </Route>
 
               <Route path="*" element={<NotFound />} />

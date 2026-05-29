@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_hifz_slots: {
+        Row: {
+          capacity: number
+          created_at: string
+          created_by: string
+          end_time: string
+          id: string
+          notes: string | null
+          slot_date: string
+          start_time: string
+        }
+        Insert: {
+          capacity?: number
+          created_at?: string
+          created_by: string
+          end_time: string
+          id?: string
+          notes?: string | null
+          slot_date: string
+          start_time: string
+        }
+        Update: {
+          capacity?: number
+          created_at?: string
+          created_by?: string
+          end_time?: string
+          id?: string
+          notes?: string | null
+          slot_date?: string
+          start_time?: string
+        }
+        Relationships: []
+      }
       attendance: {
         Row: {
           created_at: string
