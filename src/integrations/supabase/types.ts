@@ -158,6 +158,110 @@ export type Database = {
         }
         Relationships: []
       }
+      hifz_config: {
+        Row: {
+          created_at: string | null
+          duration_months: number | null
+          hizb_already_memo: number | null
+          id: string
+          start_date: string | null
+          student_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          duration_months?: number | null
+          hizb_already_memo?: number | null
+          id?: string
+          start_date?: string | null
+          student_id: string
+        }
+        Update: {
+          created_at?: string | null
+          duration_months?: number | null
+          hizb_already_memo?: number | null
+          id?: string
+          start_date?: string | null
+          student_id?: string
+        }
+        Relationships: []
+      }
+      hifz_evaluations: {
+        Row: {
+          evaluated_at: string | null
+          hizb_number: number
+          id: string
+          niveau: string | null
+          notes: string | null
+          session_id: string | null
+          status: string
+          student_id: string
+          teacher_id: string | null
+        }
+        Insert: {
+          evaluated_at?: string | null
+          hizb_number: number
+          id?: string
+          niveau?: string | null
+          notes?: string | null
+          session_id?: string | null
+          status: string
+          student_id: string
+          teacher_id?: string | null
+        }
+        Update: {
+          evaluated_at?: string | null
+          hizb_number?: number
+          id?: string
+          niveau?: string | null
+          notes?: string | null
+          session_id?: string | null
+          status?: string
+          student_id?: string
+          teacher_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hifz_evaluations_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "hifz_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hifz_sessions: {
+        Row: {
+          created_at: string | null
+          id: string
+          meet_link: string | null
+          notes_eleve: string | null
+          session_date: string
+          session_time: string
+          status: string | null
+          student_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          meet_link?: string | null
+          notes_eleve?: string | null
+          session_date: string
+          session_time: string
+          status?: string | null
+          student_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          meet_link?: string | null
+          notes_eleve?: string | null
+          session_date?: string
+          session_time?: string
+          status?: string | null
+          student_id?: string
+        }
+        Relationships: []
+      }
       homework_assignments: {
         Row: {
           created_at: string
