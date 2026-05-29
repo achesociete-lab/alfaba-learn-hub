@@ -15,6 +15,8 @@ import { template as presentielAccessGranted } from './presentiel-access-granted
 import { template as welcomeNewUser } from './welcome-new-user.tsx'
 import { template as paymentConfirmation } from './payment-confirmation.tsx'
 import { template as newLessonPublished } from './new-lesson-published.tsx'
+import { template as hifzBookingAdmin } from './hifz-booking-admin.tsx'
+import { template as hifzBookingConfirmation } from './hifz-booking-confirmation.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'admin-pending-signup': adminPendingSignup,
@@ -23,4 +25,6 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'welcome-new-user': welcomeNewUser,
   'payment-confirmation': paymentConfirmation,
   'new-lesson-published': newLessonPublished,
+  'hifz-booking-admin': hifzBookingAdmin,
+  'hifz-booking-confirmation': hifzBookingConfirmation,
 }
