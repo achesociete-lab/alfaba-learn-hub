@@ -15,6 +15,7 @@ import AdminPresentielCourses from "@/components/admin/AdminPresentielCourses";
 import AdminPresentielSubmissions from "@/components/admin/AdminPresentielSubmissions";
 import AdminRevenueTab from "@/components/admin/AdminRevenueTab";
 import AdminPromoTab from "@/components/admin/AdminPromoTab";
+import AdminHifz from "@/components/admin/AdminHifz";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
@@ -108,6 +109,9 @@ const Admin = () => {
               <TabsTrigger value="recitations" className="flex items-center gap-1.5 text-xs sm:text-sm">
                 <Headphones className="h-4 w-4" /> Récitations
               </TabsTrigger>
+              <TabsTrigger value="hifz" className="flex items-center gap-1.5 text-xs sm:text-sm">
+                <BookOpen className="h-4 w-4" /> Hifd 📖
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview"><AdminOverview /></TabsContent>
@@ -120,6 +124,7 @@ const Admin = () => {
             <TabsContent value="homework"><AdminHomework /></TabsContent>
             <TabsContent value="attendance"><AdminAttendance /></TabsContent>
             <TabsContent value="recitations"><AdminRecitations /></TabsContent>
+            <TabsContent value="hifz"><AdminHifz /></TabsContent>
           </Tabs>
         </div>
       </main>

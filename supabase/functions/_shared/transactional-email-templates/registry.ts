@@ -17,6 +17,9 @@ import { template as paymentConfirmation } from './payment-confirmation.tsx'
 import { template as newLessonPublished } from './new-lesson-published.tsx'
 import { template as hifzBookingAdmin } from './hifz-booking-admin.tsx'
 import { template as hifzBookingConfirmation } from './hifz-booking-confirmation.tsx'
+import { template as hifzSessionConfirmed } from './hifz-session-confirmed.tsx'
+import { template as hifzSessionCancelled } from './hifz-session-cancelled.tsx'
+import { template as hifzSessionEvaluated } from './hifz-session-evaluated.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'admin-pending-signup': adminPendingSignup,
@@ -27,4 +30,7 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'new-lesson-published': newLessonPublished,
   'hifz-booking-admin': hifzBookingAdmin,
   'hifz-booking-confirmation': hifzBookingConfirmation,
+  'hifz-session-confirmed': hifzSessionConfirmed,
+  'hifz-session-cancelled': hifzSessionCancelled,
+  'hifz-session-evaluated': hifzSessionEvaluated,
 }
