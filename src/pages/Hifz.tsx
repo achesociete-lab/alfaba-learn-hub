@@ -220,6 +220,35 @@ export default function Hifz() {
   const dueNow = revisionSchedule.filter(r => r.isDue);
   const upcomingRevision = revisionSchedule.filter(r => !r.isDue).slice(0, 5);
 
+  // Recommended sessions/week based on average niveau weight
+  const recommendedPerWeek = useMemo(() => {
+    const latest: Record<number, Evaluation> = {};
+    for (const e of evaluations) {
+      const cur = latest[e.hizb_number];
+      if (!cur || new Date(e.evaluated_at) > new Date(cur.evaluated_at)) latest[e.hizb_number] = e;
+    }
+    const weights = Object.values(latest).filter(e => e.niveau).map(e => NIVEAU_WEIGHT[e.niveau!] || 0);
+    if (!weights.length) return 1;
+    const avg = weights.reduce((a, b) => a + b, 0) / weights.length;
+    return avg < 2.5 ? 2 : 1;
+  }, [evaluations]);
+
+  // Sessions booked or confirmed in the current week (Mon–Sun)
+  const sessionsThisWeek = useMemo(() => {
+    const now = new Date();
+    const day = now.getDay();
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+    monday.setHours(0, 0, 0, 0);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+    return sessions.filter(s => {
+      const d = parseISO(s.session_date);
+      return d >= monday && d <= sunday && (s.status === "en_attente" || s.status === "confirmee");
+    });
+  }, [sessions]);
+
   const dashboardByType = HIFZ_SESSION_TYPES.map((t) => {
     const evs = evaluations.filter((e) => (e.session_type || "sabaq") === t.value);
     const hizbCount = new Set(evs.map((e) => e.hizb_number)).size;
@@ -495,6 +524,20 @@ export default function Hifz() {
                           <span className="font-semibold">{progressPercent}% · {memorizedPages} pages mémorisées</span>
                         </div>
                         <Progress value={progressPercent} className="h-2.5 rounded-full" />
+                      </div>
+
+                      {/* Option A — cadence recommandée */}
+                      <div className={`flex items-center justify-between px-4 py-3 rounded-xl border ${recommendedPerWeek === 2 ? "bg-amber-50 border-amber-200" : "bg-emerald-50 border-emerald-200"}`}>
+                        <div className="flex items-center gap-2">
+                          <CalendarDays className={`h-4 w-4 ${recommendedPerWeek === 2 ? "text-amber-600" : "text-emerald-600"}`} />
+                          <span className="text-sm font-medium text-gray-800">Cadence recommandée</span>
+                          <span className={`text-xs ${recommendedPerWeek === 2 ? "text-amber-700" : "text-emerald-700"}`}>
+                            {evaluations.length === 0 ? "Basée sur vos premières évaluations" : recommendedPerWeek === 2 ? "Des hizb nécessitent plus de travail" : "Bonne progression générale"}
+                          </span>
+                        </div>
+                        <Badge className={`shrink-0 font-bold ${recommendedPerWeek === 2 ? "bg-amber-500 text-white" : "bg-emerald-600 text-white"}`}>
+                          {recommendedPerWeek}× / semaine
+                        </Badge>
                       </div>
                     </CardContent>
                   </Card>
@@ -884,6 +927,33 @@ export default function Hifz() {
                 RÉSERVER
             ═══════════════════════════════════════════════════════════════ */}
             <TabsContent value="reserver" className="mt-4 space-y-6">
+
+              {/* Option B — suivi cadence hebdomadaire */}
+              {(() => {
+                const count = sessionsThisWeek.length;
+                const target = recommendedPerWeek;
+                if (count === 0) return null;
+                const isOver = count > target;
+                const isAt = count === target;
+                return (
+                  <div className={`flex items-center gap-3 p-4 rounded-xl border-2 ${isOver ? "bg-amber-50 border-amber-300" : isAt ? "bg-emerald-50 border-emerald-300" : "bg-blue-50 border-blue-200"}`}>
+                    <CalendarCheck className={`h-5 w-5 shrink-0 ${isOver ? "text-amber-600" : isAt ? "text-emerald-600" : "text-blue-500"}`} />
+                    <div className="flex-1">
+                      <p className={`text-sm font-semibold ${isOver ? "text-amber-800" : isAt ? "text-emerald-800" : "text-blue-800"}`}>
+                        {isOver && `Cadence dépassée — ${count} séance${count > 1 ? "s" : ""} réservée${count > 1 ? "s" : ""} cette semaine`}
+                        {isAt && `Objectif atteint — ${count} séance${count > 1 ? "s" : ""} réservée${count > 1 ? "s" : ""} cette semaine ✓`}
+                        {!isOver && !isAt && `${count} séance${count > 1 ? "s" : ""} réservée${count > 1 ? "s" : ""} cette semaine`}
+                      </p>
+                      <p className={`text-xs mt-0.5 ${isOver ? "text-amber-700" : isAt ? "text-emerald-700" : "text-blue-600"}`}>
+                        {isOver ? `Votre programme recommande ${target}×/semaine — une séance supplémentaire peut aider mais veillez à ne pas surcharger.` : isAt ? `Parfait, vous êtes dans la cadence recommandée (${target}×/semaine).` : `Objectif : ${target} séance${target > 1 ? "s" : ""}/semaine selon votre progression.`}
+                      </p>
+                    </div>
+                    <span className={`text-lg font-bold shrink-0 ${isOver ? "text-amber-600" : isAt ? "text-emerald-600" : "text-blue-500"}`}>
+                      {count}/{target}
+                    </span>
+                  </div>
+                );
+              })()}
 
               {/* Étape 1 */}
               <section>
