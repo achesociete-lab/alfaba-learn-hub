@@ -38,7 +38,7 @@ const NIVEAU_WEIGHT: Record<string, number> = { mediocre: 1, moyen: 2, bon: 3, e
 export default function Hifz() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const { plan, loading: subLoading } = useSubscription();
+  const { isHifz, isPremium, loading: subLoading } = useSubscription();
   const { profile } = useProfile();
   const { toast } = useToast();
 
@@ -87,7 +87,7 @@ export default function Hifz() {
     setLoading(false);
   };
 
-  useEffect(() => { if (user && plan === "premium") fetchAll(); }, [user, plan]);
+  useEffect(() => { if (user && (isHifz || isPremium)) fetchAll(); }, [user, isHifz, isPremium]);
 
   const validatedHizbNumbers = useMemo(() => {
     const set = new Set<number>();
@@ -261,7 +261,7 @@ export default function Hifz() {
     );
   }
   if (!user) return null;
-  if (plan !== "premium") return <UpsellPage />;
+  if (!isHifz && !isPremium) return <UpsellPage />;
 
   return (
     <div className="min-h-screen bg-[#fdf8ef]">
@@ -796,9 +796,9 @@ function UpsellPage() {
           <Lock className="h-10 w-10 text-white" />
         </div>
         <h1 className="text-4xl font-bold text-emerald-800 mb-3">Hifd al-Qur'ān</h1>
-        <p className="text-lg text-amber-800/80 mb-8">Le programme de mémorisation guidé est réservé aux abonnés <strong>Premium</strong>.</p>
+        <p className="text-lg text-amber-800/80 mb-8">Le programme de mémorisation guidé est réservé aux abonnés <strong>Hifz</strong> ou <strong>Premium</strong>.</p>
         <Button size="lg" onClick={() => navigate("/tarifs")} className="bg-gradient-to-r from-emerald-700 to-amber-700 text-white hover:opacity-90">
-          <Crown className="h-5 w-5 mr-2" /> Passer au plan Premium
+          <Crown className="h-5 w-5 mr-2" /> Voir les plans
         </Button>
       </div>
     </div>

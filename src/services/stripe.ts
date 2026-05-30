@@ -1,6 +1,7 @@
-// Stripe.js client stub — @stripe/stripe-js is not installed.
 // Checkout and portal flows go through Supabase Edge Functions
-// (`create-checkout`, `customer-portal`), so the browser SDK is not required.
+// (`create-checkout`, `customer-portal`). @stripe/stripe-js is not needed in the browser.
+
+import { supabase } from "@/integrations/supabase/client";
 
 export async function createCheckoutSession(
   _planId: string,
@@ -11,5 +12,8 @@ export async function createCheckoutSession(
 }
 
 export async function createPortalSession(_stripeCustomerId: string): Promise<string> {
-  throw new Error("createPortalSession is not implemented — use the customer-portal edge function instead.");
+  const { data, error } = await supabase.functions.invoke("customer-portal");
+  if (error) throw new Error(error.message);
+  if (!data?.url) throw new Error("No portal URL returned from customer-portal function");
+  return data.url as string;
 }

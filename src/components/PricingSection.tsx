@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Check, Zap, Crown, BookOpen, Headphones, Clock, Loader2, Tag, X } from "lucide-react";
+import { Check, Zap, Crown, BookOpen, Headphones, Clock, Loader2, Tag, X, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link, useNavigate } from "react-router-dom";
@@ -19,6 +19,11 @@ export const STRIPE_PLANS = {
     price_id: "price_1TLAAUKXotpKdlTP01ELN0ky",
     product_id: "prod_UJnmdJC4o0hInW",
     price: 15,
+  },
+  hifz: {
+    price_id: "price_1TcnOxKXotpKdlTPQEXQRneJ",
+    product_id: "prod_Uc1RFQIChfKUTr",
+    price: 25,
   },
 } as const;
 
@@ -144,7 +149,7 @@ const PricingSection = () => {
     return discounted.toFixed(2);
   };
 
-  const handleCheckout = async (planKey: "essentiel" | "premium") => {
+  const handleCheckout = async (planKey: "essentiel" | "premium" | "hifz") => {
     if (!user) {
       navigate("/auth");
       return;
@@ -354,6 +359,72 @@ const PricingSection = () => {
             );
           })}
         </div>
+
+        {/* Hifz — programme spécialisé */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.2 }}
+          className="max-w-5xl mx-auto mb-20"
+        >
+          <div className="relative rounded-2xl border-2 border-emerald-200 bg-gradient-to-br from-emerald-50/80 to-amber-50/60 p-6 md:p-8 flex flex-col md:flex-row gap-8 items-start shadow-sm">
+            <div className="absolute -top-3.5 left-6">
+              <span className="text-xs font-bold text-white bg-gradient-to-r from-emerald-700 to-amber-700 px-4 py-1 rounded-full shadow">
+                Programme spécialisé
+              </span>
+            </div>
+
+            {/* Left: identité & prix */}
+            <div className="md:w-72 shrink-0">
+              <div className="flex items-center gap-3 mb-3 mt-1">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-700 to-amber-700 flex items-center justify-center">
+                  <GraduationCap className="h-5 w-5 text-white" />
+                </div>
+                <h3 className="font-display text-lg font-bold text-emerald-900">Hifd al-Qur'ān</h3>
+              </div>
+              <div className="mb-1">
+                <span className="text-3xl font-extrabold text-emerald-800">25€</span>
+                <span className="text-sm text-amber-800/70">/mois</span>
+              </div>
+              <p className="text-sm text-amber-800/80 mb-5">
+                Programme complet de mémorisation du Coran avec suivi personnalisé par votre professeur.
+              </p>
+              <Button
+                onClick={() => handleCheckout("hifz")}
+                disabled={loadingPlan === "hifz" || !STRIPE_PLANS.hifz.price_id}
+                className="w-full h-11 text-sm font-semibold bg-gradient-to-r from-emerald-700 to-amber-700 hover:opacity-90 border-0 text-white"
+              >
+                {loadingPlan === "hifz" ? (
+                  <><Loader2 className="h-4 w-4 animate-spin mr-2" />Redirection...</>
+                ) : !STRIPE_PLANS.hifz.price_id ? (
+                  "Bientôt disponible"
+                ) : (
+                  "S'inscrire au programme"
+                )}
+              </Button>
+            </div>
+
+            {/* Right: features */}
+            <ul className="flex-1 grid sm:grid-cols-2 gap-x-6 gap-y-2.5">
+              {[
+                "Programme de mémorisation personnalisé",
+                "Suivi des 60 hizb (Sabaq · Sabaq Para · Dhor)",
+                "Séances individuelles avec le professeur",
+                "Calendrier de réservation en ligne",
+                "Évaluations Khatm partiel & complet",
+                "Tableau de bord de progression détaillé",
+                "Méthode pakistanaise éprouvée",
+                "Accès complet au module Hifz",
+              ].map((f) => (
+                <li key={f} className="flex items-start gap-2 text-sm text-emerald-900">
+                  <Check className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
+                  {f}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </motion.div>
 
         <div className="max-w-2xl mx-auto mb-16">
           <h3 className="text-center text-xl font-bold text-foreground mb-8">
