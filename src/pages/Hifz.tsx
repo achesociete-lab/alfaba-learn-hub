@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Crown, Lock, Sparkles, Calendar as CalendarIcon, BookOpen, History, CheckCircle2, XCircle, Loader2, ChevronRight } from "lucide-react";
+import { Crown, Lock, Sparkles, Calendar as CalendarIcon, BookOpen, History, CheckCircle2, XCircle, Loader2, ChevronRight, Moon, Sunrise, Sun, BookMarked, GraduationCap, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -254,8 +254,9 @@ export default function Hifz() {
           <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-emerald-700" /></div>
         ) : (
           <Tabs value={tab} onValueChange={setTab} className="w-full">
-            <TabsList className="grid grid-cols-3 w-full bg-emerald-50 border border-emerald-100">
+            <TabsList className="grid grid-cols-4 w-full bg-emerald-50 border border-emerald-100">
               <TabsTrigger value="programme" className="data-[state=active]:bg-emerald-700 data-[state=active]:text-white">Programme</TabsTrigger>
+              <TabsTrigger value="methode" className="data-[state=active]:bg-emerald-700 data-[state=active]:text-white">Méthode 📚</TabsTrigger>
               <TabsTrigger value="reserver" className="data-[state=active]:bg-emerald-700 data-[state=active]:text-white">Réserver</TabsTrigger>
               <TabsTrigger value="historique" className="data-[state=active]:bg-emerald-700 data-[state=active]:text-white">Historique</TabsTrigger>
             </TabsList>
@@ -373,7 +374,87 @@ export default function Hifz() {
               )}
             </TabsContent>
 
-            {/* ─── Réserver ─── */}
+            {/* ─── Méthode ─── */}
+            <TabsContent value="methode" className="mt-6 space-y-6">
+              {/* Intro */}
+              <div className="text-center space-y-2">
+                <h2 className="text-2xl font-bold text-emerald-800">La méthode pakistanaise du Hifd</h2>
+                <p className="text-sm text-amber-800/80 max-w-xl mx-auto">
+                  Utilisée dans les grandes madrasas depuis des siècles — 3 niveaux de révision pour un hifd solide à vie.
+                </p>
+              </div>
+
+              {/* Les 3 niveaux */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="border-l-4 border-l-emerald-600 border-emerald-200 bg-emerald-50/40">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="h-5 w-5 text-emerald-700" />
+                      <CardTitle className="text-emerald-800 text-base">NIVEAU 1 — SABAQ</CardTitle>
+                    </div>
+                    <p className="text-2xl font-arabic text-emerald-700 leading-none">سَبَق</p>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm">
+                    <Badge className="bg-emerald-700 text-white">Chaque jour</Badge>
+                    <p className="text-gray-700">La nouvelle leçon du jour.</p>
+                    <div className="p-3 rounded bg-white border border-emerald-100 text-xs text-gray-600 space-y-1">
+                      <p><strong>Règle d'or :</strong> répéter 10× la nuit avant de dormir, puis 5× le lendemain matin avant d'avancer.</p>
+                      <p className="text-emerald-700 font-medium">Ne jamais passer au hizb suivant si le sabaq du jour n'est pas parfaitement solide.</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-l-4 border-l-amber-500 border-amber-200 bg-amber-50/40">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center gap-2">
+                      <RotateCcw className="h-5 w-5 text-amber-700" />
+                      <CardTitle className="text-amber-800 text-base">NIVEAU 2 — SABAQ PARA</CardTitle>
+                    </div>
+                    <p className="text-2xl font-arabic text-amber-700 leading-none">سَبَق پارَه</p>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm">
+                    <Badge className="bg-amber-600 text-white">Chaque matin</Badge>
+                    <p className="text-gray-700">Les hizb des 7 derniers jours récités sans mushaf chaque matin.</p>
+                    <div className="p-3 rounded bg-white border border-amber-100 text-xs text-gray-600 space-y-1">
+                      <p>C'est le <strong>filet de sécurité</strong> qui détecte les failles avant qu'elles ne s'installent.</p>
+                      <p className="text-amber-700 font-medium">Si un verset accroche → y revenir ce soir même.</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-l-4 border-l-violet-500 border-violet-200 bg-violet-50/40">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center gap-2">
+                      <GraduationCap className="h-5 w-5 text-violet-700" />
+                      <CardTitle className="text-violet-800 text-base">NIVEAU 3 — DHOR</CardTitle>
+                    </div>
+                    <p className="text-2xl font-arabic text-violet-700 leading-none">دَوْر</p>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm">
+                    <Badge className="bg-violet-600 text-white">Rotation hebdomadaire</Badge>
+                    <p className="text-gray-700">Tous les anciens hizb en rotation continue.</p>
+                    <div className="p-3 rounded bg-white border border-violet-100 text-xs text-gray-600 space-y-1">
+                      <p>1 hizb minimum par jour depuis le début du programme.</p>
+                      <p className="text-violet-700 font-medium">La charge augmente au fil des mois — c'est le pilier du hifd à vie. Sans Dhor régulier, la mémoire s'efface en quelques semaines.</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Planning quotidien */}
+              <Card className="border-emerald-200">
+                <CardHeader>
+                  <CardTitle className="text-emerald-800 text-base">🗓 Comment organiser sa journée</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="border-l-4 border-emerald-500 pl-4 py-2 bg-emerald-50/30 rounded-r">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Moon className="h-4 w-4 text-emerald-700" />
+                      <h4 className="font-semibold text-emerald-800 text-sm">Avant/après Fajr → SABAQ</h4>
+                    </div>
+                    <p className="text-sm text-gray-700">Mémoriser les nouvelles pages · Répéter 10×</p>
+                    <p className="text-xs text-amber-800/70 mt-1">
+                      Durée estimée selon le programme de l'élève : <strong>{pacePerDay > 0 ? `${pacePerDay} pages/jour` : 
             <TabsContent value="reserver" className="mt-6 space-y-4">
               <Card className="border-emerald-200">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0">
