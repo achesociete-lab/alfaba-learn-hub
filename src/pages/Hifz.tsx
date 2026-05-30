@@ -198,7 +198,8 @@ export default function Hifz() {
   return (
     <div className="min-h-screen bg-[#fdf8ef]">
       <Navbar />
-      <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className="max-w-5xl mx-auto px-4 pt-24 pb-8">
+
         <div className="flex items-center gap-3 mb-6">
           <div className="h-12 w-12 rounded-full bg-gradient-to-br from-emerald-700 to-amber-700 flex items-center justify-center">
             <BookOpen className="h-6 w-6 text-white" />
