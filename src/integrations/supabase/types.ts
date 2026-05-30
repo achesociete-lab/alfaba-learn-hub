@@ -221,36 +221,48 @@ export type Database = {
       hifz_evaluations: {
         Row: {
           evaluated_at: string | null
+          fluidity: string | null
           hizb_number: number
           id: string
           niveau: string | null
           notes: string | null
+          ready_to_advance: boolean | null
           session_id: string | null
+          session_type: string
           status: string
           student_id: string
           teacher_id: string | null
+          without_mushaf: boolean | null
         }
         Insert: {
           evaluated_at?: string | null
+          fluidity?: string | null
           hizb_number: number
           id?: string
           niveau?: string | null
           notes?: string | null
+          ready_to_advance?: boolean | null
           session_id?: string | null
+          session_type?: string
           status: string
           student_id: string
           teacher_id?: string | null
+          without_mushaf?: boolean | null
         }
         Update: {
           evaluated_at?: string | null
+          fluidity?: string | null
           hizb_number?: number
           id?: string
           niveau?: string | null
           notes?: string | null
+          ready_to_advance?: boolean | null
           session_id?: string | null
+          session_type?: string
           status?: string
           student_id?: string
           teacher_id?: string | null
+          without_mushaf?: boolean | null
         }
         Relationships: [
           {
@@ -266,30 +278,36 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          juz_number: number | null
           meet_link: string | null
           notes_eleve: string | null
           session_date: string
           session_time: string
+          session_type: string
           status: string | null
           student_id: string
         }
         Insert: {
           created_at?: string | null
           id?: string
+          juz_number?: number | null
           meet_link?: string | null
           notes_eleve?: string | null
           session_date: string
           session_time: string
+          session_type?: string
           status?: string | null
           student_id: string
         }
         Update: {
           created_at?: string | null
           id?: string
+          juz_number?: number | null
           meet_link?: string | null
           notes_eleve?: string | null
           session_date?: string
           session_time?: string
+          session_type?: string
           status?: string | null
           student_id?: string
         }

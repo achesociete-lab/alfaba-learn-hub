@@ -7,19 +7,25 @@ interface Props {
   date?: string
   time?: string
   message?: string
+  sessionType?: string
+  sessionTypeLabel?: string
+  juzNumber?: number | null
 }
 
-const HifzBookingConfirmationEmail = ({ studentName, date, time, message }: Props) => (
+const HifzBookingConfirmationEmail = ({ studentName, date, time, message, sessionType, sessionTypeLabel, juzNumber }: Props) => (
   <Html lang="fr" dir="ltr">
     <Head />
     <Preview>Confirmation de votre réservation Hifd</Preview>
-    <Body style={{ fontFamily: 'Arial, sans-serif', backgroundColor: '#fdf8ef' }}>
+    <Body style={{ fontFamily: 'Arial, sans-serif', backgroundColor: '#ffffff' }}>
       <Container style={{ padding: '24px', maxWidth: '560px', margin: '0 auto' }}>
         <Heading style={{ color: '#15803d' }}>Réservation reçue 🌙</Heading>
         <Text>As-salâmu ‘alaykum {studentName || ''},</Text>
         <Text>Votre demande de séance Hifd a bien été enregistrée :</Text>
+        {sessionTypeLabel ? <Text><strong>Type de session :</strong> {sessionTypeLabel}{juzNumber ? ` — Juz ${juzNumber}` : ''}</Text> : null}
         <Text><strong>Date :</strong> {date}</Text>
         <Text><strong>Heure :</strong> {time}</Text>
+        {sessionType === 'test_surprise' ? <Text style={{ color: '#ea580c' }}>Le professeur choisira les hizb le jour J — prépare-toi sur tout !</Text> : null}
+        {sessionType === 'khatm_partiel' ? <Text style={{ color: '#1e3a8a' }}>Tu réciteras le Juz {juzNumber} en intégralité — prépare ta fluidité !</Text> : null}
         {message ? <Text><strong>Votre message :</strong> {message}</Text> : null}
         <Text>Votre professeur vous confirmera la séance très prochainement, in shâ'a Llâh.</Text>
         <Text style={{ color: '#b45309', marginTop: 24 }}>ALFASL — الفصل</Text>
