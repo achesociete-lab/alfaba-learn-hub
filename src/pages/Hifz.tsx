@@ -679,158 +679,223 @@ export default function Hifz() {
             </TabsContent>
 
             {/* ─── Réserver ─── */}
-            <TabsContent value="reserver" className="mt-6 space-y-4">
-              <Card className="border-emerald-200">
-                <CardHeader><CardTitle className="text-emerald-800 text-base">1. Type de session</CardTitle></CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                    {HIFZ_SESSION_TYPES.map((t) => (
-                      <button
-                        key={t.value}
-                        onClick={() => setBookingType(t.value)}
-                        className={`text-left p-3 rounded border-2 transition ${bookingType === t.value ? `${t.border} ${t.bgSoft} ring-2 ring-offset-1 ring-emerald-300` : "border-gray-200 bg-white hover:border-gray-300"}`}
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xl">{t.icon}</span>
-                          <span className="font-semibold text-sm">{t.label}</span>
+            <TabsContent value="reserver" className="mt-6 space-y-6">
+
+              {/* Étape 1 */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="w-6 h-6 rounded-full bg-emerald-700 text-white text-xs flex items-center justify-center font-bold shrink-0">1</span>
+                  <h3 className="font-semibold text-emerald-800">Type de session</h3>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                  {HIFZ_SESSION_TYPES.map((t) => (
+                    <button
+                      key={t.value}
+                      onClick={() => setBookingType(t.value)}
+                      className={`text-left p-3 rounded-xl border-2 transition ${bookingType === t.value ? `${t.border} ${t.bgSoft} ring-2 ring-offset-1 ring-emerald-300` : "border-gray-200 bg-white hover:border-emerald-200 hover:bg-emerald-50/30"}`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xl">{t.icon}</span>
+                        <span className="font-semibold text-sm">{t.label}</span>
+                        {bookingType === t.value && <CheckCircle2 className="h-4 w-4 text-emerald-600 ml-auto" />}
+                      </div>
+                      <p className="text-xs text-gray-500">{t.description}</p>
+                    </button>
+                  ))}
+                </div>
+                {bookingType === "khatm_partiel" && (
+                  <div className="mt-3 p-3 rounded-lg bg-amber-50 border border-amber-200">
+                    <Label className="text-amber-800">Quel juz ? (1 à 30)</Label>
+                    <Input type="number" min={1} max={30} value={bookingJuz} onChange={(e) => setBookingJuz(Math.min(30, Math.max(1, +e.target.value || 1)))} className="bg-white mt-1 max-w-xs" />
+                  </div>
+                )}
+              </div>
+
+              {/* Étape 2 */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="w-6 h-6 rounded-full bg-emerald-700 text-white text-xs flex items-center justify-center font-bold shrink-0">2</span>
+                  <h3 className="font-semibold text-emerald-800">Choisir un créneau</h3>
+                </div>
+                <Card className="border-emerald-200">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                    <CardTitle className="text-emerald-800 capitalize text-base">{format(calMonth, "MMMM yyyy", { locale: fr })}</CardTitle>
+                    <div className="flex gap-1">
+                      <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => setCalMonth(addMonths(calMonth, -1))}>‹</Button>
+                      <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => setCalMonth(addMonths(calMonth, 1))}>›</Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-7 gap-1 text-xs text-center text-amber-800/60 font-medium mb-2">
+                      {["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"].map((d) => <div key={d}>{d}</div>)}
+                    </div>
+                    <div className="grid grid-cols-7 gap-1">
+                      {Array.from({ length: (startOfMonth(calMonth).getDay() + 6) % 7 }).map((_, i) => <div key={`pad-${i}`} />)}
+                      {daysOfMonth.map((d) => {
+                        const key = format(d, "yyyy-MM-dd");
+                        const hasSlots = !!slotsByDay[key]?.length;
+                        const isSel = selectedDay && isSameDay(d, selectedDay);
+                        return (
+                          <button key={key} onClick={() => hasSlots && setSelectedDay(d)} disabled={!hasSlots}
+                            className={`relative aspect-square rounded-lg text-sm flex flex-col items-center justify-center transition
+                              ${hasSlots ? "bg-emerald-100 text-emerald-900 hover:bg-emerald-200 cursor-pointer font-semibold" : "text-gray-300 cursor-not-allowed"}
+                              ${isSel ? "bg-emerald-700 !text-white" : ""}`}>
+                            {format(d, "d")}
+                            {hasSlots && !isSel && <span className="absolute bottom-1 w-1 h-1 rounded-full bg-emerald-500" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {slots.length === 0 && <p className="text-center text-xs text-amber-800/60 mt-4">Aucun créneau disponible ce mois-ci.</p>}
+                  </CardContent>
+                </Card>
+
+                {selectedDay && (
+                  <div className="mt-3 space-y-2">
+                    <p className="text-sm font-medium text-emerald-800 capitalize">{format(selectedDay, "EEEE d MMMM yyyy", { locale: fr })}</p>
+                    {(slotsByDay[format(selectedDay, "yyyy-MM-dd")] || []).map((s) => (
+                      <button key={s.id} onClick={() => setSelectedSlot(s)}
+                        className="w-full text-left p-4 rounded-xl border-2 border-emerald-200 bg-white hover:border-emerald-500 hover:bg-emerald-50 flex items-center justify-between transition">
+                        <div>
+                          <span className="font-semibold text-emerald-900">{s.start_time.slice(0,5)} – {s.end_time.slice(0,5)}</span>
+                          {s.notes && <p className="text-xs text-gray-500 mt-0.5">{s.notes}</p>}
                         </div>
-                        <p className="text-xs text-gray-600">{t.description}</p>
+                        <ChevronRight className="h-5 w-5 text-emerald-600" />
                       </button>
                     ))}
                   </div>
-                  {bookingType === "khatm_partiel" && (
-                    <div className="mt-3">
-                      <Label>Quel juz ? (1 à 30)</Label>
-                      <Input type="number" min={1} max={30} value={bookingJuz} onChange={(e) => setBookingJuz(Math.min(30, Math.max(1, +e.target.value || 1)))} className="bg-white max-w-xs" />
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                )}
+              </div>
 
-              <Card className="border-emerald-200">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                  <CardTitle className="text-emerald-800 capitalize text-base">2. Créneau — {format(calMonth, "MMMM yyyy", { locale: fr })}</CardTitle>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={() => setCalMonth(addMonths(calMonth, -1))}>‹</Button>
-                    <Button size="sm" variant="outline" onClick={() => setCalMonth(addMonths(calMonth, 1))}>›</Button>
+              {/* Étape 3 : mes réservations */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="w-6 h-6 rounded-full bg-emerald-700 text-white text-xs flex items-center justify-center font-bold shrink-0">3</span>
+                  <h3 className="font-semibold text-emerald-800">Mes réservations</h3>
+                  {sessions.filter(s => s.status === "en_attente" || s.status === "confirmee").length > 0 && (
+                    <Badge className="bg-emerald-700 text-white text-xs">
+                      {sessions.filter(s => s.status === "en_attente" || s.status === "confirmee").length} à venir
+                    </Badge>
+                  )}
+                </div>
+                {sessions.length === 0 ? (
+                  <div className="text-center py-8 rounded-xl border border-dashed border-emerald-200">
+                    <p className="text-sm text-amber-800/60">Aucune réservation pour le moment.</p>
+                    <p className="text-xs text-amber-800/40 mt-1">Choisissez un type et un créneau ci-dessus.</p>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-7 gap-1 text-xs text-center text-amber-800/70 mb-1">
-                    {["L","M","M","J","V","S","D"].map((d, i) => <div key={i}>{d}</div>)}
-                  </div>
-                  <div className="grid grid-cols-7 gap-1">
-                    {Array.from({ length: (startOfMonth(calMonth).getDay() + 6) % 7 }).map((_, i) => <div key={`pad-${i}`} />)}
-                    {daysOfMonth.map((d) => {
-                      const key = format(d, "yyyy-MM-dd");
-                      const hasSlots = !!slotsByDay[key]?.length;
-                      const isSel = selectedDay && isSameDay(d, selectedDay);
+                ) : (
+                  <div className="space-y-2">
+                    {sessions.map((s) => {
+                      const ti = getSessionType(s.session_type);
+                      const statusMap: Record<string, string> = { en_attente: "En attente ⏳", confirmee: "Confirmée ✅", effectuee: "Effectuée 📚", annulee: "Annulée ❌" };
+                      const cardClass: Record<string, string> = { en_attente: "border-amber-200 bg-amber-50/40", confirmee: "border-emerald-200 bg-emerald-50/40", effectuee: "border-violet-200 bg-violet-50/20", annulee: "border-red-100 bg-red-50/20 opacity-60" };
                       return (
-                        <button key={key} onClick={() => hasSlots && setSelectedDay(d)} disabled={!hasSlots}
-                          className={`aspect-square rounded-md text-sm flex items-center justify-center transition
-                            ${hasSlots ? "bg-emerald-100 text-emerald-900 hover:bg-emerald-200 cursor-pointer font-semibold" : "text-gray-300 cursor-not-allowed"}
-                            ${isSel ? "ring-2 ring-amber-700" : ""}`}>
-                          {format(d, "d")}
-                        </button>
+                        <div key={s.id} className={`p-4 rounded-xl border-2 ${cardClass[s.status] ?? "border-gray-200 bg-white"} space-y-2`}>
+                          <div className="flex items-start justify-between flex-wrap gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Badge className={`${ti.badgeBg} ${ti.badgeText} border-0`}>{ti.icon} {ti.label}{s.session_type === "khatm_partiel" && s.juz_number ? ` · Juz ${s.juz_number}` : ""}</Badge>
+                              <span className="text-sm font-medium text-gray-800">{format(parseISO(s.session_date), "d MMM yyyy", { locale: fr })} · {s.session_time.slice(0,5)}</span>
+                            </div>
+                            <span className="text-xs font-medium text-gray-500">{statusMap[s.status] ?? s.status}</span>
+                          </div>
+                          {s.status === "confirmee" && s.meet_link && (
+                            <a href={/^https?:\/\//i.test(s.meet_link) ? s.meet_link : `https://${s.meet_link}`} target="_blank" rel="noopener noreferrer"
+                              className="flex items-center justify-center gap-2 w-full bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-medium py-2 px-3 rounded-lg transition">
+                              🎥 Rejoindre la séance
+                            </a>
+                          )}
+                          {s.status === "confirmee" && !s.meet_link && (
+                            <p className="text-xs text-amber-700 italic">Le lien Meet sera ajouté par votre professeur.</p>
+                          )}
+                        </div>
                       );
                     })}
                   </div>
-                </CardContent>
-              </Card>
-
-              {selectedDay && (
-                <Card className="border-amber-200">
-                  <CardHeader><CardTitle className="text-amber-800 capitalize">{format(selectedDay, "EEEE d MMMM yyyy", { locale: fr })}</CardTitle></CardHeader>
-                  <CardContent className="space-y-2">
-                    {(slotsByDay[format(selectedDay, "yyyy-MM-dd")] || []).map((s) => (
-                      <button key={s.id} onClick={() => setSelectedSlot(s)}
-                        className="w-full text-left p-3 rounded border border-emerald-200 bg-white hover:bg-emerald-50 flex items-center justify-between">
-                        <span className="font-medium text-emerald-900">{s.start_time.slice(0,5)} – {s.end_time.slice(0,5)}</span>
-                        <ChevronRight className="h-4 w-4 text-emerald-700" />
-                      </button>
-                    ))}
-                  </CardContent>
-                </Card>
-              )}
-
-              <Card className="border-emerald-100 bg-white">
-                <CardHeader><CardTitle className="text-emerald-800 text-base">Mes réservations</CardTitle></CardHeader>
-                <CardContent className="space-y-2">
-                  {sessions.length === 0 && <p className="text-sm text-amber-800/70">Aucune réservation pour le moment.</p>}
-                  {sessions.map((s) => {
-                    const ti = getSessionType(s.session_type);
-                    return (
-                      <div key={s.id} className="p-3 rounded bg-emerald-50/50 space-y-2">
-                        <div className="flex items-center justify-between text-sm flex-wrap gap-2">
-                          <div className="flex items-center gap-2">
-                            <Badge className={`${ti.badgeBg} ${ti.badgeText} border-0`}>{ti.icon} {ti.label}{s.session_type === "khatm_partiel" && s.juz_number ? ` Juz ${s.juz_number}` : ""}</Badge>
-                            <span className="font-medium">{format(parseISO(s.session_date), "d MMM yyyy", { locale: fr })} · {s.session_time.slice(0,5)}</span>
-                          </div>
-                          <Badge variant="outline" className={
-                            s.status === "confirmee" ? "border-emerald-700 text-emerald-800 bg-emerald-100" :
-                            s.status === "annulee" ? "border-red-600 text-red-700 bg-red-50" :
-                            s.status === "effectuee" ? "border-amber-700 text-amber-800 bg-amber-50" :
-                            "border-amber-700 text-amber-800"
-                          }>
-                            {s.status === "en_attente" ? "En attente" : s.status === "confirmee" ? "Confirmée ✅" : s.status === "annulee" ? "Annulée" : s.status === "effectuee" ? "Effectuée" : s.status}
-                          </Badge>
-                        </div>
-                        {s.status === "confirmee" && s.meet_link && (
-                          <a href={/^https?:\/\//i.test(s.meet_link) ? s.meet_link : `https://${s.meet_link}`} target="_blank" rel="noopener noreferrer"
-                            className="flex items-center justify-center gap-2 w-full bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-medium py-2 px-3 rounded transition">
-                            🎥 Rejoindre la séance Google Meet
-                          </a>
-                        )}
-                        {s.status === "confirmee" && !s.meet_link && (
-                          <p className="text-xs text-amber-800/70 italic">Le lien Meet sera ajouté par votre professeur.</p>
-                        )}
-                      </div>
-                    );
-                  })}
-                </CardContent>
-              </Card>
+                )}
+              </div>
             </TabsContent>
 
             {/* ─── Historique ─── */}
-            <TabsContent value="historique" className="mt-6">
+            <TabsContent value="historique" className="mt-6 space-y-4">
+              {/* Stats */}
+              {sessions.length > 0 && (
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { label: "Sessions effectuées", value: sessions.filter(s => s.status === "effectuee").length },
+                    { label: "Hizb distincts évalués", value: new Set(evaluations.map(e => e.hizb_number)).size },
+                    { label: "Hizb validés", value: evaluations.filter(e => e.status === "valide").length },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="text-center p-3 rounded-xl bg-emerald-50 border border-emerald-100">
+                      <div className="text-2xl font-bold text-emerald-800">{value}</div>
+                      <div className="text-xs text-amber-800/70 mt-0.5">{label}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <Card className="border-emerald-200">
                 <CardContent className="pt-6">
                   {sessions.length === 0 ? (
-                    <p className="text-center text-amber-800/70 py-8">Aucune session enregistrée.</p>
+                    <div className="text-center py-12">
+                      <p className="text-amber-800/60">Aucune session enregistrée.</p>
+                      <p className="text-xs text-amber-800/40 mt-1">Vos séances avec le professeur apparaîtront ici.</p>
+                    </div>
                   ) : (
                     <Accordion type="single" collapsible className="space-y-2">
                       {sessions.map((s) => {
                         const evs = evaluations.filter((e) => e.session_id === s.id);
                         const ti = getSessionType(s.session_type);
+                        const validCount = evs.filter(e => e.status === "valide").length;
+                        const statusMap: Record<string, string> = { en_attente: "En attente", confirmee: "Confirmée", effectuee: "Effectuée", annulee: "Annulée" };
+                        const borderColor: Record<string, string> = { confirmee: "border-emerald-300", effectuee: "border-violet-300", annulee: "border-red-200", en_attente: "border-amber-200" };
+                        const niveauBg: Record<string, string> = { excellent: "bg-emerald-700", bon: "bg-emerald-500", moyen: "bg-amber-500", mediocre: "bg-red-500" };
                         return (
-                          <AccordionItem key={s.id} value={s.id} className="border border-emerald-200 rounded-lg bg-white px-4">
-                            <AccordionTrigger className="hover:no-underline">
+                          <AccordionItem key={s.id} value={s.id} className={`border-2 ${borderColor[s.status] ?? "border-gray-200"} rounded-xl bg-white px-4`}>
+                            <AccordionTrigger className="hover:no-underline py-3">
                               <div className="flex items-center justify-between w-full pr-2 text-left gap-2">
                                 <div>
-                                  <div className="font-semibold text-emerald-900">{format(parseISO(s.session_date), "EEEE d MMMM yyyy", { locale: fr })}</div>
-                                  <div className="text-xs text-amber-800/70">{s.session_time.slice(0,5)} · {s.status}</div>
+                                  <div className="font-semibold text-emerald-900 capitalize">
+                                    {format(parseISO(s.session_date), "EEEE d MMMM yyyy", { locale: fr })}
+                                  </div>
+                                  <div className="text-xs text-amber-800/60 mt-0.5">
+                                    {s.session_time.slice(0,5)} · {statusMap[s.status] ?? s.status}
+                                  </div>
                                 </div>
-                                <div className="flex flex-col gap-1 items-end">
+                                <div className="flex flex-col gap-1 items-end shrink-0">
                                   <Badge className={`${ti.badgeBg} ${ti.badgeText} border-0 text-[10px]`}>{ti.icon} {ti.label}</Badge>
-                                  <Badge variant="outline" className="border-amber-700 text-amber-800 text-[10px]">{evs.length} hizb</Badge>
+                                  {evs.length > 0 && (
+                                    <span className="text-[10px] text-gray-400">{validCount}/{evs.length} validés</span>
+                                  )}
                                 </div>
                               </div>
                             </AccordionTrigger>
                             <AccordionContent>
-                              {evs.length === 0 ? <p className="text-sm text-gray-500 py-2">Pas encore d'évaluation.</p> : (
-                                <div className="space-y-2 pt-2">
+                              {evs.length === 0 ? (
+                                <p className="text-sm text-gray-400 py-2 italic">Aucune évaluation enregistrée pour cette séance.</p>
+                              ) : (
+                                <div className="space-y-2 pt-2 pb-1">
                                   {evs.map((e) => (
-                                    <div key={e.id} className="p-3 rounded border border-emerald-100 bg-emerald-50/40">
+                                    <div key={e.id} className={`p-3 rounded-lg border ${e.status === "valide" ? "border-emerald-100 bg-emerald-50/40" : "border-red-100 bg-red-50/30"}`}>
                                       <div className="flex items-center justify-between">
-                                        <span className="font-medium">Hizb {e.hizb_number}</span>
+                                        <span className="font-medium text-sm">Hizb {e.hizb_number}</span>
                                         {e.status === "valide" ? (
-                                          <Badge className="bg-emerald-700 text-white">{NIVEAU_LABEL[e.niveau || ""] || "Validé"}</Badge>
-                                        ) : (<Badge className="bg-red-600 text-white">À retravailler</Badge>)}
+                                          <Badge className={`${niveauBg[e.niveau || ""] ?? "bg-emerald-600"} text-white`}>
+                                            {NIVEAU_LABEL[e.niveau || ""] || "Validé"}
+                                          </Badge>
+                                        ) : (
+                                          <Badge className="bg-red-600 text-white">À retravailler</Badge>
+                                        )}
                                       </div>
-                                      {e.notes && <p className="text-sm text-gray-700 mt-1">{e.notes}</p>}
+                                      {e.notes && <p className="text-xs text-gray-500 mt-1.5 italic">"{e.notes}"</p>}
                                     </div>
                                   ))}
                                 </div>
+                              )}
+                              {s.status === "confirmee" && s.meet_link && (
+                                <a href={/^https?:\/\//i.test(s.meet_link) ? s.meet_link : `https://${s.meet_link}`} target="_blank" rel="noopener noreferrer"
+                                  className="flex items-center justify-center gap-2 w-full bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-medium py-2 px-3 rounded-lg transition mb-2">
+                                  🎥 Rejoindre la séance
+                                </a>
                               )}
                             </AccordionContent>
                           </AccordionItem>
@@ -846,28 +911,49 @@ export default function Hifz() {
       </div>
 
       <Dialog open={!!selectedSlot} onOpenChange={(o) => !o && setSelectedSlot(null)}>
-        <DialogContent>
-          <DialogHeader><DialogTitle className="text-emerald-800">Confirmer la réservation</DialogTitle></DialogHeader>
-          {selectedSlot && (
-            <div className="space-y-3">
-              <Badge className={`${getSessionType(bookingType).badgeBg} ${getSessionType(bookingType).badgeText} border-0`}>
-                {getSessionType(bookingType).icon} {getSessionType(bookingType).label}
-                {bookingType === "khatm_partiel" ? ` — Juz ${bookingJuz}` : ""}
-              </Badge>
-              <p className="text-sm">
-                <strong>{format(parseISO(selectedSlot.slot_date), "EEEE d MMMM yyyy", { locale: fr })}</strong>
-                {" · "}{selectedSlot.start_time.slice(0,5)} – {selectedSlot.end_time.slice(0,5)}
-              </p>
-              <div>
-                <Label>Message (optionnel)</Label>
-                <Textarea value={bookingMessage} onChange={(e) => setBookingMessage(e.target.value)} placeholder="Précisions pour votre professeur..." />
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-emerald-800">Confirmer la réservation</DialogTitle>
+          </DialogHeader>
+          {selectedSlot && (() => {
+            const ti = getSessionType(bookingType);
+            return (
+              <div className="space-y-4">
+                <div className={`p-4 rounded-xl border ${ti.border} ${ti.bgSoft} space-y-1`}>
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">{ti.icon}</span>
+                    <div>
+                      <p className="font-semibold text-sm">{ti.label}{bookingType === "khatm_partiel" ? ` — Juz ${bookingJuz}` : ""}</p>
+                      <p className="text-xs text-gray-500">{ti.long}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 space-y-1">
+                  <p className="font-semibold text-emerald-900 capitalize">
+                    {format(parseISO(selectedSlot.slot_date), "EEEE d MMMM yyyy", { locale: fr })}
+                  </p>
+                  <p className="text-sm text-emerald-700">
+                    {selectedSlot.start_time.slice(0,5)} – {selectedSlot.end_time.slice(0,5)}
+                  </p>
+                  {selectedSlot.notes && <p className="text-xs text-gray-500">{selectedSlot.notes}</p>}
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Message pour le professeur <span className="text-gray-400 font-normal">(optionnel)</span></Label>
+                  <Textarea
+                    value={bookingMessage}
+                    onChange={(e) => setBookingMessage(e.target.value)}
+                    placeholder="Hizb travaillés, difficultés particulières..."
+                    className="mt-1 resize-none"
+                    rows={3}
+                  />
+                </div>
               </div>
-            </div>
-          )}
-          <DialogFooter>
+            );
+          })()}
+          <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setSelectedSlot(null)}>Annuler</Button>
             <Button onClick={confirmBooking} disabled={booking} className="bg-emerald-700 hover:bg-emerald-800 text-white">
-              {booking ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmer"}
+              {booking ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Enregistrement...</> : "Confirmer la réservation"}
             </Button>
           </DialogFooter>
         </DialogContent>
