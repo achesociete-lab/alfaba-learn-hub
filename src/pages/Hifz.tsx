@@ -13,6 +13,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from "recharts";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
@@ -80,9 +82,47 @@ export default function Hifz() {
   useEffect(() => { if (user && plan === "premium") fetchAll(); }, [user, plan]);
 
   // ─── Derived data (hooks must run before any conditional return) ───
-  const remainingHizb = config ? Math.max(0, TOTAL_HIZB - (config.hizb_already_memo || 0)) : 0;
+  // Hizb validés (status='valide') uniques — viennent s'ajouter aux hizb déjà mémorisés initialement
+  const validatedHizbNumbers = useMemo(() => {
+    const set = new Set<number>();
+    for (const e of evaluations) if (e.status === "valide") set.add(e.hizb_number);
+    return set;
+  }, [evaluations]);
+  const initialMemo = config?.hizb_already_memo || 0;
+  const totalMemorized = Math.min(TOTAL_HIZB, initialMemo + validatedHizbNumbers.size);
+  const remainingHizb = config ? Math.max(0, TOTAL_HIZB - totalMemorized) : 0;
   const remainingPages = remainingHizb * PAGES_PER_HIZB;
+  const memorizedPages = totalMemorized * PAGES_PER_HIZB;
+  const progressPercent = Math.round((totalMemorized / TOTAL_HIZB) * 100);
   const pacePerDay = config ? +(remainingPages / Math.max(1, config.duration_months * 30)).toFixed(2) : 0;
+
+  // Données du graphique : cumul des hizb validés au fil du temps
+  const progressChartData = useMemo(() => {
+    const valids = evaluations
+      .filter((e) => e.status === "valide")
+      .sort((a, b) => new Date(a.evaluated_at).getTime() - new Date(b.evaluated_at).getTime());
+    const seen = new Set<number>();
+    const byDate: Record<string, number> = {};
+    for (const e of valids) {
+      if (seen.has(e.hizb_number)) continue;
+      seen.add(e.hizb_number);
+      const d = format(parseISO(e.evaluated_at), "dd/MM");
+      byDate[d] = seen.size + initialMemo;
+    }
+    const points = Object.entries(byDate).map(([date, memorized]) => ({
+      date,
+      memorisés: memorized,
+      restants: TOTAL_HIZB - memorized,
+    }));
+    if (points.length === 0 && config) {
+      points.push({
+        date: format(parseISO(config.start_date), "dd/MM"),
+        memorisés: initialMemo,
+        restants: TOTAL_HIZB - initialMemo,
+      });
+    }
+    return points;
+  }, [evaluations, initialMemo, config]);
 
   const monthlyPlan = useMemo(() => {
     if (!config) return [] as { month: number; label: string; hizb: number[] }[];
@@ -251,13 +291,50 @@ export default function Hifz() {
               ) : (
                 <div className="space-y-4">
                   <Card className="border-emerald-200 bg-gradient-to-br from-emerald-50 to-amber-50">
-                    <CardContent className="pt-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                      <Stat label="Hizb restants" value={remainingHizb} />
-                      <Stat label="Pages" value={remainingPages} />
-                      <Stat label="Durée" value={`${config.duration_months} mois`} />
-                      <Stat label="Rythme" value={`${pacePerDay} p/j`} />
+                    <CardContent className="pt-6 space-y-4">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                        <Stat label="Hizb mémorisés" value={`${totalMemorized}/${TOTAL_HIZB}`} />
+                        <Stat label="Hizb restants" value={remainingHizb} />
+                        <Stat label="Pages restantes" value={remainingPages} />
+                        <Stat label="Rythme" value={`${pacePerDay} p/j`} />
+                      </div>
+                      <div>
+                        <div className="flex justify-between text-xs text-amber-800/80 mb-1">
+                          <span>Progression globale</span>
+                          <span className="font-semibold">{progressPercent}% · {memorizedPages} pages mémorisées</span>
+                        </div>
+                        <Progress value={progressPercent} className="h-3" />
+                      </div>
                     </CardContent>
                   </Card>
+
+                  <Card className="border-emerald-200">
+                    <CardHeader>
+                      <CardTitle className="text-emerald-800 text-base">📈 Évolution de la mémorisation</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {progressChartData.length <= 1 ? (
+                        <p className="text-sm text-amber-800/70 text-center py-6">
+                          Le graphique apparaîtra dès que vos premiers hizb seront validés par votre professeur.
+                        </p>
+                      ) : (
+                        <div className="h-64 w-full">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={progressChartData} margin={{ top: 5, right: 10, bottom: 5, left: -10 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#e7d9b8" />
+                              <XAxis dataKey="date" stroke="#92400e" fontSize={11} />
+                              <YAxis stroke="#92400e" fontSize={11} domain={[0, TOTAL_HIZB]} />
+                              <Tooltip contentStyle={{ background: "#fdf8ef", border: "1px solid #15803d", borderRadius: 8 }} />
+                              <Legend wrapperStyle={{ fontSize: 12 }} />
+                              <Line type="monotone" dataKey="memorisés" stroke="#15803d" strokeWidth={2} dot={{ r: 3 }} />
+                              <Line type="monotone" dataKey="restants" stroke="#b45309" strokeWidth={2} dot={{ r: 3 }} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
 
                   <Accordion type="single" collapsible className="space-y-2">
                     {monthlyPlan.map((m) => (
