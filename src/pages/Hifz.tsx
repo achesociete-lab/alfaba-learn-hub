@@ -2,7 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Crown, Lock, Sparkles, BookOpen, CheckCircle2, XCircle, Loader2, ChevronRight, Moon, Sunrise, Sun, GraduationCap, RotateCcw } from "lucide-react";
+import {
+  Crown, Lock, Sparkles, BookOpen, CheckCircle2, Loader2, ChevronRight,
+  Moon, Sunrise, Sun, GraduationCap, RotateCcw, Target, LayoutGrid,
+  CalendarDays, Clock, TrendingUp, Star, AlertCircle, CalendarCheck,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,7 +14,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
@@ -35,6 +38,34 @@ type Evaluation = { id: string; session_id: string | null; hizb_number: number; 
 
 const NIVEAU_LABEL: Record<string, string> = { mediocre: "Médiocre", moyen: "Moyen", bon: "Bon", excellent: "Excellent" };
 const NIVEAU_WEIGHT: Record<string, number> = { mediocre: 1, moyen: 2, bon: 3, excellent: 4 };
+const NIVEAU_BG: Record<string, string> = { excellent: "bg-emerald-700", bon: "bg-emerald-500", moyen: "bg-amber-500", mediocre: "bg-red-500" };
+const STATUS_LABEL: Record<string, string> = { en_attente: "En attente", confirmee: "Confirmée", effectuee: "Effectuée", annulee: "Annulée" };
+const STATUS_CARD: Record<string, string> = {
+  en_attente: "border-amber-200 bg-amber-50/40",
+  confirmee: "border-emerald-200 bg-emerald-50/40",
+  effectuee: "border-violet-200 bg-violet-50/20",
+  annulee: "border-red-100 bg-red-50/20 opacity-60",
+};
+const STATUS_BORDER: Record<string, string> = {
+  confirmee: "border-l-emerald-400",
+  effectuee: "border-l-violet-400",
+  annulee: "border-l-red-300",
+  en_attente: "border-l-amber-300",
+};
+
+// ─── Circular progress SVG ──────────────────────────────────────────────────
+function CircleProgress({ percent }: { percent: number }) {
+  const r = 15.9;
+  const circ = 2 * Math.PI * r;
+  const offset = circ - (percent / 100) * circ;
+  return (
+    <svg viewBox="0 0 36 36" className="w-16 h-16 -rotate-90">
+      <circle cx="18" cy="18" r={r} fill="none" stroke="#d1fae5" strokeWidth="3" />
+      <circle cx="18" cy="18" r={r} fill="none" stroke="#15803d" strokeWidth="3"
+        strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round" />
+    </svg>
+  );
+}
 
 export default function Hifz() {
   const navigate = useNavigate();
@@ -50,12 +81,10 @@ export default function Hifz() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [slots, setSlots] = useState<Slot[]>([]);
 
-  // Onboarding form
   const [memoCount, setMemoCount] = useState(0);
   const [duration, setDuration] = useState(16);
   const [submitting, setSubmitting] = useState(false);
 
-  // Booking
   const [calMonth, setCalMonth] = useState(startOfMonth(new Date()));
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
@@ -64,7 +93,6 @@ export default function Hifz() {
   const [bookingJuz, setBookingJuz] = useState<number>(1);
   const [booking, setBooking] = useState(false);
 
-  // Vue globale
   const [globalFilter, setGlobalFilter] = useState<"tous" | HifzSessionType>("tous");
 
   useEffect(() => {
@@ -95,6 +123,7 @@ export default function Hifz() {
     for (const e of evaluations) if (e.status === "valide") set.add(e.hizb_number);
     return set;
   }, [evaluations]);
+
   const initialMemo = config?.hizb_already_memo || 0;
   const totalMemorized = Math.min(TOTAL_HIZB, initialMemo + validatedHizbNumbers.size);
   const remainingHizb = config ? Math.max(0, TOTAL_HIZB - totalMemorized) : 0;
@@ -112,8 +141,7 @@ export default function Hifz() {
     for (const e of valids) {
       if (seen.has(e.hizb_number)) continue;
       seen.add(e.hizb_number);
-      const d = format(parseISO(e.evaluated_at), "dd/MM");
-      byDate[d] = seen.size + initialMemo;
+      byDate[format(parseISO(e.evaluated_at), "dd/MM")] = seen.size + initialMemo;
     }
     const points = Object.entries(byDate).map(([date, memorized]) => ({
       date, memorisés: memorized, restants: TOTAL_HIZB - memorized,
@@ -136,23 +164,11 @@ export default function Hifz() {
       if (from > TOTAL_HIZB) break;
       const hizb = [];
       for (let h = from; h <= to; h++) hizb.push(h);
-      const dt = addMonths(parseISO(config.start_date), m);
-      result.push({ month: m + 1, label: format(dt, "MMMM yyyy", { locale: fr }), hizb });
+      result.push({ month: m + 1, label: format(addMonths(parseISO(config.start_date), m), "MMMM yyyy", { locale: fr }), hizb });
     }
     return result;
   }, [config, remainingHizb]);
 
-  // Dernière éval par hizb (toutes types confondus)
-  const evalByHizb = useMemo(() => {
-    const map: Record<number, Evaluation> = {};
-    for (const e of evaluations) {
-      const cur = map[e.hizb_number];
-      if (!cur || new Date(e.evaluated_at) > new Date(cur.evaluated_at)) map[e.hizb_number] = e;
-    }
-    return map;
-  }, [evaluations]);
-
-  // Dernière éval par hizb par type
   const evalByHizbByType = useMemo(() => {
     const map: Record<number, Record<string, Evaluation>> = {};
     for (const e of evaluations) {
@@ -164,6 +180,13 @@ export default function Hifz() {
     return map;
   }, [evaluations]);
 
+  const evalHistoryByHizb = useMemo(() => {
+    const map: Record<number, Evaluation[]> = {};
+    for (const e of evaluations) (map[e.hizb_number] ||= []).push(e);
+    Object.values(map).forEach((arr) => arr.sort((a, b) => new Date(b.evaluated_at).getTime() - new Date(a.evaluated_at).getTime()));
+    return map;
+  }, [evaluations]);
+
   const slotsByDay = useMemo(() => {
     const m: Record<string, Slot[]> = {};
     for (const s of slots) (m[s.slot_date] ||= []).push(s);
@@ -171,6 +194,15 @@ export default function Hifz() {
   }, [slots]);
 
   const daysOfMonth = useMemo(() => eachDayOfInterval({ start: startOfMonth(calMonth), end: endOfMonth(calMonth) }), [calMonth]);
+
+  const dashboardByType = HIFZ_SESSION_TYPES.map((t) => {
+    const evs = evaluations.filter((e) => (e.session_type || "sabaq") === t.value);
+    const hizbCount = new Set(evs.map((e) => e.hizb_number)).size;
+    const niveaux = evs.filter((e) => e.niveau).map((e) => NIVEAU_WEIGHT[e.niveau!] || 0);
+    const avg = niveaux.length ? niveaux.reduce((a, b) => a + b, 0) / niveaux.length : 0;
+    const last = [...evs].sort((a, b) => new Date(b.evaluated_at).getTime() - new Date(a.evaluated_at).getTime())[0];
+    return { type: t, hizbCount, avg, lastDate: last?.evaluated_at };
+  });
 
   const handleGenerate = async () => {
     if (!user) return;
@@ -187,7 +219,7 @@ export default function Hifz() {
 
   const handleReset = async () => {
     if (!user || !config) return;
-    if (!confirm("Réinitialiser votre programme ?")) return;
+    if (!confirm("Réinitialiser votre programme ? Cette action est irréversible.")) return;
     await supabase.from("hifz_config").delete().eq("student_id", user.id);
     setConfig(null); setMemoCount(0); setDuration(16);
   };
@@ -230,29 +262,9 @@ export default function Hifz() {
 
     setBooking(false); setSelectedSlot(null); setSelectedDay(null);
     setBookingMessage(""); setBookingType("sabaq"); setBookingJuz(1);
-    toast({ title: "Réservation enregistrée", description: "Vous recevrez un email de confirmation." });
+    toast({ title: "Réservation enregistrée ✓", description: "Vous recevrez un email de confirmation." });
     fetchAll();
   };
-
-  // Vue globale: build hizb -> evaluations history
-  const evalHistoryByHizb = useMemo(() => {
-    const map: Record<number, Evaluation[]> = {};
-    for (const e of evaluations) {
-      (map[e.hizb_number] ||= []).push(e);
-    }
-    Object.values(map).forEach((arr) => arr.sort((a, b) => new Date(b.evaluated_at).getTime() - new Date(a.evaluated_at).getTime()));
-    return map;
-  }, [evaluations]);
-
-  // Tableau de bord par type
-  const dashboardByType = HIFZ_SESSION_TYPES.map((t) => {
-    const evs = evaluations.filter((e) => (e.session_type || "sabaq") === t.value);
-    const hizbCount = new Set(evs.map((e) => e.hizb_number)).size;
-    const niveaux = evs.filter((e) => e.niveau).map((e) => NIVEAU_WEIGHT[e.niveau!] || 0);
-    const avg = niveaux.length ? niveaux.reduce((a, b) => a + b, 0) / niveaux.length : 0;
-    const last = evs.sort((a, b) => new Date(b.evaluated_at).getTime() - new Date(a.evaluated_at).getTime())[0];
-    return { type: t, hizbCount, avg, lastDate: last?.evaluated_at };
-  });
 
   if (authLoading || subLoading) {
     return (
@@ -264,79 +276,117 @@ export default function Hifz() {
   if (!user) return null;
   if (!isHifz && !isPremium) return <UpsellPage />;
 
+  // Preview calculations for onboarding form
   const previewRemaining = TOTAL_HIZB - memoCount;
   const previewPages = previewRemaining * PAGES_PER_HIZB;
   const previewPace = previewPages > 0 ? +(previewPages / (duration * 30)).toFixed(2) : 0;
-  const previewEnd = format(addMonths(new Date(), duration), "MMM yyyy", { locale: fr });
+  const previewEnd = format(addMonths(new Date(), duration), "MMMM yyyy", { locale: fr });
   const paceColor = previewPace > 2 ? "red" : previewPace > 1 ? "amber" : "emerald";
+
+  // Booking dialog data (extracted to avoid IIFE in JSX)
+  const bookingTi = getSessionType(bookingType);
+  const upcomingCount = sessions.filter(s => s.status === "en_attente" || s.status === "confirmee").length;
 
   return (
     <div className="min-h-screen bg-[#fdf8ef]">
       <Navbar />
-      <div className="max-w-5xl mx-auto px-4 pt-24 pb-8">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="h-12 w-12 rounded-full bg-gradient-to-br from-emerald-700 to-amber-700 flex items-center justify-center">
-            <BookOpen className="h-6 w-6 text-white" />
+      <div className="max-w-5xl mx-auto px-4 pt-24 pb-12">
+
+        {/* ─── Header ─── */}
+        <div className="flex items-center gap-4 mb-8">
+          <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-emerald-700 to-amber-700 flex items-center justify-center shadow-lg shrink-0">
+            <BookOpen className="h-7 w-7 text-white" />
           </div>
-          <div>
-            <h1 className="text-3xl font-bold text-emerald-800">Hifd al-Qur'ān</h1>
-            <p className="text-sm text-amber-800/80">Programme de mémorisation personnalisé</p>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold text-emerald-900 leading-tight">Hifd al-Qur'ān</h1>
+            <p className="text-sm text-amber-800/70 mt-0.5">Programme de mémorisation personnalisé</p>
           </div>
+          {config && (
+            <div className="hidden sm:flex items-center gap-3 bg-white border border-emerald-100 rounded-2xl px-4 py-2.5 shadow-sm shrink-0">
+              <div className="text-right">
+                <div className="text-xl font-bold text-emerald-800">{progressPercent}%</div>
+                <div className="text-xs text-amber-800/50">mémorisé</div>
+              </div>
+              <div className="relative flex items-center justify-center">
+                <CircleProgress percent={progressPercent} />
+                <span className="absolute text-[10px] font-bold text-emerald-700">{totalMemorized}/{TOTAL_HIZB}</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-emerald-700" /></div>
+          <div className="flex flex-col items-center justify-center py-24 gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-emerald-700" />
+            <p className="text-sm text-amber-800/60">Chargement de votre programme…</p>
+          </div>
         ) : (
           <Tabs value={tab} onValueChange={setTab} className="w-full">
-            <TabsList className="grid grid-cols-2 md:grid-cols-5 gap-1 w-full bg-emerald-50 border border-emerald-100 h-auto">
-              <TabsTrigger value="programme" className="data-[state=active]:bg-emerald-700 data-[state=active]:text-white">Programme</TabsTrigger>
-              <TabsTrigger value="vue-globale" className="data-[state=active]:bg-emerald-700 data-[state=active]:text-white">Vue globale</TabsTrigger>
-              <TabsTrigger value="methode" className="data-[state=active]:bg-emerald-700 data-[state=active]:text-white">Méthode 📚</TabsTrigger>
-              <TabsTrigger value="reserver" className="data-[state=active]:bg-emerald-700 data-[state=active]:text-white">Réserver</TabsTrigger>
-              <TabsTrigger value="historique" className="data-[state=active]:bg-emerald-700 data-[state=active]:text-white">Historique</TabsTrigger>
+
+            {/* ─── Tab navigation ─── */}
+            <TabsList className="flex w-full bg-white border border-emerald-100 rounded-xl h-auto p-1 gap-0.5 shadow-sm overflow-x-auto mb-2">
+              {[
+                { value: "programme", icon: Target, label: "Programme" },
+                { value: "vue-globale", icon: LayoutGrid, label: "Vue globale" },
+                { value: "methode", icon: BookOpen, label: "Méthode" },
+                { value: "reserver", icon: CalendarDays, label: "Réserver", badge: upcomingCount || undefined },
+                { value: "historique", icon: Clock, label: "Historique" },
+              ].map(({ value, icon: Icon, label, badge }) => (
+                <TabsTrigger
+                  key={value}
+                  value={value}
+                  className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium py-2 px-2 rounded-lg min-w-[80px]
+                    data-[state=active]:bg-emerald-700 data-[state=active]:text-white data-[state=active]:shadow-sm
+                    text-amber-900/60 hover:text-amber-900 transition-colors whitespace-nowrap relative"
+                >
+                  <Icon className="h-3.5 w-3.5 shrink-0" />
+                  <span>{label}</span>
+                  {badge ? (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] flex items-center justify-center font-bold">
+                      {badge}
+                    </span>
+                  ) : null}
+                </TabsTrigger>
+              ))}
             </TabsList>
 
-            {/* ─── Programme ─── */}
-            <TabsContent value="programme" className="mt-6">
+            {/* ═══════════════════════════════════════════════════════════════
+                PROGRAMME
+            ═══════════════════════════════════════════════════════════════ */}
+            <TabsContent value="programme" className="mt-4">
               {!config ? (
-                <Card className="border-emerald-200">
-                  <CardHeader>
-                    <CardTitle className="text-emerald-800">Créer votre programme</CardTitle>
-                    <p className="text-sm text-amber-800/70">Configurez votre plan — l'aperçu se met à jour en temps réel.</p>
+                /* ── Onboarding form ── */
+                <Card className="border-emerald-200 shadow-sm">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-emerald-800 text-xl">Créer votre programme</CardTitle>
+                    <p className="text-sm text-amber-800/60">L'aperçu se met à jour en temps réel selon vos choix.</p>
                   </CardHeader>
-                  <CardContent className="space-y-6">
-
-                    {/* Slider hizb */}
+                  <CardContent className="space-y-7">
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <Label>Hizb déjà mémorisés <span className="text-xs text-amber-800/60">(depuis An-Nas = hizb 1)</span></Label>
-                        <span className="text-2xl font-bold text-emerald-800">
-                          {memoCount} <span className="text-sm font-normal text-amber-800/60">/ 60</span>
+                        <Label className="text-sm font-medium">Hizb déjà mémorisés <span className="text-xs text-amber-800/50 font-normal">(depuis An-Nas = hizb 1)</span></Label>
+                        <span className="text-2xl font-bold text-emerald-800 tabular-nums">
+                          {memoCount}<span className="text-sm font-normal text-amber-800/50"> / 60</span>
                         </span>
                       </div>
-                      <Slider
-                        value={[memoCount]}
-                        onValueChange={([v]) => setMemoCount(v)}
-                        min={0} max={60} step={1}
-                      />
+                      <Slider value={[memoCount]} onValueChange={([v]) => setMemoCount(v)} min={0} max={60} step={1} />
                       <div className="flex justify-between text-xs text-amber-800/40">
-                        <span>0</span>
-                        <span>Coran complet (60)</span>
+                        <span>0 hizb</span>
+                        <span>Coran complet (60 hizb)</span>
                       </div>
                     </div>
 
-                    {/* Durée : boutons rapides + saisie libre */}
                     <div className="space-y-2">
-                      <Label>Durée souhaitée</Label>
+                      <Label className="text-sm font-medium">Durée souhaitée</Label>
                       <div className="flex gap-2 flex-wrap items-center">
                         {[6, 12, 18, 24, 36].map((m) => (
                           <button
                             key={m}
                             type="button"
                             onClick={() => setDuration(m)}
-                            className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition ${
+                            className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
                               duration === m
-                                ? "bg-emerald-700 text-white border-emerald-700"
+                                ? "bg-emerald-700 text-white border-emerald-700 shadow-sm"
                                 : "bg-white text-emerald-800 border-emerald-200 hover:border-emerald-400"
                             }`}
                           >
@@ -344,99 +394,99 @@ export default function Hifz() {
                           </button>
                         ))}
                         <Input
-                          type="number"
-                          min={1}
-                          max={120}
-                          value={duration}
+                          type="number" min={1} max={120} value={duration}
                           onChange={(e) => setDuration(Math.max(1, +e.target.value || 1))}
-                          className="bg-white w-24 h-9"
-                          placeholder="Autre"
+                          className="bg-white w-24 h-9 text-sm"
                         />
                       </div>
                     </div>
 
-                    {/* Aperçu live */}
                     {memoCount < 60 ? (
-                      <div className={`rounded-xl p-4 border ${
-                        paceColor === "red"     ? "bg-red-50 border-red-200" :
-                        paceColor === "amber"   ? "bg-amber-50 border-amber-200" :
-                                                  "bg-emerald-50 border-emerald-200"
+                      <div className={`rounded-xl p-5 border-2 ${
+                        paceColor === "red" ? "bg-red-50 border-red-200" :
+                        paceColor === "amber" ? "bg-amber-50 border-amber-200" :
+                        "bg-emerald-50 border-emerald-200"
                       }`}>
-                        <p className={`text-xs font-semibold uppercase tracking-wide mb-3 ${
-                          paceColor === "red"   ? "text-red-700" :
-                          paceColor === "amber" ? "text-amber-700" :
-                                                  "text-emerald-700"
+                        <p className={`text-xs font-semibold uppercase tracking-widest mb-4 ${
+                          paceColor === "red" ? "text-red-600" : paceColor === "amber" ? "text-amber-600" : "text-emerald-700"
                         }`}>Aperçu de votre programme</p>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center mb-3">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center mb-4">
                           <div>
-                            <div className="text-xl font-bold text-emerald-800">{previewRemaining}</div>
-                            <div className="text-xs text-amber-800/70">Hizb restants</div>
+                            <div className="text-2xl font-bold text-emerald-800">{previewRemaining}</div>
+                            <div className="text-xs text-amber-800/60 mt-0.5">Hizb restants</div>
                           </div>
                           <div>
-                            <div className="text-xl font-bold text-emerald-800">{previewPages}</div>
-                            <div className="text-xs text-amber-800/70">Pages restantes</div>
+                            <div className="text-2xl font-bold text-emerald-800">{previewPages}</div>
+                            <div className="text-xs text-amber-800/60 mt-0.5">Pages restantes</div>
                           </div>
                           <div>
-                            <div className={`text-xl font-bold ${
-                              paceColor === "red"   ? "text-red-700" :
-                              paceColor === "amber" ? "text-amber-700" :
-                                                      "text-emerald-800"
+                            <div className={`text-2xl font-bold ${
+                              paceColor === "red" ? "text-red-600" : paceColor === "amber" ? "text-amber-600" : "text-emerald-800"
                             }`}>{previewPace}</div>
-                            <div className="text-xs text-amber-800/70">Pages / jour</div>
+                            <div className="text-xs text-amber-800/60 mt-0.5">Pages / jour</div>
                           </div>
                           <div>
-                            <div className="text-xl font-bold text-emerald-800 capitalize">{previewEnd}</div>
-                            <div className="text-xs text-amber-800/70">Fin estimée</div>
+                            <div className="text-2xl font-bold text-emerald-800 capitalize">{previewEnd}</div>
+                            <div className="text-xs text-amber-800/60 mt-0.5">Fin estimée</div>
                           </div>
                         </div>
-                        <p className={`text-xs text-center ${
-                          paceColor === "red"   ? "text-red-700" :
-                          paceColor === "amber" ? "text-amber-700" :
-                                                  "text-emerald-700"
+                        <div className={`flex items-center gap-2 text-xs justify-center ${
+                          paceColor === "red" ? "text-red-600" : paceColor === "amber" ? "text-amber-700" : "text-emerald-700"
                         }`}>
-                          {paceColor === "red"   && "⚠️ Rythme très intensif — augmentez la durée pour un hifd solide."}
-                          {paceColor === "amber" && "⚡ Rythme soutenu — prévoyez du temps chaque jour."}
-                          {paceColor === "emerald" && "✓ Rythme idéal pour une mémorisation solide et durable."}
-                        </p>
+                          {paceColor === "red" && <><AlertCircle className="h-3.5 w-3.5 shrink-0" /> Rythme très intensif — augmentez la durée pour un hifd solide.</>}
+                          {paceColor === "amber" && <><TrendingUp className="h-3.5 w-3.5 shrink-0" /> Rythme soutenu — prévoyez du temps chaque jour.</>}
+                          {paceColor === "emerald" && <><CheckCircle2 className="h-3.5 w-3.5 shrink-0" /> Rythme idéal pour une mémorisation solide et durable.</>}
+                        </div>
                       </div>
                     ) : (
-                      <div className="rounded-xl p-4 bg-amber-50 border border-amber-200 text-center">
-                        <p className="text-amber-800 font-semibold">ما شاء الله — Vous avez mémorisé le Coran complet !</p>
-                        <p className="text-xs text-amber-800/70 mt-1">Créez un programme de révision pour maintenir votre hifd.</p>
+                      <div className="rounded-xl p-5 bg-amber-50 border-2 border-amber-200 text-center space-y-1">
+                        <Star className="h-8 w-8 text-amber-500 mx-auto" />
+                        <p className="text-amber-900 font-semibold">ما شاء الله — Vous avez mémorisé le Coran complet !</p>
+                        <p className="text-xs text-amber-800/60">Créez un programme de révision pour maintenir votre hifd.</p>
                       </div>
                     )}
 
-                    <Button onClick={handleGenerate} disabled={submitting} className="w-full bg-emerald-700 hover:bg-emerald-800 text-white">
+                    <Button onClick={handleGenerate} disabled={submitting} size="lg" className="w-full bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm">
                       {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
                       Générer mon programme
                     </Button>
                   </CardContent>
                 </Card>
               ) : (
+                /* ── Programme actif ── */
                 <div className="space-y-4">
-                  <Card className="border-emerald-200 bg-gradient-to-br from-emerald-50 to-amber-50">
-                    <CardContent className="pt-6 space-y-4">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                        <Stat label="Hizb mémorisés" value={`${totalMemorized}/${TOTAL_HIZB}`} />
-                        <Stat label="Hizb restants" value={remainingHizb} />
-                        <Stat label="Pages restantes" value={remainingPages} />
-                        <Stat label="Rythme" value={`${pacePerDay} p/j`} />
+                  {/* Stats + progress */}
+                  <Card className="border-emerald-200 bg-gradient-to-br from-emerald-50 to-amber-50/60 shadow-sm">
+                    <CardContent className="pt-6 space-y-5">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <StatCard icon={BookOpen} label="Hizb mémorisés" value={`${totalMemorized}/${TOTAL_HIZB}`} color="emerald" />
+                        <StatCard icon={Target} label="Hizb restants" value={remainingHizb} color="amber" />
+                        <StatCard icon={TrendingUp} label="Pages restantes" value={remainingPages} color="amber" />
+                        <StatCard icon={CalendarCheck} label="Rythme" value={`${pacePerDay} p/j`} color="emerald" />
                       </div>
-                      <div>
-                        <div className="flex justify-between text-xs text-amber-800/80 mb-1">
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between text-xs text-amber-800/70">
                           <span>Progression globale</span>
                           <span className="font-semibold">{progressPercent}% · {memorizedPages} pages mémorisées</span>
                         </div>
-                        <Progress value={progressPercent} className="h-3" />
+                        <Progress value={progressPercent} className="h-2.5 rounded-full" />
                       </div>
                     </CardContent>
                   </Card>
 
-                  <Card className="border-emerald-200">
-                    <CardHeader><CardTitle className="text-emerald-800 text-base">📈 Évolution de la mémorisation</CardTitle></CardHeader>
+                  {/* Chart */}
+                  <Card className="border-emerald-200 shadow-sm">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-emerald-800 text-base flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4" /> Évolution de la mémorisation
+                      </CardTitle>
+                    </CardHeader>
                     <CardContent>
                       {progressChartData.length <= 1 ? (
-                        <p className="text-sm text-amber-800/70 text-center py-6">Le graphique apparaîtra dès que vos premiers hizb seront validés.</p>
+                        <div className="flex flex-col items-center justify-center py-10 text-center gap-2">
+                          <TrendingUp className="h-10 w-10 text-emerald-200" />
+                          <p className="text-sm text-amber-800/60">Le graphique apparaîtra dès que vos premiers hizb seront validés.</p>
+                        </div>
                       ) : (
                         <div className="h-64 w-full">
                           <ResponsiveContainer width="100%" height="100%">
@@ -444,10 +494,10 @@ export default function Hifz() {
                               <CartesianGrid strokeDasharray="3 3" stroke="#e7d9b8" />
                               <XAxis dataKey="date" stroke="#92400e" fontSize={11} />
                               <YAxis stroke="#92400e" fontSize={11} domain={[0, TOTAL_HIZB]} />
-                              <Tooltip contentStyle={{ background: "#fdf8ef", border: "1px solid #15803d", borderRadius: 8 }} />
+                              <Tooltip contentStyle={{ background: "#fdf8ef", border: "1px solid #15803d", borderRadius: 10, fontSize: 12 }} />
                               <Legend wrapperStyle={{ fontSize: 12 }} />
-                              <Line type="monotone" dataKey="memorisés" stroke="#15803d" strokeWidth={2} dot={{ r: 3 }} />
-                              <Line type="monotone" dataKey="restants" stroke="#b45309" strokeWidth={2} dot={{ r: 3 }} />
+                              <Line type="monotone" dataKey="memorisés" stroke="#15803d" strokeWidth={2.5} dot={{ r: 3, fill: "#15803d" }} />
+                              <Line type="monotone" dataKey="restants" stroke="#d97706" strokeWidth={2} dot={{ r: 3, fill: "#d97706" }} strokeDasharray="4 2" />
                             </LineChart>
                           </ResponsiveContainer>
                         </div>
@@ -455,278 +505,346 @@ export default function Hifz() {
                     </CardContent>
                   </Card>
 
+                  {/* Monthly plan */}
                   <Accordion type="single" collapsible className="space-y-2">
-                    {monthlyPlan.map((m) => (
-                      <AccordionItem key={m.month} value={`m-${m.month}`} className="border border-emerald-200 rounded-lg bg-white px-4">
-                        <AccordionTrigger className="hover:no-underline">
-                          <div className="flex items-center justify-between w-full pr-2">
-                            <span className="font-semibold text-emerald-800 capitalize">Mois {m.month} · {m.label}</span>
-                            <Badge variant="outline" className="border-amber-700 text-amber-800">{m.hizb.length} hizb</Badge>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
-                            {m.hizb.map((h) => {
-                              const byType = evalByHizbByType[h] || {};
-                              const types = Object.keys(byType);
-                              return (
-                                <div key={h} className="flex items-center justify-between p-3 rounded border border-emerald-100 bg-emerald-50/40 gap-2">
-                                  <span className="font-medium whitespace-nowrap">Hizb {h}</span>
-                                  <div className="flex flex-wrap gap-1 justify-end">
-                                    {types.length === 0 ? (
-                                      <Badge variant="secondary" className="bg-gray-200 text-gray-700 text-[10px]">Non évalué</Badge>
-                                    ) : types.map((t) => {
-                                      const ev = byType[t];
-                                      const ti = getSessionType(t);
-                                      return (
-                                        <Badge key={t} className={`${ti.badgeBg} ${ti.badgeText} text-[10px] border-0`} title={`${ti.label} — ${ev.status === "valide" ? (NIVEAU_LABEL[ev.niveau || ""] || "Validé") : "À retravailler"}`}>
-                                          {ti.icon} {ev.status === "valide" ? (NIVEAU_LABEL[ev.niveau || ""] || "Validé") : "À retravailler"}
-                                        </Badge>
-                                      );
-                                    })}
+                    {monthlyPlan.map((m) => {
+                      const doneCount = m.hizb.filter(h => validatedHizbNumbers.has(h)).length;
+                      const monthPct = m.hizb.length > 0 ? Math.round((doneCount / m.hizb.length) * 100) : 0;
+                      return (
+                        <AccordionItem key={m.month} value={`m-${m.month}`} className="border border-emerald-200 rounded-xl bg-white px-4 shadow-sm">
+                          <AccordionTrigger className="hover:no-underline py-3">
+                            <div className="flex items-center justify-between w-full pr-2">
+                              <div>
+                                <span className="font-semibold text-emerald-800 capitalize">Mois {m.month} · {m.label}</span>
+                                {doneCount > 0 && (
+                                  <div className="flex items-center gap-1.5 mt-0.5">
+                                    <Progress value={monthPct} className="h-1.5 w-20" />
+                                    <span className="text-xs text-emerald-700">{doneCount}/{m.hizb.length}</span>
                                   </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    ))}
+                                )}
+                              </div>
+                              <Badge variant="outline" className="border-amber-300 text-amber-800 shrink-0">{m.hizb.length} hizb</Badge>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 pb-1">
+                              {m.hizb.map((h) => {
+                                const byType = evalByHizbByType[h] || {};
+                                const types = Object.keys(byType);
+                                const isValidated = validatedHizbNumbers.has(h);
+                                return (
+                                  <div key={h} className={`flex items-center justify-between p-3 rounded-lg border gap-2 transition-colors ${
+                                    isValidated ? "border-emerald-200 bg-emerald-50/60" : "border-gray-100 bg-gray-50/50"
+                                  }`}>
+                                    <div className="flex items-center gap-2">
+                                      {isValidated
+                                        ? <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                                        : <div className="h-4 w-4 rounded-full border-2 border-gray-200 shrink-0" />
+                                      }
+                                      <span className="font-medium text-sm">Hizb {h}</span>
+                                    </div>
+                                    <div className="flex flex-wrap gap-1 justify-end">
+                                      {types.length === 0 ? (
+                                        <Badge variant="secondary" className="bg-gray-100 text-gray-500 text-[10px] font-normal">Non évalué</Badge>
+                                      ) : types.map((t) => {
+                                        const ev = byType[t];
+                                        const ti = getSessionType(t);
+                                        return (
+                                          <Badge key={t} className={`${ti.badgeBg} ${ti.badgeText} text-[10px] border-0`}>
+                                            {ti.icon} {ev.status === "valide" ? (NIVEAU_LABEL[ev.niveau || ""] || "Validé") : "À retravailler"}
+                                          </Badge>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      );
+                    })}
                   </Accordion>
 
-                  <Button variant="outline" onClick={handleReset} className="border-amber-700 text-amber-800 hover:bg-amber-50">Modifier mon programme</Button>
+                  <Button variant="outline" onClick={handleReset} className="border-amber-300 text-amber-800 hover:bg-amber-50 text-sm">
+                    <RotateCcw className="h-3.5 w-3.5 mr-2" /> Réinitialiser mon programme
+                  </Button>
                 </div>
               )}
             </TabsContent>
 
-            {/* ─── Vue globale ─── */}
-            <TabsContent value="vue-globale" className="mt-6 space-y-4">
-              <Card className="border-emerald-200">
-                <CardHeader>
-                  <CardTitle className="text-emerald-800 text-base">Grille des 60 hizb</CardTitle>
+            {/* ═══════════════════════════════════════════════════════════════
+                VUE GLOBALE
+            ═══════════════════════════════════════════════════════════════ */}
+            <TabsContent value="vue-globale" className="mt-4 space-y-4">
+              <Card className="border-emerald-200 shadow-sm">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-emerald-800 text-base flex items-center gap-2">
+                    <LayoutGrid className="h-4 w-4" /> Grille des 60 hizb
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex flex-wrap gap-2">
-                    <Button size="sm" variant={globalFilter === "tous" ? "default" : "outline"} onClick={() => setGlobalFilter("tous")} className={globalFilter === "tous" ? "bg-emerald-700 text-white" : ""}>Tous</Button>
+                  <div className="flex flex-wrap gap-1.5">
+                    <button
+                      onClick={() => setGlobalFilter("tous")}
+                      className={`px-3 py-1 rounded-lg text-xs font-medium border transition-all ${
+                        globalFilter === "tous" ? "bg-emerald-700 text-white border-emerald-700" : "bg-white border-gray-200 text-gray-600 hover:border-emerald-300"
+                      }`}
+                    >
+                      Tous les types
+                    </button>
                     {HIFZ_SESSION_TYPES.map((t) => (
-                      <Button key={t.value} size="sm" variant={globalFilter === t.value ? "default" : "outline"} onClick={() => setGlobalFilter(t.value)} className={globalFilter === t.value ? `${t.badgeBg} ${t.badgeText} border ${t.border}` : ""}>
+                      <button
+                        key={t.value}
+                        onClick={() => setGlobalFilter(t.value)}
+                        className={`px-3 py-1 rounded-lg text-xs font-medium border transition-all ${
+                          globalFilter === t.value ? `${t.badgeBg} ${t.badgeText} ${t.border}` : `bg-white border-gray-200 text-gray-600 hover:${t.border}`
+                        }`}
+                      >
                         {t.icon} {t.label}
-                      </Button>
+                      </button>
                     ))}
                   </div>
 
-                  <TooltipProvider delayDuration={150}>
+                  <TooltipProvider delayDuration={100}>
                     <div className="grid grid-cols-6 sm:grid-cols-10 gap-1.5">
                       {Array.from({ length: TOTAL_HIZB }).map((_, i) => {
                         const h = i + 1;
                         const history = evalHistoryByHizb[h] || [];
                         const filtered = globalFilter === "tous" ? history : history.filter((e) => (e.session_type || "sabaq") === globalFilter);
                         const latest = filtered[0];
-                        let cls = "bg-gray-100 text-gray-400";
+                        let cls = "bg-gray-100 text-gray-400 border border-gray-200";
                         if (latest) {
                           if (latest.status === "valide") {
                             const ti = getSessionType(latest.session_type);
-                            cls = `${ti.badgeBg} ${ti.badgeText} font-semibold`;
-                          } else cls = "bg-red-100 text-red-700 font-semibold";
+                            cls = `${ti.badgeBg} ${ti.badgeText} font-semibold border border-transparent`;
+                          } else {
+                            cls = "bg-red-100 text-red-700 font-semibold border border-red-200";
+                          }
                         }
                         return (
                           <UITooltip key={h}>
                             <TooltipTrigger asChild>
-                              <button className={`aspect-square rounded text-xs flex items-center justify-center transition ${cls} hover:ring-2 hover:ring-emerald-400`}>
+                              <button className={`aspect-square rounded-lg text-xs flex items-center justify-center transition hover:scale-110 hover:shadow-sm ${cls}`}>
                                 {h}
                               </button>
                             </TooltipTrigger>
                             <TooltipContent className="max-w-xs">
-                              <div className="space-y-1">
-                                <p className="font-semibold">Hizb {h}</p>
-                                {history.length === 0 ? <p className="text-xs">Non évalué</p> : (
-                                  <ul className="text-xs space-y-0.5">
-                                    {history.slice(0, 6).map((e) => {
-                                      const ti = getSessionType(e.session_type);
-                                      return (
-                                        <li key={e.id}>
-                                          {ti.icon} {format(parseISO(e.evaluated_at), "d MMM", { locale: fr })} — {ti.label} — {e.status === "valide" ? (NIVEAU_LABEL[e.niveau || ""] || "Validé") : "À retravailler"}
-                                        </li>
-                                      );
-                                    })}
-                                  </ul>
-                                )}
-                              </div>
+                              <p className="font-semibold mb-1">Hizb {h}</p>
+                              {history.length === 0 ? (
+                                <p className="text-xs text-gray-400">Non évalué</p>
+                              ) : (
+                                <ul className="text-xs space-y-0.5">
+                                  {history.slice(0, 5).map((e) => {
+                                    const ti = getSessionType(e.session_type);
+                                    return (
+                                      <li key={e.id} className="flex items-center gap-1">
+                                        <span>{ti.icon}</span>
+                                        <span>{format(parseISO(e.evaluated_at), "d MMM", { locale: fr })}</span>
+                                        <span>—</span>
+                                        <span>{e.status === "valide" ? (NIVEAU_LABEL[e.niveau || ""] || "Validé") : "À retravailler"}</span>
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
+                              )}
                             </TooltipContent>
                           </UITooltip>
                         );
                       })}
                     </div>
                   </TooltipProvider>
+
+                  {/* Legend */}
+                  <div className="flex flex-wrap gap-3 pt-2 border-t border-emerald-100 text-xs text-gray-500">
+                    <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-gray-100 border border-gray-200" /><span>Non évalué</span></div>
+                    <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-red-100 border border-red-200" /><span>À retravailler</span></div>
+                    {HIFZ_SESSION_TYPES.slice(0, 3).map(t => (
+                      <div key={t.value} className="flex items-center gap-1.5">
+                        <div className={`w-3 h-3 rounded ${t.badgeBg}`} />
+                        <span>{t.label}</span>
+                      </div>
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
 
-              <Card className="border-emerald-200">
-                <CardHeader><CardTitle className="text-emerald-800 text-base">📊 Tableau de bord par type</CardTitle></CardHeader>
+              <Card className="border-emerald-200 shadow-sm">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-emerald-800 text-base flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4" /> Tableau de bord par type
+                  </CardTitle>
+                </CardHeader>
                 <CardContent className="space-y-2">
                   {dashboardByType.map(({ type: t, hizbCount, avg, lastDate }) => (
-                    <div key={t.value} className={`p-3 rounded border ${t.border} ${t.bgSoft}`}>
-                      <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div key={t.value} className={`p-4 rounded-xl border ${t.border} ${t.bgSoft}`}>
+                      <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-lg">{t.icon}</span>
-                          <span className="font-semibold text-sm">{t.label}</span>
+                          <span className="text-xl">{t.icon}</span>
+                          <div>
+                            <span className="font-semibold text-sm">{t.label}</span>
+                            <p className="text-xs text-gray-500">{t.long}</p>
+                          </div>
                         </div>
-                        <div className="text-xs text-gray-600">
-                          <strong>{hizbCount}</strong> hizb · Niveau moyen <strong>{avg ? avg.toFixed(1) + "/4" : "—"}</strong>
-                          {lastDate && <> · dernière : {format(parseISO(lastDate), "d MMM yyyy", { locale: fr })}</>}
+                        <div className="text-right text-xs text-gray-600">
+                          <div><strong className="text-base text-gray-800">{hizbCount}</strong> hizb</div>
+                          {lastDate && <div className="text-gray-400">{format(parseISO(lastDate), "d MMM yyyy", { locale: fr })}</div>}
                         </div>
                       </div>
-                      <Progress value={(avg / 4) * 100} className="h-1.5 mt-2" />
+                      <div className="flex items-center gap-2">
+                        <Progress value={(avg / 4) * 100} className="h-1.5 flex-1" />
+                        <span className="text-xs text-gray-500 w-8 text-right">{avg ? avg.toFixed(1) + "/4" : "—"}</span>
+                      </div>
                     </div>
                   ))}
                 </CardContent>
               </Card>
             </TabsContent>
 
-            {/* ─── Méthode ─── */}
-            <TabsContent value="methode" className="mt-6 space-y-6">
-              <div className="text-center space-y-2">
+            {/* ═══════════════════════════════════════════════════════════════
+                MÉTHODE
+            ═══════════════════════════════════════════════════════════════ */}
+            <TabsContent value="methode" className="mt-4 space-y-5">
+              <div className="text-center space-y-1 py-2">
                 <h2 className="text-2xl font-bold text-emerald-800">La méthode pakistanaise du Hifd</h2>
-                <p className="text-sm text-amber-800/80 max-w-xl mx-auto">3 piliers, 6 types de sessions — un hifd solide à vie.</p>
+                <p className="text-sm text-amber-800/70">3 piliers · 6 types de sessions · Un hifd solide à vie</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card className="border-l-4 border-l-emerald-600 border-emerald-200 bg-emerald-50/40">
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center gap-2"><BookOpen className="h-5 w-5 text-emerald-700" /><CardTitle className="text-emerald-800 text-base">📗 SABAQ</CardTitle></div>
-                    <p className="text-2xl font-arabic text-emerald-700 leading-none">سَبَق</p>
-                  </CardHeader>
-                  <CardContent className="space-y-2 text-sm">
-                    <Badge className="bg-emerald-700 text-white">Chaque jour</Badge>
-                    <p className="text-gray-700">La nouvelle leçon. Répéter 10× la nuit, 5× le matin.</p>
-                    <p className="text-emerald-700 font-medium text-xs">Ne jamais avancer sans validation du professeur.</p>
-                  </CardContent>
-                </Card>
-
-                <Card className="border-l-4 border-l-amber-500 border-amber-200 bg-amber-50/40">
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center gap-2"><RotateCcw className="h-5 w-5 text-amber-700" /><CardTitle className="text-amber-800 text-base">📙 SABAQ PARA</CardTitle></div>
-                    <p className="text-2xl font-arabic text-amber-700 leading-none">سَبَق پارَه</p>
-                  </CardHeader>
-                  <CardContent className="space-y-2 text-sm">
-                    <Badge className="bg-amber-600 text-white">Chaque matin</Badge>
-                    <p className="text-gray-700">Les hizb des 7 derniers jours récités sans mushaf. Le filet de sécurité.</p>
-                  </CardContent>
-                </Card>
-
-                <Card className="border-l-4 border-l-violet-500 border-violet-200 bg-violet-50/40">
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center gap-2"><GraduationCap className="h-5 w-5 text-violet-700" /><CardTitle className="text-violet-800 text-base">📘 DHOR</CardTitle></div>
-                    <p className="text-2xl font-arabic text-violet-700 leading-none">دَوْر</p>
-                  </CardHeader>
-                  <CardContent className="space-y-2 text-sm">
-                    <Badge className="bg-violet-600 text-white">Rotation quotidienne</Badge>
-                    <p className="text-gray-700">Les anciens hizb. 1 hizb/jour minimum. Le pilier du hifd à vie.</p>
-                  </CardContent>
-                </Card>
+                {[
+                  { icon: BookOpen, color: "emerald", title: "📗 SABAQ", arabic: "سَبَق", badge: "Chaque jour", desc: "La nouvelle leçon. Répéter 10× la nuit, 5× le matin.", note: "Ne jamais avancer sans validation du professeur." },
+                  { icon: RotateCcw, color: "amber", title: "📙 SABAQ PARA", arabic: "سَبَق پارَه", badge: "Chaque matin", desc: "Les hizb des 7 derniers jours récités sans mushaf. Le filet de sécurité.", note: null },
+                  { icon: GraduationCap, color: "violet", title: "📘 DHOR", arabic: "دَوْر", badge: "Rotation quotidienne", desc: "Les anciens hizb. 1 hizb/jour minimum. Le pilier du hifd à vie.", note: null },
+                ].map(({ icon: Icon, color, title, arabic, badge, desc, note }) => (
+                  <Card key={title} className={`border-l-4 border-l-${color}-500 border-${color}-100 bg-${color}-50/30`}>
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center gap-2">
+                        <Icon className={`h-5 w-5 text-${color}-700`} />
+                        <CardTitle className={`text-${color}-800 text-base`}>{title}</CardTitle>
+                      </div>
+                      <p className={`text-2xl font-arabic text-${color}-700 leading-none mt-1`}>{arabic}</p>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-sm">
+                      <Badge className={`bg-${color}-${color === "violet" ? "600" : "700"} text-white text-xs`}>{badge}</Badge>
+                      <p className="text-gray-700">{desc}</p>
+                      {note && <p className={`text-${color}-700 font-medium text-xs`}>{note}</p>}
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
 
-              <Card className="border-emerald-200">
-                <CardHeader><CardTitle className="text-emerald-800 text-base">🗓 Planning quotidien</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="border-l-4 border-emerald-500 pl-4 py-2 bg-emerald-50/30 rounded-r">
-                    <div className="flex items-center gap-2 mb-1"><Moon className="h-4 w-4 text-emerald-700" /><h4 className="font-semibold text-emerald-800 text-sm">Avant Fajr → SABAQ</h4></div>
-                    <p className="text-sm text-gray-700">Nouvelles pages · Répéter 10×</p>
-                    <p className="text-xs text-amber-800/70 mt-1">Durée selon ton programme : <strong>{pacePerDay > 0 ? `${pacePerDay} pages/jour` : "—"}</strong></p>
-                  </div>
-                  <div className="border-l-4 border-amber-500 pl-4 py-2 bg-amber-50/30 rounded-r">
-                    <div className="flex items-center gap-2 mb-1"><Sunrise className="h-4 w-4 text-amber-700" /><h4 className="font-semibold text-amber-800 text-sm">Dhuha → SABAQ PARA</h4></div>
-                    <p className="text-sm text-gray-700">7 derniers jours sans mushaf · 20-30 min</p>
-                  </div>
-                  <div className="border-l-4 border-violet-500 pl-4 py-2 bg-violet-50/30 rounded-r">
-                    <div className="flex items-center gap-2 mb-1"><Sun className="h-4 w-4 text-violet-700" /><h4 className="font-semibold text-violet-800 text-sm">Avant Asr → DHOR</h4></div>
-                    <p className="text-sm text-gray-700">1 ancien hizb · 15-20 min</p>
-                  </div>
-                  <div className="border-l-4 border-amber-700 pl-4 py-2 bg-amber-50/30 rounded-r">
-                    <div className="flex items-center gap-2 mb-1"><Moon className="h-4 w-4 text-amber-800" /><h4 className="font-semibold text-amber-900 text-sm">Maghrib / Isha → TEST EN SALAT</h4></div>
-                    <p className="text-sm text-gray-700">Réciter dans la prière</p>
-                  </div>
+              <Card className="border-emerald-200 shadow-sm">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-emerald-800 text-base">🗓 Planning quotidien recommandé</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {[
+                    { icon: Moon, color: "emerald", time: "Avant Fajr", session: "SABAQ", desc: `Nouvelles pages · Répéter 10×${pacePerDay > 0 ? ` · ${pacePerDay} pages/jour` : ""}` },
+                    { icon: Sunrise, color: "amber", time: "Dhuha", session: "SABAQ PARA", desc: "7 derniers jours sans mushaf · 20-30 min" },
+                    { icon: Sun, color: "violet", time: "Avant Asr", session: "DHOR", desc: "1 ancien hizb · 15-20 min" },
+                    { icon: Moon, color: "amber", time: "Maghrib / Isha", session: "TEST EN SALAT", desc: "Réciter les nouvelles pages dans la prière" },
+                  ].map(({ icon: Icon, color, time, session, desc }) => (
+                    <div key={session} className={`flex items-start gap-3 p-3 rounded-xl border-l-4 border-l-${color}-${color === "violet" ? "500" : "400"} bg-${color}-50/30 border border-${color}-100`}>
+                      <Icon className={`h-4 w-4 text-${color}-600 mt-0.5 shrink-0`} />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-bold text-${color}-800 uppercase tracking-wide`}>{time}</span>
+                          <span className="text-xs text-gray-400">→</span>
+                          <span className={`text-xs font-semibold text-${color}-700`}>{session}</span>
+                        </div>
+                        <p className="text-xs text-gray-600 mt-0.5">{desc}</p>
+                      </div>
+                    </div>
+                  ))}
                 </CardContent>
               </Card>
 
-              <Card className="border-emerald-200">
-                <CardHeader><CardTitle className="text-emerald-800 text-base">📋 Les 6 types de sessions</CardTitle></CardHeader>
+              <Card className="border-emerald-200 shadow-sm">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-emerald-800 text-base">📋 Les 6 types de sessions</CardTitle>
+                </CardHeader>
                 <CardContent className="space-y-2">
                   {HIFZ_SESSION_TYPES.map((t, i) => {
-                    const freq = ["chaque semaine", "toutes les 2 semaines", "mensuel", "si besoin", "mensuel", "tous les 2 mois"][i];
+                    const freq = ["Hebdomadaire", "Bi-mensuel", "Mensuel", "À la demande", "Mensuel", "Bi-mensuel"][i];
                     return (
-                      <div key={t.value} className={`p-3 rounded border ${t.border} ${t.bgSoft}`}>
-                        <div className="flex items-center justify-between flex-wrap gap-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-lg">{t.icon}</span>
-                            <div>
-                              <span className="font-semibold text-sm">{t.label}</span>
-                              <p className="text-xs text-gray-600">{t.long}</p>
-                            </div>
+                      <div key={t.value} className={`p-3 rounded-xl border ${t.border} ${t.bgSoft} flex items-center justify-between gap-2`}>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl">{t.icon}</span>
+                          <div>
+                            <span className="font-semibold text-sm">{t.label}</span>
+                            <p className="text-xs text-gray-500">{t.long}</p>
                           </div>
-                          <Badge variant="outline" className="text-[10px]">{freq}</Badge>
                         </div>
+                        <Badge variant="outline" className="text-[10px] shrink-0">{freq}</Badge>
                       </div>
                     );
                   })}
                 </CardContent>
               </Card>
 
-              <div className="text-center space-y-3 py-6">
-                <p className="text-2xl font-arabic text-emerald-700 leading-relaxed">اللَّهُمَّ انْفَعْنِي بِمَا عَلَّمْتَنِي</p>
-                <p className="text-sm text-amber-800/80 italic">"Ô Allah, fais-moi profiter de ce que Tu m'as enseigné"</p>
+              <div className="text-center space-y-2 py-6">
+                <p className="text-3xl font-arabic text-emerald-700 leading-relaxed">اللَّهُمَّ انْفَعْنِي بِمَا عَلَّمْتَنِي</p>
+                <p className="text-sm text-amber-800/70 italic">"Ô Allah, fais-moi profiter de ce que Tu m'as enseigné"</p>
               </div>
             </TabsContent>
 
-            {/* ─── Réserver ─── */}
-            <TabsContent value="reserver" className="mt-6 space-y-6">
+            {/* ═══════════════════════════════════════════════════════════════
+                RÉSERVER
+            ═══════════════════════════════════════════════════════════════ */}
+            <TabsContent value="reserver" className="mt-4 space-y-6">
 
               {/* Étape 1 */}
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="w-6 h-6 rounded-full bg-emerald-700 text-white text-xs flex items-center justify-center font-bold shrink-0">1</span>
-                  <h3 className="font-semibold text-emerald-800">Type de session</h3>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              <section>
+                <SectionHeader step={1} title="Type de session" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mt-3">
                   {HIFZ_SESSION_TYPES.map((t) => (
                     <button
                       key={t.value}
                       onClick={() => setBookingType(t.value)}
-                      className={`text-left p-3 rounded-xl border-2 transition ${bookingType === t.value ? `${t.border} ${t.bgSoft} ring-2 ring-offset-1 ring-emerald-300` : "border-gray-200 bg-white hover:border-emerald-200 hover:bg-emerald-50/30"}`}
+                      className={`text-left p-4 rounded-xl border-2 transition-all ${
+                        bookingType === t.value
+                          ? `${t.border} ${t.bgSoft} shadow-sm`
+                          : "border-gray-200 bg-white hover:border-emerald-200 hover:bg-emerald-50/20"
+                      }`}
                     >
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xl">{t.icon}</span>
-                        <span className="font-semibold text-sm">{t.label}</span>
-                        {bookingType === t.value && <CheckCircle2 className="h-4 w-4 text-emerald-600 ml-auto" />}
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl">{t.icon}</span>
+                          <span className="font-semibold text-sm">{t.label}</span>
+                        </div>
+                        {bookingType === t.value && <CheckCircle2 className="h-4 w-4 text-emerald-600" />}
                       </div>
-                      <p className="text-xs text-gray-500">{t.description}</p>
+                      <p className="text-xs text-gray-500 leading-relaxed">{t.description}</p>
                     </button>
                   ))}
                 </div>
                 {bookingType === "khatm_partiel" && (
-                  <div className="mt-3 p-3 rounded-lg bg-amber-50 border border-amber-200">
-                    <Label className="text-amber-800">Quel juz ? (1 à 30)</Label>
-                    <Input type="number" min={1} max={30} value={bookingJuz} onChange={(e) => setBookingJuz(Math.min(30, Math.max(1, +e.target.value || 1)))} className="bg-white mt-1 max-w-xs" />
+                  <div className="mt-3 p-4 rounded-xl bg-amber-50 border border-amber-200">
+                    <Label className="text-amber-800 text-sm font-medium">Quel juz ? (1 à 30)</Label>
+                    <Input
+                      type="number" min={1} max={30} value={bookingJuz}
+                      onChange={(e) => setBookingJuz(Math.min(30, Math.max(1, +e.target.value || 1)))}
+                      className="bg-white mt-1.5 max-w-xs h-9"
+                    />
                   </div>
                 )}
-              </div>
+              </section>
 
               {/* Étape 2 */}
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="w-6 h-6 rounded-full bg-emerald-700 text-white text-xs flex items-center justify-center font-bold shrink-0">2</span>
-                  <h3 className="font-semibold text-emerald-800">Choisir un créneau</h3>
-                </div>
-                <Card className="border-emerald-200">
+              <section>
+                <SectionHeader step={2} title="Choisir un créneau" />
+                <Card className="border-emerald-200 shadow-sm mt-3">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                    <CardTitle className="text-emerald-800 capitalize text-base">{format(calMonth, "MMMM yyyy", { locale: fr })}</CardTitle>
+                    <CardTitle className="text-emerald-800 capitalize text-base">
+                      {format(calMonth, "MMMM yyyy", { locale: fr })}
+                    </CardTitle>
                     <div className="flex gap-1">
                       <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => setCalMonth(addMonths(calMonth, -1))}>‹</Button>
                       <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => setCalMonth(addMonths(calMonth, 1))}>›</Button>
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-7 gap-1 text-xs text-center text-amber-800/60 font-medium mb-2">
+                    <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-amber-800/50 mb-2 uppercase tracking-wide">
                       {["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"].map((d) => <div key={d}>{d}</div>)}
                     </div>
                     <div className="grid grid-cols-7 gap-1">
@@ -736,224 +854,241 @@ export default function Hifz() {
                         const hasSlots = !!slotsByDay[key]?.length;
                         const isSel = selectedDay && isSameDay(d, selectedDay);
                         return (
-                          <button key={key} onClick={() => hasSlots && setSelectedDay(d)} disabled={!hasSlots}
-                            className={`relative aspect-square rounded-lg text-sm flex flex-col items-center justify-center transition
-                              ${hasSlots ? "bg-emerald-100 text-emerald-900 hover:bg-emerald-200 cursor-pointer font-semibold" : "text-gray-300 cursor-not-allowed"}
-                              ${isSel ? "bg-emerald-700 !text-white" : ""}`}>
+                          <button
+                            key={key}
+                            onClick={() => hasSlots && setSelectedDay(d)}
+                            disabled={!hasSlots}
+                            className={`relative aspect-square rounded-lg text-sm flex flex-col items-center justify-center transition-all font-medium
+                              ${hasSlots ? "cursor-pointer hover:shadow-sm" : "text-gray-200 cursor-not-allowed"}
+                              ${isSel ? "bg-emerald-700 text-white shadow-md scale-105" : hasSlots ? "bg-emerald-100 text-emerald-900 hover:bg-emerald-200" : ""}
+                            `}
+                          >
                             {format(d, "d")}
-                            {hasSlots && !isSel && <span className="absolute bottom-1 w-1 h-1 rounded-full bg-emerald-500" />}
+                            {hasSlots && !isSel && (
+                              <span className="absolute bottom-1 w-1 h-1 rounded-full bg-emerald-500" />
+                            )}
                           </button>
                         );
                       })}
                     </div>
-                    {slots.length === 0 && <p className="text-center text-xs text-amber-800/60 mt-4">Aucun créneau disponible ce mois-ci.</p>}
+                    {slots.length === 0 && (
+                      <p className="text-center text-xs text-amber-800/50 mt-5 pb-2">Aucun créneau disponible ce mois-ci.</p>
+                    )}
                   </CardContent>
                 </Card>
 
                 {selectedDay && (
                   <div className="mt-3 space-y-2">
-                    <p className="text-sm font-medium text-emerald-800 capitalize">{format(selectedDay, "EEEE d MMMM yyyy", { locale: fr })}</p>
+                    <p className="text-sm font-semibold text-emerald-800 capitalize">
+                      {format(selectedDay, "EEEE d MMMM yyyy", { locale: fr })}
+                    </p>
                     {(slotsByDay[format(selectedDay, "yyyy-MM-dd")] || []).map((s) => (
-                      <button key={s.id} onClick={() => setSelectedSlot(s)}
-                        className="w-full text-left p-4 rounded-xl border-2 border-emerald-200 bg-white hover:border-emerald-500 hover:bg-emerald-50 flex items-center justify-between transition">
+                      <button
+                        key={s.id}
+                        onClick={() => setSelectedSlot(s)}
+                        className="w-full text-left p-4 rounded-xl border-2 border-emerald-200 bg-white hover:border-emerald-500 hover:bg-emerald-50 flex items-center justify-between transition-all group shadow-sm"
+                      >
                         <div>
-                          <span className="font-semibold text-emerald-900">{s.start_time.slice(0,5)} – {s.end_time.slice(0,5)}</span>
-                          {s.notes && <p className="text-xs text-gray-500 mt-0.5">{s.notes}</p>}
+                          <span className="font-bold text-emerald-900">{s.start_time.slice(0,5)} – {s.end_time.slice(0,5)}</span>
+                          {s.notes && <p className="text-xs text-gray-400 mt-0.5">{s.notes}</p>}
                         </div>
-                        <ChevronRight className="h-5 w-5 text-emerald-600" />
+                        <ChevronRight className="h-5 w-5 text-emerald-400 group-hover:text-emerald-600 transition-colors" />
                       </button>
                     ))}
                   </div>
                 )}
-              </div>
+              </section>
 
-              {/* Étape 3 : mes réservations */}
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="w-6 h-6 rounded-full bg-emerald-700 text-white text-xs flex items-center justify-center font-bold shrink-0">3</span>
-                  <h3 className="font-semibold text-emerald-800">Mes réservations</h3>
-                  {sessions.filter(s => s.status === "en_attente" || s.status === "confirmee").length > 0 && (
-                    <Badge className="bg-emerald-700 text-white text-xs">
-                      {sessions.filter(s => s.status === "en_attente" || s.status === "confirmee").length} à venir
-                    </Badge>
+              {/* Étape 3 */}
+              <section>
+                <div className="flex items-center gap-3">
+                  <SectionHeader step={3} title="Mes réservations" />
+                  {upcomingCount > 0 && (
+                    <Badge className="bg-amber-500 text-white text-xs">{upcomingCount} à venir</Badge>
                   )}
                 </div>
                 {sessions.length === 0 ? (
-                  <div className="text-center py-8 rounded-xl border border-dashed border-emerald-200">
-                    <p className="text-sm text-amber-800/60">Aucune réservation pour le moment.</p>
-                    <p className="text-xs text-amber-800/40 mt-1">Choisissez un type et un créneau ci-dessus.</p>
+                  <div className="mt-3 text-center py-10 rounded-xl border-2 border-dashed border-emerald-200">
+                    <CalendarDays className="h-10 w-10 text-emerald-200 mx-auto mb-2" />
+                    <p className="text-sm text-amber-800/50">Aucune réservation pour le moment.</p>
+                    <p className="text-xs text-amber-800/30 mt-1">Choisissez un type et un créneau ci-dessus.</p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="mt-3 space-y-2">
                     {sessions.map((s) => {
                       const ti = getSessionType(s.session_type);
-                      const statusMap: Record<string, string> = { en_attente: "En attente ⏳", confirmee: "Confirmée ✅", effectuee: "Effectuée 📚", annulee: "Annulée ❌" };
-                      const cardClass: Record<string, string> = { en_attente: "border-amber-200 bg-amber-50/40", confirmee: "border-emerald-200 bg-emerald-50/40", effectuee: "border-violet-200 bg-violet-50/20", annulee: "border-red-100 bg-red-50/20 opacity-60" };
                       return (
-                        <div key={s.id} className={`p-4 rounded-xl border-2 ${cardClass[s.status] ?? "border-gray-200 bg-white"} space-y-2`}>
+                        <div key={s.id} className={`p-4 rounded-xl border-2 border-l-4 ${STATUS_CARD[s.status] ?? "border-gray-200 bg-white"} ${STATUS_BORDER[s.status] ?? "border-l-gray-300"} space-y-2`}>
                           <div className="flex items-start justify-between flex-wrap gap-2">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <Badge className={`${ti.badgeBg} ${ti.badgeText} border-0`}>{ti.icon} {ti.label}{s.session_type === "khatm_partiel" && s.juz_number ? ` · Juz ${s.juz_number}` : ""}</Badge>
-                              <span className="text-sm font-medium text-gray-800">{format(parseISO(s.session_date), "d MMM yyyy", { locale: fr })} · {s.session_time.slice(0,5)}</span>
+                              <Badge className={`${ti.badgeBg} ${ti.badgeText} border-0`}>
+                                {ti.icon} {ti.label}{s.session_type === "khatm_partiel" && s.juz_number ? ` · Juz ${s.juz_number}` : ""}
+                              </Badge>
+                              <span className="text-sm font-medium text-gray-800">
+                                {format(parseISO(s.session_date), "d MMM yyyy", { locale: fr })} · {s.session_time.slice(0,5)}
+                              </span>
                             </div>
-                            <span className="text-xs font-medium text-gray-500">{statusMap[s.status] ?? s.status}</span>
+                            <span className="text-xs font-medium text-gray-500">
+                              {STATUS_LABEL[s.status] ?? s.status}
+                            </span>
                           </div>
                           {s.status === "confirmee" && s.meet_link && (
-                            <a href={/^https?:\/\//i.test(s.meet_link) ? s.meet_link : `https://${s.meet_link}`} target="_blank" rel="noopener noreferrer"
-                              className="flex items-center justify-center gap-2 w-full bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-medium py-2 px-3 rounded-lg transition">
-                              🎥 Rejoindre la séance
+                            <a
+                              href={/^https?:\/\//i.test(s.meet_link) ? s.meet_link : `https://${s.meet_link}`}
+                              target="_blank" rel="noopener noreferrer"
+                              className="flex items-center justify-center gap-2 w-full bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-medium py-2.5 px-3 rounded-lg transition-colors"
+                            >
+                              🎥 Rejoindre la séance Google Meet
                             </a>
                           )}
                           {s.status === "confirmee" && !s.meet_link && (
-                            <p className="text-xs text-amber-700 italic">Le lien Meet sera ajouté par votre professeur.</p>
+                            <p className="text-xs text-amber-700/80 italic">Le lien Meet sera ajouté par votre professeur avant la séance.</p>
                           )}
                         </div>
                       );
                     })}
                   </div>
                 )}
-              </div>
+              </section>
             </TabsContent>
 
-            {/* ─── Historique ─── */}
-            <TabsContent value="historique" className="mt-6 space-y-4">
-              {/* Stats */}
+            {/* ═══════════════════════════════════════════════════════════════
+                HISTORIQUE
+            ═══════════════════════════════════════════════════════════════ */}
+            <TabsContent value="historique" className="mt-4 space-y-4">
               {sessions.length > 0 && (
                 <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { label: "Sessions effectuées", value: sessions.filter(s => s.status === "effectuee").length },
-                    { label: "Hizb distincts évalués", value: new Set(evaluations.map(e => e.hizb_number)).size },
-                    { label: "Hizb validés", value: evaluations.filter(e => e.status === "valide").length },
-                  ].map(({ label, value }) => (
-                    <div key={label} className="text-center p-3 rounded-xl bg-emerald-50 border border-emerald-100">
-                      <div className="text-2xl font-bold text-emerald-800">{value}</div>
-                      <div className="text-xs text-amber-800/70 mt-0.5">{label}</div>
-                    </div>
-                  ))}
+                  <StatCard icon={CalendarCheck} label="Sessions effectuées" value={sessions.filter(s => s.status === "effectuee").length} color="emerald" />
+                  <StatCard icon={BookOpen} label="Hizb évalués" value={new Set(evaluations.map(e => e.hizb_number)).size} color="amber" />
+                  <StatCard icon={Star} label="Hizb validés" value={evaluations.filter(e => e.status === "valide").length} color="emerald" />
                 </div>
               )}
 
-              <Card className="border-emerald-200">
-                <CardContent className="pt-6">
-                  {sessions.length === 0 ? (
-                    <div className="text-center py-12">
-                      <p className="text-amber-800/60">Aucune session enregistrée.</p>
-                      <p className="text-xs text-amber-800/40 mt-1">Vos séances avec le professeur apparaîtront ici.</p>
-                    </div>
-                  ) : (
-                    <Accordion type="single" collapsible className="space-y-2">
-                      {sessions.map((s) => {
-                        const evs = evaluations.filter((e) => e.session_id === s.id);
-                        const ti = getSessionType(s.session_type);
-                        const validCount = evs.filter(e => e.status === "valide").length;
-                        const statusMap: Record<string, string> = { en_attente: "En attente", confirmee: "Confirmée", effectuee: "Effectuée", annulee: "Annulée" };
-                        const borderColor: Record<string, string> = { confirmee: "border-emerald-300", effectuee: "border-violet-300", annulee: "border-red-200", en_attente: "border-amber-200" };
-                        const niveauBg: Record<string, string> = { excellent: "bg-emerald-700", bon: "bg-emerald-500", moyen: "bg-amber-500", mediocre: "bg-red-500" };
-                        return (
-                          <AccordionItem key={s.id} value={s.id} className={`border-2 ${borderColor[s.status] ?? "border-gray-200"} rounded-xl bg-white px-4`}>
-                            <AccordionTrigger className="hover:no-underline py-3">
-                              <div className="flex items-center justify-between w-full pr-2 text-left gap-2">
-                                <div>
-                                  <div className="font-semibold text-emerald-900 capitalize">
-                                    {format(parseISO(s.session_date), "EEEE d MMMM yyyy", { locale: fr })}
+              {sessions.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
+                  <Clock className="h-12 w-12 text-emerald-200" />
+                  <p className="text-amber-800/60 font-medium">Aucune session enregistrée</p>
+                  <p className="text-xs text-amber-800/40">Vos séances avec le professeur apparaîtront ici.</p>
+                </div>
+              ) : (
+                <Accordion type="single" collapsible className="space-y-2">
+                  {sessions.map((s) => {
+                    const evs = evaluations.filter((e) => e.session_id === s.id);
+                    const ti = getSessionType(s.session_type);
+                    const validCount = evs.filter(e => e.status === "valide").length;
+                    return (
+                      <AccordionItem
+                        key={s.id}
+                        value={s.id}
+                        className={`border-2 border-l-4 ${STATUS_BORDER[s.status] ?? "border-l-gray-200"} border-gray-100 rounded-xl bg-white px-4 shadow-sm`}
+                      >
+                        <AccordionTrigger className="hover:no-underline py-3">
+                          <div className="flex items-center justify-between w-full pr-2 text-left gap-2">
+                            <div>
+                              <div className="font-semibold text-emerald-900 capitalize text-sm">
+                                {format(parseISO(s.session_date), "EEEE d MMMM yyyy", { locale: fr })}
+                              </div>
+                              <div className="text-xs text-amber-800/50 mt-0.5">
+                                {s.session_time.slice(0,5)} · {STATUS_LABEL[s.status] ?? s.status}
+                              </div>
+                            </div>
+                            <div className="flex flex-col gap-1 items-end shrink-0">
+                              <Badge className={`${ti.badgeBg} ${ti.badgeText} border-0 text-[10px]`}>{ti.icon} {ti.label}</Badge>
+                              {evs.length > 0 && (
+                                <span className="text-[10px] text-gray-400">{validCount}/{evs.length} validés</span>
+                              )}
+                            </div>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          {evs.length === 0 ? (
+                            <p className="text-sm text-gray-400 py-3 italic text-center">Aucune évaluation enregistrée pour cette séance.</p>
+                          ) : (
+                            <div className="space-y-2 pt-2 pb-1">
+                              {evs.map((e) => (
+                                <div key={e.id} className={`p-3 rounded-lg border ${e.status === "valide" ? "border-emerald-100 bg-emerald-50/50" : "border-red-100 bg-red-50/30"}`}>
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-semibold text-sm text-gray-800">Hizb {e.hizb_number}</span>
+                                    {e.status === "valide" ? (
+                                      <Badge className={`${NIVEAU_BG[e.niveau || ""] ?? "bg-emerald-600"} text-white text-xs`}>
+                                        {NIVEAU_LABEL[e.niveau || ""] || "Validé"}
+                                      </Badge>
+                                    ) : (
+                                      <Badge className="bg-red-600 text-white text-xs">À retravailler</Badge>
+                                    )}
                                   </div>
-                                  <div className="text-xs text-amber-800/60 mt-0.5">
-                                    {s.session_time.slice(0,5)} · {statusMap[s.status] ?? s.status}
-                                  </div>
-                                </div>
-                                <div className="flex flex-col gap-1 items-end shrink-0">
-                                  <Badge className={`${ti.badgeBg} ${ti.badgeText} border-0 text-[10px]`}>{ti.icon} {ti.label}</Badge>
-                                  {evs.length > 0 && (
-                                    <span className="text-[10px] text-gray-400">{validCount}/{evs.length} validés</span>
+                                  {e.notes && (
+                                    <p className="text-xs text-gray-500 mt-1.5 italic border-l-2 border-gray-200 pl-2">"{e.notes}"</p>
                                   )}
                                 </div>
-                              </div>
-                            </AccordionTrigger>
-                            <AccordionContent>
-                              {evs.length === 0 ? (
-                                <p className="text-sm text-gray-400 py-2 italic">Aucune évaluation enregistrée pour cette séance.</p>
-                              ) : (
-                                <div className="space-y-2 pt-2 pb-1">
-                                  {evs.map((e) => (
-                                    <div key={e.id} className={`p-3 rounded-lg border ${e.status === "valide" ? "border-emerald-100 bg-emerald-50/40" : "border-red-100 bg-red-50/30"}`}>
-                                      <div className="flex items-center justify-between">
-                                        <span className="font-medium text-sm">Hizb {e.hizb_number}</span>
-                                        {e.status === "valide" ? (
-                                          <Badge className={`${niveauBg[e.niveau || ""] ?? "bg-emerald-600"} text-white`}>
-                                            {NIVEAU_LABEL[e.niveau || ""] || "Validé"}
-                                          </Badge>
-                                        ) : (
-                                          <Badge className="bg-red-600 text-white">À retravailler</Badge>
-                                        )}
-                                      </div>
-                                      {e.notes && <p className="text-xs text-gray-500 mt-1.5 italic">"{e.notes}"</p>}
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                              {s.status === "confirmee" && s.meet_link && (
-                                <a href={/^https?:\/\//i.test(s.meet_link) ? s.meet_link : `https://${s.meet_link}`} target="_blank" rel="noopener noreferrer"
-                                  className="flex items-center justify-center gap-2 w-full bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-medium py-2 px-3 rounded-lg transition mb-2">
-                                  🎥 Rejoindre la séance
-                                </a>
-                              )}
-                            </AccordionContent>
-                          </AccordionItem>
-                        );
-                      })}
-                    </Accordion>
-                  )}
-                </CardContent>
-              </Card>
+                              ))}
+                            </div>
+                          )}
+                          {s.status === "confirmee" && s.meet_link && (
+                            <a
+                              href={/^https?:\/\//i.test(s.meet_link) ? s.meet_link : `https://${s.meet_link}`}
+                              target="_blank" rel="noopener noreferrer"
+                              className="flex items-center justify-center gap-2 w-full bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors mb-2"
+                            >
+                              🎥 Rejoindre la séance
+                            </a>
+                          )}
+                        </AccordionContent>
+                      </AccordionItem>
+                    );
+                  })}
+                </Accordion>
+              )}
             </TabsContent>
+
           </Tabs>
         )}
       </div>
 
+      {/* ─── Booking dialog ─── */}
       <Dialog open={!!selectedSlot} onOpenChange={(o) => !o && setSelectedSlot(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-emerald-800">Confirmer la réservation</DialogTitle>
+            <DialogTitle className="text-emerald-800 text-lg">Confirmer la réservation</DialogTitle>
           </DialogHeader>
-          {selectedSlot && (() => {
-            const ti = getSessionType(bookingType);
-            return (
-              <div className="space-y-4">
-                <div className={`p-4 rounded-xl border ${ti.border} ${ti.bgSoft} space-y-1`}>
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl">{ti.icon}</span>
-                    <div>
-                      <p className="font-semibold text-sm">{ti.label}{bookingType === "khatm_partiel" ? ` — Juz ${bookingJuz}` : ""}</p>
-                      <p className="text-xs text-gray-500">{ti.long}</p>
-                    </div>
+          {selectedSlot && (
+            <div className="space-y-4">
+              <div className={`p-4 rounded-xl border-2 ${bookingTi.border} ${bookingTi.bgSoft}`}>
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl">{bookingTi.icon}</span>
+                  <div>
+                    <p className="font-bold">{bookingTi.label}{bookingType === "khatm_partiel" ? ` — Juz ${bookingJuz}` : ""}</p>
+                    <p className="text-xs text-gray-500">{bookingTi.long}</p>
                   </div>
                 </div>
-                <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 space-y-1">
-                  <p className="font-semibold text-emerald-900 capitalize">
-                    {format(parseISO(selectedSlot.slot_date), "EEEE d MMMM yyyy", { locale: fr })}
-                  </p>
-                  <p className="text-sm text-emerald-700">
-                    {selectedSlot.start_time.slice(0,5)} – {selectedSlot.end_time.slice(0,5)}
-                  </p>
-                  {selectedSlot.notes && <p className="text-xs text-gray-500">{selectedSlot.notes}</p>}
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">Message pour le professeur <span className="text-gray-400 font-normal">(optionnel)</span></Label>
-                  <Textarea
-                    value={bookingMessage}
-                    onChange={(e) => setBookingMessage(e.target.value)}
-                    placeholder="Hizb travaillés, difficultés particulières..."
-                    className="mt-1 resize-none"
-                    rows={3}
-                  />
-                </div>
               </div>
-            );
-          })()}
-          <DialogFooter className="gap-2">
+              <div className="p-4 rounded-xl bg-emerald-50 border-2 border-emerald-200 space-y-1">
+                <p className="font-bold text-emerald-900 capitalize">
+                  {format(parseISO(selectedSlot.slot_date), "EEEE d MMMM yyyy", { locale: fr })}
+                </p>
+                <p className="text-sm text-emerald-700 font-medium">
+                  {selectedSlot.start_time.slice(0,5)} – {selectedSlot.end_time.slice(0,5)}
+                </p>
+                {selectedSlot.notes && <p className="text-xs text-gray-400 mt-1">{selectedSlot.notes}</p>}
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-700">
+                  Message pour le professeur <span className="text-gray-400 font-normal">(optionnel)</span>
+                </Label>
+                <Textarea
+                  value={bookingMessage}
+                  onChange={(e) => setBookingMessage(e.target.value)}
+                  placeholder="Hizb travaillés cette semaine, difficultés particulières…"
+                  className="mt-1.5 resize-none text-sm"
+                  rows={3}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter className="gap-2 pt-2">
             <Button variant="outline" onClick={() => setSelectedSlot(null)}>Annuler</Button>
             <Button onClick={confirmBooking} disabled={booking} className="bg-emerald-700 hover:bg-emerald-800 text-white">
-              {booking ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Enregistrement...</> : "Confirmer la réservation"}
+              {booking ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Enregistrement…</> : "Confirmer la réservation"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -962,11 +1097,34 @@ export default function Hifz() {
   );
 }
 
+// ─── Sub-components ──────────────────────────────────────────────────────────
+
+function SectionHeader({ step, title }: { step: number; title: string }) {
+  return (
+    <div className="flex items-center gap-2.5">
+      <span className="w-7 h-7 rounded-full bg-emerald-700 text-white text-xs flex items-center justify-center font-bold shrink-0 shadow-sm">
+        {step}
+      </span>
+      <h3 className="font-semibold text-emerald-900">{title}</h3>
+    </div>
+  );
+}
+
+function StatCard({ icon: Icon, label, value, color }: { icon: React.ElementType; label: string; value: React.ReactNode; color: "emerald" | "amber" }) {
+  return (
+    <div className={`text-center p-4 rounded-xl bg-${color}-50 border border-${color}-100`}>
+      <Icon className={`h-4 w-4 text-${color}-600 mx-auto mb-1`} />
+      <div className="text-2xl font-bold text-emerald-800">{value}</div>
+      <div className="text-xs text-amber-800/60 mt-0.5 leading-tight">{label}</div>
+    </div>
+  );
+}
+
 function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div>
+    <div className="text-center">
       <div className="text-2xl font-bold text-emerald-800">{value}</div>
-      <div className="text-xs text-amber-800/80">{label}</div>
+      <div className="text-xs text-amber-800/70">{label}</div>
     </div>
   );
 }
@@ -976,15 +1134,33 @@ function UpsellPage() {
   return (
     <div className="min-h-screen bg-[#fdf8ef]">
       <Navbar />
-      <div className="max-w-3xl mx-auto px-4 py-16 text-center">
-        <div className="mx-auto h-20 w-20 rounded-full bg-gradient-to-br from-emerald-700 to-amber-700 flex items-center justify-center mb-6">
-          <Lock className="h-10 w-10 text-white" />
+      <div className="max-w-2xl mx-auto px-4 py-20 text-center">
+        <div className="mx-auto h-20 w-20 rounded-3xl bg-gradient-to-br from-emerald-700 to-amber-700 flex items-center justify-center mb-8 shadow-xl">
+          <Lock className="h-9 w-9 text-white" />
         </div>
-        <h1 className="text-4xl font-bold text-emerald-800 mb-3">Hifd al-Qur'ān</h1>
-        <p className="text-lg text-amber-800/80 mb-8">Le programme de mémorisation guidé est réservé aux abonnés <strong>Hifz</strong> ou <strong>Premium</strong>.</p>
-        <Button size="lg" onClick={() => navigate("/tarifs")} className="bg-gradient-to-r from-emerald-700 to-amber-700 text-white hover:opacity-90">
+        <h1 className="text-4xl font-bold text-emerald-900 mb-3">Hifd al-Qur'ān</h1>
+        <p className="text-base text-amber-800/70 mb-8 max-w-md mx-auto">
+          Le programme de mémorisation guidé est réservé aux abonnés <strong>Hifz</strong> ou <strong>Premium</strong>.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left max-w-md mx-auto mb-10">
+          {[
+            "Programme de mémorisation personnalisé",
+            "Suivi des 60 hizb par type de session",
+            "Réservation de séances avec le professeur",
+            "Méthode pakistanaise éprouvée (Sabaq · Dhor)",
+            "Évaluations et notes de progression",
+            "Tableau de bord avec graphiques",
+          ].map((f) => (
+            <div key={f} className="flex items-start gap-2.5 p-3 bg-white rounded-xl border border-emerald-100 shadow-sm">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
+              <span className="text-sm text-gray-700">{f}</span>
+            </div>
+          ))}
+        </div>
+        <Button size="lg" onClick={() => navigate("/tarifs")} className="bg-gradient-to-r from-emerald-700 to-amber-700 text-white hover:opacity-90 shadow-lg h-12 px-8 text-base">
           <Crown className="h-5 w-5 mr-2" /> Voir les plans
         </Button>
+        <p className="text-xs text-amber-800/40 mt-4">Sans engagement · Résiliable à tout moment</p>
       </div>
     </div>
   );
