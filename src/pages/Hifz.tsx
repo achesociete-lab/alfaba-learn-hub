@@ -264,6 +264,12 @@ export default function Hifz() {
   if (!user) return null;
   if (!isHifz && !isPremium) return <UpsellPage />;
 
+  const previewRemaining = TOTAL_HIZB - memoCount;
+  const previewPages = previewRemaining * PAGES_PER_HIZB;
+  const previewPace = previewPages > 0 ? +(previewPages / (duration * 30)).toFixed(2) : 0;
+  const previewEnd = format(addMonths(new Date(), duration), "MMM yyyy", { locale: fr });
+  const paceColor = previewPace > 2 ? "red" : previewPace > 1 ? "amber" : "emerald";
+
   return (
     <div className="min-h-screen bg-[#fdf8ef]">
       <Navbar />
@@ -292,13 +298,7 @@ export default function Hifz() {
 
             {/* ─── Programme ─── */}
             <TabsContent value="programme" className="mt-6">
-              {!config ? (() => {
-                const previewRemaining = TOTAL_HIZB - memoCount;
-                const previewPages = previewRemaining * PAGES_PER_HIZB;
-                const previewPace = previewPages > 0 ? +(previewPages / (duration * 30)).toFixed(2) : 0;
-                const previewEnd = format(addMonths(new Date(), duration), "MMM yyyy", { locale: fr });
-                const paceColor = previewPace > 2 ? "red" : previewPace > 1 ? "amber" : "emerald";
-                return (
+              {!config ? (
                 <Card className="border-emerald-200">
                   <CardHeader>
                     <CardTitle className="text-emerald-800">Créer votre programme</CardTitle>
@@ -412,8 +412,6 @@ export default function Hifz() {
                     </Button>
                   </CardContent>
                 </Card>
-                );
-              })()
               ) : (
                 <div className="space-y-4">
                   <Card className="border-emerald-200 bg-gradient-to-br from-emerald-50 to-amber-50">
