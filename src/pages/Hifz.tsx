@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
+import { Slider } from "@/components/ui/slider";
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from "recharts";
 import { useToast } from "@/hooks/use-toast";
@@ -291,28 +292,128 @@ export default function Hifz() {
 
             {/* ─── Programme ─── */}
             <TabsContent value="programme" className="mt-6">
-              {!config ? (
+              {!config ? (() => {
+                const previewRemaining = TOTAL_HIZB - memoCount;
+                const previewPages = previewRemaining * PAGES_PER_HIZB;
+                const previewPace = previewPages > 0 ? +(previewPages / (duration * 30)).toFixed(2) : 0;
+                const previewEnd = format(addMonths(new Date(), duration), "MMM yyyy", { locale: fr });
+                const paceColor = previewPace > 2 ? "red" : previewPace > 1 ? "amber" : "emerald";
+                return (
                 <Card className="border-emerald-200">
-                  <CardHeader><CardTitle className="text-emerald-800">Créer votre programme</CardTitle></CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label>Hizb déjà mémorisés (depuis An-Nas)</Label>
-                      <Select value={String(memoCount)} onValueChange={(v) => setMemoCount(+v)}>
-                        <SelectTrigger className="bg-white"><SelectValue /></SelectTrigger>
-                        <SelectContent className="max-h-72">
-                          {Array.from({ length: 61 }).map((_, i) => (<SelectItem key={i} value={String(i)}>{i} hizb</SelectItem>))}
-                        </SelectContent>
-                      </Select>
+                  <CardHeader>
+                    <CardTitle className="text-emerald-800">Créer votre programme</CardTitle>
+                    <p className="text-sm text-amber-800/70">Configurez votre plan — l'aperçu se met à jour en temps réel.</p>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+
+                    {/* Slider hizb */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label>Hizb déjà mémorisés <span className="text-xs text-amber-800/60">(depuis An-Nas = hizb 1)</span></Label>
+                        <span className="text-2xl font-bold text-emerald-800">
+                          {memoCount} <span className="text-sm font-normal text-amber-800/60">/ 60</span>
+                        </span>
+                      </div>
+                      <Slider
+                        value={[memoCount]}
+                        onValueChange={([v]) => setMemoCount(v)}
+                        min={0} max={60} step={1}
+                      />
+                      <div className="flex justify-between text-xs text-amber-800/40">
+                        <span>0</span>
+                        <span>Coran complet (60)</span>
+                      </div>
                     </div>
-                    <div>
-                      <Label>Durée souhaitée (mois)</Label>
-                      <Input type="number" min={1} max={120} value={duration} onChange={(e) => setDuration(Math.max(1, +e.target.value || 1))} className="bg-white" />
+
+                    {/* Durée : boutons rapides + saisie libre */}
+                    <div className="space-y-2">
+                      <Label>Durée souhaitée</Label>
+                      <div className="flex gap-2 flex-wrap items-center">
+                        {[6, 12, 18, 24, 36].map((m) => (
+                          <button
+                            key={m}
+                            type="button"
+                            onClick={() => setDuration(m)}
+                            className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition ${
+                              duration === m
+                                ? "bg-emerald-700 text-white border-emerald-700"
+                                : "bg-white text-emerald-800 border-emerald-200 hover:border-emerald-400"
+                            }`}
+                          >
+                            {m} mois
+                          </button>
+                        ))}
+                        <Input
+                          type="number"
+                          min={1}
+                          max={120}
+                          value={duration}
+                          onChange={(e) => setDuration(Math.max(1, +e.target.value || 1))}
+                          className="bg-white w-24 h-9"
+                          placeholder="Autre"
+                        />
+                      </div>
                     </div>
-                    <Button onClick={handleGenerate} disabled={submitting} className="bg-emerald-700 hover:bg-emerald-800 text-white">
-                      {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} Générer mon programme
+
+                    {/* Aperçu live */}
+                    {memoCount < 60 ? (
+                      <div className={`rounded-xl p-4 border ${
+                        paceColor === "red"     ? "bg-red-50 border-red-200" :
+                        paceColor === "amber"   ? "bg-amber-50 border-amber-200" :
+                                                  "bg-emerald-50 border-emerald-200"
+                      }`}>
+                        <p className={`text-xs font-semibold uppercase tracking-wide mb-3 ${
+                          paceColor === "red"   ? "text-red-700" :
+                          paceColor === "amber" ? "text-amber-700" :
+                                                  "text-emerald-700"
+                        }`}>Aperçu de votre programme</p>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center mb-3">
+                          <div>
+                            <div className="text-xl font-bold text-emerald-800">{previewRemaining}</div>
+                            <div className="text-xs text-amber-800/70">Hizb restants</div>
+                          </div>
+                          <div>
+                            <div className="text-xl font-bold text-emerald-800">{previewPages}</div>
+                            <div className="text-xs text-amber-800/70">Pages restantes</div>
+                          </div>
+                          <div>
+                            <div className={`text-xl font-bold ${
+                              paceColor === "red"   ? "text-red-700" :
+                              paceColor === "amber" ? "text-amber-700" :
+                                                      "text-emerald-800"
+                            }`}>{previewPace}</div>
+                            <div className="text-xs text-amber-800/70">Pages / jour</div>
+                          </div>
+                          <div>
+                            <div className="text-xl font-bold text-emerald-800 capitalize">{previewEnd}</div>
+                            <div className="text-xs text-amber-800/70">Fin estimée</div>
+                          </div>
+                        </div>
+                        <p className={`text-xs text-center ${
+                          paceColor === "red"   ? "text-red-700" :
+                          paceColor === "amber" ? "text-amber-700" :
+                                                  "text-emerald-700"
+                        }`}>
+                          {paceColor === "red"   && "⚠️ Rythme très intensif — augmentez la durée pour un hifd solide."}
+                          {paceColor === "amber" && "⚡ Rythme soutenu — prévoyez du temps chaque jour."}
+                          {paceColor === "emerald" && "✓ Rythme idéal pour une mémorisation solide et durable."}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="rounded-xl p-4 bg-amber-50 border border-amber-200 text-center">
+                        <p className="text-amber-800 font-semibold">ما شاء الله — Vous avez mémorisé le Coran complet !</p>
+                        <p className="text-xs text-amber-800/70 mt-1">Créez un programme de révision pour maintenir votre hifd.</p>
+                      </div>
+                    )}
+
+                    <Button onClick={handleGenerate} disabled={submitting} className="w-full bg-emerald-700 hover:bg-emerald-800 text-white">
+                      {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                      Générer mon programme
                     </Button>
                   </CardContent>
                 </Card>
+                );
+              })()
               ) : (
                 <div className="space-y-4">
                   <Card className="border-emerald-200 bg-gradient-to-br from-emerald-50 to-amber-50">

@@ -11,10 +11,18 @@ export interface Profile {
   type_eleve: "en_ligne" | "presentiel" | "en_attente";
 }
 
+// Tracks which userId we last fetched for and the result.
+// Deriving `loading` from this avoids the render-gap race condition where
+// user becomes non-null but profileLoading is still false from the null-user state.
+type FetchState = { userId: string | null; profile: Profile | null };
+
 export function useProfile() {
   const { user } = useAuth();
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [fetchState, setFetchState] = useState<FetchState>({ userId: null, profile: null });
+
+  // Derived synchronously — true the instant user.id changes, before any effect runs.
+  const loading = !!user && fetchState.userId !== user.id;
+  const profile = fetchState.userId === (user?.id ?? null) ? fetchState.profile : null;
 
   // BUG 5 FIX: age/gender ne sont pas requis pour les utilisateurs Google OAuth.
   const isComplete =
@@ -29,16 +37,15 @@ export function useProfile() {
       .select("first_name, last_name, level, age, gender, type_eleve")
       .eq("user_id", user.id)
       .maybeSingle();
-    setProfile(data as Profile | null);
+    setFetchState({ userId: user.id, profile: data as Profile | null });
   };
 
   useEffect(() => {
     if (!user) {
-      setProfile(null);
-      setLoading(false);
+      setFetchState({ userId: null, profile: null });
       return;
     }
-    setLoading(true);
+
     let cancelled = false;
 
     const fetchWithRetry = async () => {
@@ -52,8 +59,7 @@ export function useProfile() {
       if (cancelled) return;
 
       if (data) {
-        setProfile(data as Profile);
-        setLoading(false);
+        setFetchState({ userId: user.id, profile: data as Profile });
         return;
       }
 
@@ -72,20 +78,18 @@ export function useProfile() {
 
         if (cancelled) return;
         if (retryData) {
-          setProfile(retryData as Profile);
-          setLoading(false);
+          setFetchState({ userId: user.id, profile: retryData as Profile });
           return;
         }
       }
 
       // All retries exhausted — profile genuinely doesn't exist
-      setProfile(null);
-      setLoading(false);
+      setFetchState({ userId: user.id, profile: null });
     };
 
     fetchWithRetry();
     return () => { cancelled = true; };
-  }, [user]);
+  }, [user?.id]); // user.id — not the full user object — avoids spurious re-fetches
 
   return { profile, loading, isComplete, refetch };
 }
