@@ -324,6 +324,22 @@ export default function Hifz() {
   const bookingTi = getSessionType(bookingType);
   const upcomingCount = sessions.filter(s => s.status === "en_attente" || s.status === "confirmee").length;
 
+  // Cadence banner (extracted to avoid IIFE in JSX)
+  const cadenceBannerData = sessionsThisWeek.length > 0 ? (() => {
+    const count = sessionsThisWeek.length;
+    const target = recommendedPerWeek;
+    const isOver = count > target;
+    const isAt = count === target;
+    return { count, target, isOver, isAt };
+  })() : null;
+
+  // Does current calendar month have any available slots?
+  const currentMonthHasSlots = daysOfMonth.some(d => !!slotsByDay[format(d, "yyyy-MM-dd")]?.length);
+
+  // Split sessions into upcoming and past
+  const upcomingSessions = sessions.filter(s => s.status === "en_attente" || s.status === "confirmee");
+  const pastSessions = sessions.filter(s => s.status === "effectuee" || s.status === "annulee");
+
   return (
     <div className="min-h-screen bg-[#fdf8ef]">
       <Navbar />
@@ -785,74 +801,92 @@ export default function Hifz() {
             ═══════════════════════════════════════════════════════════════ */}
             <TabsContent value="reserver" className="mt-4 space-y-6">
 
-              {/* Option B — suivi cadence hebdomadaire */}
-              {(() => {
-                const count = sessionsThisWeek.length;
-                const target = recommendedPerWeek;
-                if (count === 0) return null;
-                const isOver = count > target;
-                const isAt = count === target;
-                return (
-                  <div className={`flex items-center gap-3 p-4 rounded-xl border-2 ${isOver ? "bg-amber-50 border-amber-300" : isAt ? "bg-emerald-50 border-emerald-300" : "bg-blue-50 border-blue-200"}`}>
-                    <CalendarCheck className={`h-5 w-5 shrink-0 ${isOver ? "text-amber-600" : isAt ? "text-emerald-600" : "text-blue-500"}`} />
-                    <div className="flex-1">
-                      <p className={`text-sm font-semibold ${isOver ? "text-amber-800" : isAt ? "text-emerald-800" : "text-blue-800"}`}>
-                        {isOver && `Cadence dépassée — ${count} séance${count > 1 ? "s" : ""} réservée${count > 1 ? "s" : ""} cette semaine`}
-                        {isAt && `Objectif atteint — ${count} séance${count > 1 ? "s" : ""} réservée${count > 1 ? "s" : ""} cette semaine ✓`}
-                        {!isOver && !isAt && `${count} séance${count > 1 ? "s" : ""} réservée${count > 1 ? "s" : ""} cette semaine`}
-                      </p>
-                      <p className={`text-xs mt-0.5 ${isOver ? "text-amber-700" : isAt ? "text-emerald-700" : "text-blue-600"}`}>
-                        {isOver ? `Votre programme recommande ${target}×/semaine — une séance supplémentaire peut aider mais veillez à ne pas surcharger.` : isAt ? `Parfait, vous êtes dans la cadence recommandée (${target}×/semaine).` : `Objectif : ${target} séance${target > 1 ? "s" : ""}/semaine selon votre progression.`}
-                      </p>
-                    </div>
-                    <span className={`text-lg font-bold shrink-0 ${isOver ? "text-amber-600" : isAt ? "text-emerald-600" : "text-blue-500"}`}>
-                      {count}/{target}
-                    </span>
+              {/* Cadence banner */}
+              {cadenceBannerData && (
+                <div className={`flex items-center gap-3 p-4 rounded-xl border-2 ${
+                  cadenceBannerData.isOver ? "bg-amber-50 border-amber-300" :
+                  cadenceBannerData.isAt  ? "bg-emerald-50 border-emerald-300" :
+                                            "bg-sky-50 border-sky-200"
+                }`}>
+                  <CalendarCheck className={`h-5 w-5 shrink-0 ${cadenceBannerData.isOver ? "text-amber-600" : cadenceBannerData.isAt ? "text-emerald-600" : "text-sky-500"}`} />
+                  <div className="flex-1">
+                    <p className={`text-sm font-semibold ${cadenceBannerData.isOver ? "text-amber-800" : cadenceBannerData.isAt ? "text-emerald-800" : "text-sky-800"}`}>
+                      {cadenceBannerData.isOver && `Cadence dépassée — ${cadenceBannerData.count} séance${cadenceBannerData.count > 1 ? "s" : ""} réservée${cadenceBannerData.count > 1 ? "s" : ""} cette semaine`}
+                      {cadenceBannerData.isAt && `Objectif atteint — ${cadenceBannerData.count} séance${cadenceBannerData.count > 1 ? "s" : ""} cette semaine ✓`}
+                      {!cadenceBannerData.isOver && !cadenceBannerData.isAt && `${cadenceBannerData.count} séance${cadenceBannerData.count > 1 ? "s" : ""} réservée${cadenceBannerData.count > 1 ? "s" : ""} cette semaine`}
+                    </p>
+                    <p className={`text-xs mt-0.5 ${cadenceBannerData.isOver ? "text-amber-700" : cadenceBannerData.isAt ? "text-emerald-700" : "text-sky-600"}`}>
+                      {cadenceBannerData.isOver
+                        ? `Programme recommande ${cadenceBannerData.target}×/semaine — veillez à ne pas surcharger.`
+                        : cadenceBannerData.isAt
+                        ? `Parfait, vous êtes dans la cadence recommandée (${cadenceBannerData.target}×/semaine).`
+                        : `Objectif : ${cadenceBannerData.target} séance${cadenceBannerData.target > 1 ? "s" : ""}/semaine selon votre progression.`
+                      }
+                    </p>
                   </div>
-                );
-              })()}
-
-              {/* Étape 1 */}
-              <section>
-                <SectionHeader step={1} title="Type de session" />
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mt-3">
-                  {HIFZ_SESSION_TYPES.map((t) => (
-                    <button
-                      key={t.value}
-                      onClick={() => setBookingType(t.value)}
-                      className={`text-left p-4 rounded-xl border-2 transition-all ${
-                        bookingType === t.value
-                          ? `${t.border} ${t.bgSoft} shadow-sm`
-                          : "border-gray-200 bg-white hover:border-emerald-200 hover:bg-emerald-50/20"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1.5">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xl">{t.icon}</span>
-                          <span className="font-semibold text-sm">{t.label}</span>
-                        </div>
-                        {bookingType === t.value && <CheckCircle2 className="h-4 w-4 text-emerald-600" />}
-                      </div>
-                      <p className="text-xs text-gray-500 leading-relaxed">{t.description}</p>
-                    </button>
-                  ))}
+                  <span className={`text-xl font-bold tabular-nums shrink-0 ${cadenceBannerData.isOver ? "text-amber-600" : cadenceBannerData.isAt ? "text-emerald-600" : "text-sky-500"}`}>
+                    {cadenceBannerData.count}/{cadenceBannerData.target}
+                  </span>
                 </div>
+              )}
+
+              {/* ① Type de session */}
+              <section className="space-y-3">
+                <SectionHeader step={1} title="Type de session" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                  {HIFZ_SESSION_TYPES.map((t) => {
+                    const isSelected = bookingType === t.value;
+                    return (
+                      <button
+                        key={t.value}
+                        onClick={() => setBookingType(t.value)}
+                        className={`relative text-left p-4 rounded-xl border-2 transition-all ${
+                          isSelected
+                            ? `${t.border} ${t.bgSoft} shadow-md ring-2 ring-offset-1 ring-emerald-300`
+                            : "border-gray-100 bg-white hover:border-emerald-200 hover:shadow-sm"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="text-3xl leading-none mt-0.5">{t.icon}</span>
+                          {isSelected && (
+                            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                          )}
+                        </div>
+                        <p className="font-bold text-sm text-gray-800 mt-2">{t.label}</p>
+                        <p className="text-xs text-gray-500 leading-relaxed mt-0.5">{t.description}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+
                 {bookingType === "khatm_partiel" && (
-                  <div className="mt-3 p-4 rounded-xl bg-amber-50 border border-amber-200">
-                    <Label className="text-amber-800 text-sm font-medium">Quel juz ? (1 à 30)</Label>
-                    <Input
-                      type="number" min={1} max={30} value={bookingJuz}
-                      onChange={(e) => setBookingJuz(Math.min(30, Math.max(1, +e.target.value || 1)))}
-                      className="bg-white mt-1.5 max-w-xs h-9"
-                    />
+                  <div className="p-4 rounded-xl bg-amber-50 border-2 border-amber-200 space-y-2">
+                    <Label className="text-amber-800 text-sm font-semibold">Quel juz ? (1 à 30)</Label>
+                    <div className="grid grid-cols-6 sm:grid-cols-10 gap-1.5">
+                      {Array.from({ length: 30 }, (_, i) => i + 1).map((j) => (
+                        <button
+                          key={j}
+                          type="button"
+                          onClick={() => setBookingJuz(j)}
+                          className={`aspect-square rounded-lg text-sm font-medium transition-all ${
+                            bookingJuz === j
+                              ? "bg-amber-600 text-white shadow-sm"
+                              : "bg-white border border-amber-200 text-amber-800 hover:bg-amber-100"
+                          }`}
+                        >
+                          {j}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-amber-700">Juz {bookingJuz} sélectionné</p>
                   </div>
                 )}
               </section>
 
-              {/* Étape 2 */}
-              <section>
+              {/* ② Choisir un créneau */}
+              <section className="space-y-3">
                 <SectionHeader step={2} title="Choisir un créneau" />
-                <Card className="border-emerald-200 shadow-sm mt-3">
+                <Card className="border-emerald-200 shadow-sm">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
                     <CardTitle className="text-emerald-800 capitalize text-base">
                       {format(calMonth, "MMMM yyyy", { locale: fr })}
@@ -862,8 +896,8 @@ export default function Hifz() {
                       <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => setCalMonth(addMonths(calMonth, 1))}>›</Button>
                     </div>
                   </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-amber-800/50 mb-2 uppercase tracking-wide">
+                  <CardContent className="space-y-3">
+                    <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-amber-800/50 uppercase tracking-wide">
                       {["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"].map((d) => <div key={d}>{d}</div>)}
                     </div>
                     <div className="grid grid-cols-7 gap-1">
@@ -878,27 +912,40 @@ export default function Hifz() {
                             onClick={() => hasSlots && setSelectedDay(d)}
                             disabled={!hasSlots}
                             className={`relative aspect-square rounded-lg text-sm flex flex-col items-center justify-center transition-all font-medium
-                              ${hasSlots ? "cursor-pointer hover:shadow-sm" : "text-gray-200 cursor-not-allowed"}
-                              ${isSel ? "bg-emerald-700 text-white shadow-md scale-105" : hasSlots ? "bg-emerald-100 text-emerald-900 hover:bg-emerald-200" : ""}
+                              ${isSel ? "bg-emerald-700 text-white shadow-md scale-105" :
+                                hasSlots ? "bg-emerald-100 text-emerald-900 hover:bg-emerald-200 cursor-pointer" :
+                                "text-gray-200 cursor-not-allowed"}
                             `}
                           >
                             {format(d, "d")}
-                            {hasSlots && !isSel && (
-                              <span className="absolute bottom-1 w-1 h-1 rounded-full bg-emerald-500" />
-                            )}
+                            {hasSlots && !isSel && <span className="absolute bottom-1 w-1 h-1 rounded-full bg-emerald-500" />}
                           </button>
                         );
                       })}
                     </div>
-                    {slots.length === 0 && (
-                      <p className="text-center text-xs text-amber-800/50 mt-5 pb-2">Aucun créneau disponible ce mois-ci.</p>
+
+                    {/* Légende */}
+                    <div className="flex items-center gap-4 pt-1 border-t border-gray-100 text-xs text-gray-400">
+                      <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-emerald-100" /><span>Disponible</span></div>
+                      <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-emerald-700" /><span>Sélectionné</span></div>
+                    </div>
+
+                    {/* Pas de créneaux ce mois-ci */}
+                    {!currentMonthHasSlots && (
+                      <div className="flex flex-col items-center gap-2 py-4 text-center">
+                        <p className="text-sm text-amber-800/50">Aucun créneau disponible en {format(calMonth, "MMMM", { locale: fr })}.</p>
+                        <Button size="sm" variant="outline" className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                          onClick={() => setCalMonth(addMonths(calMonth, 1))}>
+                          Voir le mois suivant →
+                        </Button>
+                      </div>
                     )}
                   </CardContent>
                 </Card>
 
                 {selectedDay && (
-                  <div className="mt-3 space-y-2">
-                    <p className="text-sm font-semibold text-emerald-800 capitalize">
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-emerald-800 capitalize px-1">
                       {format(selectedDay, "EEEE d MMMM yyyy", { locale: fr })}
                     </p>
                     {(slotsByDay[format(selectedDay, "yyyy-MM-dd")] || []).map((s) => (
@@ -908,7 +955,7 @@ export default function Hifz() {
                         className="w-full text-left p-4 rounded-xl border-2 border-emerald-200 bg-white hover:border-emerald-500 hover:bg-emerald-50 flex items-center justify-between transition-all group shadow-sm"
                       >
                         <div>
-                          <span className="font-bold text-emerald-900">{s.start_time.slice(0,5)} – {s.end_time.slice(0,5)}</span>
+                          <span className="font-bold text-emerald-900 text-base">{s.start_time.slice(0,5)} – {s.end_time.slice(0,5)}</span>
                           {s.notes && <p className="text-xs text-gray-400 mt-0.5">{s.notes}</p>}
                         </div>
                         <ChevronRight className="h-5 w-5 text-emerald-400 group-hover:text-emerald-600 transition-colors" />
@@ -918,54 +965,82 @@ export default function Hifz() {
                 )}
               </section>
 
-              {/* Étape 3 */}
-              <section>
+              {/* ③ Mes réservations */}
+              <section className="space-y-3">
                 <div className="flex items-center gap-3">
                   <SectionHeader step={3} title="Mes réservations" />
                   {upcomingCount > 0 && (
-                    <Badge className="bg-amber-500 text-white text-xs">{upcomingCount} à venir</Badge>
+                    <Badge className="bg-amber-500 text-white">{upcomingCount} à venir</Badge>
                   )}
                 </div>
+
                 {sessions.length === 0 ? (
-                  <div className="mt-3 text-center py-10 rounded-xl border-2 border-dashed border-emerald-200">
-                    <CalendarDays className="h-10 w-10 text-emerald-200 mx-auto mb-2" />
-                    <p className="text-sm text-amber-800/50">Aucune réservation pour le moment.</p>
-                    <p className="text-xs text-amber-800/30 mt-1">Choisissez un type et un créneau ci-dessus.</p>
+                  <div className="text-center py-12 rounded-xl border-2 border-dashed border-emerald-200 bg-emerald-50/30">
+                    <CalendarDays className="h-12 w-12 text-emerald-200 mx-auto mb-3" />
+                    <p className="text-sm font-medium text-amber-800/50">Aucune réservation pour le moment</p>
+                    <p className="text-xs text-amber-800/30 mt-1">Choisissez un type de session et un créneau ci-dessus.</p>
                   </div>
                 ) : (
-                  <div className="mt-3 space-y-2">
-                    {sessions.map((s) => {
-                      const ti = getSessionType(s.session_type);
-                      return (
-                        <div key={s.id} className={`p-4 rounded-xl border-2 border-l-4 ${STATUS_CARD[s.status] ?? "border-gray-200 bg-white"} ${STATUS_BORDER[s.status] ?? "border-l-gray-300"} space-y-2`}>
-                          <div className="flex items-start justify-between flex-wrap gap-2">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <Badge className={`${ti.badgeBg} ${ti.badgeText} border-0`}>
-                                {ti.icon} {ti.label}{s.session_type === "khatm_partiel" && s.juz_number ? ` · Juz ${s.juz_number}` : ""}
-                              </Badge>
-                              <span className="text-sm font-medium text-gray-800">
-                                {format(parseISO(s.session_date), "d MMM yyyy", { locale: fr })} · {s.session_time.slice(0,5)}
-                              </span>
+                  <div className="space-y-4">
+                    {/* À venir */}
+                    {upcomingSessions.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest px-1">À venir</p>
+                        {upcomingSessions.map((s) => {
+                          const ti = getSessionType(s.session_type);
+                          return (
+                            <div key={s.id} className={`p-4 rounded-xl border-2 border-l-4 ${STATUS_CARD[s.status] ?? "border-gray-200 bg-white"} ${STATUS_BORDER[s.status] ?? "border-l-gray-300"} space-y-2`}>
+                              <div className="flex items-start justify-between flex-wrap gap-2">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <Badge className={`${ti.badgeBg} ${ti.badgeText} border-0`}>
+                                    {ti.icon} {ti.label}{s.session_type === "khatm_partiel" && s.juz_number ? ` · Juz ${s.juz_number}` : ""}
+                                  </Badge>
+                                  <span className="text-sm font-semibold text-gray-800">
+                                    {format(parseISO(s.session_date), "EEEE d MMM", { locale: fr })} · {s.session_time.slice(0,5)}
+                                  </span>
+                                </div>
+                                <span className="text-xs font-medium text-gray-500">{STATUS_LABEL[s.status] ?? s.status}</span>
+                              </div>
+                              {s.status === "confirmee" && s.meet_link && (
+                                <a href={/^https?:\/\//i.test(s.meet_link) ? s.meet_link : `https://${s.meet_link}`}
+                                  target="_blank" rel="noopener noreferrer"
+                                  className="flex items-center justify-center gap-2 w-full bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-medium py-2.5 px-3 rounded-lg transition-colors">
+                                  🎥 Rejoindre la séance Google Meet
+                                </a>
+                              )}
+                              {s.status === "confirmee" && !s.meet_link && (
+                                <p className="text-xs text-amber-700/80 italic">Le lien Meet sera ajouté par votre professeur avant la séance.</p>
+                              )}
                             </div>
-                            <span className="text-xs font-medium text-gray-500">
-                              {STATUS_LABEL[s.status] ?? s.status}
-                            </span>
-                          </div>
-                          {s.status === "confirmee" && s.meet_link && (
-                            <a
-                              href={/^https?:\/\//i.test(s.meet_link) ? s.meet_link : `https://${s.meet_link}`}
-                              target="_blank" rel="noopener noreferrer"
-                              className="flex items-center justify-center gap-2 w-full bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-medium py-2.5 px-3 rounded-lg transition-colors"
-                            >
-                              🎥 Rejoindre la séance Google Meet
-                            </a>
-                          )}
-                          {s.status === "confirmee" && !s.meet_link && (
-                            <p className="text-xs text-amber-700/80 italic">Le lien Meet sera ajouté par votre professeur avant la séance.</p>
-                          )}
-                        </div>
-                      );
-                    })}
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Passées */}
+                    {pastSessions.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest px-1">Passées</p>
+                        {pastSessions.map((s) => {
+                          const ti = getSessionType(s.session_type);
+                          return (
+                            <div key={s.id} className={`p-3 rounded-xl border ${STATUS_CARD[s.status] ?? "border-gray-100 bg-gray-50"} opacity-70`}>
+                              <div className="flex items-center justify-between flex-wrap gap-2">
+                                <div className="flex items-center gap-2">
+                                  <Badge className={`${ti.badgeBg} ${ti.badgeText} border-0 text-[10px]`}>
+                                    {ti.icon} {ti.label}
+                                  </Badge>
+                                  <span className="text-sm text-gray-600">
+                                    {format(parseISO(s.session_date), "d MMM yyyy", { locale: fr })} · {s.session_time.slice(0,5)}
+                                  </span>
+                                </div>
+                                <span className="text-xs text-gray-400">{STATUS_LABEL[s.status] ?? s.status}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 )}
               </section>
