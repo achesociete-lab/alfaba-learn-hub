@@ -4,7 +4,7 @@ import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameD
 import { fr } from "date-fns/locale";
 import {
   Crown, Lock, Sparkles, BookOpen, CheckCircle2, Loader2, ChevronRight,
-  Moon, Sunrise, Sun, GraduationCap, RotateCcw, Target, LayoutGrid,
+  Moon, Sunrise, Sun, GraduationCap, RotateCcw, Target,
   CalendarDays, Clock, TrendingUp, Star, AlertCircle, CalendarCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,6 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Slider } from "@/components/ui/slider";
-import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from "recharts";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
@@ -95,7 +94,6 @@ export default function Hifz() {
   const [bookingJuz, setBookingJuz] = useState<number>(1);
   const [booking, setBooking] = useState(false);
 
-  const [globalFilter, setGlobalFilter] = useState<"tous" | HifzSessionType>("tous");
 
   useEffect(() => {
     if (authLoading) return;
@@ -182,13 +180,6 @@ export default function Hifz() {
     return map;
   }, [evaluations]);
 
-  const evalHistoryByHizb = useMemo(() => {
-    const map: Record<number, Evaluation[]> = {};
-    for (const e of evaluations) (map[e.hizb_number] ||= []).push(e);
-    Object.values(map).forEach((arr) => arr.sort((a, b) => new Date(b.evaluated_at).getTime() - new Date(a.evaluated_at).getTime()));
-    return map;
-  }, [evaluations]);
-
   const slotsByDay = useMemo(() => {
     const m: Record<string, Slot[]> = {};
     for (const s of slots) (m[s.slot_date] ||= []).push(s);
@@ -249,14 +240,6 @@ export default function Hifz() {
     });
   }, [sessions]);
 
-  const dashboardByType = HIFZ_SESSION_TYPES.map((t) => {
-    const evs = evaluations.filter((e) => (e.session_type || "sabaq") === t.value);
-    const hizbCount = new Set(evs.map((e) => e.hizb_number)).size;
-    const niveaux = evs.filter((e) => e.niveau).map((e) => NIVEAU_WEIGHT[e.niveau!] || 0);
-    const avg = niveaux.length ? niveaux.reduce((a, b) => a + b, 0) / niveaux.length : 0;
-    const last = [...evs].sort((a, b) => new Date(b.evaluated_at).getTime() - new Date(a.evaluated_at).getTime())[0];
-    return { type: t, hizbCount, avg, lastDate: last?.evaluated_at };
-  });
 
   const handleGenerate = async () => {
     if (!user) return;
@@ -381,8 +364,7 @@ export default function Hifz() {
             <TabsList className="flex w-full bg-white border border-emerald-100 rounded-xl h-auto p-1 gap-0.5 shadow-sm overflow-x-auto mb-2">
               {[
                 { value: "programme", icon: Target, label: "Programme" },
-                { value: "vue-globale", icon: LayoutGrid, label: "Vue globale" },
-                { value: "methode", icon: BookOpen, label: "Méthode" },
+{ value: "methode", icon: BookOpen, label: "Méthode" },
                 { value: "reserver", icon: CalendarDays, label: "Réserver", badge: upcomingCount || undefined },
                 { value: "historique", icon: Clock, label: "Historique" },
               ].map(({ value, icon: Icon, label, badge }) => (
@@ -711,131 +693,6 @@ export default function Hifz() {
             {/* ═══════════════════════════════════════════════════════════════
                 VUE GLOBALE
             ═══════════════════════════════════════════════════════════════ */}
-            <TabsContent value="vue-globale" className="mt-4 space-y-4">
-              <Card className="border-emerald-200 shadow-sm">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-emerald-800 text-base flex items-center gap-2">
-                    <LayoutGrid className="h-4 w-4" /> Grille des 60 hizb
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex flex-wrap gap-1.5">
-                    <button
-                      onClick={() => setGlobalFilter("tous")}
-                      className={`px-3 py-1 rounded-lg text-xs font-medium border transition-all ${
-                        globalFilter === "tous" ? "bg-emerald-700 text-white border-emerald-700" : "bg-white border-gray-200 text-gray-600 hover:border-emerald-300"
-                      }`}
-                    >
-                      Tous les types
-                    </button>
-                    {HIFZ_SESSION_TYPES.map((t) => (
-                      <button
-                        key={t.value}
-                        onClick={() => setGlobalFilter(t.value)}
-                        className={`px-3 py-1 rounded-lg text-xs font-medium border transition-all ${
-                          globalFilter === t.value ? `${t.badgeBg} ${t.badgeText} ${t.border}` : `bg-white border-gray-200 text-gray-600 hover:${t.border}`
-                        }`}
-                      >
-                        {t.icon} {t.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  <TooltipProvider delayDuration={100}>
-                    <div className="grid grid-cols-6 sm:grid-cols-10 gap-1.5">
-                      {Array.from({ length: TOTAL_HIZB }).map((_, i) => {
-                        const h = i + 1;
-                        const history = evalHistoryByHizb[h] || [];
-                        const filtered = globalFilter === "tous" ? history : history.filter((e) => (e.session_type || "sabaq") === globalFilter);
-                        const latest = filtered[0];
-                        let cls = "bg-gray-100 text-gray-400 border border-gray-200";
-                        if (latest) {
-                          if (latest.status === "valide") {
-                            const ti = getSessionType(latest.session_type);
-                            cls = `${ti.badgeBg} ${ti.badgeText} font-semibold border border-transparent`;
-                          } else {
-                            cls = "bg-red-100 text-red-700 font-semibold border border-red-200";
-                          }
-                        }
-                        return (
-                          <UITooltip key={h}>
-                            <TooltipTrigger asChild>
-                              <button className={`aspect-square rounded-lg text-xs flex items-center justify-center transition hover:scale-110 hover:shadow-sm ${cls}`}>
-                                {h}
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent className="max-w-xs">
-                              <p className="font-semibold mb-1">Hizb {h}</p>
-                              {history.length === 0 ? (
-                                <p className="text-xs text-gray-400">Non évalué</p>
-                              ) : (
-                                <ul className="text-xs space-y-0.5">
-                                  {history.slice(0, 5).map((e) => {
-                                    const ti = getSessionType(e.session_type);
-                                    return (
-                                      <li key={e.id} className="flex items-center gap-1">
-                                        <span>{ti.icon}</span>
-                                        <span>{format(parseISO(e.evaluated_at), "d MMM", { locale: fr })}</span>
-                                        <span>—</span>
-                                        <span>{e.status === "valide" ? (NIVEAU_LABEL[e.niveau || ""] || "Validé") : "À retravailler"}</span>
-                                      </li>
-                                    );
-                                  })}
-                                </ul>
-                              )}
-                            </TooltipContent>
-                          </UITooltip>
-                        );
-                      })}
-                    </div>
-                  </TooltipProvider>
-
-                  {/* Legend */}
-                  <div className="flex flex-wrap gap-3 pt-2 border-t border-emerald-100 text-xs text-gray-500">
-                    <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-gray-100 border border-gray-200" /><span>Non évalué</span></div>
-                    <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-red-100 border border-red-200" /><span>À retravailler</span></div>
-                    {HIFZ_SESSION_TYPES.slice(0, 3).map(t => (
-                      <div key={t.value} className="flex items-center gap-1.5">
-                        <div className={`w-3 h-3 rounded ${t.badgeBg}`} />
-                        <span>{t.label}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-emerald-200 shadow-sm">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-emerald-800 text-base flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4" /> Tableau de bord par type
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {dashboardByType.map(({ type: t, hizbCount, avg, lastDate }) => (
-                    <div key={t.value} className={`p-4 rounded-xl border ${t.border} ${t.bgSoft}`}>
-                      <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xl">{t.icon}</span>
-                          <div>
-                            <span className="font-semibold text-sm">{t.label}</span>
-                            <p className="text-xs text-gray-500">{t.long}</p>
-                          </div>
-                        </div>
-                        <div className="text-right text-xs text-gray-600">
-                          <div><strong className="text-base text-gray-800">{hizbCount}</strong> hizb</div>
-                          {lastDate && <div className="text-gray-400">{format(parseISO(lastDate), "d MMM yyyy", { locale: fr })}</div>}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Progress value={(avg / 4) * 100} className="h-1.5 flex-1" />
-                        <span className="text-xs text-gray-500 w-8 text-right">{avg ? avg.toFixed(1) + "/4" : "—"}</span>
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
             {/* ═══════════════════════════════════════════════════════════════
                 MÉTHODE
             ═══════════════════════════════════════════════════════════════ */}
