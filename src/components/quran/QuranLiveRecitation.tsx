@@ -268,8 +268,7 @@ const QuranLiveRecitation = ({ surah, verses, onClose }: Props) => {
           ayah_start: verses[0]?.number ?? 1,
           ayah_end: verses[verses.length - 1]?.number ?? 1,
           score: pct,
-          notes: `Live: ${correct}/${totalWords} mots corrects, ${errors} erreurs, ${skipped} sautés`,
-          mode: "live",
+          ai_feedback: { mode: "live", notes: `Live: ${correct}/${totalWords} mots corrects, ${errors} erreurs, ${skipped} sautés` },
         });
       } catch { /* swallow — non-critical */ }
       if (mountedRef.current) setSavingResult(false);

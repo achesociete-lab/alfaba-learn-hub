@@ -38,13 +38,13 @@ describe("useSubscription plan logic", () => {
   });
 
   it("should identify premium plan correctly", () => {
-    const plan = "premium";
+    const plan: string = "premium";
     expect(plan === "découverte").toBe(false);
-    expect(["essentiel", "premium"].includes(plan)).toBe(true);
+    expect(["essentiel", "premium", "hifz"].includes(plan)).toBe(true);
   });
 
   it("should identify all valid plan types", () => {
-    const validPlans = ["découverte", "essentiel", "premium"];
+    const validPlans = ["découverte", "essentiel", "premium", "hifz"];
     validPlans.forEach((plan) => {
       expect(validPlans.includes(plan)).toBe(true);
     });
