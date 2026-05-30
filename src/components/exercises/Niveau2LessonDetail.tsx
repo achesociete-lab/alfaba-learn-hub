@@ -27,12 +27,13 @@ function GrammarTab({ lesson }: { lesson: Niveau2Lesson }) {
   const { speak, stop } = useArabicSpeech();
   const { isAdmin } = useIsAdmin();
   const [isReading, setIsReading] = useState(false);
+  const grammarExamples = lesson.grammar.flatMap((rule) => rule.examples);
 
   const readLesson = async () => {
     if (isReading) { stop(); setIsReading(false); return; }
     setIsReading(true);
     try {
-      for (const example of lesson.grammar.examples) {
+      for (const example of grammarExamples) {
         await speak(example.arabic, 0.75);
         await new Promise(r => setTimeout(r, 500));
       }
@@ -50,11 +51,14 @@ function GrammarTab({ lesson }: { lesson: Niveau2Lesson }) {
         </div></div>
       )}
       <div className="p-4 rounded-xl border border-border bg-card space-y-4">
-        <h3 className="font-semibold text-foreground text-lg">{lesson.grammar.title}</h3>
-        <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">{lesson.grammar.explanation}</p>
-        {lesson.grammar.rule && <div className="p-3 rounded-lg bg-primary/5 border border-primary/20"><p className="text-sm text-primary font-medium">📐 Règle : {lesson.grammar.rule}</p></div>}
+        {lesson.grammar.map((rule, i) => (
+          <div key={i} className="space-y-2">
+            <h3 className="font-semibold text-foreground text-lg">{rule.title}</h3>
+            <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">{rule.explanation}</p>
+          </div>
+        ))}
       </div>
-      {lesson.comprehension.text && (
+      {lesson.comprehension.arabic && (
         <div className="p-4 rounded-xl border border-border bg-card space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-foreground flex items-center gap-2"><FileText className="h-4 w-4" /> Texte de compréhension</h3>
@@ -62,19 +66,20 @@ function GrammarTab({ lesson }: { lesson: Niveau2Lesson }) {
               <Volume2 className={`h-3.5 w-3.5 ${isReading ? "animate-pulse text-primary" : ""}`} />{isReading ? "Arrêter" : "Écouter"}
             </Button>
           </div>
-          <div className="p-4 rounded-lg bg-muted/50" dir="rtl"><p className="font-arabic text-lg text-foreground leading-loose">{lesson.comprehension.text}</p></div>
+          <div className="p-4 rounded-lg bg-muted/50" dir="rtl"><p className="font-arabic text-lg text-foreground leading-loose">{lesson.comprehension.arabic}</p></div>
         </div>
       )}
       <div className="p-4 rounded-xl border border-border bg-card space-y-3">
         <h3 className="font-semibold text-foreground">Exemples</h3>
         <div className="space-y-2">
-          {lesson.grammar.examples.map((ex, i) => {
-            const emoji = getIllustration(ex.translation);
+          {grammarExamples.map((ex, i) => {
+            const label = ex.meaning || ex.transliteration;
+            const emoji = getIllustration(label);
             return (
               <motion.div key={i} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
                 onClick={() => speak(ex.arabic)} className="flex items-center justify-between p-3 rounded-lg bg-muted cursor-pointer hover:bg-primary/10 transition-colors">
                 <div className="flex items-center gap-2"><Volume2 className="h-4 w-4 text-muted-foreground shrink-0" /><span className="font-arabic text-xl text-foreground">{ex.arabic}</span></div>
-                <div className="flex items-center gap-2"><span className="text-sm text-foreground">{ex.translation}</span>{emoji && <span className="text-xl">{emoji}</span>}</div>
+                <div className="flex items-center gap-2"><span className="text-sm text-foreground">{label}</span>{emoji && <span className="text-xl">{emoji}</span>}</div>
               </motion.div>
             );
           })}
