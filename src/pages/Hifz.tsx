@@ -1007,101 +1007,60 @@ export default function Hifz() {
                 )}
               </section>
 
-              {/* ③ Mes réservations */}
-              <section className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <SectionHeader step={3} title="Mes réservations" />
-                  {upcomingCount > 0 && (
-                    <Badge className="bg-amber-500 text-white">{upcomingCount} à venir</Badge>
-                  )}
-                </div>
-
-                {sessions.length === 0 ? (
-                  <div className="text-center py-12 rounded-xl border-2 border-dashed border-emerald-200 bg-emerald-50/30">
-                    <CalendarDays className="h-12 w-12 text-emerald-200 mx-auto mb-3" />
-                    <p className="text-sm font-medium text-amber-800/50">Aucune réservation pour le moment</p>
-                    <p className="text-xs text-amber-800/30 mt-1">Choisissez un type de session et un créneau ci-dessus.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {/* À venir */}
-                    {upcomingSessions.length > 0 && (
-                      <div className="space-y-2">
-                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest px-1">À venir</p>
-                        {upcomingSessions.map((s) => {
-                          const ti = getSessionType(s.session_type);
-                          const pageMatch = s.notes_eleve?.match(/^\[Pages (\d+–\d+)\]\s*/);
-                          const pages = pageMatch ? pageMatch[1] : null;
-                          const userNote = pageMatch ? s.notes_eleve!.slice(pageMatch[0].length) : s.notes_eleve;
-                          return (
-                            <div key={s.id} className={`p-4 rounded-xl border-2 border-l-4 ${STATUS_CARD[s.status] ?? "border-gray-200 bg-white"} ${STATUS_BORDER[s.status] ?? "border-l-gray-300"} space-y-2`}>
-                              <div className="flex items-start justify-between flex-wrap gap-2">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <Badge className={`${ti.badgeBg} ${ti.badgeText} border-0`}>
-                                    {ti.icon} {ti.label}{s.session_type === "khatm_partiel" && s.juz_number ? ` · Juz ${s.juz_number}` : ""}
-                                  </Badge>
-                                  {pages && (
-                                    <Badge variant="outline" className="border-emerald-300 text-emerald-700 text-xs">
-                                      📖 p. {pages}
-                                    </Badge>
-                                  )}
-                                  <span className="text-sm font-semibold text-gray-800">
-                                    {format(parseISO(s.session_date), "EEEE d MMM", { locale: fr })} · {s.session_time.slice(0,5)}
-                                  </span>
-                                </div>
-                                <span className="text-xs font-medium text-gray-500">{STATUS_LABEL[s.status] ?? s.status}</span>
-                              </div>
-                              {userNote && <p className="text-xs text-gray-500 italic">"{userNote}"</p>}
-                              {s.status === "confirmee" && s.meet_link && (
-                                <a href={/^https?:\/\//i.test(s.meet_link) ? s.meet_link : `https://${s.meet_link}`}
-                                  target="_blank" rel="noopener noreferrer"
-                                  className="flex items-center justify-center gap-2 w-full bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-medium py-2.5 px-3 rounded-lg transition-colors">
-                                  🎥 Rejoindre la séance Google Meet
-                                </a>
-                              )}
-                              {s.status === "confirmee" && !s.meet_link && (
-                                <p className="text-xs text-amber-700/80 italic">Le lien Meet sera ajouté par votre professeur avant la séance.</p>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {/* Passées */}
-                    {pastSessions.length > 0 && (
-                      <div className="space-y-2">
-                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest px-1">Passées</p>
-                        {pastSessions.map((s) => {
-                          const ti = getSessionType(s.session_type);
-                          return (
-                            <div key={s.id} className={`p-3 rounded-xl border ${STATUS_CARD[s.status] ?? "border-gray-100 bg-gray-50"} opacity-70`}>
-                              <div className="flex items-center justify-between flex-wrap gap-2">
-                                <div className="flex items-center gap-2">
-                                  <Badge className={`${ti.badgeBg} ${ti.badgeText} border-0 text-[10px]`}>
-                                    {ti.icon} {ti.label}
-                                  </Badge>
-                                  <span className="text-sm text-gray-600">
-                                    {format(parseISO(s.session_date), "d MMM yyyy", { locale: fr })} · {s.session_time.slice(0,5)}
-                                  </span>
-                                </div>
-                                <span className="text-xs text-gray-400">{STATUS_LABEL[s.status] ?? s.status}</span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </section>
             </TabsContent>
 
             {/* ═══════════════════════════════════════════════════════════════
                 HISTORIQUE
             ═══════════════════════════════════════════════════════════════ */}
             <TabsContent value="historique" className="mt-4 space-y-4">
-              {sessions.length > 0 && (
+
+              {/* Séances à venir */}
+              {upcomingSessions.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs font-semibold text-emerald-700 uppercase tracking-widest">À venir</p>
+                    <Badge className="bg-amber-500 text-white text-xs">{upcomingSessions.length}</Badge>
+                  </div>
+                  {upcomingSessions.map((s) => {
+                    const ti = getSessionType(s.session_type);
+                    const pageMatch = s.notes_eleve?.match(/^\[Pages (\d+–\d+)\]\s*/);
+                    const pages = pageMatch ? pageMatch[1] : null;
+                    const userNote = pageMatch ? s.notes_eleve!.slice(pageMatch[0].length) : s.notes_eleve;
+                    return (
+                      <div key={s.id} className={`p-4 rounded-xl border-2 border-l-4 ${STATUS_CARD[s.status] ?? "border-gray-200 bg-white"} ${STATUS_BORDER[s.status] ?? "border-l-gray-300"} space-y-2`}>
+                        <div className="flex items-start justify-between flex-wrap gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge className={`${ti.badgeBg} ${ti.badgeText} border-0`}>
+                              {ti.icon} {ti.label}{s.session_type === "khatm_partiel" && s.juz_number ? ` · Juz ${s.juz_number}` : ""}
+                            </Badge>
+                            {pages && (
+                              <Badge variant="outline" className="border-emerald-300 text-emerald-700 text-xs">📖 p. {pages}</Badge>
+                            )}
+                            <span className="text-sm font-semibold text-gray-800 capitalize">
+                              {format(parseISO(s.session_date), "EEEE d MMM yyyy", { locale: fr })} · {s.session_time.slice(0,5)}
+                            </span>
+                          </div>
+                          <span className="text-xs font-medium text-gray-500">{STATUS_LABEL[s.status] ?? s.status}</span>
+                        </div>
+                        {userNote && <p className="text-xs text-gray-500 italic">"{userNote}"</p>}
+                        {s.status === "confirmee" && s.meet_link && (
+                          <a href={/^https?:\/\//i.test(s.meet_link) ? s.meet_link : `https://${s.meet_link}`}
+                            target="_blank" rel="noopener noreferrer"
+                            className="flex items-center justify-center gap-2 w-full bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-medium py-2.5 px-3 rounded-lg transition-colors">
+                            🎥 Rejoindre la séance Google Meet
+                          </a>
+                        )}
+                        {s.status === "confirmee" && !s.meet_link && (
+                          <p className="text-xs text-amber-700/80 italic">Le lien Meet sera ajouté par votre professeur avant la séance.</p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Stats + historique évaluations */}
+              {sessions.filter(s => s.status === "effectuee").length > 0 && (
                 <div className="grid grid-cols-3 gap-3">
                   <StatCard icon={CalendarCheck} label="Sessions effectuées" value={sessions.filter(s => s.status === "effectuee").length} color="emerald" />
                   <StatCard icon={BookOpen} label="Hizb évalués" value={new Set(evaluations.map(e => e.hizb_number)).size} color="amber" />
@@ -1109,13 +1068,13 @@ export default function Hifz() {
                 </div>
               )}
 
-              {sessions.length === 0 ? (
+              {sessions.filter(s => s.status === "effectuee").length === 0 && upcomingSessions.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
                   <Clock className="h-12 w-12 text-emerald-200" />
                   <p className="text-amber-800/60 font-medium">Aucune session enregistrée</p>
                   <p className="text-xs text-amber-800/40">Vos séances avec le professeur apparaîtront ici.</p>
                 </div>
-              ) : (
+              ) : sessions.filter(s => s.status === "effectuee").length > 0 ? (
                 <Accordion type="single" collapsible className="space-y-2">
                   {sessions.map((s) => {
                     const evs = evaluations.filter((e) => e.session_id === s.id);
@@ -1183,7 +1142,7 @@ export default function Hifz() {
                     );
                   })}
                 </Accordion>
-              )}
+              ) : null}
             </TabsContent>
 
           </Tabs>
