@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { HIFZ_SESSION_TYPES, getSessionType, HifzSessionType } from "@/lib/hifz-session-types";
 
 type Slot = {
   id: string;
@@ -54,9 +55,19 @@ type Session = {
   status: string;
   meet_link: string | null;
   notes_eleve: string | null;
+  session_type?: string | null;
+  juz_number?: number | null;
 };
 type Profile = { user_id: string; first_name: string; last_name: string };
-type EvalDraft = { hizb_number: number; status: "valide" | "a_retravailler" | ""; niveau: string; notes: string };
+type EvalDraft = {
+  hizb_number: number;
+  status: "valide" | "a_retravailler" | "";
+  niveau: string;
+  notes: string;
+  ready_to_advance?: boolean | null;
+  without_mushaf?: boolean;
+  fluidity?: string;
+};
 
 const NIVEAUX = [
   { value: "mediocre", label: "Médiocre", color: "bg-red-100 text-red-700" },
@@ -64,6 +75,7 @@ const NIVEAUX = [
   { value: "bon", label: "Bon", color: "bg-emerald-100 text-emerald-700" },
   { value: "excellent", label: "Excellent", color: "bg-emerald-600 text-white" },
 ];
+const FLUIDITY = ["Haché", "Correct", "Fluide", "Majestueux"];
 
 export default function AdminHifz() {
   const { toast } = useToast();
