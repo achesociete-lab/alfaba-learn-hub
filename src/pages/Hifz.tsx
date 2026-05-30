@@ -291,13 +291,50 @@ export default function Hifz() {
               ) : (
                 <div className="space-y-4">
                   <Card className="border-emerald-200 bg-gradient-to-br from-emerald-50 to-amber-50">
-                    <CardContent className="pt-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                      <Stat label="Hizb restants" value={remainingHizb} />
-                      <Stat label="Pages" value={remainingPages} />
-                      <Stat label="Durée" value={`${config.duration_months} mois`} />
-                      <Stat label="Rythme" value={`${pacePerDay} p/j`} />
+                    <CardContent className="pt-6 space-y-4">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                        <Stat label="Hizb mémorisés" value={`${totalMemorized}/${TOTAL_HIZB}`} />
+                        <Stat label="Hizb restants" value={remainingHizb} />
+                        <Stat label="Pages restantes" value={remainingPages} />
+                        <Stat label="Rythme" value={`${pacePerDay} p/j`} />
+                      </div>
+                      <div>
+                        <div className="flex justify-between text-xs text-amber-800/80 mb-1">
+                          <span>Progression globale</span>
+                          <span className="font-semibold">{progressPercent}% · {memorizedPages} pages mémorisées</span>
+                        </div>
+                        <Progress value={progressPercent} className="h-3" />
+                      </div>
                     </CardContent>
                   </Card>
+
+                  <Card className="border-emerald-200">
+                    <CardHeader>
+                      <CardTitle className="text-emerald-800 text-base">📈 Évolution de la mémorisation</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {progressChartData.length <= 1 ? (
+                        <p className="text-sm text-amber-800/70 text-center py-6">
+                          Le graphique apparaîtra dès que vos premiers hizb seront validés par votre professeur.
+                        </p>
+                      ) : (
+                        <div className="h-64 w-full">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={progressChartData} margin={{ top: 5, right: 10, bottom: 5, left: -10 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#e7d9b8" />
+                              <XAxis dataKey="date" stroke="#92400e" fontSize={11} />
+                              <YAxis stroke="#92400e" fontSize={11} domain={[0, TOTAL_HIZB]} />
+                              <Tooltip contentStyle={{ background: "#fdf8ef", border: "1px solid #15803d", borderRadius: 8 }} />
+                              <Legend wrapperStyle={{ fontSize: 12 }} />
+                              <Line type="monotone" dataKey="memorisés" stroke="#15803d" strokeWidth={2} dot={{ r: 3 }} />
+                              <Line type="monotone" dataKey="restants" stroke="#b45309" strokeWidth={2} dot={{ r: 3 }} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
 
                   <Accordion type="single" collapsible className="space-y-2">
                     {monthlyPlan.map((m) => (
