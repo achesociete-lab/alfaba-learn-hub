@@ -453,8 +453,70 @@ export default function Hifz() {
                       <h4 className="font-semibold text-emerald-800 text-sm">Avant/après Fajr → SABAQ</h4>
                     </div>
                     <p className="text-sm text-gray-700">Mémoriser les nouvelles pages · Répéter 10×</p>
-                    <p className="text-xs text-amber-800/70 mt-1">
-                      Durée estimée selon le programme de l'élève : <strong>{pacePerDay > 0 ? `${pacePerDay} pages/jour` : 
+                    <p className="text-xs text-amber-800/70 mt-1">Durée estimée selon le programme de l'élève : <strong>{pacePerDay > 0 ? `${pacePerDay} pages/jour` : "—"}</strong></p>
+                  </div>
+                  <div className="border-l-4 border-amber-500 pl-4 py-2 bg-amber-50/30 rounded-r">
+                    <div className="flex items-center gap-2 mb-1"><Sunrise className="h-4 w-4 text-amber-700" /><h4 className="font-semibold text-amber-800 text-sm">Dhuha (milieu de matinée) → SABAQ PARA</h4></div>
+                    <p className="text-sm text-gray-700">Réciter les 7 derniers jours sans mushaf</p>
+                    <p className="text-xs text-amber-800/70 mt-1">Durée estimée : <strong>20 à 30 minutes</strong></p>
+                  </div>
+                  <div className="border-l-4 border-violet-500 pl-4 py-2 bg-violet-50/30 rounded-r">
+                    <div className="flex items-center gap-2 mb-1"><Sun className="h-4 w-4 text-violet-700" /><h4 className="font-semibold text-violet-800 text-sm">Avant Asr → DHOR</h4></div>
+                    <p className="text-sm text-gray-700">1 hizb ancien en rotation · Mushaf autorisé</p>
+                    <p className="text-xs text-amber-800/70 mt-1">Durée estimée : <strong>15 à 20 minutes</strong></p>
+                  </div>
+                  <div className="border-l-4 border-amber-700 pl-4 py-2 bg-amber-50/30 rounded-r">
+                    <div className="flex items-center gap-2 mb-1"><Moon className="h-4 w-4 text-amber-800" /><h4 className="font-semibold text-amber-900 text-sm">Maghrib / Isha → TEST EN SALAT</h4></div>
+                    <p className="text-sm text-gray-700">Réciter les versets mémorisés dans la prière</p>
+                    <p className="text-xs text-emerald-700 mt-1 italic">"Le meilleur test de solidité du hifd"</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-emerald-200 bg-emerald-50/40">
+                <CardHeader>
+                  <CardTitle className="text-emerald-800 text-base">🕌 Le Vendredi — Jour sans nouvelle mémorisation</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-gray-700 space-y-2">
+                  <p>Pas de Sabaq ce jour.</p>
+                  <ul className="list-disc list-inside space-y-1 text-xs text-gray-600">
+                    <li>Révision complète de la semaine</li>
+                    <li>Lecture d'Al-Kahf entière</li>
+                    <li>Salat de nuit avec les versets mémorisés</li>
+                  </ul>
+                </CardContent>
+              </Card>
+
+              <Card className="border-emerald-200">
+                <CardHeader>
+                  <CardTitle className="text-emerald-800 text-base">📈 Comment grandit le Dhor mois après mois</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="relative pl-6 space-y-6">
+                    <div className="absolute left-2 top-2 bottom-2 w-0.5 bg-emerald-200" />
+                    {[
+                      { step: 1, label: `Mois 1–3`, desc: "Hizb déjà mémorisés uniquement (acquis avant programme)", color: "bg-emerald-600" },
+                      { step: 2, label: `Mois 4–6`, desc: "+ nouveaux hizb validés ajoutés à la rotation", color: "bg-amber-500" },
+                      { step: 3, label: `Mois 7–${config?.duration_months ? `fin mémorisation (${config.duration_months} mois)` : "fin mémorisation"}`, desc: "Rotation complète en parallèle", color: "bg-violet-500" },
+                      { step: 4, label: "Phase révision", desc: "3 à 6 hizb par jour — consolidation finale", color: "bg-amber-700" },
+                    ].map((item) => (
+                      <div key={item.step} className="relative">
+                        <div className={`absolute -left-6 top-0.5 h-4 w-4 rounded-full ${item.color} ring-4 ring-white`} />
+                        <h5 className="font-semibold text-emerald-800 text-sm">{item.label}</h5>
+                        <p className="text-xs text-gray-600">{item.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="text-center space-y-3 py-6">
+                <p className="text-2xl font-arabic text-emerald-700 leading-relaxed">اللَّهُمَّ انْفَعْنِي بِمَا عَلَّمْتَنِي</p>
+                <p className="text-sm text-amber-800/80 italic">"Ô Allah, fais-moi profiter de ce que Tu m'as enseigné"</p>
+              </div>
+            </TabsContent>
+
+            {/* ─── Réserver ─── */}
             <TabsContent value="reserver" className="mt-6 space-y-4">
               <Card className="border-emerald-200">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0">
