@@ -356,11 +356,37 @@ export default function Hifz() {
                 <CardContent className="space-y-2">
                   {sessions.length === 0 && <p className="text-sm text-amber-800/70">Aucune réservation pour le moment.</p>}
                   {sessions.map((s) => (
-                    <div key={s.id} className="flex items-center justify-between text-sm p-2 rounded bg-emerald-50/50">
-                      <span>{format(parseISO(s.session_date), "d MMM yyyy", { locale: fr })} · {s.session_time.slice(0,5)}</span>
-                      <Badge variant="outline" className="border-emerald-700 text-emerald-800">{s.status}</Badge>
+                    <div key={s.id} className="p-3 rounded bg-emerald-50/50 space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-medium">{format(parseISO(s.session_date), "d MMM yyyy", { locale: fr })} · {s.session_time.slice(0,5)}</span>
+                        <Badge
+                          variant="outline"
+                          className={
+                            s.status === "confirmee" ? "border-emerald-700 text-emerald-800 bg-emerald-100" :
+                            s.status === "annulee" ? "border-red-600 text-red-700 bg-red-50" :
+                            s.status === "effectuee" ? "border-amber-700 text-amber-800 bg-amber-50" :
+                            "border-amber-700 text-amber-800"
+                          }
+                        >
+                          {s.status === "en_attente" ? "En attente" : s.status === "confirmee" ? "Confirmée ✅" : s.status === "annulee" ? "Annulée" : s.status === "effectuee" ? "Effectuée" : s.status}
+                        </Badge>
+                      </div>
+                      {s.status === "confirmee" && s.meet_link && (
+                        <a
+                          href={s.meet_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-2 w-full bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-medium py-2 px-3 rounded transition"
+                        >
+                          🎥 Rejoindre la séance Google Meet
+                        </a>
+                      )}
+                      {s.status === "confirmee" && !s.meet_link && (
+                        <p className="text-xs text-amber-800/70 italic">Le lien Meet sera ajouté par votre professeur.</p>
+                      )}
                     </div>
                   ))}
+
                 </CardContent>
               </Card>
             </TabsContent>
