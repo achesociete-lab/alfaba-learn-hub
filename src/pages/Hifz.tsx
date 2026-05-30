@@ -92,6 +92,8 @@ export default function Hifz() {
   const [bookingMessage, setBookingMessage] = useState("");
   const [bookingType, setBookingType] = useState<HifzSessionType>("sabaq");
   const [bookingJuz, setBookingJuz] = useState<number>(1);
+  const [pagesFrom, setPagesFrom] = useState<number | "">("");
+  const [pagesTo, setPagesTo] = useState<number | "">("");
   const [booking, setBooking] = useState(false);
 
 
@@ -264,12 +266,14 @@ export default function Hifz() {
   const confirmBooking = async () => {
     if (!user || !selectedSlot) return;
     setBooking(true);
+    const pageRange = pagesFrom !== "" && pagesTo !== "" ? `[Pages ${pagesFrom}–${pagesTo}]` : null;
+    const notesEleve = [pageRange, bookingMessage.trim() || null].filter(Boolean).join(" ") || null;
     const insertData: any = {
       student_id: user.id,
       session_date: selectedSlot.slot_date,
       session_time: selectedSlot.start_time,
       status: "en_attente",
-      notes_eleve: bookingMessage || null,
+      notes_eleve: notesEleve,
       session_type: bookingType,
     };
     if (bookingType === "khatm_partiel") insertData.juz_number = bookingJuz;
@@ -288,6 +292,7 @@ export default function Hifz() {
       date: format(parseISO(selectedSlot.slot_date), "EEEE d MMMM yyyy", { locale: fr }),
       time: selectedSlot.start_time.slice(0, 5),
       message: bookingMessage,
+      pageRange: pageRange ?? null,
       sessionType: bookingType,
       sessionTypeLabel: `${typeInfo.icon} ${typeInfo.label}`,
       juzNumber: bookingType === "khatm_partiel" ? bookingJuz : null,
@@ -299,6 +304,7 @@ export default function Hifz() {
 
     setBooking(false); setSelectedSlot(null); setSelectedDay(null);
     setBookingMessage(""); setBookingType("sabaq"); setBookingJuz(1);
+    setPagesFrom(""); setPagesTo("");
     toast({ title: "Réservation enregistrée ✓", description: "Vous recevrez un email de confirmation." });
     fetchAll();
   };
@@ -881,6 +887,42 @@ export default function Hifz() {
                     <p className="text-xs text-amber-700">Juz {bookingJuz} sélectionné</p>
                   </div>
                 )}
+
+                {bookingType !== "khatm_partiel" && (
+                  <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 space-y-2">
+                    <Label className="text-emerald-800 text-sm font-semibold">
+                      Pages prévues <span className="text-gray-400 font-normal">(optionnel)</span>
+                    </Label>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500 shrink-0">De la page</span>
+                        <Input
+                          type="number" min={1} max={604}
+                          value={pagesFrom}
+                          onChange={(e) => setPagesFrom(e.target.value ? Math.min(604, Math.max(1, +e.target.value)) : "")}
+                          placeholder="ex: 105"
+                          className="bg-white h-9 w-28 text-sm"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500 shrink-0">à la page</span>
+                        <Input
+                          type="number" min={1} max={604}
+                          value={pagesTo}
+                          onChange={(e) => setPagesTo(e.target.value ? Math.min(604, Math.max(1, +e.target.value)) : "")}
+                          placeholder="ex: 109"
+                          className="bg-white h-9 w-28 text-sm"
+                        />
+                      </div>
+                      {pagesFrom !== "" && pagesTo !== "" && +pagesTo >= +pagesFrom && (
+                        <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2 py-1 rounded-lg">
+                          {+pagesTo - +pagesFrom + 1} page{+pagesTo - +pagesFrom > 0 ? "s" : ""}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-400">Le Coran compte 604 pages — 1 hizb ≈ 10 pages</p>
+                  </div>
+                )}
               </section>
 
               {/* ② Choisir un créneau */}
@@ -988,6 +1030,9 @@ export default function Hifz() {
                         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest px-1">À venir</p>
                         {upcomingSessions.map((s) => {
                           const ti = getSessionType(s.session_type);
+                          const pageMatch = s.notes_eleve?.match(/^\[Pages (\d+–\d+)\]\s*/);
+                          const pages = pageMatch ? pageMatch[1] : null;
+                          const userNote = pageMatch ? s.notes_eleve!.slice(pageMatch[0].length) : s.notes_eleve;
                           return (
                             <div key={s.id} className={`p-4 rounded-xl border-2 border-l-4 ${STATUS_CARD[s.status] ?? "border-gray-200 bg-white"} ${STATUS_BORDER[s.status] ?? "border-l-gray-300"} space-y-2`}>
                               <div className="flex items-start justify-between flex-wrap gap-2">
@@ -995,12 +1040,18 @@ export default function Hifz() {
                                   <Badge className={`${ti.badgeBg} ${ti.badgeText} border-0`}>
                                     {ti.icon} {ti.label}{s.session_type === "khatm_partiel" && s.juz_number ? ` · Juz ${s.juz_number}` : ""}
                                   </Badge>
+                                  {pages && (
+                                    <Badge variant="outline" className="border-emerald-300 text-emerald-700 text-xs">
+                                      📖 p. {pages}
+                                    </Badge>
+                                  )}
                                   <span className="text-sm font-semibold text-gray-800">
                                     {format(parseISO(s.session_date), "EEEE d MMM", { locale: fr })} · {s.session_time.slice(0,5)}
                                   </span>
                                 </div>
                                 <span className="text-xs font-medium text-gray-500">{STATUS_LABEL[s.status] ?? s.status}</span>
                               </div>
+                              {userNote && <p className="text-xs text-gray-500 italic">"{userNote}"</p>}
                               {s.status === "confirmee" && s.meet_link && (
                                 <a href={/^https?:\/\//i.test(s.meet_link) ? s.meet_link : `https://${s.meet_link}`}
                                   target="_blank" rel="noopener noreferrer"
@@ -1153,6 +1204,9 @@ export default function Hifz() {
                   <div>
                     <p className="font-bold">{bookingTi.label}{bookingType === "khatm_partiel" ? ` — Juz ${bookingJuz}` : ""}</p>
                     <p className="text-xs text-gray-500">{bookingTi.long}</p>
+                    {pagesFrom !== "" && pagesTo !== "" && bookingType !== "khatm_partiel" && (
+                      <p className="text-xs font-semibold text-emerald-700 mt-1">📖 Pages {pagesFrom}–{pagesTo} ({+pagesTo - +pagesFrom + 1} pages)</p>
+                    )}
                   </div>
                 </div>
               </div>
