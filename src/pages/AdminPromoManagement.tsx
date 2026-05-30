@@ -31,11 +31,11 @@ export default function AdminPromoManagement() {
   }, []);
 
   const fetchPromoCodes = async () => {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('promo_codes')
       .select('*')
       .order('created_at', { ascending: false });
-    if (!error) setPromoCodes(data || []);
+    if (!error) setPromoCodes((data as PromoCode[] | null) || []);
     setLoading(false);
   };
 
@@ -45,7 +45,7 @@ export default function AdminPromoManagement() {
       return;
     }
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('promo_codes')
       .insert({
         code: newCode.toUpperCase(),
@@ -67,12 +67,12 @@ export default function AdminPromoManagement() {
   };
 
   const togglePromoCode = async (id: string, active: boolean) => {
-    await supabase.from('promo_codes').update({ active: !active }).eq('id', id);
+    await (supabase as any).from('promo_codes').update({ active: !active }).eq('id', id);
     fetchPromoCodes();
   };
 
   const deletePromoCode = async (id: string) => {
-    await supabase.from('promo_codes').delete().eq('id', id);
+    await (supabase as any).from('promo_codes').delete().eq('id', id);
     toast.success('Code supprimé');
     fetchPromoCodes();
   };

@@ -2,7 +2,7 @@ import { lazy, Suspense } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Lazy load the heavy Coran page
-const CoranContent = lazy(() => import('./CoranContent'));
+const CoranContent = lazy(() => import('@/pages/Coran'));
 
 export function LazyCoranContent() {
   return (

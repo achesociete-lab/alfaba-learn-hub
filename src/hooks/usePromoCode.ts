@@ -21,31 +21,32 @@ export function usePromoCode() {
 
     setLoading(true);
     try {
-      const { data } = await supabase
-        .from("promo_codes" as any)
+      const { data } = await (supabase as any)
+        .from("promo_codes")
         .select("id, discount_percentage, usage_count, usage_limit, expiry_date, active")
         .eq("code", code.toUpperCase().trim())
         .maybeSingle();
+      const promo = data as { id: string; discount_percentage: number; usage_count: number; usage_limit: number; expiry_date: string; active: boolean } | null;
 
-      if (!data) {
+      if (!promo) {
         const r: PromoResult = { valid: false, discount: 0, codeId: null, message: "Code invalide" };
         setResult(r);
         return r;
       }
 
-      if (!data.active) {
+      if (!promo.active) {
         const r: PromoResult = { valid: false, discount: 0, codeId: null, message: "Ce code n'est plus actif" };
         setResult(r);
         return r;
       }
 
-      if (new Date(data.expiry_date) < new Date()) {
+      if (new Date(promo.expiry_date) < new Date()) {
         const r: PromoResult = { valid: false, discount: 0, codeId: null, message: "Ce code a expiré" };
         setResult(r);
         return r;
       }
 
-      if (data.usage_count >= data.usage_limit) {
+      if (promo.usage_count >= promo.usage_limit) {
         const r: PromoResult = { valid: false, discount: 0, codeId: null, message: "Ce code a atteint sa limite d'utilisation" };
         setResult(r);
         return r;
@@ -53,9 +54,9 @@ export function usePromoCode() {
 
       const r: PromoResult = {
         valid: true,
-        discount: data.discount_percentage,
-        codeId: data.id,
-        message: `${data.discount_percentage}% de réduction appliquée !`,
+        discount: promo.discount_percentage,
+        codeId: promo.id,
+        message: `${promo.discount_percentage}% de réduction appliquée !`,
       };
       setResult(r);
       return r;

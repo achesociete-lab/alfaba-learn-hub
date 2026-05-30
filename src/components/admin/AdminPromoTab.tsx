@@ -35,11 +35,11 @@ export default function AdminPromoTab() {
   }, []);
 
   const fetchPromoCodes = async () => {
-    const { data } = await supabase
-      .from("promo_codes" as any)
+    const { data } = await (supabase as any)
+      .from("promo_codes")
       .select("*")
       .order("created_at", { ascending: false });
-    setPromoCodes((data as PromoCode[]) || []);
+    setPromoCodes((data as PromoCode[] | null) || []);
     setLoading(false);
   };
 
@@ -55,7 +55,7 @@ export default function AdminPromoTab() {
       return;
     }
     setCreating(true);
-    const { error } = await supabase.from("promo_codes" as any).insert({
+    const { error } = await (supabase as any).from("promo_codes").insert({
       code: newCode.toUpperCase(),
       discount_percentage: discount,
       usage_limit: limit,
@@ -73,13 +73,13 @@ export default function AdminPromoTab() {
   };
 
   const togglePromoCode = async (id: string, active: boolean) => {
-    await supabase.from("promo_codes" as any).update({ active: !active }).eq("id", id);
+    await (supabase as any).from("promo_codes").update({ active: !active }).eq("id", id);
     setPromoCodes((prev) => prev.map((p) => p.id === id ? { ...p, active: !active } : p));
   };
 
   const deletePromoCode = async (id: string, code: string) => {
     if (!confirm(`Supprimer le code "${code}" ?`)) return;
-    await supabase.from("promo_codes" as any).delete().eq("id", id);
+    await (supabase as any).from("promo_codes").delete().eq("id", id);
     setPromoCodes((prev) => prev.filter((p) => p.id !== id));
     toast.success("Code supprimé");
   };

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/use-admin";
+import { useSubscription } from "@/hooks/use-subscription";
 import { supabase } from "@/integrations/supabase/client";
 
 const publicNavLinks = [
@@ -14,12 +15,12 @@ const publicNavLinks = [
   { to: "/coran", label: "Coran" },
 ];
 
-const getAuthNavLinks = (level: string | null, typeEleve: string | null) => {
+const getAuthNavLinks = (level: string | null, typeEleve: string | null, hasHifzAccess = false) => {
   // Présentiel : accès limité
   if (typeEleve === "presentiel") {
-    return [
-      { to: "/cours-presentiel", label: "Espace Élève" },
-    ];
+    const links = [{ to: "/cours-presentiel", label: "Espace Élève" }];
+    if (hasHifzAccess) links.push({ to: "/hifz", label: "📖 Hifd" });
+    return links;
   }
 
   const links: { to: string; label: string }[] = [
@@ -46,6 +47,7 @@ const Navbar = () => {
   const location = useLocation();
   const { user, signOut } = useAuth();
   const { isAdmin } = useIsAdmin();
+  const { isHifz, isPremium } = useSubscription();
   const [userLevel, setUserLevel] = useState<string | null>(null);
   const [userType, setUserType] = useState<string | null>(null);
 
@@ -60,7 +62,7 @@ const Navbar = () => {
       });
   }, [user]);
 
-  const navLinks = user ? getAuthNavLinks(userLevel, userType) : publicNavLinks;
+  const navLinks = user ? getAuthNavLinks(userLevel, userType, isHifz || isPremium) : publicNavLinks;
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
