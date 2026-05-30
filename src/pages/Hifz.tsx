@@ -171,16 +171,6 @@ export default function Hifz() {
 
   const daysOfMonth = useMemo(() => eachDayOfInterval({ start: startOfMonth(calMonth), end: endOfMonth(calMonth) }), [calMonth]);
 
-  if (authLoading || subLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#fdf8ef]">
-        <Loader2 className="h-8 w-8 animate-spin text-emerald-700" />
-      </div>
-    );
-  }
-  if (!user) return null;
-  if (plan !== "premium") return <UpsellPage />;
-
   const handleGenerate = async () => {
     if (!user) return;
     setSubmitting(true);
@@ -262,6 +252,16 @@ export default function Hifz() {
     const last = evs.sort((a, b) => new Date(b.evaluated_at).getTime() - new Date(a.evaluated_at).getTime())[0];
     return { type: t, hizbCount, avg, lastDate: last?.evaluated_at };
   });
+
+  if (authLoading || subLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#fdf8ef]">
+        <Loader2 className="h-8 w-8 animate-spin text-emerald-700" />
+      </div>
+    );
+  }
+  if (!user) return null;
+  if (plan !== "premium") return <UpsellPage />;
 
   return (
     <div className="min-h-screen bg-[#fdf8ef]">
