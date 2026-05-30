@@ -82,9 +82,47 @@ export default function Hifz() {
   useEffect(() => { if (user && plan === "premium") fetchAll(); }, [user, plan]);
 
   // ─── Derived data (hooks must run before any conditional return) ───
-  const remainingHizb = config ? Math.max(0, TOTAL_HIZB - (config.hizb_already_memo || 0)) : 0;
+  // Hizb validés (status='valide') uniques — viennent s'ajouter aux hizb déjà mémorisés initialement
+  const validatedHizbNumbers = useMemo(() => {
+    const set = new Set<number>();
+    for (const e of evaluations) if (e.status === "valide") set.add(e.hizb_number);
+    return set;
+  }, [evaluations]);
+  const initialMemo = config?.hizb_already_memo || 0;
+  const totalMemorized = Math.min(TOTAL_HIZB, initialMemo + validatedHizbNumbers.size);
+  const remainingHizb = config ? Math.max(0, TOTAL_HIZB - totalMemorized) : 0;
   const remainingPages = remainingHizb * PAGES_PER_HIZB;
+  const memorizedPages = totalMemorized * PAGES_PER_HIZB;
+  const progressPercent = Math.round((totalMemorized / TOTAL_HIZB) * 100);
   const pacePerDay = config ? +(remainingPages / Math.max(1, config.duration_months * 30)).toFixed(2) : 0;
+
+  // Données du graphique : cumul des hizb validés au fil du temps
+  const progressChartData = useMemo(() => {
+    const valids = evaluations
+      .filter((e) => e.status === "valide")
+      .sort((a, b) => new Date(a.evaluated_at).getTime() - new Date(b.evaluated_at).getTime());
+    const seen = new Set<number>();
+    const byDate: Record<string, number> = {};
+    for (const e of valids) {
+      if (seen.has(e.hizb_number)) continue;
+      seen.add(e.hizb_number);
+      const d = format(parseISO(e.evaluated_at), "dd/MM");
+      byDate[d] = seen.size + initialMemo;
+    }
+    const points = Object.entries(byDate).map(([date, memorized]) => ({
+      date,
+      memorisés: memorized,
+      restants: TOTAL_HIZB - memorized,
+    }));
+    if (points.length === 0 && config) {
+      points.push({
+        date: format(parseISO(config.start_date), "dd/MM"),
+        memorisés: initialMemo,
+        restants: TOTAL_HIZB - initialMemo,
+      });
+    }
+    return points;
+  }, [evaluations, initialMemo, config]);
 
   const monthlyPlan = useMemo(() => {
     if (!config) return [] as { month: number; label: string; hizb: number[] }[];
