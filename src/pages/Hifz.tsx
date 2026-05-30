@@ -373,7 +373,7 @@ export default function Hifz() {
                       </div>
                       {s.status === "confirmee" && s.meet_link && (
                         <a
-                          href={s.meet_link}
+                          href={/^https?:\/\//i.test(s.meet_link) ? s.meet_link : `https://${s.meet_link}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center justify-center gap-2 w-full bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-medium py-2 px-3 rounded transition"
