@@ -38,6 +38,8 @@ type Evaluation = { id: string; session_id: string | null; hizb_number: number; 
 
 const NIVEAU_LABEL: Record<string, string> = { mediocre: "Médiocre", moyen: "Moyen", bon: "Bon", excellent: "Excellent" };
 const NIVEAU_WEIGHT: Record<string, number> = { mediocre: 1, moyen: 2, bon: 3, excellent: 4 };
+// Spaced repetition intervals in days per niveau
+const REVISION_INTERVALS: Record<string, number> = { mediocre: 1, moyen: 3, bon: 7, excellent: 14 };
 const NIVEAU_BG: Record<string, string> = { excellent: "bg-emerald-700", bon: "bg-emerald-500", moyen: "bg-amber-500", mediocre: "bg-red-500" };
 const STATUS_LABEL: Record<string, string> = { en_attente: "En attente", confirmee: "Confirmée", effectuee: "Effectuée", annulee: "Annulée" };
 const STATUS_CARD: Record<string, string> = {
@@ -194,6 +196,29 @@ export default function Hifz() {
   }, [slots]);
 
   const daysOfMonth = useMemo(() => eachDayOfInterval({ start: startOfMonth(calMonth), end: endOfMonth(calMonth) }), [calMonth]);
+
+  const revisionSchedule = useMemo(() => {
+    // Latest evaluation per hizb (any session type)
+    const latestByHizb: Record<number, Evaluation> = {};
+    for (const e of evaluations) {
+      const cur = latestByHizb[e.hizb_number];
+      if (!cur || new Date(e.evaluated_at) > new Date(cur.evaluated_at)) latestByHizb[e.hizb_number] = e;
+    }
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    return Object.entries(latestByHizb)
+      .map(([h, ev]) => {
+        const niveau = ev.niveau || "moyen";
+        const interval = REVISION_INTERVALS[niveau] ?? 7;
+        const last = new Date(ev.evaluated_at); last.setHours(0, 0, 0, 0);
+        const daysSince = Math.floor((today.getTime() - last.getTime()) / 86_400_000);
+        const daysUntilDue = interval - daysSince;
+        return { hizb: +h, niveau, daysUntilDue, lastEval: ev, isDue: daysUntilDue <= 0 };
+      })
+      .sort((a, b) => a.daysUntilDue - b.daysUntilDue);
+  }, [evaluations]);
+
+  const dueNow = revisionSchedule.filter(r => r.isDue);
+  const upcomingRevision = revisionSchedule.filter(r => !r.isDue).slice(0, 5);
 
   const dashboardByType = HIFZ_SESSION_TYPES.map((t) => {
     const evs = evaluations.filter((e) => (e.session_type || "sabaq") === t.value);
@@ -473,6 +498,73 @@ export default function Hifz() {
                       </div>
                     </CardContent>
                   </Card>
+
+                  {/* Révision prioritaire */}
+                  {revisionSchedule.length > 0 && (
+                    <Card className={`shadow-sm border-2 ${dueNow.length > 0 ? "border-amber-300 bg-amber-50/40" : "border-emerald-200 bg-emerald-50/30"}`}>
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-base flex items-center gap-2 text-emerald-800">
+                            <CalendarCheck className="h-4 w-4" /> Révision prioritaire du jour
+                          </CardTitle>
+                          {dueNow.length > 0 ? (
+                            <Badge className="bg-amber-500 text-white">{dueNow.length} à réviser</Badge>
+                          ) : (
+                            <Badge className="bg-emerald-600 text-white">✓ À jour</Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-amber-800/60 mt-0.5">
+                          Basé sur la répétition espacée : Médiocre = J+1 · Moyen = J+3 · Bon = J+7 · Excellent = J+14
+                        </p>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {dueNow.length === 0 ? (
+                          <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-100/60 border border-emerald-200">
+                            <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+                            <div>
+                              <p className="text-sm font-medium text-emerald-800">Tous vos hizb sont à jour !</p>
+                              <p className="text-xs text-emerald-700/70">Le prochain hizb à réviser est le <strong>Hizb {upcomingRevision[0]?.hizb}</strong> dans {upcomingRevision[0]?.daysUntilDue} jour{upcomingRevision[0]?.daysUntilDue > 1 ? "s" : ""}.</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
+                            {dueNow.map((r) => {
+                              const overdue = Math.abs(r.daysUntilDue);
+                              const isVeryLate = overdue > 3;
+                              return (
+                                <div key={r.hizb} className={`flex items-center justify-between px-3 py-2 rounded-lg border ${isVeryLate ? "border-red-200 bg-red-50/60" : "border-amber-200 bg-amber-50/60"}`}>
+                                  <div className="flex items-center gap-2.5">
+                                    <span className={`text-sm font-bold ${isVeryLate ? "text-red-700" : "text-amber-800"}`}>Hizb {r.hizb}</span>
+                                    <Badge className={`text-[10px] border-0 ${NIVEAU_BG[r.niveau] ?? "bg-gray-400"} text-white`}>
+                                      {NIVEAU_LABEL[r.niveau] ?? r.niveau}
+                                    </Badge>
+                                  </div>
+                                  <span className={`text-xs font-semibold ${isVeryLate ? "text-red-600" : "text-amber-700"}`}>
+                                    {overdue === 0 ? "Aujourd'hui" : `${overdue}j de retard`}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {upcomingRevision.length > 0 && (
+                          <div>
+                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">À venir</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {upcomingRevision.map((r) => (
+                                <div key={r.hizb} className="flex items-center gap-1.5 px-2.5 py-1 bg-white border border-gray-200 rounded-lg text-xs text-gray-500">
+                                  <span className="font-medium text-gray-700">Hizb {r.hizb}</span>
+                                  <span>·</span>
+                                  <span>dans {r.daysUntilDue}j</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
 
                   {/* Chart */}
                   <Card className="border-emerald-200 shadow-sm">
