@@ -12,7 +12,18 @@ interface EvalItem {
 interface Props {
   studentName?: string
   date?: string
+  sessionType?: string
+  sessionTypeLabel?: string
   evaluations?: EvalItem[]
+}
+
+const TYPE_COLOR: Record<string, string> = {
+  sabaq: '#15803d',
+  sabaq_para: '#b45309',
+  dhor: '#7c3aed',
+  rattrapage: '#dc2626',
+  test_surprise: '#ea580c',
+  khatm_partiel: '#1e3a8a',
 }
 
 const NIVEAU: Record<string, string> = {
