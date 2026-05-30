@@ -1,0 +1,9 @@
+ALTER TABLE public.hifz_sessions
+  ADD COLUMN IF NOT EXISTS session_type TEXT NOT NULL DEFAULT 'sabaq',
+  ADD COLUMN IF NOT EXISTS juz_number INTEGER NULL;
+
+ALTER TABLE public.hifz_evaluations
+  ADD COLUMN IF NOT EXISTS session_type TEXT NOT NULL DEFAULT 'sabaq',
+  ADD COLUMN IF NOT EXISTS ready_to_advance BOOLEAN NULL,
+  ADD COLUMN IF NOT EXISTS without_mushaf BOOLEAN NULL,
+  ADD COLUMN IF NOT EXISTS fluidity TEXT NULL;
