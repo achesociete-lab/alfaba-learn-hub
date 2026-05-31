@@ -73,8 +73,15 @@ Deno.serve(async (req) => {
       pacePerDay = +(remaining * 10 / Math.max(1, config.duration_months * 30)).toFixed(2);
     }
 
-    const { error: emailError } = await supabase.functions.invoke("send-transactional-email", {
-      body: {
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const resp = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${anonKey}`,
+        apikey: anonKey,
+      },
+      body: JSON.stringify({
         templateName: "hifz-daily-reminder",
         recipientEmail: email,
         idempotencyKey: `hifz-daily-${userId}-${today}`,
@@ -84,14 +91,17 @@ Deno.serve(async (req) => {
           totalMemorized,
           programmeUrl: "https://alfasl.fr/hifz",
         },
-      },
+      }),
     });
 
-    if (emailError) {
-      console.error(`Failed to send to ${email}:`, emailError);
+    if (!resp.ok) {
+      const errText = await resp.text();
+      console.error(`Failed to send to ${email}: ${resp.status} ${errText}`);
     } else {
+      await resp.text();
       sent++;
     }
+
   }
 
   console.log(`Daily Hifz reminder: ${sent}/${subscriptions.length} sent for ${today}`);
