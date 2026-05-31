@@ -406,7 +406,6 @@ export default function Hifz() {
             <TabsList className="flex w-full bg-white border border-emerald-100 rounded-xl h-auto p-1 gap-0.5 shadow-sm overflow-x-auto mb-2">
               {[
                 { value: "programme", icon: Target, label: "Programme" },
-{ value: "methode", icon: BookOpen, label: "Méthode" },
                 { value: "reserver", icon: CalendarDays, label: "Réserver", badge: upcomingCount || undefined },
                 { value: "historique", icon: Clock, label: "Historique" },
               ].map(({ value, icon: Icon, label, badge }) => (
