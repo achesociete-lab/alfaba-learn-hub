@@ -95,6 +95,7 @@ export default function Hifz() {
   const [pagesFrom, setPagesFrom] = useState<number | "">("");
   const [pagesTo, setPagesTo] = useState<number | "">("");
   const [booking, setBooking] = useState(false);
+  const [cancelling, setCancelling] = useState<string | null>(null);
 
 
   useEffect(() => {
@@ -242,6 +243,25 @@ export default function Hifz() {
     });
   }, [sessions]);
 
+
+  const handleCancel = async (sessionId: string, isConfirmed: boolean) => {
+    const msg = isConfirmed
+      ? "Cette séance est confirmée par le professeur. Voulez-vous vraiment l'annuler ?"
+      : "Annuler cette réservation ?";
+    if (!confirm(msg)) return;
+    setCancelling(sessionId);
+    const { error } = await supabase
+      .from("hifz_sessions")
+      .update({ status: "annulee" })
+      .eq("id", sessionId);
+    setCancelling(null);
+    if (error) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Réservation annulée" });
+      fetchAll();
+    }
+  };
 
   const handleGenerate = async () => {
     if (!user) return;
@@ -546,41 +566,40 @@ export default function Hifz() {
                     </CardContent>
                   </Card>
 
-                  {/* Révision prioritaire */}
-                  {revisionSchedule.length > 0 && (
-                    <Card className={`shadow-sm border-2 ${dueNow.length > 0 ? "border-amber-300 bg-amber-50/40" : "border-emerald-200 bg-emerald-50/30"}`}>
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-base flex items-center gap-2 text-emerald-800">
-                            <CalendarCheck className="h-4 w-4" /> Révision prioritaire du jour
-                          </CardTitle>
-                          {dueNow.length > 0 ? (
-                            <Badge className="bg-amber-500 text-white">{dueNow.length} à réviser</Badge>
-                          ) : (
-                            <Badge className="bg-emerald-600 text-white">✓ À jour</Badge>
-                          )}
-                        </div>
-                        <p className="text-xs text-amber-800/60 mt-0.5">
-                          Basé sur la répétition espacée : Médiocre = J+1 · Moyen = J+3 · Bon = J+7 · Excellent = J+14
-                        </p>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        {dueNow.length === 0 ? (
-                          <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-100/60 border border-emerald-200">
-                            <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
-                            <div>
-                              <p className="text-sm font-medium text-emerald-800">Tous vos hizb sont à jour !</p>
-                              <p className="text-xs text-emerald-700/70">Le prochain hizb à réviser est le <strong>Hizb {upcomingRevision[0]?.hizb}</strong> dans {upcomingRevision[0]?.daysUntilDue} jour{upcomingRevision[0]?.daysUntilDue > 1 ? "s" : ""}.</p>
-                            </div>
+                  {/* À faire aujourd'hui */}
+                  <Card className="shadow-sm border-2 border-emerald-200 bg-gradient-to-br from-white to-emerald-50/40">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2 text-emerald-800">
+                        <CalendarCheck className="h-4 w-4" /> À faire aujourd'hui
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+
+                      {/* Apprentissage du jour */}
+                      {pacePerDay > 0 && (
+                        <div className="flex items-center gap-3 p-3 rounded-xl border border-emerald-200 bg-emerald-50/60">
+                          <span className="text-xl shrink-0">📗</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-emerald-800">Nouvel apprentissage</p>
+                            <p className="text-xs text-emerald-700/70">{pacePerDay} page{pacePerDay > 1 ? "s" : ""} à mémoriser · Répéter 10× la nuit, 5× le matin</p>
                           </div>
-                        ) : (
-                          <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
+                        </div>
+                      )}
+
+                      {/* Révisions dues */}
+                      {dueNow.length > 0 ? (
+                        <div className="space-y-1.5">
+                          <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide px-1">
+                            {dueNow.length} hizb à réviser
+                          </p>
+                          <div className="max-h-44 overflow-y-auto space-y-1 pr-1">
                             {dueNow.map((r) => {
                               const overdue = Math.abs(r.daysUntilDue);
                               const isVeryLate = overdue > 3;
                               return (
                                 <div key={r.hizb} className={`flex items-center justify-between px-3 py-2 rounded-lg border ${isVeryLate ? "border-red-200 bg-red-50/60" : "border-amber-200 bg-amber-50/60"}`}>
-                                  <div className="flex items-center gap-2.5">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-base">📘</span>
                                     <span className={`text-sm font-bold ${isVeryLate ? "text-red-700" : "text-amber-800"}`}>Hizb {r.hizb}</span>
                                     <Badge className={`text-[10px] border-0 ${NIVEAU_BG[r.niveau] ?? "bg-gray-400"} text-white`}>
                                       {NIVEAU_LABEL[r.niveau] ?? r.niveau}
@@ -593,25 +612,45 @@ export default function Hifz() {
                               );
                             })}
                           </div>
-                        )}
-
-                        {upcomingRevision.length > 0 && (
+                        </div>
+                      ) : revisionSchedule.length > 0 ? (
+                        <div className="flex items-center gap-3 p-3 rounded-xl border border-emerald-200 bg-emerald-50/60">
+                          <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
                           <div>
-                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">À venir</p>
-                            <div className="flex flex-wrap gap-1.5">
-                              {upcomingRevision.map((r) => (
-                                <div key={r.hizb} className="flex items-center gap-1.5 px-2.5 py-1 bg-white border border-gray-200 rounded-lg text-xs text-gray-500">
-                                  <span className="font-medium text-gray-700">Hizb {r.hizb}</span>
-                                  <span>·</span>
-                                  <span>dans {r.daysUntilDue}j</span>
-                                </div>
-                              ))}
-                            </div>
+                            <p className="text-sm font-medium text-emerald-800">Révisions à jour ✓</p>
+                            {upcomingRevision[0] && (
+                              <p className="text-xs text-emerald-700/70">Prochain : Hizb {upcomingRevision[0].hizb} dans {upcomingRevision[0].daysUntilDue} jour{upcomingRevision[0].daysUntilDue > 1 ? "s" : ""}</p>
+                            )}
                           </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  )}
+                        </div>
+                      ) : null}
+
+                      {/* Prochaine séance */}
+                      {upcomingSessions[0] && (() => {
+                        const ns = upcomingSessions[0];
+                        const ti = getSessionType(ns.session_type);
+                        return (
+                          <div className={`flex items-center gap-3 p-3 rounded-xl border-2 ${STATUS_CARD[ns.status] ?? "border-gray-200 bg-white"}`}>
+                            <span className="text-xl shrink-0">{ti.icon}</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-gray-800">Prochaine séance</p>
+                              <p className="text-xs text-gray-500 capitalize">
+                                {format(parseISO(ns.session_date), "EEEE d MMM", { locale: fr })} · {ns.session_time.slice(0,5)} · {ti.label}
+                              </p>
+                            </div>
+                            {ns.status === "confirmee" && ns.meet_link && (
+                              <a href={/^https?:\/\//i.test(ns.meet_link) ? ns.meet_link : `https://${ns.meet_link}`}
+                                target="_blank" rel="noopener noreferrer"
+                                className="shrink-0 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-medium rounded-lg transition-colors">
+                                🎥 Rejoindre
+                              </a>
+                            )}
+                          </div>
+                        );
+                      })()}
+
+                    </CardContent>
+                  </Card>
 
                   {/* Chart */}
                   <Card className="border-emerald-200 shadow-sm">
@@ -868,7 +907,7 @@ export default function Hifz() {
                 {bookingType === "khatm_partiel" && (
                   <div className="p-4 rounded-xl bg-amber-50 border-2 border-amber-200 space-y-2">
                     <Label className="text-amber-800 text-sm font-semibold">Quel juz ? (1 à 30)</Label>
-                    <div className="grid grid-cols-6 sm:grid-cols-10 gap-1.5">
+                    <div className="grid grid-cols-5 sm:grid-cols-10 gap-1.5">
                       {Array.from({ length: 30 }, (_, i) => i + 1).map((j) => (
                         <button
                           key={j}
@@ -893,25 +932,25 @@ export default function Hifz() {
                     <Label className="text-emerald-800 text-sm font-semibold">
                       Pages prévues <span className="text-gray-400 font-normal">(optionnel)</span>
                     </Label>
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:flex-wrap">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-500 shrink-0">De la page</span>
+                        <span className="text-xs text-gray-500 shrink-0">De</span>
                         <Input
                           type="number" min={1} max={604}
                           value={pagesFrom}
                           onChange={(e) => setPagesFrom(e.target.value ? Math.min(604, Math.max(1, +e.target.value)) : "")}
-                          placeholder="ex: 105"
-                          className="bg-white h-9 w-28 text-sm"
+                          placeholder="p. 105"
+                          className="bg-white h-9 w-full sm:w-24 text-sm"
                         />
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-500 shrink-0">à la page</span>
+                        <span className="text-xs text-gray-500 shrink-0">à</span>
                         <Input
                           type="number" min={1} max={604}
                           value={pagesTo}
                           onChange={(e) => setPagesTo(e.target.value ? Math.min(604, Math.max(1, +e.target.value)) : "")}
-                          placeholder="ex: 109"
-                          className="bg-white h-9 w-28 text-sm"
+                          placeholder="p. 109"
+                          className="bg-white h-9 w-full sm:w-24 text-sm"
                         />
                       </div>
                       {pagesFrom !== "" && pagesTo !== "" && +pagesTo >= +pagesFrom && (
@@ -1053,6 +1092,13 @@ export default function Hifz() {
                         {s.status === "confirmee" && !s.meet_link && (
                           <p className="text-xs text-amber-700/80 italic">Le lien Meet sera ajouté par votre professeur avant la séance.</p>
                         )}
+                        <button
+                          onClick={() => handleCancel(s.id, s.status === "confirmee")}
+                          disabled={cancelling === s.id}
+                          className="text-xs text-red-500 hover:text-red-700 hover:underline disabled:opacity-50 transition-colors text-left"
+                        >
+                          {cancelling === s.id ? "Annulation…" : "Annuler la réservation"}
+                        </button>
                       </div>
                     );
                   })}
