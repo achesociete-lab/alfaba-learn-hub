@@ -16,7 +16,7 @@ interface Props {
 const TYPE_META: Record<string, { color: string; icon: string; tip: string }> = {
   sabaq:         { color: '#15803d', icon: '📗', tip: 'Préparez votre nouvelle portion mémorisée — récitez-la 5× ce soir.' },
   sabaq_para:    { color: '#b45309', icon: '📙', tip: 'Révisez vos hizb des dernières semaines sans regarder le mushaf.' },
-  dhor:          { color: '#7c3aed', icon: '📘', tip: 'Le professeur tirera un ancien hizb au hasard — préparez-vous sur l'ensemble.' },
+  dhor:          { color: '#7c3aed', icon: '📘', tip: "Le professeur tirera un ancien hizb au hasard — préparez-vous sur l'ensemble." },
   rattrapage:    { color: '#dc2626', icon: '🔴', tip: 'Retravaillez les hizb notés Médiocre ou À retravailler.' },
   test_surprise: { color: '#ea580c', icon: '⚡', tip: 'Session test — le professeur choisira. Préparez-vous sur tout !' },
   khatm_partiel: { color: '#1e3a8a', icon: '🏁', tip: 'Préparez votre fluidité pour réciter le Juz en intégralité sans interruption.' },

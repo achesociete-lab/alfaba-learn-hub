@@ -67,9 +67,15 @@ Deno.serve(async (req) => {
     const dateFormatted = format(new Date(session.session_date + "T12:00:00"), "EEEE d MMMM yyyy", { locale: fr });
     const timeFormatted = session.session_time?.slice(0, 5);
 
-    // Invoke send-transactional-email with idempotency key
-    const { error: emailError } = await supabase.functions.invoke("send-transactional-email", {
-      body: {
+    const anonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ1cXVkcml6aHJybnhvd2lyaXRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NzY5MDIsImV4cCI6MjA5MDA1MjkwMn0.S6Y-FK4TY_H6zH7_ebSEXZh3Lluzn6HXoTcv9i1M0gE";
+    const resp = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${anonKey}`,
+        apikey: anonKey,
+      },
+      body: JSON.stringify({
         templateName: "hifz-session-reminder",
         recipientEmail: email,
         idempotencyKey: `hifz-reminder-${session.id}-${tomorrow}`,
@@ -83,15 +89,18 @@ Deno.serve(async (req) => {
           juzNumber: session.juz_number ?? null,
           pageRange,
         },
-      },
+      }),
     });
 
-    if (emailError) {
-      console.error(`Failed to send reminder for session ${session.id}:`, emailError);
+    if (!resp.ok) {
+      const errText = await resp.text();
+      console.error(`Failed to send reminder for session ${session.id}: ${resp.status} ${errText}`);
     } else {
+      await resp.text();
       sent++;
       console.log(`Reminder sent to ${email} for session ${session.id}`);
     }
+
   }
 
   return new Response(JSON.stringify({ sent, total: sessions.length, date: tomorrow }), {
