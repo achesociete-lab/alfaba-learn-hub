@@ -4,7 +4,7 @@ import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameD
 import { fr } from "date-fns/locale";
 import {
   Crown, Lock, Sparkles, BookOpen, CheckCircle2, Loader2, ChevronRight,
-  Moon, Sunrise, Sun, GraduationCap, RotateCcw, Target,
+  RotateCcw, Target,
   CalendarDays, Clock, TrendingUp, Star, AlertCircle, CalendarCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
