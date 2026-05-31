@@ -726,7 +726,7 @@ export default function Hifz() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {[
-                  { icon: BookOpen, color: "emerald", title: "📗 Nouvelle leçon", arabic: "سَبَق", badge: "Chaque jour", desc: "La nouvelle portion mémorisée, récitée devant le professeur. Répéter 10× la nuit, 5× le matin.", note: "Ne jamais avancer sans validation du professeur." },
+                  { icon: BookOpen, color: "emerald", title: "📗 Nouvel apprentissage", arabic: "سَبَق", badge: "Chaque jour", desc: "La nouvelle portion mémorisée, récitée devant le professeur. Répéter 10× la nuit, 5× le matin.", note: "Ne jamais avancer sans validation du professeur." },
                   { icon: RotateCcw, color: "amber", title: "📙 Révision récente", arabic: "سَبَق پارَه", badge: "Chaque matin", desc: "Les hizb des dernières semaines récités sans mushaf — le filet de sécurité contre l'oubli.", note: null },
                   { icon: GraduationCap, color: "violet", title: "📘 Révision ancienne", arabic: "دَوْر", badge: "Rotation quotidienne", desc: "Les anciens hizb. 1 hizb/jour minimum — le pilier du hifd à vie.", note: null },
                 ].map(({ icon: Icon, color, title, arabic, badge, desc, note }) => (
@@ -753,7 +753,7 @@ export default function Hifz() {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {[
-                    { icon: Moon, color: "emerald", time: "Avant Fajr", session: "Nouvelle leçon", desc: `Nouvelles pages · Répéter 10×${pacePerDay > 0 ? ` · ${pacePerDay} pages/jour` : ""}` },
+                    { icon: Moon, color: "emerald", time: "Avant Fajr", session: "Nouvel apprentissage", desc: `Nouvelles pages · Répéter 10×${pacePerDay > 0 ? ` · ${pacePerDay} pages/jour` : ""}` },
                     { icon: Sunrise, color: "amber", time: "Dhuha", session: "Révision récente", desc: "Dernières semaines sans mushaf · 20-30 min" },
                     { icon: Sun, color: "violet", time: "Avant Asr", session: "Révision ancienne", desc: "1 ancien hizb · 15-20 min" },
                     { icon: Moon, color: "amber", time: "Maghrib / Isha", session: "TEST EN SALAT", desc: "Réciter les nouvelles pages dans la prière" },

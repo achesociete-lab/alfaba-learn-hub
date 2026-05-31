@@ -409,7 +409,7 @@ const PricingSection = () => {
             <ul className="flex-1 grid sm:grid-cols-2 gap-x-6 gap-y-2.5">
               {[
                 "Programme de mémorisation personnalisé",
-                "Suivi des 60 hizb (Nouvelle leçon · Révision récente · Révision ancienne)",
+                "Suivi des 60 hizb (Nouvel apprentissage · Révision récente · Révision ancienne)",
                 "Séances individuelles avec le professeur",
                 "Calendrier de réservation en ligne",
                 "Évaluations par séance avec compte-rendu",

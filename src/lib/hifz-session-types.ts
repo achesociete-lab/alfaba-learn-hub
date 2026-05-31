@@ -22,7 +22,7 @@ export const HIFZ_SESSION_TYPES: Array<{
 }> = [
   {
     value: "sabaq",
-    label: "Nouvelle leçon",
+    label: "Nouvel apprentissage",
     icon: "📗",
     short: "Nouvelle mémorisation",
     description: "Je récite mon nouveau hizb mémorisé depuis notre dernière session",
