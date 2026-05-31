@@ -21,6 +21,7 @@ import { template as hifzSessionConfirmed } from './hifz-session-confirmed.tsx'
 import { template as hifzSessionCancelled } from './hifz-session-cancelled.tsx'
 import { template as hifzSessionEvaluated } from './hifz-session-evaluated.tsx'
 import { template as hifzSessionReminder } from './hifz-session-reminder.tsx'
+import { template as hifzDailyReminder } from './hifz-daily-reminder.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'admin-pending-signup': adminPendingSignup,
@@ -35,4 +36,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'hifz-session-cancelled': hifzSessionCancelled,
   'hifz-session-evaluated': hifzSessionEvaluated,
   'hifz-session-reminder': hifzSessionReminder,
+  'hifz-daily-reminder': hifzDailyReminder,
 }
