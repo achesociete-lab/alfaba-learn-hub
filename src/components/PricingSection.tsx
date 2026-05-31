@@ -409,12 +409,12 @@ const PricingSection = () => {
             <ul className="flex-1 grid sm:grid-cols-2 gap-x-6 gap-y-2.5">
               {[
                 "Programme de mémorisation personnalisé",
-                "Suivi des 60 hizb (Sabaq · Sabaq Para · Dhor)",
+                "Suivi des 60 hizb (Nouvelle leçon · Révision récente · Révision ancienne)",
                 "Séances individuelles avec le professeur",
                 "Calendrier de réservation en ligne",
-                "Évaluations Khatm partiel & complet",
+                "Évaluations par séance avec compte-rendu",
                 "Tableau de bord de progression détaillé",
-                "Méthode pakistanaise éprouvée",
+                "Programme de mémorisation structuré en 3 piliers",
                 "Accès complet au module Hifz",
               ].map((f) => (
                 <li key={f} className="flex items-start gap-2 text-sm text-emerald-900">

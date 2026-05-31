@@ -720,15 +720,15 @@ export default function Hifz() {
             ═══════════════════════════════════════════════════════════════ */}
             <TabsContent value="methode" className="mt-4 space-y-5">
               <div className="text-center space-y-1 py-2">
-                <h2 className="text-2xl font-bold text-emerald-800">La méthode pakistanaise du Hifd</h2>
-                <p className="text-sm text-amber-800/70">3 piliers · 6 types de sessions · Un hifd solide à vie</p>
+                <h2 className="text-2xl font-bold text-emerald-800">Notre programme de mémorisation</h2>
+                <p className="text-sm text-amber-800/70">3 piliers · 6 types de séances · Un hifd solide à vie</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {[
-                  { icon: BookOpen, color: "emerald", title: "📗 SABAQ", arabic: "سَبَق", badge: "Chaque jour", desc: "La nouvelle leçon. Répéter 10× la nuit, 5× le matin.", note: "Ne jamais avancer sans validation du professeur." },
-                  { icon: RotateCcw, color: "amber", title: "📙 SABAQ PARA", arabic: "سَبَق پارَه", badge: "Chaque matin", desc: "Les hizb des 7 derniers jours récités sans mushaf. Le filet de sécurité.", note: null },
-                  { icon: GraduationCap, color: "violet", title: "📘 DHOR", arabic: "دَوْر", badge: "Rotation quotidienne", desc: "Les anciens hizb. 1 hizb/jour minimum. Le pilier du hifd à vie.", note: null },
+                  { icon: BookOpen, color: "emerald", title: "📗 Nouvelle leçon", arabic: "سَبَق", badge: "Chaque jour", desc: "La nouvelle portion mémorisée, récitée devant le professeur. Répéter 10× la nuit, 5× le matin.", note: "Ne jamais avancer sans validation du professeur." },
+                  { icon: RotateCcw, color: "amber", title: "📙 Révision récente", arabic: "سَبَق پارَه", badge: "Chaque matin", desc: "Les hizb des dernières semaines récités sans mushaf — le filet de sécurité contre l'oubli.", note: null },
+                  { icon: GraduationCap, color: "violet", title: "📘 Révision ancienne", arabic: "دَوْر", badge: "Rotation quotidienne", desc: "Les anciens hizb. 1 hizb/jour minimum — le pilier du hifd à vie.", note: null },
                 ].map(({ icon: Icon, color, title, arabic, badge, desc, note }) => (
                   <Card key={title} className={`border-l-4 border-l-${color}-500 border-${color}-100 bg-${color}-50/30`}>
                     <CardHeader className="pb-2">
@@ -753,9 +753,9 @@ export default function Hifz() {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {[
-                    { icon: Moon, color: "emerald", time: "Avant Fajr", session: "SABAQ", desc: `Nouvelles pages · Répéter 10×${pacePerDay > 0 ? ` · ${pacePerDay} pages/jour` : ""}` },
-                    { icon: Sunrise, color: "amber", time: "Dhuha", session: "SABAQ PARA", desc: "7 derniers jours sans mushaf · 20-30 min" },
-                    { icon: Sun, color: "violet", time: "Avant Asr", session: "DHOR", desc: "1 ancien hizb · 15-20 min" },
+                    { icon: Moon, color: "emerald", time: "Avant Fajr", session: "Nouvelle leçon", desc: `Nouvelles pages · Répéter 10×${pacePerDay > 0 ? ` · ${pacePerDay} pages/jour` : ""}` },
+                    { icon: Sunrise, color: "amber", time: "Dhuha", session: "Révision récente", desc: "Dernières semaines sans mushaf · 20-30 min" },
+                    { icon: Sun, color: "violet", time: "Avant Asr", session: "Révision ancienne", desc: "1 ancien hizb · 15-20 min" },
                     { icon: Moon, color: "amber", time: "Maghrib / Isha", session: "TEST EN SALAT", desc: "Réciter les nouvelles pages dans la prière" },
                   ].map(({ icon: Icon, color, time, session, desc }) => (
                     <div key={session} className={`flex items-start gap-3 p-3 rounded-xl border-l-4 border-l-${color}-${color === "violet" ? "500" : "400"} bg-${color}-50/30 border border-${color}-100`}>
@@ -1254,7 +1254,7 @@ function UpsellPage() {
             "Programme de mémorisation personnalisé",
             "Suivi des 60 hizb par type de session",
             "Réservation de séances avec le professeur",
-            "Méthode pakistanaise éprouvée (Sabaq · Dhor)",
+            "Programme de mémorisation structuré en 3 piliers",
             "Évaluations et notes de progression",
             "Tableau de bord avec graphiques",
           ].map((f) => (
