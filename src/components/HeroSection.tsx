@@ -1,81 +1,117 @@
 import { motion } from "framer-motion";
-import { ArrowRight, Star } from "lucide-react";
+import { ArrowRight, BookOpen, Star, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import heroImg from "@/assets/hero-pattern.jpg";
 
 const HeroSection = () => (
-  <section className="relative min-h-[90vh] flex items-center overflow-hidden">
-    {/* Background */}
-    <div className="absolute inset-0">
-      <img src={heroImg} alt="" className="w-full h-full object-cover opacity-20" />
-      <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/80 to-background" />
+  <section className="relative min-h-screen flex items-center overflow-hidden bg-gradient-to-br from-emerald-950 via-emerald-900 to-amber-950">
+    {/* Background pattern */}
+    <div className="absolute inset-0 opacity-5">
+      <div className="absolute top-20 left-10 text-[200px] font-arabic text-white leading-none select-none">ق</div>
+      <div className="absolute bottom-20 right-10 text-[200px] font-arabic text-white leading-none select-none">ر</div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[300px] font-arabic text-white leading-none select-none opacity-30">آن</div>
     </div>
 
-    <div className="container mx-auto px-4 relative z-10 pt-20">
-      <div className="max-w-3xl mx-auto text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-        >
-          <div className="inline-flex items-center gap-2 bg-primary/10 px-4 py-1.5 rounded-full mb-6">
-            <Star className="h-4 w-4 text-gold" />
-            <span className="text-sm font-medium text-primary">Méthode ALFASL</span>
-          </div>
+    {/* Gold top bar */}
+    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400" />
 
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-6 text-foreground">
-            Apprenez l'arabe{" "}
-            <span className="text-gradient-gold">avec passion</span>
-          </h1>
+    <div className="container mx-auto px-4 relative z-10 pt-24 pb-16">
+      <div className="max-w-4xl mx-auto text-center">
 
-          <p className="font-arabic text-3xl sm:text-4xl text-primary/70 mb-4">
-            بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ
-          </p>
-
-          <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
-            Une plateforme complète pour francophones : cours en présentiel, 
-            e-learning, devoirs, notes et suivi de progression. Niveaux 1 & 2.
-          </p>
-        </motion.div>
-
+        {/* Badge */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.3 }}
-          className="flex flex-col sm:flex-row gap-4 justify-center"
+          transition={{ duration: 0.5 }}
+          className="inline-flex items-center gap-2 bg-amber-400/20 border border-amber-400/30 px-4 py-1.5 rounded-full mb-8"
         >
-          <Button asChild size="lg" className="gradient-emerald border-0 text-primary-foreground text-base px-8">
-            <Link to="/niveau-1">
-              Commencer gratuitement <ArrowRight className="ml-2 h-5 w-5" />
+          <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
+          <span className="text-sm font-semibold text-amber-300 tracking-wide uppercase">Programme Hifd al-Qur'ān</span>
+        </motion.div>
+
+        {/* Headline */}
+        <motion.h1
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.1 }}
+          className="text-4xl sm:text-6xl lg:text-7xl font-bold leading-tight mb-6 text-white"
+        >
+          Mémorisez le Coran
+          <br />
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-yellow-200">
+            avec un professeur dédié
+          </span>
+        </motion.h1>
+
+        {/* Arabic */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.3 }}
+          className="font-arabic text-3xl sm:text-4xl text-amber-200/80 mb-6 leading-relaxed"
+        >
+          «&nbsp;خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ&nbsp;»
+        </motion.p>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+          className="text-sm text-amber-300/60 italic mb-10"
+        >
+          « Le meilleur d'entre vous est celui qui apprend le Coran et l'enseigne. » — Bukhari
+        </motion.p>
+
+        {/* Sub */}
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="text-lg sm:text-xl text-emerald-100/80 mb-10 max-w-2xl mx-auto leading-relaxed"
+        >
+          <strong className="text-white">2 séances individuelles par semaine</strong> avec votre professeur.
+          Suivi personnalisé, évaluations après chaque séance, progression tracée hizb par hizb.
+        </motion.p>
+
+        {/* CTAs */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.5 }}
+          className="flex flex-col sm:flex-row gap-4 justify-center mb-14"
+        >
+          <Button asChild size="lg" className="bg-gradient-to-r from-amber-400 to-yellow-300 hover:from-amber-500 hover:to-yellow-400 text-emerald-950 font-bold text-base px-10 h-14 rounded-2xl shadow-2xl shadow-amber-500/30 border-0">
+            <Link to="/hifz">
+              Démarrer le programme <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
           </Button>
-          <Button asChild size="lg" variant="outline" className="border-primary/30 text-foreground hover:bg-primary/5 text-base px-8">
+          <Button asChild size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10 text-base px-10 h-14 rounded-2xl bg-white/5 backdrop-blur-sm">
             <Link to="/tarifs">Voir les tarifs</Link>
           </Button>
         </motion.div>
 
+        {/* Stats */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.8 }}
-          className="mt-12 flex justify-center gap-8 text-sm text-muted-foreground"
+          className="grid grid-cols-3 gap-6 max-w-lg mx-auto"
         >
-          <div className="text-center">
-            <p className="text-2xl font-bold text-foreground">2</p>
-            <p>Niveaux</p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-foreground">50+</p>
-            <p>Leçons</p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-foreground">100%</p>
-            <p>Francophone</p>
-          </div>
+          {[
+            { value: "8", label: "séances / mois" },
+            { value: "60", label: "hizb suivis" },
+            { value: "100%", label: "individuel" },
+          ].map(({ value, label }) => (
+            <div key={label} className="text-center">
+              <p className="text-3xl font-bold text-amber-300">{value}</p>
+              <p className="text-xs text-emerald-300/70 mt-1 uppercase tracking-wide">{label}</p>
+            </div>
+          ))}
         </motion.div>
       </div>
     </div>
+
+    {/* Bottom fade */}
+    <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent" />
   </section>
 );
 

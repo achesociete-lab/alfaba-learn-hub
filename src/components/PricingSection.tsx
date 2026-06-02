@@ -21,9 +21,9 @@ export const STRIPE_PLANS = {
     price: 15,
   },
   hifz: {
-    price_id: "price_1TcnOxKXotpKdlTPQEXQRneJ",
+    price_id: "price_1TdpPgKXotpKdlTPO74jJFBb",
     product_id: "prod_Uc1RFQIChfKUTr",
-    price: 25,
+    price: 79,
   },
 } as const;
 
@@ -384,11 +384,11 @@ const PricingSection = () => {
                 <h3 className="font-display text-lg font-bold text-emerald-900">Hifd al-Qur'ān</h3>
               </div>
               <div className="mb-1">
-                <span className="text-3xl font-extrabold text-emerald-800">25€</span>
+                <span className="text-3xl font-extrabold text-emerald-800">79€</span>
                 <span className="text-sm text-amber-800/70">/mois</span>
               </div>
               <p className="text-sm text-amber-800/80 mb-5">
-                Programme complet de mémorisation du Coran avec suivi personnalisé par votre professeur.
+                2 séances individuelles par semaine avec votre professeur. Programme complet de mémorisation avec suivi personnalisé.
               </p>
               <Button
                 onClick={() => handleCheckout("hifz")}

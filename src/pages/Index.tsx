@@ -1,23 +1,23 @@
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
-import LevelsOverview from "@/components/LevelsOverview";
-import AIProfessorSection from "@/components/AIProfessorSection";
-import FeaturesSection from "@/components/FeaturesSection";
-import QuranBanner from "@/components/QuranBanner";
-import TestimonialsSection from "@/components/TestimonialsSection";
-import HomePricingSection from "@/components/HomePricingSection";
+import HifzPillarsSection from "@/components/HifzPillarsSection";
+import HifzWhySection from "@/components/HifzWhySection";
+import ArabicLevelsSection from "@/components/ArabicLevelsSection";
+import HifzPricingCTA from "@/components/HifzPricingCTA";
+import HifzFaqSection from "@/components/HifzFaqSection";
+import HifzFinalCTA from "@/components/HifzFinalCTA";
 import Footer from "@/components/Footer";
 
 const Index = () => (
   <div className="min-h-screen bg-background">
     <Navbar />
     <HeroSection />
-    <LevelsOverview />
-    <AIProfessorSection />
-    <FeaturesSection />
-    <QuranBanner />
-    <TestimonialsSection />
-    <HomePricingSection />
+    <HifzPillarsSection />
+    <HifzWhySection />
+    <ArabicLevelsSection />
+    <HifzPricingCTA />
+    <HifzFaqSection />
+    <HifzFinalCTA />
     <Footer />
   </div>
 );

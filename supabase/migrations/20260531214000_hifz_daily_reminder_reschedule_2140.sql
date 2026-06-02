@@ -1,5 +1,5 @@
--- Rappel quotidien de révision pour tous les élèves Hifz/Premium actifs
--- Déclenché chaque jour à 19h40 UTC (= 21h40 heure de Paris en été / CEST)
+-- Reprogramme le rappel quotidien Hifd à 21h35 heure de Paris (19h35 UTC en été / CEST)
+SELECT cron.unschedule('hifz-daily-reminder');
 SELECT cron.schedule(
   'hifz-daily-reminder',
   '40 19 * * *',
