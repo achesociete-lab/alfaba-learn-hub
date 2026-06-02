@@ -86,6 +86,9 @@ export default function Hifz() {
   const [duration, setDuration] = useState(16);
   const [submitting, setSubmitting] = useState(false);
 
+  // Khatm programme
+  const [khatmMonths, setKhatmMonths] = useState<number | null>(null);
+
   const [calMonth, setCalMonth] = useState(startOfMonth(new Date()));
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
@@ -397,6 +400,7 @@ export default function Hifz() {
             <TabsList className="flex w-full bg-white border border-emerald-100 rounded-xl h-auto p-1 gap-0.5 shadow-sm overflow-x-auto mb-2">
               {[
                 { value: "programme", icon: Target, label: "Programme" },
+                { value: "khatm", icon: BookOpen, label: "Khatm" },
                 { value: "reserver", icon: CalendarDays, label: "Réserver", badge: upcomingCount || undefined },
                 { value: "historique", icon: Clock, label: "Historique" },
               ].map(({ value, icon: Icon, label, badge }) => (
@@ -1038,6 +1042,147 @@ export default function Hifz() {
                   })}
                 </Accordion>
               ) : null}
+            </TabsContent>
+
+            {/* ═══════════════════════════════════════════════════════════════
+                KHATM
+            ═══════════════════════════════════════════════════════════════ */}
+            <TabsContent value="khatm" className="mt-4 space-y-5">
+
+              {/* Header */}
+              <div className="rounded-2xl bg-gradient-to-br from-emerald-950 to-emerald-800 p-6 text-center space-y-3">
+                <p className="font-arabic text-4xl text-amber-300 leading-relaxed">خَتْم</p>
+                <h2 className="text-xl font-bold text-white">La Clôture en Lecture</h2>
+                <p className="text-emerald-200/80 text-sm max-w-xs mx-auto">
+                  Complétez régulièrement la lecture intégrale du Coran depuis le mushaf — c'est le pilier du contact quotidien avec le Livre d'Allah.
+                </p>
+              </div>
+
+              {/* Pourquoi le mushaf */}
+              <Card className="border-amber-200 bg-amber-50/50 shadow-sm">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-amber-800 text-base flex items-center gap-2">
+                    📖 Pourquoi lire depuis le mushaf ?
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm text-amber-900/80">
+                  <div className="flex items-start gap-3 p-3 rounded-xl bg-white border border-amber-100">
+                    <span className="text-xl shrink-0">👁️</span>
+                    <div>
+                      <p className="font-semibold text-amber-900">Le regard sur les mots est une ibâda</p>
+                      <p className="text-xs text-amber-800/60 mt-0.5">Regarder le Coran est en soi un acte d'adoration — les yeux participent à la mémorisation.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-3 rounded-xl bg-white border border-amber-100">
+                    <span className="text-xl shrink-0">🧠</span>
+                    <div>
+                      <p className="font-semibold text-amber-900">La mémoire visuelle ancre le hifd</p>
+                      <p className="text-xs text-amber-800/60 mt-0.5">Votre cerveau photographie les pages. Lire depuis le mushaf renforce l'ancrage visuel de ce que vous avez mémorisé.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-3 rounded-xl bg-white border border-amber-100">
+                    <span className="text-xl shrink-0">🔗</span>
+                    <div>
+                      <p className="font-semibold text-amber-900">Un lien quotidien ininterrompu</p>
+                      <p className="text-xs text-amber-800/60 mt-0.5">Les Salaf recommandaient de ne jamais laisser passer une journée sans ouvrir le mushaf. C'est ce contact régulier qui protège le cœur.</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Hadith */}
+              <Card className="border-emerald-200 shadow-sm">
+                <CardContent className="pt-5 space-y-3">
+                  <p className="font-arabic text-lg text-emerald-800 text-right leading-relaxed dir-rtl">
+                    «&nbsp;الَّذِي يَقْرَأُ الْقُرْآنَ وَهُوَ مَاهِرٌ بِهِ مَعَ السَّفَرَةِ الْكِرَامِ الْبَرَرَةِ&nbsp;»
+                  </p>
+                  <p className="text-sm text-gray-600 italic text-center">
+                    « Celui qui lit le Coran avec aisance sera avec les nobles scribes vertueux. »
+                  </p>
+                  <p className="text-xs text-gray-400 text-center">— Bukhari & Muslim</p>
+                </CardContent>
+              </Card>
+
+              {/* Générateur de programme */}
+              <Card className="border-emerald-200 shadow-sm">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-emerald-800 text-base">📅 Mon programme de clôture</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm text-gray-600">En combien de mois souhaitez-vous clôturer le Coran en lecture ?</p>
+
+                  <div className="flex gap-2 flex-wrap">
+                    {[1, 2, 3, 4, 6].map((m) => (
+                      <button
+                        key={m}
+                        onClick={() => setKhatmMonths(m)}
+                        className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${
+                          khatmMonths === m
+                            ? "bg-emerald-700 text-white border-emerald-700 shadow"
+                            : "bg-white text-emerald-800 border-emerald-200 hover:border-emerald-400"
+                        }`}
+                      >
+                        {m} mois
+                      </button>
+                    ))}
+                  </div>
+
+                  {khatmMonths && (() => {
+                    const totalPages = 604;
+                    const totalDays = khatmMonths * 30;
+                    const pagesPerDay = (totalPages / totalDays).toFixed(1);
+                    const juzPerDay = (30 / (khatmMonths * 30)).toFixed(2);
+                    const pagesPerSession = Math.ceil(totalPages / totalDays);
+                    const endDate = format(addMonths(new Date(), khatmMonths), "MMMM yyyy", { locale: fr });
+                    const color = khatmMonths === 1 ? "emerald" : khatmMonths <= 2 ? "amber" : "violet";
+                    return (
+                      <div className={`rounded-2xl border-2 border-${color}-200 bg-${color}-50/40 p-5 space-y-4`}>
+                        <p className={`text-xs font-bold uppercase tracking-widest text-${color}-700`}>Votre programme</p>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          {[
+                            { label: "Pages / jour", value: pagesPerDay },
+                            { label: "Juz / jour", value: juzPerDay },
+                            { label: "Durée", value: `${khatmMonths} mois` },
+                            { label: "Fin estimée", value: endDate },
+                          ].map(({ label, value }) => (
+                            <div key={label} className="bg-white rounded-xl p-3 text-center border border-gray-100">
+                              <p className={`text-xl font-bold text-${color}-800 capitalize`}>{value}</p>
+                              <p className="text-xs text-gray-500 mt-0.5">{label}</p>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className={`p-4 rounded-xl bg-white border border-${color}-100 space-y-2`}>
+                          <p className={`text-sm font-bold text-${color}-800`}>📖 En pratique chaque jour</p>
+                          <ul className="space-y-1.5 text-sm text-gray-700">
+                            <li className="flex items-start gap-2"><CheckCircle2 className={`h-4 w-4 text-${color}-600 shrink-0 mt-0.5`} />Lisez <strong>{pagesPerSession} page{pagesPerSession > 1 ? "s" : ""}</strong> depuis votre mushaf</li>
+                            <li className="flex items-start gap-2"><CheckCircle2 className={`h-4 w-4 text-${color}-600 shrink-0 mt-0.5`} />Respectez l'ordre du Coran, de Al-Fatiha à An-Nas</li>
+                            <li className="flex items-start gap-2"><CheckCircle2 className={`h-4 w-4 text-${color}-600 shrink-0 mt-0.5`} />Ne sautez aucun jour — la régularité prime sur la quantité</li>
+                          </ul>
+                        </div>
+
+                        {khatmMonths === 1 && (
+                          <p className="text-xs text-emerald-700 font-medium text-center">⚡ Rythme intense — idéal pendant Ramadan ou les grandes vacances</p>
+                        )}
+                        {khatmMonths >= 4 && (
+                          <p className="text-xs text-violet-700 font-medium text-center">✅ Rythme doux — parfait en parallèle d'un programme de hifd actif</p>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
+
+              {/* Conseil du professeur */}
+              <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-amber-50 border-2 border-emerald-200 p-5 text-center space-y-2">
+                <p className="text-2xl">🤲</p>
+                <p className="text-sm font-semibold text-emerald-800">Le conseil du professeur</p>
+                <p className="text-sm text-emerald-700/80 max-w-sm mx-auto">
+                  Ne laissez jamais passer une journée sans ouvrir votre mushaf. Même 5 minutes suffisent. C'est la régularité, pas la quantité, qui construit le rapport au Coran.
+                </p>
+              </div>
+
             </TabsContent>
 
           </Tabs>

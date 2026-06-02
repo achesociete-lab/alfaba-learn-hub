@@ -334,6 +334,7 @@ function SessionsTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
 
     // Recrée le créneau pour le rendre à nouveau disponible
     if (s.session_date >= format(new Date(), "yyyy-MM-dd")) {
+      const { data: u } = await supabase.auth.getUser();
       await supabase.from("admin_hifz_slots").insert({
         slot_date: s.session_date,
         start_time: s.session_time,
@@ -341,6 +342,7 @@ function SessionsTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
           ? "00:00:00"
           : `${String(parseInt(s.session_time.slice(0, 2)) + 1).padStart(2, "0")}:00:00`,
         capacity: 1,
+        created_by: u.user?.id,
       });
     }
 
