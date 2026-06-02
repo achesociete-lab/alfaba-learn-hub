@@ -346,8 +346,11 @@ export default function Hifz() {
   // Does current calendar month have any available slots?
   const currentMonthHasSlots = daysOfMonth.some(d => !!slotsByDay[format(d, "yyyy-MM-dd")]?.length);
 
-  // Split sessions into upcoming and past
-  const upcomingSessions = sessions.filter(s => s.status === "en_attente" || s.status === "confirmee");
+  // Split sessions into upcoming and past — upcoming must be today or in the future
+  const today = format(new Date(), "yyyy-MM-dd");
+  const upcomingSessions = sessions.filter(s =>
+    (s.status === "en_attente" || s.status === "confirmee") && s.session_date >= today
+  );
   const pastSessions = sessions.filter(s => s.status === "effectuee" || s.status === "annulee");
 
   return (
@@ -523,7 +526,7 @@ export default function Hifz() {
                         <StatCard icon={BookOpen} label="Hizb mémorisés" value={`${totalMemorized}/${TOTAL_HIZB}`} color="emerald" />
                         <StatCard icon={Target} label="Hizb restants" value={remainingHizb} color="amber" />
                         <StatCard icon={TrendingUp} label="Pages restantes" value={remainingPages} color="amber" />
-                        <StatCard icon={CalendarCheck} label="Rythme" value={`${pacePerDay} p/j`} color="emerald" />
+                        <StatCard icon={CalendarCheck} label="Rythme" value={pacePerDay < 1 ? "< 1 p/j" : `${pacePerDay} p/j`} color="emerald" />
                       </div>
                       <div className="space-y-1.5">
                         <div className="flex justify-between text-xs text-amber-800/70">
@@ -564,7 +567,7 @@ export default function Hifz() {
                           <span className="text-xl shrink-0">📗</span>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold text-emerald-800">Nouvel apprentissage</p>
-                            <p className="text-xs text-emerald-700/70">{pacePerDay} page{pacePerDay > 1 ? "s" : ""} à mémoriser · Répéter 10× la nuit, 5× le matin</p>
+                            <p className="text-xs text-emerald-700/70">{pacePerDay < 1 ? "1 page minimum" : `${pacePerDay} page${pacePerDay > 1 ? "s" : ""}`} à mémoriser · Répéter 10× la nuit, 5× le matin</p>
                           </div>
                         </div>
                       )}
