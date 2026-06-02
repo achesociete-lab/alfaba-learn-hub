@@ -1,11 +1,11 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Check, Zap, Crown, BookOpen, Headphones, Clock, Loader2, Tag, X, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { usePromoCode } from "@/hooks/usePromoCode";
 
@@ -99,6 +99,82 @@ const stats = [
   { icon: Headphones, value: "60", label: "hizb suivis" },
 ];
 
+const TICKER_ITEMS = [
+  "📗 Cours d'arabe dès le niveau débutant",
+  "🌙 Programme Hifd — 2 séances individuelles / semaine",
+  "✅ Sans engagement · Résiliable à tout moment",
+  "🤖 Tuteur IA disponible 24h/24",
+  "📖 60 hizb suivis hizb par hizb",
+  "🎓 Professeur dédié pour votre mémorisation",
+  "🇫🇷 Entièrement en français",
+];
+
+const ROTATING_WORDS = ["l'arabe.", "le Coran.", "avec ALFASL."];
+
+function RotatingWord() {
+  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setIndex((i) => (i + 1) % ROTATING_WORDS.length), 2800);
+    return () => clearInterval(t);
+  }, []);
+  return (
+    <span className="relative inline-block min-w-[200px] text-left">
+      <AnimatePresence mode="wait">
+        <motion.span
+          key={index}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.4 }}
+          className="text-gradient-gold inline-block"
+        >
+          {ROTATING_WORDS[index]}
+        </motion.span>
+      </AnimatePresence>
+    </span>
+  );
+}
+
+function Ticker() {
+  const items = [...TICKER_ITEMS, ...TICKER_ITEMS];
+  return (
+    <div className="overflow-hidden bg-emerald-950 py-3 mb-10 -mx-4 sm:-mx-0 sm:rounded-xl">
+      <motion.div
+        className="flex gap-12 whitespace-nowrap"
+        animate={{ x: ["0%", "-50%"] }}
+        transition={{ duration: 28, repeat: Infinity, ease: "linear" }}
+      >
+        {items.map((item, i) => (
+          <span key={i} className="text-emerald-200 text-sm font-medium shrink-0">
+            {item}
+          </span>
+        ))}
+      </motion.div>
+    </div>
+  );
+}
+
+function CountUp({ target }: { target: number }) {
+  const [count, setCount] = useState(0);
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return;
+      observer.disconnect();
+      let start = 0;
+      const step = Math.ceil(target / 40);
+      const t = setInterval(() => {
+        start = Math.min(start + step, target);
+        setCount(start);
+        if (start >= target) clearInterval(t);
+      }, 30);
+    });
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [target]);
+  return <span ref={ref}>{count}</span>;
+}
+
 const faqs = [
   {
     q: "Puis-je changer de formule à tout moment ?",
@@ -183,29 +259,29 @@ const PricingSection = () => {
         <div className="text-center mb-6">
           <motion.span
             initial={{ opacity: 0, y: 10 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            animate={{ opacity: 1, y: 0 }}
             className="inline-block text-xs font-semibold tracking-widest uppercase text-primary mb-3"
           >
             Cours d'arabe & Hifd al-Qur'ān
           </motion.span>
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
             className="text-3xl sm:text-5xl font-bold text-foreground mb-4"
           >
-            Apprenez l'arabe.<br />Mémorisez le <span className="text-gradient-gold">Coran.</span>
+            Apprenez{" "}
+            <RotatingWord />
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
-            className="text-muted-foreground max-w-2xl mx-auto text-lg"
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-muted-foreground max-w-2xl mx-auto text-lg mb-8"
           >
             ALFASL propose des cours d'arabe en ligne pour francophones et un programme de mémorisation du Coran avec professeur dédié. Commencez gratuitement.
           </motion.p>
+          <Ticker />
         </div>
 
         {/* Promo code banner */}
@@ -263,7 +339,9 @@ const PricingSection = () => {
           {stats.map((s) => (
             <div key={s.label} className="text-center py-4">
               <s.icon className="h-5 w-5 text-primary mx-auto mb-1" />
-              <div className="text-2xl font-bold text-foreground">{s.value}</div>
+              <div className="text-2xl font-bold text-foreground">
+                <CountUp target={Number(s.value)} />
+              </div>
               <div className="text-xs text-muted-foreground">{s.label}</div>
             </div>
           ))}
