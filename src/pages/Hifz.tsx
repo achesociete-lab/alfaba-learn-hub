@@ -95,6 +95,7 @@ export default function Hifz() {
   const [pagesFrom, setPagesFrom] = useState<number | "">("");
   const [pagesTo, setPagesTo] = useState<number | "">("");
   const [booking, setBooking] = useState(false);
+  const [confirmedRepetition, setConfirmedRepetition] = useState(false);
   const [cancelling, setCancelling] = useState<string | null>(null);
 
 
@@ -1041,7 +1042,7 @@ export default function Hifz() {
       </div>
 
       {/* ─── Booking dialog ─── */}
-      <Dialog open={!!selectedSlot} onOpenChange={(o) => !o && setSelectedSlot(null)}>
+      <Dialog open={!!selectedSlot} onOpenChange={(o) => { if (!o) { setSelectedSlot(null); setConfirmedRepetition(false); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="text-emerald-800 text-lg">Confirmer la réservation</DialogTitle>
@@ -1081,11 +1082,41 @@ export default function Hifz() {
                   rows={3}
                 />
               </div>
+
+              {bookingType === "sabaq" && (
+                <button
+                  type="button"
+                  onClick={() => setConfirmedRepetition(!confirmedRepetition)}
+                  className={`w-full flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all ${
+                    confirmedRepetition
+                      ? "border-emerald-500 bg-emerald-50"
+                      : "border-amber-300 bg-amber-50"
+                  }`}
+                >
+                  <div className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                    confirmedRepetition ? "bg-emerald-600 border-emerald-600" : "border-amber-400 bg-white"
+                  }`}>
+                    {confirmedRepetition && <CheckCircle2 className="h-3.5 w-3.5 text-white" />}
+                  </div>
+                  <div>
+                    <p className={`text-sm font-semibold ${confirmedRepetition ? "text-emerald-800" : "text-amber-800"}`}>
+                      J'ai répété ma portion 50× (méthode Shankit)
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Obligatoire avant de présenter au professeur
+                    </p>
+                  </div>
+                </button>
+              )}
             </div>
           )}
           <DialogFooter className="gap-2 pt-2">
-            <Button variant="outline" onClick={() => setSelectedSlot(null)}>Annuler</Button>
-            <Button onClick={confirmBooking} disabled={booking} className="bg-emerald-700 hover:bg-emerald-800 text-white">
+            <Button variant="outline" onClick={() => { setSelectedSlot(null); setConfirmedRepetition(false); }}>Annuler</Button>
+            <Button
+              onClick={confirmBooking}
+              disabled={booking || (bookingType === "sabaq" && !confirmedRepetition)}
+              className="bg-emerald-700 hover:bg-emerald-800 text-white disabled:opacity-50"
+            >
               {booking ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Enregistrement…</> : "Confirmer la réservation"}
             </Button>
           </DialogFooter>

@@ -43,7 +43,7 @@ const HifzPillarsSection = () => (
       </motion.div>
 
       <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-        {pillars.map(({ icon, colorHex, arabic, title, desc, badge }, i) => (
+        {pillars.map(({ icon, colorHex, title, desc, badge }, i) => (
           <motion.div
             key={title}
             initial={{ opacity: 0, y: 30 }}
