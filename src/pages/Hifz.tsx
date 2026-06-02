@@ -88,8 +88,36 @@ export default function Hifz() {
 
   // Khatm programme
   const [khatmDays, setKhatmDays] = useState<number | null>(null);
-  const [khatmViewerPage, setKhatmViewerPage] = useState<number>(1);
-  const [khatmImgError, setKhatmImgError] = useState(false);
+
+  // Khatm suivi — persisté en localStorage
+  type KhatmRecord = { startDate: string; khatmDays: number; daysRead: string[] };
+  const KHATM_KEY = `khatm_${user?.id}`;
+  const loadKhatm = (): KhatmRecord | null => {
+    try { return JSON.parse(localStorage.getItem(KHATM_KEY) || "null"); } catch { return null; }
+  };
+  const [khatmRecord, setKhatmRecord] = useState<KhatmRecord | null>(() => loadKhatm());
+
+  const startKhatm = (days: number) => {
+    const rec: KhatmRecord = { startDate: format(new Date(), "yyyy-MM-dd"), khatmDays: days, daysRead: [] };
+    localStorage.setItem(KHATM_KEY, JSON.stringify(rec));
+    setKhatmRecord(rec);
+    setKhatmDays(days);
+  };
+
+  const markTodayRead = () => {
+    if (!khatmRecord) return;
+    const today = format(new Date(), "yyyy-MM-dd");
+    if (khatmRecord.daysRead.includes(today)) return;
+    const updated = { ...khatmRecord, daysRead: [...khatmRecord.daysRead, today] };
+    localStorage.setItem(KHATM_KEY, JSON.stringify(updated));
+    setKhatmRecord(updated);
+  };
+
+  const resetKhatm = () => {
+    localStorage.removeItem(KHATM_KEY);
+    setKhatmRecord(null);
+    setKhatmDays(null);
+  };
 
   const [calMonth, setCalMonth] = useState(startOfMonth(new Date()));
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
@@ -1052,194 +1080,206 @@ export default function Hifz() {
             <TabsContent value="khatm" className="mt-4 space-y-5">
 
               {/* Header */}
-              <div className="rounded-2xl bg-gradient-to-br from-emerald-950 to-emerald-800 p-6 text-center space-y-3">
+              <div className="rounded-2xl bg-gradient-to-br from-emerald-950 to-emerald-800 p-6 text-center space-y-2">
                 <p className="font-arabic text-4xl text-amber-300 leading-relaxed">خَتْم</p>
-                <h2 className="text-xl font-bold text-white">La Clôture en Lecture</h2>
+                <h2 className="text-xl font-bold text-white">Clôture en lecture — Mushaf</h2>
                 <p className="text-emerald-200/80 text-sm max-w-xs mx-auto">
-                  Complétez régulièrement la lecture intégrale du Coran depuis le mushaf — c'est le pilier du contact quotidien avec le Livre d'Allah.
+                  Lisez depuis votre mushaf physique. Nous suivons votre régularité.
                 </p>
               </div>
 
-              {/* Pourquoi le mushaf */}
-              <Card className="border-amber-200 bg-amber-50/50 shadow-sm">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-amber-800 text-base flex items-center gap-2">
-                    📖 Pourquoi lire depuis le mushaf ?
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm text-amber-900/80">
-                  <div className="flex items-start gap-3 p-3 rounded-xl bg-white border border-amber-100">
-                    <span className="text-xl shrink-0">👁️</span>
-                    <div>
-                      <p className="font-semibold text-amber-900">Le regard sur les mots est une ibâda</p>
-                      <p className="text-xs text-amber-800/60 mt-0.5">Regarder le Coran est en soi un acte d'adoration — les yeux participent à la mémorisation.</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 p-3 rounded-xl bg-white border border-amber-100">
-                    <span className="text-xl shrink-0">🧠</span>
-                    <div>
-                      <p className="font-semibold text-amber-900">La mémoire visuelle ancre le hifd</p>
-                      <p className="text-xs text-amber-800/60 mt-0.5">Votre cerveau photographie les pages. Lire depuis le mushaf renforce l'ancrage visuel de ce que vous avez mémorisé.</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 p-3 rounded-xl bg-white border border-amber-100">
-                    <span className="text-xl shrink-0">🔗</span>
-                    <div>
-                      <p className="font-semibold text-amber-900">Un lien quotidien ininterrompu</p>
-                      <p className="text-xs text-amber-800/60 mt-0.5">Les Salaf recommandaient de ne jamais laisser passer une journée sans ouvrir le mushaf. C'est ce contact régulier qui protège le cœur.</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
               {/* Hadith */}
               <Card className="border-emerald-200 shadow-sm">
-                <CardContent className="pt-5 space-y-3">
-                  <p className="font-arabic text-lg text-emerald-800 text-right leading-relaxed dir-rtl">
+                <CardContent className="pt-5 space-y-2 text-center">
+                  <p className="font-arabic text-lg text-emerald-800 leading-relaxed">
                     «&nbsp;الَّذِي يَقْرَأُ الْقُرْآنَ وَهُوَ مَاهِرٌ بِهِ مَعَ السَّفَرَةِ الْكِرَامِ الْبَرَرَةِ&nbsp;»
                   </p>
-                  <p className="text-sm text-gray-600 italic text-center">
-                    « Celui qui lit le Coran avec aisance sera avec les nobles scribes vertueux. »
-                  </p>
-                  <p className="text-xs text-gray-400 text-center">— Bukhari & Muslim</p>
+                  <p className="text-sm text-gray-600 italic">« Celui qui lit le Coran avec aisance sera avec les nobles scribes vertueux. »</p>
+                  <p className="text-xs text-gray-400">— Bukhari & Muslim</p>
                 </CardContent>
               </Card>
 
-              {/* Générateur de programme */}
-              <Card className="border-emerald-200 shadow-sm">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-emerald-800 text-base">📅 Mon programme de clôture</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-sm text-gray-600">En combien de jours souhaitez-vous clôturer le Coran ? <span className="text-amber-700 font-semibold">(30 jours maximum)</span></p>
+              {/* Programme actif ou setup */}
+              {khatmRecord ? (() => {
+                const today = format(new Date(), "yyyy-MM-dd");
+                const startDate = parseISO(khatmRecord.startDate);
+                const dayNumber = Math.floor((Date.now() - startDate.getTime()) / 86400000) + 1;
+                const currentDay = Math.min(dayNumber, khatmRecord.khatmDays);
+                const pagesPerDay = Math.ceil(604 / khatmRecord.khatmDays);
+                const pageStart = Math.min(604, (currentDay - 1) * pagesPerDay + 1);
+                const pageEnd = Math.min(604, currentDay * pagesPerDay);
+                const daysRead = khatmRecord.daysRead.length;
+                const alreadyReadToday = khatmRecord.daysRead.includes(today);
+                const streak = (() => {
+                  let s = 0;
+                  let d = new Date();
+                  while (true) {
+                    const k = format(d, "yyyy-MM-dd");
+                    if (khatmRecord.daysRead.includes(k)) { s++; d = new Date(d.getTime() - 86400000); }
+                    else break;
+                  }
+                  return s;
+                })();
+                const isFinished = daysRead >= khatmRecord.khatmDays || dayNumber > khatmRecord.khatmDays;
+                const endDate = format(new Date(startDate.getTime() + khatmRecord.khatmDays * 86400000), "d MMMM yyyy", { locale: fr });
 
-                  <div className="flex gap-2 flex-wrap">
-                    {[7, 10, 15, 20, 30].map((d) => (
-                      <button
-                        key={d}
-                        onClick={() => setKhatmDays(d)}
-                        className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${
-                          khatmDays === d
-                            ? "bg-emerald-700 text-white border-emerald-700 shadow"
-                            : "bg-white text-emerald-800 border-emerald-200 hover:border-emerald-400"
-                        }`}
-                      >
-                        {d === 30 ? "1 mois" : `${d} jours`}
-                      </button>
-                    ))}
+                return (
+                  <div className="space-y-4">
+                    {/* Stats rapides */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-center">
+                        <p className="text-2xl font-bold text-emerald-800">{daysRead}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">Jours lus</p>
+                      </div>
+                      <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 text-center">
+                        <p className="text-2xl font-bold text-amber-700">{streak}🔥</p>
+                        <p className="text-xs text-gray-500 mt-0.5">Série</p>
+                      </div>
+                      <div className="bg-violet-50 border border-violet-100 rounded-xl p-3 text-center">
+                        <p className="text-2xl font-bold text-violet-700">{khatmRecord.khatmDays - daysRead}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">Jours restants</p>
+                      </div>
+                    </div>
+
+                    {/* Barre de progression */}
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-xs text-gray-500">
+                        <span>Progression</span>
+                        <span className="font-semibold text-emerald-700">{Math.round((daysRead / khatmRecord.khatmDays) * 100)}%</span>
+                      </div>
+                      <Progress value={Math.round((daysRead / khatmRecord.khatmDays) * 100)} className="h-2.5 rounded-full" />
+                    </div>
+
+                    {isFinished ? (
+                      <div className="rounded-2xl bg-gradient-to-br from-amber-50 to-emerald-50 border-2 border-amber-300 p-6 text-center space-y-2">
+                        <p className="text-3xl">🎉</p>
+                        <p className="font-bold text-emerald-800 text-lg">ما شاء الله — Khatm accompli !</p>
+                        <p className="text-sm text-gray-600">Qu'Allah accepte votre lecture et la place dans la balance de vos bonnes œuvres.</p>
+                        <Button onClick={resetKhatm} variant="outline" size="sm" className="mt-3 border-amber-300 text-amber-800">
+                          Commencer un nouveau khatm
+                        </Button>
+                      </div>
+                    ) : (
+                      <Card className={`border-2 shadow-sm ${alreadyReadToday ? "border-emerald-400 bg-emerald-50/50" : "border-amber-300 bg-amber-50/50"}`}>
+                        <CardContent className="pt-5 space-y-4">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="text-xs font-bold uppercase tracking-widest text-gray-500">Jour {currentDay} / {khatmRecord.khatmDays}</p>
+                              <p className="text-lg font-bold text-emerald-800 mt-0.5">
+                                Pages {pageStart}–{pageEnd}
+                              </p>
+                              <p className="text-xs text-gray-500">{pagesPerDay} pages · fin estimée le {endDate}</p>
+                            </div>
+                            <span className="text-3xl">{alreadyReadToday ? "✅" : "📖"}</span>
+                          </div>
+
+                          {alreadyReadToday ? (
+                            <div className="flex items-center gap-2 text-emerald-700 font-semibold text-sm">
+                              <CheckCircle2 className="h-5 w-5" />
+                              Lecture du jour validée — bârakAllâhu fîk
+                            </div>
+                          ) : (
+                            <Button
+                              onClick={markTodayRead}
+                              className="w-full bg-emerald-700 hover:bg-emerald-800 text-white h-12 text-base font-semibold"
+                            >
+                              ✅ J'ai lu mes pages aujourd'hui
+                            </Button>
+                          )}
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Calendrier des jours lus */}
+                    <Card className="border-emerald-200 shadow-sm">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-emerald-800 text-sm">Historique de lecture</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex flex-wrap gap-1.5">
+                          {Array.from({ length: khatmRecord.khatmDays }, (_, i) => {
+                            const d = format(new Date(startDate.getTime() + i * 86400000), "yyyy-MM-dd");
+                            const read = khatmRecord.daysRead.includes(d);
+                            const isPast = d < today;
+                            const isToday = d === today;
+                            return (
+                              <div
+                                key={d}
+                                title={`Jour ${i + 1} — ${format(parseISO(d), "d MMM", { locale: fr })}`}
+                                className={`w-7 h-7 rounded-lg text-[10px] flex items-center justify-center font-bold transition-colors ${
+                                  read ? "bg-emerald-600 text-white" :
+                                  isToday ? "bg-amber-400 text-white ring-2 ring-amber-300" :
+                                  isPast ? "bg-red-100 text-red-400" :
+                                  "bg-gray-100 text-gray-400"
+                                }`}
+                              >
+                                {i + 1}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div className="flex items-center gap-4 mt-3 text-xs text-gray-400 flex-wrap">
+                          <span className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-emerald-600" /> Lu</span>
+                          <span className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-amber-400" /> Aujourd'hui</span>
+                          <span className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-red-100" /> Manqué</span>
+                          <span className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-gray-100" /> À venir</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <button onClick={resetKhatm} className="text-xs text-gray-400 hover:text-red-500 transition-colors underline text-center w-full">
+                      Réinitialiser mon programme Khatm
+                    </button>
                   </div>
-
-                  {khatmDays && (() => {
-                    const totalPages = 604;
-                    const pagesPerDay = Math.ceil(totalPages / khatmDays);
-                    const juzPerDay = (30 / khatmDays).toFixed(1);
-                    const endDate = format(new Date(Date.now() + khatmDays * 86400000), "d MMMM yyyy", { locale: fr });
-                    const color = khatmDays <= 7 ? "violet" : khatmDays <= 15 ? "amber" : "emerald";
-                    return (
-                      <div className={`rounded-2xl border-2 border-${color}-200 bg-${color}-50/40 p-5 space-y-4`}>
-                        <p className={`text-xs font-bold uppercase tracking-widest text-${color}-700`}>Votre programme</p>
-
+                );
+              })() : (
+                /* Setup initial */
+                <Card className="border-emerald-200 shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-emerald-800 text-base">📅 Démarrer mon khatm</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-sm text-gray-600">En combien de jours souhaitez-vous clôturer le Coran depuis votre mushaf ? <span className="text-amber-700 font-semibold">(30 jours maximum)</span></p>
+                    <div className="flex gap-2 flex-wrap">
+                      {[7, 10, 15, 20, 30].map((d) => (
+                        <button
+                          key={d}
+                          onClick={() => setKhatmDays(d)}
+                          className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${
+                            khatmDays === d
+                              ? "bg-emerald-700 text-white border-emerald-700 shadow"
+                              : "bg-white text-emerald-800 border-emerald-200 hover:border-emerald-400"
+                          }`}
+                        >
+                          {d === 30 ? "1 mois" : `${d} jours`}
+                        </button>
+                      ))}
+                    </div>
+                    {khatmDays && (
+                      <div className="space-y-3">
                         <div className="grid grid-cols-2 gap-3">
                           {[
-                            { label: "Pages / jour", value: `${pagesPerDay} p.` },
-                            { label: "Juz / jour", value: `${juzPerDay} juz` },
+                            { label: "Pages / jour", value: `${Math.ceil(604 / khatmDays)} p.` },
+                            { label: "Juz / jour", value: `${(30 / khatmDays).toFixed(1)} juz` },
                             { label: "Durée", value: khatmDays === 30 ? "1 mois" : `${khatmDays} jours` },
-                            { label: "Fin estimée", value: endDate },
+                            { label: "Fin estimée", value: format(new Date(Date.now() + khatmDays * 86400000), "d MMM yyyy", { locale: fr }) },
                           ].map(({ label, value }) => (
-                            <div key={label} className="bg-white rounded-xl p-3 text-center border border-gray-100">
-                              <p className={`text-lg font-bold text-${color}-800 capitalize`}>{value}</p>
+                            <div key={label} className="bg-emerald-50 rounded-xl p-3 text-center border border-emerald-100">
+                              <p className="text-lg font-bold text-emerald-800">{value}</p>
                               <p className="text-xs text-gray-500 mt-0.5">{label}</p>
                             </div>
                           ))}
                         </div>
-
-                        <div className={`p-4 rounded-xl bg-white border border-${color}-100 space-y-2`}>
-                          <p className={`text-sm font-bold text-${color}-800`}>📖 En pratique chaque jour</p>
-                          <ul className="space-y-1.5 text-sm text-gray-700">
-                            <li className="flex items-start gap-2"><CheckCircle2 className={`h-4 w-4 text-${color}-600 shrink-0 mt-0.5`} />Lisez <strong>{pagesPerDay} pages</strong> depuis votre mushaf</li>
-                            <li className="flex items-start gap-2"><CheckCircle2 className={`h-4 w-4 text-${color}-600 shrink-0 mt-0.5`} />Respectez l'ordre du Coran, d'Al-Fatiha à An-Nas</li>
-                            <li className="flex items-start gap-2"><CheckCircle2 className={`h-4 w-4 text-${color}-600 shrink-0 mt-0.5`} />Ne sautez aucun jour — la régularité prime sur la quantité</li>
-                          </ul>
-                        </div>
-
-                        {khatmDays <= 7 && <p className="text-xs text-violet-700 font-semibold text-center">⚡ Rythme très intense — réservé aux grandes disponibilités</p>}
-                        {khatmDays === 30 && <p className="text-xs text-emerald-700 font-semibold text-center">✅ Rythme idéal en parallèle d'un programme de hifd actif</p>}
+                        <Button onClick={() => startKhatm(khatmDays)} className="w-full bg-emerald-700 hover:bg-emerald-800 text-white h-12 text-base font-semibold">
+                          Démarrer le programme
+                        </Button>
                       </div>
-                    );
-                  })()}
-                </CardContent>
-              </Card>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
 
-              {/* Mushaf viewer */}
-              {khatmDays && (() => {
-                const pagesPerDay = Math.ceil(604 / khatmDays);
-                const dayStart = Math.min(604, ((khatmViewerPage - 1) * 0) + 1); // unused
-                const firstPageToday = 1; // toujours depuis le début — l'élève navigue librement
-                const pageStr = String(khatmViewerPage).padStart(3, "0");
-                const imgUrl = `https://www.mp3quran.net/api/quran_pages_arabic/${pageStr}.png`;
-                return (
-                  <Card className="border-emerald-200 shadow-sm overflow-hidden">
-                    <CardHeader className="pb-3 bg-emerald-950 text-white">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-base text-white flex items-center gap-2">
-                          📖 Lecture du Mushaf
-                        </CardTitle>
-                        <div className="flex items-center gap-1 text-emerald-300 text-xs">
-                          <span>~{pagesPerDay} pages / jour</span>
-                        </div>
-                      </div>
-                      <p className="text-emerald-300 text-xs">Page {khatmViewerPage} / 604</p>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                      {/* Page image */}
-                      <div className="bg-[#fdf8ef] flex items-center justify-center min-h-64 p-2">
-                        {khatmImgError ? (
-                          <p className="text-sm text-gray-400 text-center py-10">Impossible de charger cette page.</p>
-                        ) : (
-                          <img
-                            key={khatmViewerPage}
-                            src={imgUrl}
-                            alt={`Mushaf page ${khatmViewerPage}`}
-                            className="w-full max-w-md rounded"
-                            loading="lazy"
-                            onError={() => setKhatmImgError(true)}
-                            onLoad={() => setKhatmImgError(false)}
-                          />
-                        )}
-                      </div>
-                      {/* Navigation */}
-                      <div className="flex items-center justify-between p-3 border-t border-emerald-100 bg-white">
-                        <button
-                          onClick={() => { setKhatmViewerPage(p => Math.max(1, p - 1)); setKhatmImgError(false); }}
-                          disabled={khatmViewerPage <= 1}
-                          className="px-4 py-2 rounded-xl text-sm font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 disabled:opacity-30 hover:bg-emerald-100 transition-colors"
-                        >
-                          ← Précédente
-                        </button>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            min={1} max={604}
-                            value={khatmViewerPage}
-                            onChange={(e) => { const v = Math.max(1, Math.min(604, +e.target.value)); setKhatmViewerPage(v); setKhatmImgError(false); }}
-                            className="w-16 text-center text-sm border border-emerald-200 rounded-lg py-1.5 bg-white"
-                          />
-                          <span className="text-xs text-gray-400">/ 604</span>
-                        </div>
-                        <button
-                          onClick={() => { setKhatmViewerPage(p => Math.min(604, p + 1)); setKhatmImgError(false); }}
-                          disabled={khatmViewerPage >= 604}
-                          className="px-4 py-2 rounded-xl text-sm font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 disabled:opacity-30 hover:bg-emerald-100 transition-colors"
-                        >
-                          Suivante →
-                        </button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })()}
-
-              {/* Conseil du professeur */}
+              {/* Conseil */}
               <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-amber-50 border-2 border-emerald-200 p-5 text-center space-y-2">
                 <p className="text-2xl">🤲</p>
                 <p className="text-sm font-semibold text-emerald-800">Le conseil du professeur</p>
