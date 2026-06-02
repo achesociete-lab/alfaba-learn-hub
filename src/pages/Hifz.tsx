@@ -1087,24 +1087,34 @@ export default function Hifz() {
                 <button
                   type="button"
                   onClick={() => setConfirmedRepetition(!confirmedRepetition)}
-                  className={`w-full flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all ${
+                  className={`w-full text-left transition-all rounded-2xl border-2 overflow-hidden ${
                     confirmedRepetition
-                      ? "border-emerald-500 bg-emerald-50"
-                      : "border-amber-300 bg-amber-50"
+                      ? "border-emerald-500"
+                      : "border-red-400"
                   }`}
                 >
-                  <div className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-                    confirmedRepetition ? "bg-emerald-600 border-emerald-600" : "border-amber-400 bg-white"
-                  }`}>
-                    {confirmedRepetition && <CheckCircle2 className="h-3.5 w-3.5 text-white" />}
+                  {/* Header bande colorée */}
+                  <div className={`px-4 py-2 flex items-center gap-2 ${confirmedRepetition ? "bg-emerald-600" : "bg-red-500"}`}>
+                    <span className="text-white text-base">{confirmedRepetition ? "✅" : "⚠️"}</span>
+                    <span className="text-white text-xs font-bold uppercase tracking-widest">
+                      {confirmedRepetition ? "Confirmé" : "Obligatoire"}
+                    </span>
                   </div>
-                  <div>
-                    <p className={`text-sm font-semibold ${confirmedRepetition ? "text-emerald-800" : "text-amber-800"}`}>
-                      J'ai répété mon wird 50 fois
-                    </p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      Obligatoire avant de présenter au professeur
-                    </p>
+                  {/* Corps */}
+                  <div className={`px-4 py-4 flex items-center gap-4 ${confirmedRepetition ? "bg-emerald-50" : "bg-red-50"}`}>
+                    <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+                      confirmedRepetition ? "bg-emerald-600 border-emerald-600" : "border-red-400 bg-white"
+                    }`}>
+                      {confirmedRepetition && <CheckCircle2 className="h-4 w-4 text-white" />}
+                    </div>
+                    <div>
+                      <p className={`font-bold text-base ${confirmedRepetition ? "text-emerald-800" : "text-red-700"}`}>
+                        J'ai répété mon wird 50 fois
+                      </p>
+                      <p className={`text-xs mt-0.5 ${confirmedRepetition ? "text-emerald-600" : "text-red-500"}`}>
+                        Obligatoire avant de présenter au professeur
+                      </p>
+                    </div>
                   </div>
                 </button>
               )}
