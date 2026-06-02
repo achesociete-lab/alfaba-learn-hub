@@ -290,6 +290,9 @@ export default function Hifz() {
       return;
     }
 
+    // Supprimer le créneau pour qu'il ne soit plus disponible
+    await supabase.from("admin_hifz_slots").delete().eq("id", selectedSlot.id);
+
     const typeInfo = getSessionType(bookingType);
     const studentName = `${profile?.first_name || ""} ${profile?.last_name || ""}`.trim() || (user.email ?? "Élève");
     const tplData = {
