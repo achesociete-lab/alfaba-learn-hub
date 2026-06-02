@@ -568,7 +568,7 @@ export default function Hifz() {
                           <span className="text-xl shrink-0">📗</span>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold text-emerald-800">Nouvel apprentissage</p>
-                            <p className="text-xs text-emerald-700/70">{pacePerDay < 1 ? "1 page minimum" : `${pacePerDay} page${pacePerDay > 1 ? "s" : ""}`} à mémoriser · Répéter 50× (méthode Shankit)</p>
+                            <p className="text-xs text-emerald-700/70">{pacePerDay < 1 ? "1 page minimum" : `${pacePerDay} page${pacePerDay > 1 ? "s" : ""}`} à mémoriser · Répéter 50×</p>
                           </div>
                         </div>
                       )}
@@ -1100,7 +1100,7 @@ export default function Hifz() {
                   </div>
                   <div>
                     <p className={`text-sm font-semibold ${confirmedRepetition ? "text-emerald-800" : "text-amber-800"}`}>
-                      J'ai répété ma portion 50× (méthode Shankit)
+                      J'ai répété ma portion 50×
                     </p>
                     <p className="text-xs text-gray-500 mt-0.5">
                       Obligatoire avant de présenter au professeur
