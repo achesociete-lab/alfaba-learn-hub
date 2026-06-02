@@ -95,8 +95,8 @@ const plans = [
 ];
 
 const stats = [
-  { icon: BookOpen, value: "24", label: "Leçons complètes" },
-  { icon: Headphones, value: "100+", label: "Exercices audio" },
+  { icon: BookOpen, value: "2", label: "séances Hifd / semaine" },
+  { icon: Headphones, value: "60", label: "hizb suivis" },
 ];
 
 const faqs = [
@@ -187,7 +187,7 @@ const PricingSection = () => {
             viewport={{ once: true }}
             className="inline-block text-xs font-semibold tracking-widest uppercase text-primary mb-3"
           >
-            Tarifs transparents
+            Cours d'arabe & Hifd al-Qur'ān
           </motion.span>
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
@@ -195,7 +195,7 @@ const PricingSection = () => {
             viewport={{ once: true }}
             className="text-3xl sm:text-5xl font-bold text-foreground mb-4"
           >
-            Investissez dans votre <span className="text-gradient-gold">savoir</span>
+            Apprenez l'arabe.<br />Mémorisez le <span className="text-gradient-gold">Coran.</span>
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -204,7 +204,7 @@ const PricingSection = () => {
             transition={{ delay: 0.1 }}
             className="text-muted-foreground max-w-2xl mx-auto text-lg"
           >
-            Choisissez la formule adaptée à vos objectifs. Commencez gratuitement, évoluez à votre rythme.
+            ALFASL propose des cours d'arabe en ligne pour francophones et un programme de mémorisation du Coran avec professeur dédié. Commencez gratuitement.
           </motion.p>
         </div>
 
