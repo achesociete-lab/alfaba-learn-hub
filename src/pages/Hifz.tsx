@@ -155,22 +155,6 @@ export default function Hifz() {
     return points;
   }, [evaluations, initialMemo, config]);
 
-  const monthlyPlan = useMemo(() => {
-    if (!config) return [] as { month: number; label: string; hizb: number[] }[];
-    const months = Math.max(1, config.duration_months);
-    const perMonth = Math.ceil(remainingHizb / months);
-    const startHizb = config.hizb_already_memo + 1;
-    const result = [];
-    for (let m = 0; m < months; m++) {
-      const from = startHizb + m * perMonth;
-      const to = Math.min(TOTAL_HIZB, from + perMonth - 1);
-      if (from > TOTAL_HIZB) break;
-      const hizb = [];
-      for (let h = from; h <= to; h++) hizb.push(h);
-      result.push({ month: m + 1, label: format(addMonths(parseISO(config.start_date), m), "MMMM yyyy", { locale: fr }), hizb });
-    }
-    return result;
-  }, [config, remainingHizb]);
 
   const evalByHizbByType = useMemo(() => {
     const map: Record<number, Record<string, Evaluation>> = {};
@@ -681,67 +665,6 @@ export default function Hifz() {
                       )}
                     </CardContent>
                   </Card>
-
-                  {/* Monthly plan */}
-                  <Accordion type="single" collapsible className="space-y-2">
-                    {monthlyPlan.map((m) => {
-                      const doneCount = m.hizb.filter(h => validatedHizbNumbers.has(h)).length;
-                      const monthPct = m.hizb.length > 0 ? Math.round((doneCount / m.hizb.length) * 100) : 0;
-                      return (
-                        <AccordionItem key={m.month} value={`m-${m.month}`} className="border border-emerald-200 rounded-xl bg-white px-4 shadow-sm">
-                          <AccordionTrigger className="hover:no-underline py-3">
-                            <div className="flex items-center justify-between w-full pr-2">
-                              <div>
-                                <span className="font-semibold text-emerald-800 capitalize">Mois {m.month} · {m.label}</span>
-                                {doneCount > 0 && (
-                                  <div className="flex items-center gap-1.5 mt-0.5">
-                                    <Progress value={monthPct} className="h-1.5 w-20" />
-                                    <span className="text-xs text-emerald-700">{doneCount}/{m.hizb.length}</span>
-                                  </div>
-                                )}
-                              </div>
-                              <Badge variant="outline" className="border-amber-300 text-amber-800 shrink-0">{m.hizb.length} hizb</Badge>
-                            </div>
-                          </AccordionTrigger>
-                          <AccordionContent>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 pb-1">
-                              {m.hizb.map((h) => {
-                                const byType = evalByHizbByType[h] || {};
-                                const types = Object.keys(byType);
-                                const isValidated = validatedHizbNumbers.has(h);
-                                return (
-                                  <div key={h} className={`flex items-center justify-between p-3 rounded-lg border gap-2 transition-colors ${
-                                    isValidated ? "border-emerald-200 bg-emerald-50/60" : "border-gray-100 bg-gray-50/50"
-                                  }`}>
-                                    <div className="flex items-center gap-2">
-                                      {isValidated
-                                        ? <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                                        : <div className="h-4 w-4 rounded-full border-2 border-gray-200 shrink-0" />
-                                      }
-                                      <span className="font-medium text-sm">Hizb {h}</span>
-                                    </div>
-                                    <div className="flex flex-wrap gap-1 justify-end">
-                                      {types.length === 0 ? (
-                                        <Badge variant="secondary" className="bg-gray-100 text-gray-500 text-[10px] font-normal">Non évalué</Badge>
-                                      ) : types.map((t) => {
-                                        const ev = byType[t];
-                                        const ti = getSessionType(t);
-                                        return (
-                                          <Badge key={t} className={`${ti.badgeBg} ${ti.badgeText} text-[10px] border-0`}>
-                                            {ti.icon} {ev.status === "valide" ? (NIVEAU_LABEL[ev.niveau || ""] || "Validé") : "À retravailler"}
-                                          </Badge>
-                                        );
-                                      })}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </AccordionContent>
-                        </AccordionItem>
-                      );
-                    })}
-                  </Accordion>
 
                   <Button variant="outline" onClick={handleReset} className="border-amber-300 text-amber-800 hover:bg-amber-50 text-sm">
                     <RotateCcw className="h-3.5 w-3.5 mr-2" /> Réinitialiser mon programme
