@@ -3,27 +3,21 @@ import { motion } from "framer-motion";
 const pillars = [
   {
     icon: "📗",
-    color: "emerald",
     colorHex: "#15803d",
-    arabic: "سَبَق",
     title: "Nouvel apprentissage",
     desc: "Chaque séance, vous mémorisez une nouvelle portion avec votre professeur, qui corrige votre prononciation et valide votre récitation avant d'avancer.",
     badge: "Chaque séance",
   },
   {
     icon: "📙",
-    color: "amber",
     colorHex: "#b45309",
-    arabic: "مُرَاجَعَة قَرِيبَة",
     title: "Révision récente",
     desc: "Les hizb mémorisés récemment sont révisés sans mushaf pour ancrer la mémorisation. C'est le filet de sécurité contre l'oubli rapide.",
     badge: "Chaque semaine",
   },
   {
     icon: "📘",
-    color: "violet",
     colorHex: "#7c3aed",
-    arabic: "مُرَاجَعَة قَدِيمَة",
     title: "Révision ancienne",
     desc: "Les anciens hizb sont révisés en rotation régulière. C'est ce pilier qui garantit un hifd solide à vie — pas juste une mémorisation temporaire.",
     badge: "En rotation",
@@ -60,7 +54,6 @@ const HifzPillarsSection = () => (
             style={{ borderTop: `3px solid ${colorHex}` }}
           >
             <span className="text-4xl mb-4 block">{icon}</span>
-            <p className="font-arabic text-2xl mb-2" style={{ color: colorHex }}>{arabic}</p>
             <div className="inline-block text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full mb-3 text-white" style={{ backgroundColor: colorHex }}>
               {badge}
             </div>
