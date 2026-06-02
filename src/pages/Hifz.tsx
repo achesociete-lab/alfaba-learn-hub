@@ -88,6 +88,8 @@ export default function Hifz() {
 
   // Khatm programme
   const [khatmDays, setKhatmDays] = useState<number | null>(null);
+  const [khatmViewerPage, setKhatmViewerPage] = useState<number>(1);
+  const [khatmImgError, setKhatmImgError] = useState(false);
 
   const [calMonth, setCalMonth] = useState(startOfMonth(new Date()));
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
@@ -1167,6 +1169,75 @@ export default function Hifz() {
                   })()}
                 </CardContent>
               </Card>
+
+              {/* Mushaf viewer */}
+              {khatmDays && (() => {
+                const pagesPerDay = Math.ceil(604 / khatmDays);
+                const dayStart = Math.min(604, ((khatmViewerPage - 1) * 0) + 1); // unused
+                const firstPageToday = 1; // toujours depuis le début — l'élève navigue librement
+                const pageStr = String(khatmViewerPage).padStart(3, "0");
+                const imgUrl = `https://www.mp3quran.net/api/quran_pages_arabic/${pageStr}.png`;
+                return (
+                  <Card className="border-emerald-200 shadow-sm overflow-hidden">
+                    <CardHeader className="pb-3 bg-emerald-950 text-white">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-base text-white flex items-center gap-2">
+                          📖 Lecture du Mushaf
+                        </CardTitle>
+                        <div className="flex items-center gap-1 text-emerald-300 text-xs">
+                          <span>~{pagesPerDay} pages / jour</span>
+                        </div>
+                      </div>
+                      <p className="text-emerald-300 text-xs">Page {khatmViewerPage} / 604</p>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      {/* Page image */}
+                      <div className="bg-[#fdf8ef] flex items-center justify-center min-h-64 p-2">
+                        {khatmImgError ? (
+                          <p className="text-sm text-gray-400 text-center py-10">Impossible de charger cette page.</p>
+                        ) : (
+                          <img
+                            key={khatmViewerPage}
+                            src={imgUrl}
+                            alt={`Mushaf page ${khatmViewerPage}`}
+                            className="w-full max-w-md rounded"
+                            loading="lazy"
+                            onError={() => setKhatmImgError(true)}
+                            onLoad={() => setKhatmImgError(false)}
+                          />
+                        )}
+                      </div>
+                      {/* Navigation */}
+                      <div className="flex items-center justify-between p-3 border-t border-emerald-100 bg-white">
+                        <button
+                          onClick={() => { setKhatmViewerPage(p => Math.max(1, p - 1)); setKhatmImgError(false); }}
+                          disabled={khatmViewerPage <= 1}
+                          className="px-4 py-2 rounded-xl text-sm font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 disabled:opacity-30 hover:bg-emerald-100 transition-colors"
+                        >
+                          ← Précédente
+                        </button>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min={1} max={604}
+                            value={khatmViewerPage}
+                            onChange={(e) => { const v = Math.max(1, Math.min(604, +e.target.value)); setKhatmViewerPage(v); setKhatmImgError(false); }}
+                            className="w-16 text-center text-sm border border-emerald-200 rounded-lg py-1.5 bg-white"
+                          />
+                          <span className="text-xs text-gray-400">/ 604</span>
+                        </div>
+                        <button
+                          onClick={() => { setKhatmViewerPage(p => Math.min(604, p + 1)); setKhatmImgError(false); }}
+                          disabled={khatmViewerPage >= 604}
+                          className="px-4 py-2 rounded-xl text-sm font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 disabled:opacity-30 hover:bg-emerald-100 transition-colors"
+                        >
+                          Suivante →
+                        </button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })()}
 
               {/* Conseil du professeur */}
               <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-amber-50 border-2 border-emerald-200 p-5 text-center space-y-2">
