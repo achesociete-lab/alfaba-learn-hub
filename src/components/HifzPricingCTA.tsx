@@ -85,22 +85,22 @@ const HifzPricingCTA = () => (
         className="max-w-2xl mx-auto"
       >
         <p className="text-center text-sm text-muted-foreground mb-5">Vous souhaitez d'abord apprendre l'arabe ?</p>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-4">
           {otherPlans.map(({ name, price, desc, to }) => (
             <Link
               key={name}
               to={to}
-              className="group flex flex-col items-center text-center p-4 rounded-2xl border border-border hover:border-emerald-300 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20 transition-all duration-200"
+              className="group flex flex-col items-center text-center p-5 rounded-2xl border border-border hover:border-emerald-300 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20 transition-all duration-200"
             >
-              <span className="font-bold text-foreground text-sm mb-0.5">{name}</span>
-              <span className="text-emerald-600 font-semibold text-sm mb-1">{price}</span>
-              <span className="text-xs text-muted-foreground">{desc}</span>
+              <span className="font-bold text-foreground text-base mb-1">{name}</span>
+              <span className="text-emerald-600 font-bold text-base mb-1.5">{price}</span>
+              <span className="text-sm text-muted-foreground">{desc}</span>
             </Link>
           ))}
         </div>
-        <p className="text-center mt-4">
-          <Link to="/tarifs" className="text-xs text-muted-foreground hover:text-primary inline-flex items-center gap-1 underline underline-offset-2">
-            Voir tous les détails <ArrowRight className="h-3 w-3" />
+        <p className="text-center mt-5">
+          <Link to="/tarifs" className="text-sm font-medium text-primary hover:underline inline-flex items-center gap-1">
+            Voir tous les détails <ArrowRight className="h-4 w-4" />
           </Link>
         </p>
       </motion.div>
