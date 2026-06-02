@@ -87,7 +87,7 @@ export default function Hifz() {
   const [submitting, setSubmitting] = useState(false);
 
   // Khatm programme
-  const [khatmMonths, setKhatmMonths] = useState<number | null>(null);
+  const [khatmDays, setKhatmDays] = useState<number | null>(null);
 
   const [calMonth, setCalMonth] = useState(startOfMonth(new Date()));
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
@@ -1109,45 +1109,43 @@ export default function Hifz() {
                   <CardTitle className="text-emerald-800 text-base">📅 Mon programme de clôture</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <p className="text-sm text-gray-600">En combien de mois souhaitez-vous clôturer le Coran en lecture ?</p>
+                  <p className="text-sm text-gray-600">En combien de jours souhaitez-vous clôturer le Coran ? <span className="text-amber-700 font-semibold">(30 jours maximum)</span></p>
 
                   <div className="flex gap-2 flex-wrap">
-                    {[1, 2, 3, 4, 6].map((m) => (
+                    {[7, 10, 15, 20, 30].map((d) => (
                       <button
-                        key={m}
-                        onClick={() => setKhatmMonths(m)}
+                        key={d}
+                        onClick={() => setKhatmDays(d)}
                         className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${
-                          khatmMonths === m
+                          khatmDays === d
                             ? "bg-emerald-700 text-white border-emerald-700 shadow"
                             : "bg-white text-emerald-800 border-emerald-200 hover:border-emerald-400"
                         }`}
                       >
-                        {m} mois
+                        {d === 30 ? "1 mois" : `${d} jours`}
                       </button>
                     ))}
                   </div>
 
-                  {khatmMonths && (() => {
+                  {khatmDays && (() => {
                     const totalPages = 604;
-                    const totalDays = khatmMonths * 30;
-                    const pagesPerDay = (totalPages / totalDays).toFixed(1);
-                    const juzPerDay = (30 / (khatmMonths * 30)).toFixed(2);
-                    const pagesPerSession = Math.ceil(totalPages / totalDays);
-                    const endDate = format(addMonths(new Date(), khatmMonths), "MMMM yyyy", { locale: fr });
-                    const color = khatmMonths === 1 ? "emerald" : khatmMonths <= 2 ? "amber" : "violet";
+                    const pagesPerDay = Math.ceil(totalPages / khatmDays);
+                    const juzPerDay = (30 / khatmDays).toFixed(1);
+                    const endDate = format(new Date(Date.now() + khatmDays * 86400000), "d MMMM yyyy", { locale: fr });
+                    const color = khatmDays <= 7 ? "violet" : khatmDays <= 15 ? "amber" : "emerald";
                     return (
                       <div className={`rounded-2xl border-2 border-${color}-200 bg-${color}-50/40 p-5 space-y-4`}>
                         <p className={`text-xs font-bold uppercase tracking-widest text-${color}-700`}>Votre programme</p>
 
                         <div className="grid grid-cols-2 gap-3">
                           {[
-                            { label: "Pages / jour", value: pagesPerDay },
-                            { label: "Juz / jour", value: juzPerDay },
-                            { label: "Durée", value: `${khatmMonths} mois` },
+                            { label: "Pages / jour", value: `${pagesPerDay} p.` },
+                            { label: "Juz / jour", value: `${juzPerDay} juz` },
+                            { label: "Durée", value: khatmDays === 30 ? "1 mois" : `${khatmDays} jours` },
                             { label: "Fin estimée", value: endDate },
                           ].map(({ label, value }) => (
                             <div key={label} className="bg-white rounded-xl p-3 text-center border border-gray-100">
-                              <p className={`text-xl font-bold text-${color}-800 capitalize`}>{value}</p>
+                              <p className={`text-lg font-bold text-${color}-800 capitalize`}>{value}</p>
                               <p className="text-xs text-gray-500 mt-0.5">{label}</p>
                             </div>
                           ))}
@@ -1156,18 +1154,14 @@ export default function Hifz() {
                         <div className={`p-4 rounded-xl bg-white border border-${color}-100 space-y-2`}>
                           <p className={`text-sm font-bold text-${color}-800`}>📖 En pratique chaque jour</p>
                           <ul className="space-y-1.5 text-sm text-gray-700">
-                            <li className="flex items-start gap-2"><CheckCircle2 className={`h-4 w-4 text-${color}-600 shrink-0 mt-0.5`} />Lisez <strong>{pagesPerSession} page{pagesPerSession > 1 ? "s" : ""}</strong> depuis votre mushaf</li>
-                            <li className="flex items-start gap-2"><CheckCircle2 className={`h-4 w-4 text-${color}-600 shrink-0 mt-0.5`} />Respectez l'ordre du Coran, de Al-Fatiha à An-Nas</li>
+                            <li className="flex items-start gap-2"><CheckCircle2 className={`h-4 w-4 text-${color}-600 shrink-0 mt-0.5`} />Lisez <strong>{pagesPerDay} pages</strong> depuis votre mushaf</li>
+                            <li className="flex items-start gap-2"><CheckCircle2 className={`h-4 w-4 text-${color}-600 shrink-0 mt-0.5`} />Respectez l'ordre du Coran, d'Al-Fatiha à An-Nas</li>
                             <li className="flex items-start gap-2"><CheckCircle2 className={`h-4 w-4 text-${color}-600 shrink-0 mt-0.5`} />Ne sautez aucun jour — la régularité prime sur la quantité</li>
                           </ul>
                         </div>
 
-                        {khatmMonths === 1 && (
-                          <p className="text-xs text-emerald-700 font-medium text-center">⚡ Rythme intense — idéal pendant Ramadan ou les grandes vacances</p>
-                        )}
-                        {khatmMonths >= 4 && (
-                          <p className="text-xs text-violet-700 font-medium text-center">✅ Rythme doux — parfait en parallèle d'un programme de hifd actif</p>
-                        )}
+                        {khatmDays <= 7 && <p className="text-xs text-violet-700 font-semibold text-center">⚡ Rythme très intense — réservé aux grandes disponibilités</p>}
+                        {khatmDays === 30 && <p className="text-xs text-emerald-700 font-semibold text-center">✅ Rythme idéal en parallèle d'un programme de hifd actif</p>}
                       </div>
                     );
                   })()}
