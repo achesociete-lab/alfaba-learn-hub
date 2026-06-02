@@ -331,6 +331,19 @@ function SessionsTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
   const cancelSession = async (s: Session) => {
     if (!confirm("Annuler cette session ?")) return;
     await supabase.from("hifz_sessions").update({ status: "annulee" }).eq("id", s.id);
+
+    // Recrée le créneau pour le rendre à nouveau disponible
+    if (s.session_date >= format(new Date(), "yyyy-MM-dd")) {
+      await supabase.from("admin_hifz_slots").insert({
+        slot_date: s.session_date,
+        start_time: s.session_time,
+        end_time: s.session_time.slice(0, 2) === "23"
+          ? "00:00:00"
+          : `${String(parseInt(s.session_time.slice(0, 2)) + 1).padStart(2, "0")}:00:00`,
+        capacity: 1,
+      });
+    }
+
     const p = profiles[s.student_id];
     const studentName = p ? `${p.first_name} ${p.last_name}`.trim() : "Élève";
     try {
@@ -346,7 +359,7 @@ function SessionsTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
         },
       });
     } catch {}
-    toast({ title: "Session annulée" });
+    toast({ title: "Session annulée — créneau remis en disponible" });
     fetchSessions();
   };
 
