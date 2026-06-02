@@ -1100,7 +1100,7 @@ export default function Hifz() {
                   </div>
                   <div>
                     <p className={`text-sm font-semibold ${confirmedRepetition ? "text-emerald-800" : "text-amber-800"}`}>
-                      J'ai répété ma portion 50×
+                      J'ai répété mon wird 50×
                     </p>
                     <p className="text-xs text-gray-500 mt-0.5">
                       Obligatoire avant de présenter au professeur
