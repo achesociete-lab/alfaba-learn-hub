@@ -132,6 +132,11 @@ export default function Hifz() {
   const [cancelling, setCancelling] = useState<string | null>(null);
   const [mushafAnnotations, setMushafAnnotations] = useState<any[]>([]);
   const [viewAnnotation, setViewAnnotation] = useState<{ page: number; url: string; note?: string } | null>(null);
+  const [lastAnnotSeen, setLastAnnotSeen] = useState<string | null>(null);
+  useEffect(() => {
+    if (!user) return;
+    try { setLastAnnotSeen(localStorage.getItem(`hifz-annots-seen-${user.id}`)); } catch {}
+  }, [user?.id]);
 
   // Report / retard
   const [rescheduleSession, setRescheduleSession] = useState<Session | null>(null);
@@ -241,6 +246,39 @@ export default function Hifz() {
 
   const dueNow = revisionSchedule.filter(r => r.isDue);
   const upcomingRevision = revisionSchedule.filter(r => !r.isDue).slice(0, 5);
+
+  // IDs des annotations déjà affichées dans les accordéons de séances
+  const shownAnnotationIds = useMemo(() => {
+    const shown = new Set<string>();
+    for (const s of sessions) {
+      const evs = evaluations.filter(e => e.session_id === s.id);
+      const evPageRanges = evs.flatMap(e =>
+        (e as any).page_start
+          ? Array.from({ length: ((e as any).page_end ?? (e as any).page_start) - (e as any).page_start + 1 }, (_: unknown, i: number) => (e as any).page_start + i)
+          : []
+      );
+      for (const a of mushafAnnotations) {
+        if (a.session_id === s.id || (a.session_id == null && evPageRanges.includes(a.page_number))) {
+          shown.add(a.id);
+        }
+      }
+    }
+    return shown;
+  }, [sessions, evaluations, mushafAnnotations]);
+
+  // Annotations orphelines — pas encore affichées dans un accordéon de séance
+  const orphanAnnotations = useMemo(
+    () => mushafAnnotations.filter((a: any) => !shownAnnotationIds.has(a.id)),
+    [mushafAnnotations, shownAnnotationIds]
+  );
+
+  // Badge nouvelles annotations (créées après la dernière visite de l'onglet Historique)
+  const newAnnotCount = useMemo(() => {
+    if (!mushafAnnotations.length) return 0;
+    if (!lastAnnotSeen) return mushafAnnotations.length;
+    const lastSeen = new Date(lastAnnotSeen);
+    return mushafAnnotations.filter((a: any) => new Date(a.created_at) > lastSeen).length;
+  }, [mushafAnnotations, lastAnnotSeen]);
 
   // Recommended sessions/week based on average niveau weight
   const recommendedPerWeek = useMemo(() => {
@@ -486,16 +524,23 @@ export default function Hifz() {
             <p className="text-sm text-amber-800/60">Chargement de votre programme…</p>
           </div>
         ) : (
-          <Tabs value={tab} onValueChange={setTab} className="w-full">
+          <Tabs value={tab} onValueChange={(v) => {
+          setTab(v);
+          if (v === "historique" && user) {
+            const now = new Date().toISOString();
+            try { localStorage.setItem(`hifz-annots-seen-${user.id}`, now); } catch {}
+            setLastAnnotSeen(now);
+          }
+        }} className="w-full">
 
             {/* ─── Tab navigation ─── */}
             <TabsList className="flex w-full bg-white border border-emerald-100 rounded-xl h-auto p-1 gap-0.5 shadow-sm overflow-x-auto mb-2">
-              {[
+              {([
                 { value: "programme", icon: Target, label: "Programme" },
                 { value: "khatm", icon: BookOpen, label: "Khatm" },
                 { value: "reserver", icon: CalendarDays, label: "Réserver", badge: upcomingCount || undefined },
-                { value: "historique", icon: Clock, label: "Historique" },
-              ].map(({ value, icon: Icon, label, badge }) => (
+                { value: "historique", icon: Clock, label: "Historique", annotBadge: newAnnotCount || undefined },
+              ] as Array<{ value: string; icon: React.ElementType; label: string; badge?: number; annotBadge?: number }>).map(({ value, icon: Icon, label, badge, annotBadge }) => (
                 <TabsTrigger
                   key={value}
                   value={value}
@@ -508,6 +553,11 @@ export default function Hifz() {
                   {badge ? (
                     <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] flex items-center justify-center font-bold">
                       {badge}
+                    </span>
+                  ) : null}
+                  {annotBadge ? (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-600 text-white text-[9px] flex items-center justify-center font-bold">
+                      {annotBadge}
                     </span>
                   ) : null}
                 </TabsTrigger>
@@ -776,19 +826,9 @@ export default function Hifz() {
               )}
             </TabsContent>
 
-            {/* ═══════════════════════════════════════════════════════════════
-<<<<<<< HEAD
-=======
-                VUE GLOBALE
-            ═══════════════════════════════════════════════════════════════ */}
-            {/* ═══════════════════════════════════════════════════════════════
-                MÉTHODE
-            ═══════════════════════════════════════════════════════════════ */}
-
-            {/* ═══════════════════════════════════════════════════════════════
->>>>>>> 12c1863 (Refonte page accueil Hifd + prix 79e + cron 21h40)
+            {/* ══════════════════════════════════════════════════════════════
                 RÉSERVER
-            ═══════════════════════════════════════════════════════════════ */}
+            ══════════════════════════════════════════════════════════════ */}
             <TabsContent value="reserver" className="mt-4 space-y-6">
 
               {/* Cadence banner */}
@@ -1276,14 +1316,14 @@ export default function Hifz() {
                 </Accordion>
               ) : null}
 
-              {/* Annotations Mushaf du professeur */}
-              {mushafAnnotations.length > 0 && (
+              {/* Annotations Mushaf non rattachées à une séance */}
+              {orphanAnnotations.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-xs font-semibold text-emerald-700 uppercase tracking-widest flex items-center gap-1">
-                    <span>🖊️</span> Corrections Mushaf de votre professeur ({mushafAnnotations.length})
+                    <span>🖊️</span> Autres corrections Mushaf ({orphanAnnotations.length})
                   </p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {mushafAnnotations.map((a: any) => (
+                    {orphanAnnotations.map((a: any) => (
                         <button
                           key={a.id}
                           type="button"
