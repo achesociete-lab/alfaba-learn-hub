@@ -131,6 +131,7 @@ export default function Hifz() {
   const [confirmedRepetition, setConfirmedRepetition] = useState(false);
   const [cancelling, setCancelling] = useState<string | null>(null);
   const [mushafAnnotations, setMushafAnnotations] = useState<any[]>([]);
+  const [viewAnnotation, setViewAnnotation] = useState<{ page: number; url: string; note?: string } | null>(null);
 
   // Report / retard
   const [rescheduleSession, setRescheduleSession] = useState<Session | null>(null);
@@ -1229,12 +1230,11 @@ export default function Hifz() {
                                 </p>
                                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                                   {sessionAnnotations.map((a: any) => (
-                                    <a
+                                    <button
                                       key={a.id}
-                                      href={a.annotated_image_url}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="block rounded-xl overflow-hidden border-2 border-emerald-300 hover:shadow-lg transition-shadow group"
+                                      type="button"
+                                      onClick={() => setViewAnnotation({ page: a.page_number, url: a.annotated_image_url, note: a.note })}
+                                      className="block rounded-xl overflow-hidden border-2 border-emerald-300 hover:shadow-lg transition-shadow group text-left w-full"
                                     >
                                       <div style={{ position: "relative", width: "100%", paddingTop: "140%", overflow: "hidden" }}>
                                         <img
@@ -1253,7 +1253,7 @@ export default function Hifz() {
                                         <span className="text-[10px] font-semibold text-emerald-800 block">p.{a.page_number}</span>
                                         {a.note && <span className="text-[9px] text-muted-foreground line-clamp-1">{a.note}</span>}
                                       </div>
-                                    </a>
+                                    </button>
                                   ))}
                                 </div>
                               </div>
@@ -1284,12 +1284,11 @@ export default function Hifz() {
                   </p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {mushafAnnotations.map((a: any) => (
-                        <a
+                        <button
                           key={a.id}
-                          href={a.annotated_image_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="block rounded-xl border border-emerald-200 overflow-hidden hover:shadow-md transition-shadow group"
+                          type="button"
+                          onClick={() => setViewAnnotation({ page: a.page_number, url: a.annotated_image_url, note: a.note })}
+                          className="block rounded-xl border border-emerald-200 overflow-hidden hover:shadow-md transition-shadow group text-left w-full"
                         >
                           <div style={{ position: "relative", width: "100%", paddingTop: "140%", overflow: "hidden" }}>
                             <img
@@ -1308,11 +1307,50 @@ export default function Hifz() {
                             Page {a.page_number}
                             {a.note && <span className="block text-[10px] text-muted-foreground truncate">{a.note}</span>}
                           </div>
-                        </a>
+                        </button>
                     ))}
                   </div>
                 </div>
               )}
+            {/* Modal annotation composée */}
+            {viewAnnotation && (
+              <div
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+                onClick={() => setViewAnnotation(null)}
+              >
+                <div
+                  className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-amber-100">
+                    <div>
+                      <span className="font-semibold text-emerald-800">Page {viewAnnotation.page} / 604 — Correction de votre professeur</span>
+                      {viewAnnotation.note && (
+                        <p className="text-xs text-muted-foreground mt-0.5 italic">« {viewAnnotation.note} »</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setViewAnnotation(null)}
+                      className="text-muted-foreground hover:text-foreground text-xl leading-none"
+                    >✕</button>
+                  </div>
+                  <div className="overflow-auto max-h-[75vh]">
+                    <div style={{ position: "relative", width: "100%" }}>
+                      <img
+                        src={`https://www.mp3quran.net/api/quran_pages_arabic/${String(viewAnnotation.page).padStart(3,"0")}.png`}
+                        alt={`Page ${viewAnnotation.page}`}
+                        style={{ display: "block", width: "100%" }}
+                      />
+                      <img
+                        src={viewAnnotation.url}
+                        alt="Annotations du professeur"
+                        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
             </TabsContent>
 
             {/* ═══════════════════════════════════════════════════════════════
