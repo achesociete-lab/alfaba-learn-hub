@@ -1,19 +1,11 @@
-// Visualiseur Mushaf de Médine avec annotation au stylo
-// Architecture : <img> normale (pas de CORS) + <canvas> transparent superposé.
-// Le canvas est TOUJOURS visible (transparent = invisible), seul pointerEvents change.
-// Taille du canvas = taille affichée de l'image (via ResizeObserver).
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  ChevronLeft, ChevronRight, Eraser, Undo2, Trash2,
-  Save, Loader2, ZoomIn, ZoomOut, Pencil,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Eraser, Undo2, Trash2, Save, Loader2, ZoomIn, ZoomOut, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-const TOTAL_PAGES = 604;
 const COLORS = ["#ef4444", "#22c55e", "#3b82f6", "#eab308", "#a855f7", "#000000"];
 const SIZES  = [2, 4, 8, 14];
 
@@ -32,15 +24,15 @@ interface Props {
 export default function MushafAnnotator({ studentId, studentName, sessionId, initialPage = 1, onSaved }: Props) {
   const { toast } = useToast();
 
-  const [page, setPage]         = useState(initialPage);
+  const [page, setPage]       = useState(initialPage);
   const [pageInput, setPageInput] = useState(String(initialPage));
-  const [imgLoaded, setImgLoaded] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const [tool, setTool]   = useState<"pen" | "eraser">("pen");
   const [color, setColor] = useState(COLORS[0]);
   const [size, setSize]   = useState(SIZES[1]);
-  const [drawing, setDrawing] = useState(false);
-  const lastPt = useRef<{ x: number; y: number } | null>(null);
+  const drawing           = useRef(false);
+  const lastPt            = useRef<{ x: number; y: number } | null>(null);
   const [history, setHistory] = useState<ImageData[]>([]);
   const [hasStrokes, setHasStrokes] = useState(false);
 
@@ -48,90 +40,68 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
   const [saving, setSaving] = useState(false);
   const [note, setNote]   = useState("");
 
-  const imgRef     = useRef<HTMLImageElement>(null);
-  const canvasRef  = useRef<HTMLCanvasElement>(null);
-  const wrapRef    = useRef<HTMLDivElement>(null);
+  const imgRef    = useRef<HTMLImageElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // ── Sync canvas pixel dimensions to displayed img size (ResizeObserver) ───────
-  useLayoutEffect(() => {
-    const wrap = wrapRef.current;
-    if (!wrap) return;
-    const ro = new ResizeObserver(() => {
-      const img = imgRef.current;
-      const cv  = canvasRef.current;
-      if (!img || !cv || !img.complete || img.naturalWidth === 0) return;
-      const rect = img.getBoundingClientRect();
-      if (rect.width === 0 || rect.height === 0) return;
-      // Only resize if different to avoid clearing annotations on every frame
-      if (cv.width !== Math.round(rect.width) || cv.height !== Math.round(rect.height)) {
-        // Preserve existing strokes through resize
-        const ctx = cv.getContext("2d")!;
-        const prev = cv.width > 0 ? ctx.getImageData(0, 0, cv.width, cv.height) : null;
-        cv.width  = Math.round(rect.width);
-        cv.height = Math.round(rect.height);
-        if (prev && prev.width > 0) {
-          const tmp = document.createElement("canvas");
-          tmp.width = prev.width; tmp.height = prev.height;
-          tmp.getContext("2d")!.putImageData(prev, 0, 0);
-          ctx.drawImage(tmp, 0, 0, cv.width, cv.height);
-        }
-      }
-    });
-    ro.observe(wrap);
-    return () => ro.disconnect();
-  }, []);
+  // ── When image loads: size the canvas exactly to the displayed image ──────────
+  const onImgLoad = () => {
+    const img = imgRef.current;
+    const cv  = canvasRef.current;
+    if (!img || !cv) return;
+    cv.width  = img.offsetWidth  || img.naturalWidth;
+    cv.height = img.offsetHeight || img.naturalHeight;
+    cv.getContext("2d")!.clearRect(0, 0, cv.width, cv.height);
+    setLoading(false);
+    setHasStrokes(false);
+    setHistory([]);
+  };
 
-  // ── Reset canvas when page changes ────────────────────────────────────────────
-  useEffect(() => {
-    setImgLoaded(false);
+  // ── Navigate ──────────────────────────────────────────────────────────────────
+  const goTo = (p: number) => {
+    const c = Math.max(1, Math.min(604, p));
+    if (c === page) return;
+    setPage(c);
+    setPageInput(String(c));
+    setLoading(true);
     setHasStrokes(false);
     setHistory([]);
     const cv = canvasRef.current;
     if (cv) cv.getContext("2d")!.clearRect(0, 0, cv.width, cv.height);
-  }, [page]);
-
-  // ── Navigate ──────────────────────────────────────────────────────────────────
-  const goTo = (p: number) => {
-    const c = Math.max(1, Math.min(TOTAL_PAGES, p));
-    setPage(c);
-    setPageInput(String(c));
   };
 
-  // ── Pointer coords relative to canvas ─────────────────────────────────────────
+  // ── Pointer coords ────────────────────────────────────────────────────────────
   const getPt = (e: React.PointerEvent) => {
     const cv   = canvasRef.current!;
     const rect = cv.getBoundingClientRect();
     return {
-      x: (e.clientX - rect.left) * (cv.width  / rect.width),
-      y: (e.clientY - rect.top)  * (cv.height / rect.height),
+      x: (e.clientX - rect.left) * (cv.width  / (rect.width  || 1)),
+      y: (e.clientY - rect.top)  * (cv.height / (rect.height || 1)),
     };
   };
 
   const pushHistory = () => {
-    const cv  = canvasRef.current!;
-    const ctx = cv.getContext("2d")!;
-    setHistory((h) => [...h.slice(-30), ctx.getImageData(0, 0, cv.width, cv.height)]);
+    const cv = canvasRef.current!;
+    setHistory(h => [...h.slice(-30), cv.getContext("2d")!.getImageData(0, 0, cv.width, cv.height)]);
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
-    if (!imgLoaded) return;
+    if (loading || !canvasRef.current) return;
     pushHistory();
-    setDrawing(true);
-    lastPt.current = getPt(e);
+    drawing.current = true;
+    lastPt.current  = getPt(e);
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
-    if (!drawing || !lastPt.current) return;
+    if (!drawing.current || !lastPt.current) return;
     const cv  = canvasRef.current!;
     const ctx = cv.getContext("2d")!;
     const pt  = getPt(e);
     ctx.beginPath();
-    ctx.lineCap  = "round";
-    ctx.lineJoin = "round";
+    ctx.lineCap = ctx.lineJoin = "round";
     if (tool === "eraser") {
       ctx.globalCompositeOperation = "destination-out";
-      ctx.lineWidth   = size * 3;
+      ctx.lineWidth   = size * 4;
       ctx.strokeStyle = "rgba(0,0,0,1)";
     } else {
       ctx.globalCompositeOperation = "source-over";
@@ -145,12 +115,12 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
     setHasStrokes(true);
   };
 
-  const onPointerUp = () => { setDrawing(false); lastPt.current = null; };
+  const onPointerUp = () => { drawing.current = false; lastPt.current = null; };
 
   const undo = () => {
     if (!history.length) return;
     canvasRef.current!.getContext("2d")!.putImageData(history[history.length - 1], 0, 0);
-    setHistory((h) => h.slice(0, -1));
+    setHistory(h => h.slice(0, -1));
     if (history.length <= 1) setHasStrokes(false);
   };
 
@@ -161,41 +131,31 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
     setHasStrokes(false);
   };
 
-  // ── Save : export canvas (transparent PNG annotation layer) ───────────────────
+  // ── Save : export canvas annotation layer as PNG ──────────────────────────────
   const save = async () => {
-    if (!hasStrokes) {
-      toast({ title: "Aucune annotation à sauvegarder", variant: "destructive" });
-      return;
-    }
+    if (!hasStrokes) { toast({ title: "Aucune annotation", variant: "destructive" }); return; }
     setSaving(true);
     try {
       const cv = canvasRef.current!;
       const blob: Blob = await new Promise((res, rej) =>
-        cv.toBlob((b) => b ? res(b) : rej(new Error("toBlob failed")), "image/png")
+        cv.toBlob(b => b ? res(b) : rej(new Error("toBlob failed")), "image/png")
       );
       const path = `hifz-annotations/${studentId}/page-${page}-${Date.now()}.png`;
-      const { error: upErr } = await supabase.storage
-        .from("presentiel-courses")
-        .upload(path, blob, { contentType: "image/png", upsert: false });
+      const { error: upErr } = await supabase.storage.from("presentiel-courses")
+        .upload(path, blob, { contentType: "image/png" });
       if (upErr) throw upErr;
       const { data: { publicUrl } } = supabase.storage.from("presentiel-courses").getPublicUrl(path);
       const { error: dbErr } = await supabase.from("hifz_mushaf_annotations" as any).insert({
-        student_id: studentId,
-        page_number: page,
+        student_id: studentId, page_number: page,
         annotated_image_url: publicUrl,
-        note: note.trim() || null,
-        session_id: sessionId || null,
+        note: note.trim() || null, session_id: sessionId || null,
       });
       if (dbErr) throw dbErr;
       toast({ title: `Page ${page} sauvegardée ✓`, description: `Pour ${studentName}` });
-      clear();
-      setNote("");
-      onSaved?.();
+      clear(); setNote(""); onSaved?.();
     } catch (e: any) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
   };
 
   return (
@@ -207,9 +167,9 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
         </Button>
         <div className="flex items-center gap-1">
           <Input type="number" min={1} max={604} value={pageInput}
-            onChange={(e) => setPageInput(e.target.value)}
+            onChange={e => setPageInput(e.target.value)}
             onBlur={() => goTo(Number(pageInput) || page)}
-            onKeyDown={(e) => e.key === "Enter" && goTo(Number(pageInput) || page)}
+            onKeyDown={e => e.key === "Enter" && goTo(Number(pageInput) || page)}
             className="h-8 w-16 text-center text-sm" />
           <span className="text-xs text-muted-foreground">/ 604</span>
         </div>
@@ -227,28 +187,28 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
         </Button>
 
         <div className="flex gap-1">
-          {COLORS.map((c) => (
+          {COLORS.map(c => (
             <button key={c} onClick={() => { setColor(c); setTool("pen"); }}
-              className={`w-6 h-6 rounded-full border-2 transition-transform ${color === c && tool === "pen" ? "scale-125 border-foreground" : "border-transparent"}`}
+              className={`w-6 h-6 rounded-full border-2 ${color === c && tool === "pen" ? "scale-125 border-foreground" : "border-transparent"}`}
               style={{ backgroundColor: c }} />
           ))}
         </div>
 
         <div className="flex gap-1 items-center">
-          {SIZES.map((s) => (
+          {SIZES.map(s => (
             <button key={s} onClick={() => setSize(s)}
-              className={`rounded-full bg-foreground transition-all ${size === s ? "opacity-100 ring-2 ring-primary ring-offset-1" : "opacity-30"}`}
+              className={`rounded-full bg-foreground ${size === s ? "opacity-100 ring-2 ring-primary ring-offset-1" : "opacity-30"}`}
               style={{ width: Math.max(8, s + 4), height: Math.max(8, s + 4) }} />
           ))}
         </div>
 
         <div className="w-px h-5 bg-border mx-1" />
 
-        <Button size="sm" variant="outline" onClick={() => setZoom((z) => Math.min(2, +(z + 0.25).toFixed(2)))} className="px-2">
+        <Button size="sm" variant="outline" onClick={() => setZoom(z => Math.min(2, +(z + 0.25).toFixed(2)))} className="px-2">
           <ZoomIn className="h-4 w-4" />
         </Button>
         <span className="text-xs text-muted-foreground w-10 text-center">{Math.round(zoom * 100)}%</span>
-        <Button size="sm" variant="outline" onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.25).toFixed(2)))} className="px-2">
+        <Button size="sm" variant="outline" onClick={() => setZoom(z => Math.max(0.5, +(z - 0.25).toFixed(2)))} className="px-2">
           <ZoomOut className="h-4 w-4" />
         </Button>
 
@@ -262,24 +222,27 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
         </Button>
       </div>
 
-      {/* Canvas zone */}
+      {/* Canvas zone — CSS Grid stacks img + canvas in the same cell */}
       <div className="rounded-xl border border-border overflow-auto bg-stone-100" style={{ maxHeight: "72vh" }}>
         <div style={{ transform: `scale(${zoom})`, transformOrigin: "top center", display: "inline-block", minWidth: "100%" }}>
-          {/* wrapRef observed by ResizeObserver to sync canvas size */}
-          <div ref={wrapRef} className="relative" style={{ direction: "ltr", display: "inline-block", lineHeight: 0 }}>
-            {/* Base image — loaded normally, no crossOrigin */}
+
+          {loading && (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-emerald-700" />
+            </div>
+          )}
+
+          {/* CSS Grid trick: img and canvas occupy grid cell "1/1", perfectly stacked */}
+          <div style={{ display: "grid", visibility: loading ? "hidden" : "visible" }}>
             <img
               ref={imgRef}
               key={page}
               src={getMushafUrl(page)}
-              alt={`Page ${page} du Mushaf`}
+              alt={`Page ${page}`}
               draggable={false}
-              onLoad={() => setImgLoaded(true)}
-              onError={() => setImgLoaded(false)}
-              style={{ display: "block", maxWidth: "100%", userSelect: "none" }}
+              onLoad={onImgLoad}
+              style={{ gridArea: "1 / 1", display: "block", width: "100%", maxWidth: "700px", userSelect: "none" }}
             />
-
-            {/* Annotation canvas — always transparent, just pointerEvents changes */}
             <canvas
               ref={canvasRef}
               onPointerDown={onPointerDown}
@@ -287,43 +250,25 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
               onPointerUp={onPointerUp}
               onPointerLeave={onPointerUp}
               style={{
-                position: "absolute",
-                top: 0, left: 0,
-                width: "100%",
-                height: "100%",
+                gridArea: "1 / 1",
                 cursor: tool === "eraser" ? "cell" : "crosshair",
                 touchAction: "none",
-                background: "transparent",
-                pointerEvents: imgLoaded ? "auto" : "none",
               }}
             />
-
-            {/* Loading spinner */}
-            {!imgLoaded && (
-              <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(245,245,244,0.7)" }}>
-                <Loader2 className="h-8 w-8 animate-spin text-emerald-700" />
-              </div>
-            )}
           </div>
+
         </div>
       </div>
 
       {/* Save */}
       <div className="flex gap-2 items-center flex-wrap">
-        <Input value={note} onChange={(e) => setNote(e.target.value)}
-          placeholder="Note pour l'élève (optionnel)…"
-          className="flex-1 min-w-0 text-sm" />
+        <Input value={note} onChange={e => setNote(e.target.value)}
+          placeholder="Note pour l'élève (optionnel)…" className="flex-1 min-w-0 text-sm" />
         <Button onClick={save} disabled={saving || !hasStrokes}
           className="bg-emerald-700 hover:bg-emerald-800 text-white gap-2 shrink-0">
-          {saving
-            ? <><Loader2 className="h-4 w-4 animate-spin" /> Sauvegarde…</>
-            : <><Save className="h-4 w-4" /> Sauvegarder l'annotation</>}
+          {saving ? <><Loader2 className="h-4 w-4 animate-spin" /> Sauvegarde…</> : <><Save className="h-4 w-4" /> Sauvegarder</>}
         </Button>
-        {hasStrokes && (
-          <Badge variant="outline" className="border-emerald-500 text-emerald-600 text-xs">
-            Non sauvegardé
-          </Badge>
-        )}
+        {hasStrokes && <Badge variant="outline" className="border-emerald-500 text-emerald-600 text-xs">Non sauvegardé</Badge>}
       </div>
     </div>
   );
