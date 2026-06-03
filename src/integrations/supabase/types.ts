@@ -559,9 +559,6 @@ export type Database = {
           created_at: string
           created_by: string
           dictation: Json | null
-          dictation_sentence_audios: Json
-          dictation_text: string | null
-          dictation_word_audios: Json
           dictation_words: Json
           fill_blanks: Json
           id: string
@@ -584,9 +581,6 @@ export type Database = {
           created_at?: string
           created_by: string
           dictation?: Json | null
-          dictation_sentence_audios?: Json
-          dictation_text?: string | null
-          dictation_word_audios?: Json
           dictation_words?: Json
           fill_blanks?: Json
           id?: string
@@ -609,9 +603,6 @@ export type Database = {
           created_at?: string
           created_by?: string
           dictation?: Json | null
-          dictation_sentence_audios?: Json
-          dictation_text?: string | null
-          dictation_word_audios?: Json
           dictation_words?: Json
           fill_blanks?: Json
           id?: string
