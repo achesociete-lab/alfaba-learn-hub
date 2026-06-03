@@ -1236,12 +1236,19 @@ export default function Hifz() {
                                       rel="noreferrer"
                                       className="block rounded-xl overflow-hidden border-2 border-emerald-300 hover:shadow-lg transition-shadow group"
                                     >
-                                      <img
-                                        src={a.annotated_image_url}
-                                        alt={`Correction p.${a.page_number}`}
-                                        className="w-full object-cover group-hover:opacity-90 transition"
-                                        style={{ maxHeight: 120 }}
-                                      />
+                                      <div style={{ position: "relative", width: "100%", paddingTop: "140%", overflow: "hidden" }}>
+                                        <img
+                                          src={`https://www.mp3quran.net/api/quran_pages_arabic/${String(a.page_number).padStart(3,"0")}.png`}
+                                          alt=""
+                                          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                                        />
+                                        <img
+                                          src={a.annotated_image_url}
+                                          alt={`Correction p.${a.page_number}`}
+                                          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                                          className="group-hover:opacity-90 transition"
+                                        />
+                                      </div>
                                       <div className="px-1.5 py-1 bg-emerald-50 text-center">
                                         <span className="text-[10px] font-semibold text-emerald-800 block">p.{a.page_number}</span>
                                         {a.note && <span className="text-[9px] text-muted-foreground line-clamp-1">{a.note}</span>}
@@ -1284,12 +1291,19 @@ export default function Hifz() {
                           rel="noreferrer"
                           className="block rounded-xl border border-emerald-200 overflow-hidden hover:shadow-md transition-shadow group"
                         >
-                          <img
-                            src={a.annotated_image_url}
-                            alt={`Page ${a.page_number} annotée`}
-                            className="w-full object-cover group-hover:opacity-90 transition"
-                            style={{ maxHeight: 140 }}
-                          />
+                          <div style={{ position: "relative", width: "100%", paddingTop: "140%", overflow: "hidden" }}>
+                            <img
+                              src={`https://www.mp3quran.net/api/quran_pages_arabic/${String(a.page_number).padStart(3,"0")}.png`}
+                              alt=""
+                              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                            />
+                            <img
+                              src={a.annotated_image_url}
+                              alt={`Page ${a.page_number} annotée`}
+                              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                              className="group-hover:opacity-90 transition"
+                            />
+                          </div>
                           <div className="px-2 py-1 bg-emerald-50 text-xs text-emerald-800 font-medium">
                             Page {a.page_number}
                             {a.note && <span className="block text-[10px] text-muted-foreground truncate">{a.note}</span>}
