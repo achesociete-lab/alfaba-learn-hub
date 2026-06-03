@@ -115,27 +115,39 @@ export async function fetchJuzVerses(juzNumber: number): Promise<QuranVerse[]> {
   }));
 }
 
-// Get Quran page image URL (Medina Mushaf) — high resolution
+// Get Quran page image URL (Medina Mushaf)
+// Primary: mp3quran.net (no CORS restriction, direct PNG)
 export function getMedinaPageUrl(page: number): string {
   const padded = String(page).padStart(3, "0");
-  return `https://cdn.islamic.network/quran/images/high-resolution/${padded}.png`;
+  return `https://www.mp3quran.net/api/quran_pages_arabic/${padded}.png`;
 }
 
-// Fetch Mushaf page number for a given surah:verse (cached)
-const versePageCache = new Map<string, number>();
-export async function fetchVersePage(surah: number, verse: number): Promise<number | null> {
+// Fetch Mushaf page + hizb number for a given surah:verse (cached)
+export interface VerseInfo { page: number; hizb: number }
+const verseInfoCache = new Map<string, VerseInfo>();
+export async function fetchVerseInfo(surah: number, verse: number): Promise<VerseInfo | null> {
   const key = `${surah}:${verse}`;
-  if (versePageCache.has(key)) return versePageCache.get(key)!;
+  if (verseInfoCache.has(key)) return verseInfoCache.get(key)!;
   try {
     const res = await fetch(`${QURAN_API}/ayah/${surah}:${verse}`);
     if (!res.ok) return null;
     const data = await res.json();
     const page = data?.data?.page ?? null;
-    if (page) versePageCache.set(key, page);
-    return page;
+    const hizbQuarter = data?.data?.hizbQuarter ?? null;
+    if (!page) return null;
+    const hizb = hizbQuarter ? Math.ceil(hizbQuarter / 4) : 1;
+    const info: VerseInfo = { page, hizb };
+    verseInfoCache.set(key, info);
+    return info;
   } catch {
     return null;
   }
+}
+
+// Keep old export for compatibility
+export async function fetchVersePage(surah: number, verse: number): Promise<number | null> {
+  const info = await fetchVerseInfo(surah, verse);
+  return info?.page ?? null;
 }
 
 // Search for a verse by text across all surahs

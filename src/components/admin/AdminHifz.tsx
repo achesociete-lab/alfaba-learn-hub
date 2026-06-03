@@ -41,7 +41,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { HIFZ_SESSION_TYPES, getSessionType, HifzSessionType } from "@/lib/hifz-session-types";
-import { fetchSurahList, fetchVersePage, SurahInfo } from "@/utils/quran-api";
+import { fetchSurahList, fetchVerseInfo, getMedinaPageUrl, SurahInfo } from "@/utils/quran-api";
 
 type Slot = {
   id: string;
@@ -700,10 +700,32 @@ function EvaluateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
   const [timer, setTimer] = useState<number | null>(null);
   const [surahList, setSurahList] = useState<SurahInfo[]>([]);
   const [loadingPage, setLoadingPage] = useState<Record<number, boolean>>({});
+  const [previewPage, setPreviewPage] = useState<number | null>(null);
 
   const selectedSession = sessions.find((s) => s.id === sessionId);
   const sessionType = (selectedSession?.session_type || "sabaq") as HifzSessionType;
   const typeInfo = getSessionType(sessionType);
+
+  const PERSIST_KEY = "hifz-eval-draft";
+
+  // Restore persisted state on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(PERSIST_KEY);
+      if (!saved) return;
+      const { studentId: sid, sessionId: ssid, evals: ev } = JSON.parse(saved);
+      if (sid) setStudentId(sid);
+      if (ssid) setSessionId(ssid);
+      if (ev?.length) setEvals(ev);
+    } catch {}
+  }, []);
+
+  // Persist state on every change
+  useEffect(() => {
+    try {
+      localStorage.setItem(PERSIST_KEY, JSON.stringify({ studentId, sessionId, evals }));
+    } catch {}
+  }, [studentId, sessionId, evals]);
 
   useEffect(() => {
     (async () => {
@@ -720,19 +742,20 @@ function EvaluateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
     })();
   }, []);
 
-  // Auto-fetch Mushaf page when surah+verse is complete
+  // Auto-fetch page + hizb from surah/verse via API
   const resolvePages = async (idx: number, draft: EvalDraft) => {
     const { surah_start, verse_start, surah_end, verse_end } = draft;
     if (!surah_start || !verse_start) return;
     setLoadingPage((p) => ({ ...p, [idx]: true }));
-    const [p1, p2] = await Promise.all([
-      fetchVersePage(surah_start, verse_start),
-      surah_end && verse_end ? fetchVersePage(surah_end, verse_end) : Promise.resolve(null),
+    const [info1, info2] = await Promise.all([
+      fetchVerseInfo(surah_start, verse_start),
+      surah_end && verse_end ? fetchVerseInfo(surah_end, verse_end) : Promise.resolve(null),
     ]);
     setLoadingPage((p) => ({ ...p, [idx]: false }));
     updateEval(idx, {
-      page_start: p1 ?? undefined,
-      page_end: p2 ?? p1 ?? undefined,
+      page_start: info1?.page ?? undefined,
+      page_end: info2?.page ?? info1?.page ?? undefined,
+      hizb_number: info1?.hizb ?? draft.hizb_number,
     });
   };
 
@@ -860,6 +883,7 @@ function EvaluateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
     setEvals([{ hizb_number: 1, status: "", niveau: "", notes: "" }]);
     setSessionId("");
     setTimer(null);
+    localStorage.removeItem(PERSIST_KEY);
   };
 
   return (
@@ -935,17 +959,11 @@ function EvaluateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
           <Card key={i} className="border-emerald-100">
             <CardContent className="pt-4 space-y-3">
               <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <Label className="whitespace-nowrap">Hizb</Label>
-                  <Select value={String(e.hizb_number)} onValueChange={(v) => updateEval(i, { hizb_number: +v })}>
-                    <SelectTrigger className="w-24 bg-white"><SelectValue /></SelectTrigger>
-                    <SelectContent className="max-h-72">
-                      {Array.from({ length: 60 }).map((_, k) => (<SelectItem key={k + 1} value={String(k + 1)}>{k + 1}</SelectItem>))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {e.hizb_number && e.surah_start ? (
+                  <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">Hizb {e.hizb_number} (auto)</span>
+                ) : null}
                 {evals.length > 1 && sessionType !== "khatm_partiel" && (
-                  <Button size="sm" variant="ghost" onClick={() => removeEval(i)}><Trash2 className="h-4 w-4 text-red-600" /></Button>
+                  <Button size="sm" variant="ghost" className="ml-auto" onClick={() => removeEval(i)}><Trash2 className="h-4 w-4 text-red-600" /></Button>
                 )}
               </div>
 
@@ -1080,13 +1098,13 @@ function EvaluateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
                     <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg">
                       📖 Pages Mushaf : {e.page_start}{e.page_end && e.page_end !== e.page_start ? `–${e.page_end}` : ""}
                     </span>
-                    <a
-                      href={`https://cdn.islamic.network/quran/images/high-resolution/${String(e.page_start).padStart(3,"0")}.png`}
-                      target="_blank" rel="noreferrer"
-                      className="text-xs text-blue-600 underline"
+                    <button
+                      type="button"
+                      onClick={() => setPreviewPage(e.page_start!)}
+                      className="text-xs text-emerald-700 underline hover:text-emerald-900"
                     >
-                      Voir page {e.page_start} ↗
-                    </a>
+                      Voir page {e.page_start} →
+                    </button>
                   </div>
                 ) : null}
               </div>
@@ -1098,6 +1116,42 @@ function EvaluateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
       <Button onClick={submit} disabled={saving} className="bg-emerald-700 hover:bg-emerald-800 text-white">
         {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Enregistrer l'évaluation
       </Button>
+
+      {/* Modal prévisualisation page Mushaf */}
+      {previewPage !== null && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          onClick={() => setPreviewPage(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+              <div className="flex items-center gap-3">
+                <span className="font-semibold text-emerald-800">Page {previewPage} / 604</span>
+                <div className="flex gap-1">
+                  <Button size="sm" variant="outline" onClick={() => setPreviewPage(p => Math.max(1, (p ?? 1) - 1))}>‹</Button>
+                  <Button size="sm" variant="outline" onClick={() => setPreviewPage(p => Math.min(604, (p ?? 1) + 1))}>›</Button>
+                </div>
+              </div>
+              <button
+                onClick={() => setPreviewPage(null)}
+                className="text-muted-foreground hover:text-foreground text-xl leading-none"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="overflow-auto max-h-[75vh] bg-stone-100 flex items-center justify-center p-2">
+              <img
+                src={getMedinaPageUrl(previewPage)}
+                alt={`Page ${previewPage} du Mushaf`}
+                className="w-full max-w-lg rounded"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

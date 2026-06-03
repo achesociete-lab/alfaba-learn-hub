@@ -14,12 +14,7 @@ const TOTAL_PAGES = 604;
 const COLORS = ["#ef4444", "#22c55e", "#3b82f6", "#eab308", "#a855f7", "#000000"];
 const SIZES  = [2, 5, 10, 18];
 
-// Deux sources avec fallback
 function getMushafUrl(page: number) {
-  const p = String(page).padStart(3, "0");
-  return `https://cdn.islamic.network/quran/images/high-resolution/${p}.png`;
-}
-function getMushafUrlFallback(page: number) {
   const p = String(page).padStart(3, "0");
   return `https://www.mp3quran.net/api/quran_pages_arabic/${p}.png`;
 }
@@ -72,32 +67,23 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
     const img = new Image();
     img.crossOrigin = "anonymous";
 
-    const tryLoad = (url: string, fallback?: string) => {
-      img.onload = () => {
-        imgRef.current = img;
-        const canvas  = canvasRef.current!;
-        const overlay = overlayRef.current!;
-        // Fit to 900px wide max
-        const maxW = 900;
-        const scale = Math.min(1, maxW / img.naturalWidth);
-        const w = Math.round(img.naturalWidth  * scale);
-        const h = Math.round(img.naturalHeight * scale);
-        canvas.width  = overlay.width  = w;
-        canvas.height = overlay.height = h;
-        const ctx = canvas.getContext("2d")!;
-        ctx.drawImage(img, 0, 0, w, h);
-        // Clear overlay
-        overlay.getContext("2d")!.clearRect(0, 0, w, h);
-        setImgLoaded(true);
-      };
-      img.onerror = () => {
-        if (fallback) { img.src = fallback; }
-        else { setImgError(true); }
-      };
-      img.src = url;
+    img.onload = () => {
+      imgRef.current = img;
+      const canvas  = canvasRef.current!;
+      const overlay = overlayRef.current!;
+      const maxW = 900;
+      const scale = Math.min(1, maxW / img.naturalWidth);
+      const w = Math.round(img.naturalWidth  * scale);
+      const h = Math.round(img.naturalHeight * scale);
+      canvas.width  = overlay.width  = w;
+      canvas.height = overlay.height = h;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, w, h);
+      overlay.getContext("2d")!.clearRect(0, 0, w, h);
+      setImgLoaded(true);
     };
-
-    tryLoad(getMushafUrl(p), getMushafUrlFallback(p));
+    img.onerror = () => setImgError(true);
+    img.src = getMushafUrl(p);
   }, []);
 
   useEffect(() => { loadPage(page); }, [page, loadPage]);
