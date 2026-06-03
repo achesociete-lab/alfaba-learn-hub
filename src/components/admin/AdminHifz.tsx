@@ -703,6 +703,7 @@ function EvaluateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
   const [surahList, setSurahList] = useState<SurahInfo[]>([]);
   const [loadingPage, setLoadingPage] = useState<Record<number, boolean>>({});
   const [previewPage, setPreviewPage] = useState<number | null>(null);
+  const [viewAnnotation, setViewAnnotation] = useState<{ page: number; url: string; note?: string } | null>(null);
   const [showAnnotator, setShowAnnotator] = useState(false);
   const [annotatingEval, setAnnotatingEval] = useState<{ evalId: string; sessionId: string | null; page: number; label: string } | null>(null);
   const [studentAnnotations, setStudentAnnotations] = useState<any[]>([]);
@@ -1248,13 +1249,12 @@ function EvaluateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
                       return (
                         <div className="flex flex-wrap gap-1.5 pt-1">
                           {related.map((a: any) => (
-                            <a
+                            <button
                               key={a.id}
-                              href={a.annotated_image_url}
-                              target="_blank"
-                              rel="noreferrer"
+                              type="button"
                               title={a.note || `Page ${a.page_number}`}
-                              className="block rounded-lg overflow-hidden border-2 border-emerald-400 hover:shadow-md transition-shadow group shrink-0"
+                              onClick={() => setViewAnnotation({ page: a.page_number, url: a.annotated_image_url, note: a.note })}
+                              className="block rounded-lg overflow-hidden border-2 border-emerald-400 hover:shadow-md transition-shadow group shrink-0 text-left"
                             >
                               <div style={{ position: "relative", height: 72, width: 52, overflow: "hidden" }}>
                                 <img
@@ -1272,7 +1272,7 @@ function EvaluateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
                               <div className="bg-emerald-50 text-[9px] text-emerald-700 text-center font-semibold px-1 py-0.5">
                                 p.{a.page_number}
                               </div>
-                            </a>
+                            </button>
                           ))}
                         </div>
                       );
@@ -1337,6 +1337,46 @@ function EvaluateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Modal annotation composée */}
+      {viewAnnotation && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setViewAnnotation(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+              <div>
+                <span className="font-semibold text-emerald-800">Page {viewAnnotation.page} / 604</span>
+                {viewAnnotation.note && (
+                  <p className="text-xs text-muted-foreground mt-0.5 italic">« {viewAnnotation.note} »</p>
+                )}
+              </div>
+              <button
+                onClick={() => setViewAnnotation(null)}
+                className="text-muted-foreground hover:text-foreground text-xl leading-none"
+              >✕</button>
+            </div>
+            <div className="overflow-auto max-h-[75vh]">
+              <div style={{ position: "relative", width: "100%" }}>
+                <img
+                  src={`https://www.mp3quran.net/api/quran_pages_arabic/${String(viewAnnotation.page).padStart(3,"0")}.png`}
+                  alt={`Page ${viewAnnotation.page}`}
+                  style={{ display: "block", width: "100%" }}
+                />
+                <img
+                  src={viewAnnotation.url}
+                  alt="Annotations"
+                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1489,14 +1529,29 @@ function AnnotateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {annotations.map((a: any) => (
                   <div key={a.id} className="relative group rounded-lg overflow-hidden border border-border">
-                    <a href={a.annotated_image_url} target="_blank" rel="noreferrer">
-                      <img
-                        src={a.annotated_image_url}
-                        alt={`Page ${a.page_number} annotée`}
-                        className="w-full object-cover hover:opacity-90 transition"
-                        style={{ maxHeight: 140 }}
-                      />
-                    </a>
+                    <button
+                      type="button"
+                      className="block w-full text-left"
+                      onClick={() => {
+                        const evt = new CustomEvent("view-annotation", { detail: { page: a.page_number, url: a.annotated_image_url, note: a.note } });
+                        window.dispatchEvent(evt);
+                      }}
+                    >
+                      <div style={{ position: "relative", width: "100%", maxHeight: 140, overflow: "hidden" }}>
+                        <img
+                          src={`https://www.mp3quran.net/api/quran_pages_arabic/${String(a.page_number).padStart(3,"0")}.png`}
+                          alt=""
+                          className="w-full object-cover"
+                          style={{ maxHeight: 140 }}
+                        />
+                        <img
+                          src={a.annotated_image_url}
+                          alt={`Page ${a.page_number} annotée`}
+                          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                          className="hover:opacity-90 transition"
+                        />
+                      </div>
+                    </button>
                     <div className="px-2 py-1 text-xs bg-background/90 flex items-center justify-between gap-1">
                       <span className="font-medium">Page {a.page_number}</span>
                       <button
