@@ -24,9 +24,9 @@ interface Props {
 export default function MushafAnnotator({ studentId, studentName, sessionId, initialPage = 1, onSaved }: Props) {
   const { toast } = useToast();
 
-  const [page, setPage]       = useState(initialPage);
+  const [page, setPage]         = useState(initialPage);
   const [pageInput, setPageInput] = useState(String(initialPage));
-  const [loading, setLoading] = useState(true);
+  const [canDraw, setCanDraw]   = useState(false);  // true once img is loaded
 
   const [tool, setTool]   = useState<"pen" | "eraser">("pen");
   const [color, setColor] = useState(COLORS[0]);
@@ -35,7 +35,6 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
   const lastPt            = useRef<{ x: number; y: number } | null>(null);
   const [history, setHistory] = useState<ImageData[]>([]);
   const [hasStrokes, setHasStrokes] = useState(false);
-
   const [zoom, setZoom]   = useState(1);
   const [saving, setSaving] = useState(false);
   const [note, setNote]   = useState("");
@@ -43,15 +42,15 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
   const imgRef    = useRef<HTMLImageElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // ── When image loads: size the canvas exactly to the displayed image ──────────
+  // ── Image loaded → size canvas to natural dimensions ─────────────────────────
   const onImgLoad = () => {
     const img = imgRef.current;
     const cv  = canvasRef.current;
     if (!img || !cv) return;
-    cv.width  = img.offsetWidth  || img.naturalWidth;
-    cv.height = img.offsetHeight || img.naturalHeight;
+    cv.width  = img.naturalWidth;
+    cv.height = img.naturalHeight;
     cv.getContext("2d")!.clearRect(0, 0, cv.width, cv.height);
-    setLoading(false);
+    setCanDraw(true);
     setHasStrokes(false);
     setHistory([]);
   };
@@ -60,40 +59,37 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
   const goTo = (p: number) => {
     const c = Math.max(1, Math.min(604, p));
     if (c === page) return;
-    setPage(c);
-    setPageInput(String(c));
-    setLoading(true);
+    setCanDraw(false);
     setHasStrokes(false);
     setHistory([]);
     const cv = canvasRef.current;
     if (cv) cv.getContext("2d")!.clearRect(0, 0, cv.width, cv.height);
+    setPage(c);
+    setPageInput(String(c));
   };
 
-  // ── Pointer coords ────────────────────────────────────────────────────────────
+  // ── Pointer coords (scale display px → natural px) ────────────────────────────
   const getPt = (e: React.PointerEvent) => {
     const cv   = canvasRef.current!;
     const rect = cv.getBoundingClientRect();
     return {
-      x: (e.clientX - rect.left) * (cv.width  / (rect.width  || 1)),
-      y: (e.clientY - rect.top)  * (cv.height / (rect.height || 1)),
+      x: (e.clientX - rect.left) / (rect.width  / cv.width),
+      y: (e.clientY - rect.top)  / (rect.height / cv.height),
     };
   };
 
-  const pushHistory = () => {
-    const cv = canvasRef.current!;
-    setHistory(h => [...h.slice(-30), cv.getContext("2d")!.getImageData(0, 0, cv.width, cv.height)]);
-  };
-
   const onPointerDown = (e: React.PointerEvent) => {
-    if (loading || !canvasRef.current) return;
-    pushHistory();
+    if (!canDraw) return;
+    const ctx = canvasRef.current!.getContext("2d")!;
+    const cv  = canvasRef.current!;
+    setHistory(h => [...h.slice(-30), ctx.getImageData(0, 0, cv.width, cv.height)]);
     drawing.current = true;
     lastPt.current  = getPt(e);
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
-    if (!drawing.current || !lastPt.current) return;
+    if (!drawing.current || !lastPt.current || !canDraw) return;
     const cv  = canvasRef.current!;
     const ctx = cv.getContext("2d")!;
     const pt  = getPt(e);
@@ -101,11 +97,11 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
     ctx.lineCap = ctx.lineJoin = "round";
     if (tool === "eraser") {
       ctx.globalCompositeOperation = "destination-out";
-      ctx.lineWidth   = size * 4;
+      ctx.lineWidth   = size * 6;
       ctx.strokeStyle = "rgba(0,0,0,1)";
     } else {
       ctx.globalCompositeOperation = "source-over";
-      ctx.lineWidth   = size;
+      ctx.lineWidth   = size * 2;  // *2 parce que canvas = taille naturelle
       ctx.strokeStyle = color;
     }
     ctx.moveTo(lastPt.current.x, lastPt.current.y);
@@ -119,7 +115,8 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
 
   const undo = () => {
     if (!history.length) return;
-    canvasRef.current!.getContext("2d")!.putImageData(history[history.length - 1], 0, 0);
+    const cv = canvasRef.current!;
+    cv.getContext("2d")!.putImageData(history[history.length - 1], 0, 0);
     setHistory(h => h.slice(0, -1));
     if (history.length <= 1) setHasStrokes(false);
   };
@@ -131,14 +128,12 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
     setHasStrokes(false);
   };
 
-  // ── Save : export canvas annotation layer as PNG ──────────────────────────────
   const save = async () => {
     if (!hasStrokes) { toast({ title: "Aucune annotation", variant: "destructive" }); return; }
     setSaving(true);
     try {
-      const cv = canvasRef.current!;
       const blob: Blob = await new Promise((res, rej) =>
-        cv.toBlob(b => b ? res(b) : rej(new Error("toBlob failed")), "image/png")
+        canvasRef.current!.toBlob(b => b ? res(b) : rej(new Error("toBlob failed")), "image/png")
       );
       const path = `hifz-annotations/${studentId}/page-${page}-${Date.now()}.png`;
       const { error: upErr } = await supabase.storage.from("presentiel-courses")
@@ -189,7 +184,7 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
         <div className="flex gap-1">
           {COLORS.map(c => (
             <button key={c} onClick={() => { setColor(c); setTool("pen"); }}
-              className={`w-6 h-6 rounded-full border-2 ${color === c && tool === "pen" ? "scale-125 border-foreground" : "border-transparent"}`}
+              className={`w-6 h-6 rounded-full border-2 transition-transform ${color === c && tool === "pen" ? "scale-125 border-foreground" : "border-transparent"}`}
               style={{ backgroundColor: c }} />
           ))}
         </div>
@@ -197,7 +192,7 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
         <div className="flex gap-1 items-center">
           {SIZES.map(s => (
             <button key={s} onClick={() => setSize(s)}
-              className={`rounded-full bg-foreground ${size === s ? "opacity-100 ring-2 ring-primary ring-offset-1" : "opacity-30"}`}
+              className={`rounded-full bg-foreground transition-all ${size === s ? "opacity-100 ring-2 ring-primary ring-offset-1" : "opacity-30"}`}
               style={{ width: Math.max(8, s + 4), height: Math.max(8, s + 4) }} />
           ))}
         </div>
@@ -220,28 +215,33 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
         <Button size="sm" variant="outline" onClick={clear} disabled={!hasStrokes} className="text-destructive border-destructive/30">
           <Trash2 className="h-3.5 w-3.5" />
         </Button>
+
+        {!canDraw && <span className="text-xs text-muted-foreground italic ml-2">Chargement…</span>}
       </div>
 
-      {/* Canvas zone — CSS Grid stacks img + canvas in the same cell */}
+      {/* Zone dessin — CSS Grid : img + canvas dans la même cellule */}
       <div className="rounded-xl border border-border overflow-auto bg-stone-100" style={{ maxHeight: "72vh" }}>
         <div style={{ transform: `scale(${zoom})`, transformOrigin: "top center", display: "inline-block", minWidth: "100%" }}>
-
-          {loading && (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="h-8 w-8 animate-spin text-emerald-700" />
-            </div>
-          )}
-
-          {/* CSS Grid trick: img and canvas occupy grid cell "1/1", perfectly stacked */}
-          <div style={{ display: "grid", visibility: loading ? "hidden" : "visible" }}>
+          {/*
+            display:grid empile img et canvas dans la même cellule (1/1).
+            Aucun positionnement absolu, aucun état de visibilité.
+            Le canvas est TOUJOURS là, transparent quand vide.
+          */}
+          <div style={{ display: "grid" }}>
             <img
               ref={imgRef}
               key={page}
               src={getMushafUrl(page)}
-              alt={`Page ${page}`}
+              alt={`Page ${page} du Mushaf`}
               draggable={false}
               onLoad={onImgLoad}
-              style={{ gridArea: "1 / 1", display: "block", width: "100%", maxWidth: "700px", userSelect: "none" }}
+              style={{
+                gridArea: "1 / 1",
+                display: "block",
+                width: "100%",
+                maxWidth: "700px",
+                userSelect: "none",
+              }}
             />
             <canvas
               ref={canvasRef}
@@ -251,12 +251,13 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
               onPointerLeave={onPointerUp}
               style={{
                 gridArea: "1 / 1",
-                cursor: tool === "eraser" ? "cell" : "crosshair",
+                width: "100%",
+                height: "100%",
+                cursor: canDraw ? (tool === "eraser" ? "cell" : "crosshair") : "default",
                 touchAction: "none",
               }}
             />
           </div>
-
         </div>
       </div>
 
