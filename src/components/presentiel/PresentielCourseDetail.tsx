@@ -30,6 +30,8 @@ export interface PresentielCourseV2 {
   vocabulary: { arabic: string; french: string }[];
   dictation_words: string[];
   dictation_word_audios?: string[];
+  dictation_text?: string | null;
+  dictation_sentence_audios?: string[];
   comprehension_questions?: { question: string; answer: string }[];
   reorder_exercises?: { words: string[]; correct_order: string[] }[];
   photo_url?: string | null;
@@ -1206,10 +1208,17 @@ const PresentielCourseDetail = ({ course: rawCourse, userProgress, onProgressUpd
               title="Étape — Dictée"
               maxPhotos={3}
               instruction={
-                <DicteeInstruction
-                  words={course.dictation_words || []}
-                  wordAudios={course.dictation_word_audios}
-                />
+                course.level === "niveau_2" && course.dictation_text ? (
+                  <DicteeInstructionN2
+                    text={course.dictation_text}
+                    sentenceAudios={course.dictation_sentence_audios}
+                  />
+                ) : (
+                  <DicteeInstruction
+                    words={course.dictation_words || []}
+                    wordAudios={course.dictation_word_audios}
+                  />
+                )
               }
               onDone={async () => {
                 if (user) {
@@ -1246,6 +1255,121 @@ function waitMs(ms: number): Promise<void> {
 }
 
 const DICTEE_PAUSE_SEC = 6; // secondes d'écriture entre chaque mot
+
+// Helper: dictée N2 — texte phrase par phrase
+function DicteeInstructionN2({ text, sentenceAudios }: { text: string; sentenceAudios?: string[] }) {
+  const { speak } = useArabicSpeech();
+
+  const sentences = (text.match(/[^.؟!]+[.؟!]*/g) || [text]).map((s) => s.trim()).filter(Boolean);
+
+  const [idx, setIdx] = useState(0);
+  const [played, setPlayed] = useState<boolean[]>([]);
+  const [done, setDone] = useState(false);
+
+  const handleListen = async () => {
+    const teacherAudio = sentenceAudios?.[idx];
+    if (teacherAudio) {
+      const audio = new Audio(teacherAudio);
+      await audio.play().catch(() => speak(sentences[idx]));
+    } else {
+      await speak(sentences[idx]);
+    }
+    setPlayed((p) => { const n = [...p]; n[idx] = true; return n; });
+  };
+
+  const handleNext = () => {
+    if (idx + 1 >= sentences.length) setDone(true);
+    else setIdx((i) => i + 1);
+  };
+
+  if (sentences.length === 0) {
+    return <span className="text-sm text-muted-foreground">Aucune phrase configurée.</span>;
+  }
+
+  if (done) {
+    return (
+      <div className="space-y-3">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 text-center"
+        >
+          <CheckCircle2 className="h-8 w-8 text-emerald-600 mx-auto mb-2" />
+          <p className="font-bold text-emerald-700 dark:text-emerald-400">
+            Toutes les phrases dictées !
+          </p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Prenez une photo de votre feuille et envoyez-la pour correction.
+          </p>
+        </motion.div>
+        <Button variant="outline" size="sm" onClick={() => { setIdx(0); setPlayed([]); setDone(false); }}>
+          ↩ Recommencer
+        </Button>
+      </div>
+    );
+  }
+
+  const currentPlayed = played[idx] ?? false;
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Écoutez chaque phrase et écrivez-la sur votre feuille. Envoyez ensuite une photo pour correction.
+      </p>
+
+      {/* Barre de progression */}
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-semibold text-muted-foreground">
+          Phrase {idx + 1} / {sentences.length}
+        </span>
+        <div className="flex gap-1 flex-1">
+          {sentences.map((_, i) => (
+            <div
+              key={i}
+              className={`flex-1 h-1.5 rounded-full transition-all ${
+                i < idx ? "bg-emerald-500" : i === idx ? "bg-primary" : "bg-muted"
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Zone phrase */}
+      <div className="p-5 rounded-xl bg-muted/40 border border-border text-center min-h-[80px] flex items-center justify-center">
+        {currentPlayed ? (
+          <p className="text-xs text-muted-foreground">Phrase écoutée — écrivez-la sur votre feuille</p>
+        ) : (
+          <p className="text-sm text-muted-foreground italic">Cliquez sur "Écouter" — ne regardez pas la phrase !</p>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex flex-col gap-2">
+        <Button
+          onClick={handleListen}
+          variant={currentPlayed ? "outline" : "default"}
+          className={`w-full gap-2 ${!currentPlayed ? "gradient-emerald border-0 text-primary-foreground" : ""}`}
+        >
+          <Volume2 className="h-5 w-5" />
+          {currentPlayed ? "Réécouter" : `▶ Écouter la phrase n°${idx + 1}`}
+          {sentenceAudios?.[idx] && <span className="text-xs opacity-70 ml-1">🎙️ voix du prof</span>}
+        </Button>
+
+        {currentPlayed && (
+          <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}>
+            <Button
+              onClick={handleNext}
+              className="w-full gap-2 gradient-emerald border-0 text-primary-foreground"
+            >
+              ✏️ J'ai écrit →{" "}
+              {idx + 1 < sentences.length ? `Phrase ${idx + 2}/${sentences.length}` : "Terminé 🎉"}
+            </Button>
+          </motion.div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // Helper: dictée — mode mot par mot (clic par clic)
 function DicteeInstruction({ words, wordAudios }: { words: string[]; wordAudios?: string[] }) {

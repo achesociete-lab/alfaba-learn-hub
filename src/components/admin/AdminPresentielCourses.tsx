@@ -37,6 +37,8 @@ interface CourseDraft {
   reorder_exercises: ReorderEx[];
   dictation_words: string[];
   dictation_word_audios: string[];
+  dictation_text: string;
+  dictation_sentence_audios: string[];
   assigned_user_ids: string[];
   photo_url: string | null;
   lesson_photos: string[];
@@ -53,6 +55,8 @@ const emptyDraft = (): CourseDraft => ({
   reorder_exercises: [{ words: [], correct_order: [] }],
   dictation_words: [],
   dictation_word_audios: [],
+  dictation_text: "",
+  dictation_sentence_audios: [],
   assigned_user_ids: [],
   photo_url: null,
   lesson_photos: [],
@@ -79,6 +83,11 @@ const AdminPresentielCourses = () => {
   const [uploadingWordAudio, setUploadingWordAudio] = useState<number | null>(null);
   const wordMediaRef = useRef<MediaRecorder | null>(null);
   const wordChunksRef = useRef<Blob[]>([]);
+  const [recordingSentenceIdx, setRecordingSentenceIdx] = useState<number | null>(null);
+  const [uploadingSentenceAudio, setUploadingSentenceAudio] = useState<number | null>(null);
+  const sentenceMediaRef = useRef<MediaRecorder | null>(null);
+  const sentenceChunksRef = useRef<Blob[]>([]);
+  const [generatingDictationText, setGeneratingDictationText] = useState(false);
   const [expandedProgress, setExpandedProgress] = useState<string | null>(null);
   const [courseProgressMap, setCourseProgressMap] = useState<Record<string, any[]>>({});
   const [loadingProgress, setLoadingProgress] = useState<string | null>(null);
@@ -371,6 +380,92 @@ const AdminPresentielCourses = () => {
     });
   };
 
+  const splitSentences = (text: string): string[] =>
+    (text.match(/[^.؟!]+[.؟!]*/g) || [text]).map((s) => s.trim()).filter(Boolean);
+
+  const startSentenceRecording = async (idx: number) => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mr = new MediaRecorder(stream);
+      sentenceChunksRef.current = [];
+      mr.ondataavailable = (e) => sentenceChunksRef.current.push(e.data);
+      mr.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(sentenceChunksRef.current, { type: "audio/webm" });
+        await uploadSentenceAudio(idx, blob);
+      };
+      mr.start();
+      sentenceMediaRef.current = mr;
+      setRecordingSentenceIdx(idx);
+    } catch {
+      toast.error("Microphone non accessible");
+    }
+  };
+
+  const stopSentenceRecording = () => {
+    sentenceMediaRef.current?.stop();
+    setRecordingSentenceIdx(null);
+  };
+
+  const uploadSentenceAudio = async (idx: number, blob: Blob) => {
+    if (!user) return;
+    setUploadingSentenceAudio(idx);
+    try {
+      const path = `${user.id}/dictation-sentence-${idx}-${Date.now()}.webm`;
+      const { error: upErr } = await supabase.storage
+        .from("presentiel-courses")
+        .upload(path, blob, { contentType: "audio/webm" });
+      if (upErr) throw upErr;
+      const { data: { publicUrl } } = supabase.storage.from("presentiel-courses").getPublicUrl(path);
+      setDraft((d) => {
+        const audios = [...d.dictation_sentence_audios];
+        while (audios.length <= idx) audios.push("");
+        audios[idx] = publicUrl;
+        return { ...d, dictation_sentence_audios: audios };
+      });
+      toast.success(`Phrase n°${idx + 1} enregistrée`);
+    } catch (e: any) {
+      toast.error(e.message || "Erreur upload audio");
+    } finally {
+      setUploadingSentenceAudio(null);
+    }
+  };
+
+  const deleteSentenceAudio = (idx: number) => {
+    setDraft((d) => {
+      const audios = [...d.dictation_sentence_audios];
+      audios[idx] = "";
+      return { ...d, dictation_sentence_audios: audios };
+    });
+  };
+
+  const generateDictationText = async () => {
+    setGeneratingDictationText(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("presentiel-ai-generate", {
+        body: {
+          mode: "dictation_text_n2",
+          words_from_current: draft.dictation_words,
+          photo_urls: dictationRefPhotos,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (!data?.dictation_text) throw new Error("Aucun texte généré");
+      setDraft((d) => ({ ...d, dictation_text: data.dictation_text, dictation_sentence_audios: [] }));
+      toast.success("Texte de dictée généré !");
+    } catch (e: any) {
+      const msg = e.message || "";
+      if (msg.includes("402") || msg.toLowerCase().includes("credit")) {
+        toast.error("Crédits IA épuisés.", { duration: 8000 });
+      } else {
+        toast.error(msg || "Erreur génération texte");
+      }
+    } finally {
+      setGeneratingDictationText(false);
+    }
+  };
+
   const fetchData = async () => {
     const { data: c } = await supabase
       .from("presentiel_courses")
@@ -404,6 +499,8 @@ const AdminPresentielCourses = () => {
         : [{ words: [], correct_order: [] }],
       dictation_words: Array.isArray(c.dictation_words) ? c.dictation_words : [],
       dictation_word_audios: Array.isArray(c.dictation_word_audios) ? c.dictation_word_audios : [],
+      dictation_text: c.dictation_text || "",
+      dictation_sentence_audios: Array.isArray(c.dictation_sentence_audios) ? c.dictation_sentence_audios : [],
       assigned_user_ids: (c.presentiel_course_assignments || []).map((a: any) => a.user_id),
       photo_url: c.photo_url || null,
       lesson_photos: Array.isArray(c.lesson_photos) ? c.lesson_photos : [],
@@ -428,6 +525,8 @@ const AdminPresentielCourses = () => {
         reorder_exercises: draft.reorder_exercises.filter(r => r.correct_order.length > 0) as any,
         dictation_words: draft.dictation_words.filter(w => w.trim()) as any,
         dictation_word_audios: draft.dictation_word_audios as any,
+        dictation_text: draft.dictation_text || null,
+        dictation_sentence_audios: draft.dictation_sentence_audios as any,
         photo_url: draft.photo_url,
         lesson_photos: draft.lesson_photos as any,
         audio_url: draft.audio_url,
@@ -1060,9 +1159,9 @@ const AdminPresentielCourses = () => {
             </div>
           )}
 
-          {/* Dictation — depuis leçons précédentes OU saisie manuelle */}
+          {/* Dictation */}
           <div className="space-y-3">
-            {/* Bloc photo → IA → mots */}
+            {/* Bloc photo → IA → mots (commun aux deux niveaux pour la référence) */}
             <div className="p-4 rounded-lg border border-dashed border-blue-400/50 bg-blue-50/30 dark:bg-blue-950/20 space-y-3">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <Label className="flex items-center gap-2 text-blue-700 dark:text-blue-400">
@@ -1134,103 +1233,169 @@ const AdminPresentielCourses = () => {
               </div>
             </div>
 
-            {/* Textarea manuelle */}
-            <div className="space-y-1">
-              <Label className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Headphones className="h-4 w-4" /> Mots de la dictée (modifiables, séparés par virgule)
-              </Label>
-              <Textarea
-                dir="rtl"
-                className="font-amiri text-lg text-right min-h-[80px]"
-                value={dictationInput || draft.dictation_words.join("، ")}
-                onChange={(e) => {
-                  setDictationInput(e.target.value);
-                  const words = e.target.value.split(/[,،]/).map(w => w.trim()).filter(Boolean);
-                  setDraft({ ...draft, dictation_words: words });
-                }}
-                placeholder="كلمة، كلمة، كلمة — ou génère depuis les photos ci-dessus"
-              />
-            </div>
-
-            {/* Enregistrement audio par mot */}
-            {draft.dictation_words.length > 0 && (
-              <div className="space-y-2 p-4 rounded-lg border border-dashed border-emerald-400/50 bg-emerald-50/20 dark:bg-emerald-950/10">
-                <Label className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
-                  <Mic className="h-4 w-4" /> Enregistrer votre voix pour chaque mot
-                </Label>
-                <p className="text-xs text-muted-foreground">
-                  Cliquez sur <Mic className="h-3 w-3 inline" /> pour enregistrer votre prononciation de chaque mot — l'élève entendra votre voix au lieu de la synthèse IA.
-                </p>
-                <div className="space-y-2">
-                  {draft.dictation_words.map((word, i) => {
-                    const audioUrl = draft.dictation_word_audios[i] || "";
-                    const isRecording = recordingWordIdx === i;
-                    const isUploading = uploadingWordAudio === i;
-                    return (
-                      <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-background border border-border">
-                        {/* Numéro + mot */}
-                        <span className="text-xs font-semibold text-muted-foreground w-5 text-center shrink-0">{i + 1}</span>
-                        <span dir="rtl" className="font-amiri text-xl flex-1 text-right">{word}</span>
-
-                        {/* Lecteur si enregistré */}
-                        {audioUrl && !isRecording && (
-                          <audio
-                            controls
-                            src={audioUrl}
-                            style={{ height: 32, width: 140 }}
-                            className="rounded shrink-0"
-                          />
-                        )}
-
-                        {/* Boutons */}
-                        <div className="flex gap-1 shrink-0">
-                          {isUploading ? (
-                            <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                          ) : isRecording ? (
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={stopWordRecording}
-                              className="gap-1 animate-pulse"
-                            >
-                              <Square className="h-3 w-3" /> Stop
-                            </Button>
-                          ) : (
-                            <Button
-                              size="sm"
-                              variant={audioUrl ? "outline" : "default"}
-                              onClick={() => startWordRecording(i)}
-                              disabled={recordingWordIdx !== null}
-                              className={`gap-1 ${!audioUrl ? "gradient-emerald border-0 text-primary-foreground" : ""}`}
-                              title={audioUrl ? "Ré-enregistrer" : "Enregistrer"}
-                            >
-                              <Mic className="h-3 w-3" />
-                              {audioUrl ? <RotateCcw className="h-3 w-3" /> : "Enregistrer"}
-                            </Button>
-                          )}
-                          {audioUrl && !isRecording && (
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => deleteWordAudio(i)}
-                              title="Supprimer cet enregistrement"
-                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          )}
-                        </div>
-
-                        {/* Badge voix enregistrée */}
-                        {audioUrl && (
-                          <Badge variant="outline" className="text-[10px] shrink-0 border-emerald-500 text-emerald-600">
-                            ✓ Voix enregistrée
-                          </Badge>
-                        )}
-                      </div>
-                    );
-                  })}
+            {/* Niveau 1 : mots isolés */}
+            {draft.level === "niveau_1" && (
+              <>
+                <div className="space-y-1">
+                  <Label className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Headphones className="h-4 w-4" /> Mots de la dictée (séparés par virgule)
+                  </Label>
+                  <Textarea
+                    dir="rtl"
+                    className="font-amiri text-lg text-right min-h-[80px]"
+                    value={dictationInput || draft.dictation_words.join("، ")}
+                    onChange={(e) => {
+                      setDictationInput(e.target.value);
+                      const words = e.target.value.split(/[,،]/).map(w => w.trim()).filter(Boolean);
+                      setDraft({ ...draft, dictation_words: words });
+                    }}
+                    placeholder="كلمة، كلمة، كلمة — ou génère depuis les photos ci-dessus"
+                  />
                 </div>
+
+                {/* Enregistrement audio par mot (N1) */}
+                {draft.dictation_words.length > 0 && (
+                  <div className="space-y-2 p-4 rounded-lg border border-dashed border-emerald-400/50 bg-emerald-50/20 dark:bg-emerald-950/10">
+                    <Label className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
+                      <Mic className="h-4 w-4" /> Enregistrer votre voix pour chaque mot
+                    </Label>
+                    <div className="space-y-2">
+                      {draft.dictation_words.map((word, i) => {
+                        const audioUrl = draft.dictation_word_audios[i] || "";
+                        const isRecording = recordingWordIdx === i;
+                        const isUploading = uploadingWordAudio === i;
+                        return (
+                          <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-background border border-border">
+                            <span className="text-xs font-semibold text-muted-foreground w-5 text-center shrink-0">{i + 1}</span>
+                            <span dir="rtl" className="font-amiri text-xl flex-1 text-right">{word}</span>
+                            {audioUrl && !isRecording && (
+                              <audio controls src={audioUrl} style={{ height: 32, width: 140 }} className="rounded shrink-0" />
+                            )}
+                            <div className="flex gap-1 shrink-0">
+                              {isUploading ? (
+                                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                              ) : isRecording ? (
+                                <Button size="sm" variant="destructive" onClick={stopWordRecording} className="gap-1 animate-pulse">
+                                  <Square className="h-3 w-3" /> Stop
+                                </Button>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant={audioUrl ? "outline" : "default"}
+                                  onClick={() => startWordRecording(i)}
+                                  disabled={recordingWordIdx !== null}
+                                  className={`gap-1 ${!audioUrl ? "gradient-emerald border-0 text-primary-foreground" : ""}`}
+                                >
+                                  <Mic className="h-3 w-3" />
+                                  {audioUrl ? <RotateCcw className="h-3 w-3" /> : "Enregistrer"}
+                                </Button>
+                              )}
+                              {audioUrl && !isRecording && (
+                                <Button size="icon" variant="ghost" onClick={() => deleteWordAudio(i)} className="h-8 w-8 text-muted-foreground hover:text-destructive">
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              )}
+                            </div>
+                            {audioUrl && <Badge variant="outline" className="text-[10px] shrink-0 border-emerald-500 text-emerald-600">✓ Enregistré</Badge>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Niveau 2 : texte de dictée complet */}
+            {draft.level === "niveau_2" && (
+              <div className="space-y-3 p-4 rounded-lg border border-dashed border-primary/40 bg-primary/5">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <Label className="flex items-center gap-2">
+                    <Headphones className="h-4 w-4" /> Texte de dictée — Niveau 2
+                    <Badge variant="outline" className="text-xs">Niveau 2</Badge>
+                  </Label>
+                  <Button
+                    size="sm"
+                    onClick={generateDictationText}
+                    disabled={generatingDictationText}
+                    className="gap-1 gradient-emerald border-0 text-primary-foreground"
+                  >
+                    {generatingDictationText
+                      ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Génération…</>
+                      : <><Wand2 className="h-3.5 w-3.5" /> Générer avec l'IA</>}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  L'IA génère un texte de 3-5 phrases à partir du vocabulaire de la leçon et des leçons précédentes (photos ci-dessus). Vous pouvez aussi le saisir manuellement.
+                </p>
+                <Textarea
+                  dir="rtl"
+                  className="font-amiri text-xl text-right min-h-[120px] leading-loose"
+                  value={draft.dictation_text}
+                  onChange={(e) => setDraft((d) => ({ ...d, dictation_text: e.target.value, dictation_sentence_audios: [] }))}
+                  placeholder="اكتب هنا نصّ الإملاء… أو génère-le avec l'IA"
+                />
+
+                {/* Enregistrement phrase par phrase */}
+                {draft.dictation_text.trim() && (() => {
+                  const sentences = splitSentences(draft.dictation_text);
+                  return (
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 text-sm">
+                        <Mic className="h-4 w-4" /> Enregistrer votre voix — phrase par phrase
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        {sentences.length} phrase(s) détectée(s). Enregistrez chacune pour que l'élève entende votre voix lors de la dictée.
+                      </p>
+                      <div className="space-y-2">
+                        {sentences.map((sentence, i) => {
+                          const audioUrl = draft.dictation_sentence_audios[i] || "";
+                          const isRecording = recordingSentenceIdx === i;
+                          const isUploading = uploadingSentenceAudio === i;
+                          return (
+                            <div key={i} className="flex flex-col gap-2 p-3 rounded-lg bg-background border border-border">
+                              <div className="flex items-start gap-2">
+                                <span className="text-xs font-semibold text-muted-foreground mt-1 shrink-0">{i + 1}.</span>
+                                <p dir="rtl" className="font-amiri text-lg text-right flex-1 leading-relaxed">{sentence}</p>
+                              </div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {audioUrl && !isRecording && (
+                                  <audio controls src={audioUrl} style={{ height: 32, flex: 1, minWidth: 120 }} className="rounded" />
+                                )}
+                                <div className="flex gap-1 shrink-0 ml-auto">
+                                  {isUploading ? (
+                                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                                  ) : isRecording ? (
+                                    <Button size="sm" variant="destructive" onClick={stopSentenceRecording} className="gap-1 animate-pulse">
+                                      <Square className="h-3 w-3" /> Stop
+                                    </Button>
+                                  ) : (
+                                    <Button
+                                      size="sm"
+                                      variant={audioUrl ? "outline" : "default"}
+                                      onClick={() => startSentenceRecording(i)}
+                                      disabled={recordingSentenceIdx !== null}
+                                      className={`gap-1 ${!audioUrl ? "gradient-emerald border-0 text-primary-foreground" : ""}`}
+                                    >
+                                      <Mic className="h-3 w-3" />
+                                      {audioUrl ? <><RotateCcw className="h-3 w-3" /> Ré-enregistrer</> : "Enregistrer"}
+                                    </Button>
+                                  )}
+                                  {audioUrl && !isRecording && (
+                                    <Button size="icon" variant="ghost" onClick={() => deleteSentenceAudio(i)} className="h-8 w-8 text-muted-foreground hover:text-destructive">
+                                      <X className="h-3 w-3" />
+                                    </Button>
+                                  )}
+                                </div>
+                                {audioUrl && <Badge variant="outline" className="text-[10px] border-emerald-500 text-emerald-600">✓ Enregistrée</Badge>}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>

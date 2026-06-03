@@ -115,6 +115,77 @@ Ces mots seront utilisés pour une dictée de révision : choisis les mots les p
       });
     }
 
+    // ── MODE: dictation_text_n2 — génère un texte de dictée N2 à partir de mots ──
+    if (mode === "dictation_text_n2") {
+      const { words_from_current = [], photo_urls: refUrls = [] } = body || {};
+
+      const systemPrompt = `Tu es un professeur d'arabe expert niveau 2 (intermédiaire).
+Tu génères un texte court de dictée arabe en utilisant exclusivement des mots fournis ou vus dans les leçons précédentes.
+RÈGLES ABSOLUES :
+- Le texte DOIT contenir 3 à 5 phrases courtes et cohérentes.
+- TOUS les mots arabes DOIVENT avoir des harakat complets (fatha, kasra, damma, sukun, shadda, tanwin).
+- Utilise EN PRIORITÉ les mots fournis dans la liste. Tu peux en ajouter d'autres simples si nécessaire pour la cohérence.
+- Les phrases doivent être déclaratives, simples, accessibles à un élève de niveau 2.
+- NE mets JAMAIS de traduction ni de phonétique dans le texte arabe.`;
+
+      const wordsList = (words_from_current as string[]).join("، ");
+      const userParts: any[] = [
+        {
+          type: "text",
+          text: `Génère un texte de dictée de 3 à 5 phrases courtes en arabe avec harakat, en utilisant au maximum ces mots : ${wordsList || "(aucun mot fourni, utilise du vocabulaire simple de niveau 2)"}${(refUrls as string[]).length > 0 ? "\nVoici aussi des photos de leçons précédentes pour t'inspirer du vocabulaire vu :" : ""}`,
+        },
+        ...(refUrls as string[]).map((url: string) => ({ type: "image_url", image_url: { url } })),
+      ];
+
+      const tool = [{
+        type: "function",
+        function: {
+          name: "generate_dictation_text",
+          description: "Générer le texte de dictée niveau 2",
+          parameters: {
+            type: "object",
+            properties: {
+              dictation_text: {
+                type: "string",
+                description: "Texte arabe complet avec harakat, 3-5 phrases séparées par des points",
+              },
+            },
+            required: ["dictation_text"],
+          },
+        },
+      }];
+
+      const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-pro",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userParts },
+          ],
+          tools: tool,
+          tool_choice: { type: "function", function: { name: "generate_dictation_text" } },
+        }),
+      });
+
+      if (!aiRes.ok) {
+        const t = await aiRes.text();
+        console.error("AI error (dictation_text_n2)", aiRes.status, t);
+        if (aiRes.status === 429) return new Response(JSON.stringify({ error: "Limite de requêtes atteinte." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (aiRes.status === 402) return new Response(JSON.stringify({ error: "Crédits IA épuisés." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        return new Response(JSON.stringify({ error: "Erreur IA" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      const data = await aiRes.json();
+      const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+      if (!toolCall) throw new Error("Aucun tool_call dans la réponse IA");
+      const result = JSON.parse(toolCall.function.arguments);
+      return new Response(JSON.stringify({ dictation_text: result.dictation_text || "" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // ── MODE: génération complète du cours ──
     if (!level) {
       return new Response(JSON.stringify({ error: "level requis" }), {
