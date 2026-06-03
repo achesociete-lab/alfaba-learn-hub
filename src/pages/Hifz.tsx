@@ -1195,6 +1195,48 @@ export default function Hifz() {
                                       <Badge className="bg-red-600 text-white text-xs">À retravailler</Badge>
                                     )}
                                   </div>
+                                  {/* Plage récitée */}
+                                  {(e as any).surah_start && (
+                                    <div className="mt-1.5 space-y-1">
+                                      <p className="text-xs font-medium text-emerald-700">
+                                        📖 Récité : S.{(e as any).surah_start}:{(e as any).verse_start ?? 1}
+                                        {(e as any).surah_end ? ` → S.${(e as any).surah_end}:${(e as any).verse_end ?? "fin"}` : ""}
+                                        {(e as any).page_start ? ` (p.${(e as any).page_start}${(e as any).page_end && (e as any).page_end !== (e as any).page_start ? `–${(e as any).page_end}` : ""})` : ""}
+                                      </p>
+                                      {/* Annotations du professeur sur ces pages */}
+                                      {(e as any).page_start && (() => {
+                                        const ps = (e as any).page_start as number;
+                                        const pe = ((e as any).page_end ?? ps) as number;
+                                        const relevant = mushafAnnotations.filter((a: any) =>
+                                          a.page_number >= ps && a.page_number <= pe
+                                        );
+                                        if (!relevant.length) return null;
+                                        return (
+                                          <div className="flex flex-wrap gap-1.5 mt-1">
+                                            {relevant.map((a: any) => (
+                                              <a
+                                                key={a.id}
+                                                href={a.annotated_image_url}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="block rounded-lg overflow-hidden border-2 border-emerald-400 hover:shadow-md transition-shadow group"
+                                              >
+                                                <img
+                                                  src={a.annotated_image_url}
+                                                  alt={`Correction p.${a.page_number}`}
+                                                  className="object-cover group-hover:opacity-90"
+                                                  style={{ height: 80, width: 60 }}
+                                                />
+                                                <div className="bg-emerald-50 text-[9px] text-emerald-700 text-center font-semibold px-1">
+                                                  p.{a.page_number}
+                                                </div>
+                                              </a>
+                                            ))}
+                                          </div>
+                                        );
+                                      })()}
+                                    </div>
+                                  )}
                                   {e.notes && (
                                     <p className="text-xs text-gray-500 mt-1.5 italic border-l-2 border-gray-200 pl-2">"{e.notes}"</p>
                                   )}

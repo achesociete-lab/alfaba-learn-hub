@@ -121,6 +121,23 @@ export function getMedinaPageUrl(page: number): string {
   return `https://cdn.islamic.network/quran/images/high-resolution/${padded}.png`;
 }
 
+// Fetch Mushaf page number for a given surah:verse (cached)
+const versePageCache = new Map<string, number>();
+export async function fetchVersePage(surah: number, verse: number): Promise<number | null> {
+  const key = `${surah}:${verse}`;
+  if (versePageCache.has(key)) return versePageCache.get(key)!;
+  try {
+    const res = await fetch(`${QURAN_API}/ayah/${surah}:${verse}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const page = data?.data?.page ?? null;
+    if (page) versePageCache.set(key, page);
+    return page;
+  } catch {
+    return null;
+  }
+}
+
 // Search for a verse by text across all surahs
 export async function searchVerse(query: string): Promise<{ surah: number; ayah: number; text: string; page: number }[]> {
   const normalized = normalizeArabic(query);

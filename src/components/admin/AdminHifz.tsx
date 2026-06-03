@@ -41,6 +41,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { HIFZ_SESSION_TYPES, getSessionType, HifzSessionType } from "@/lib/hifz-session-types";
+import { fetchSurahList, fetchVersePage, SurahInfo } from "@/utils/quran-api";
 
 type Slot = {
   id: string;
@@ -74,6 +75,12 @@ type EvalDraft = {
   ready_to_advance?: boolean | null;
   without_mushaf?: boolean;
   fluidity?: string;
+  surah_start?: number;
+  verse_start?: number;
+  surah_end?: number;
+  verse_end?: number;
+  page_start?: number;
+  page_end?: number;
 };
 
 const NIVEAUX = [
@@ -691,6 +698,8 @@ function EvaluateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
   const [saving, setSaving] = useState(false);
   const [studentEvals, setStudentEvals] = useState<any[]>([]);
   const [timer, setTimer] = useState<number | null>(null);
+  const [surahList, setSurahList] = useState<SurahInfo[]>([]);
+  const [loadingPage, setLoadingPage] = useState<Record<number, boolean>>({});
 
   const selectedSession = sessions.find((s) => s.id === sessionId);
   const sessionType = (selectedSession?.session_type || "sabaq") as HifzSessionType;
@@ -698,14 +707,34 @@ function EvaluateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
 
   useEffect(() => {
     (async () => {
-      const { data: cfgs } = await supabase.from("hifz_config").select("student_id");
-      const ids = (cfgs || []).map((c: any) => c.student_id);
+      const [cfgsRes, surahsRes] = await Promise.all([
+        supabase.from("hifz_config").select("student_id"),
+        fetchSurahList().catch(() => []),
+      ]);
+      setSurahList(surahsRes);
+      const ids = (cfgsRes.data || []).map((c: any) => c.student_id);
       if (!ids.length) return;
       const { data: profs } = await supabase
         .from("profiles").select("user_id, first_name, last_name").in("user_id", ids);
       setStudents((profs || []).map((p: any) => ({ ...p, student_id: p.user_id })));
     })();
   }, []);
+
+  // Auto-fetch Mushaf page when surah+verse is complete
+  const resolvePages = async (idx: number, draft: EvalDraft) => {
+    const { surah_start, verse_start, surah_end, verse_end } = draft;
+    if (!surah_start || !verse_start) return;
+    setLoadingPage((p) => ({ ...p, [idx]: true }));
+    const [p1, p2] = await Promise.all([
+      fetchVersePage(surah_start, verse_start),
+      surah_end && verse_end ? fetchVersePage(surah_end, verse_end) : Promise.resolve(null),
+    ]);
+    setLoadingPage((p) => ({ ...p, [idx]: false }));
+    updateEval(idx, {
+      page_start: p1 ?? undefined,
+      page_end: p2 ?? p1 ?? undefined,
+    });
+  };
 
   useEffect(() => {
     if (!studentId) { setSessions([]); setSessionId(""); setStudentEvals([]); return; }
@@ -795,6 +824,10 @@ function EvaluateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
       if (sessionType === "sabaq") row.ready_to_advance = e.ready_to_advance ?? null;
       if (sessionType === "sabaq_para") row.without_mushaf = e.without_mushaf ?? true;
       if (sessionType === "khatm_partiel") row.fluidity = e.fluidity || null;
+      if (e.surah_start) { row.surah_start = e.surah_start; row.verse_start = e.verse_start ?? 1; }
+      if (e.surah_end)   { row.surah_end   = e.surah_end;   row.verse_end   = e.verse_end   ?? 1; }
+      if (e.page_start)  row.page_start = e.page_start;
+      if (e.page_end)    row.page_end   = e.page_end;
       return row;
     });
     const { error } = await supabase.from("hifz_evaluations").insert(rows);
@@ -966,6 +999,97 @@ function EvaluateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
 
               <Textarea placeholder="Notes (optionnel)" value={e.notes}
                 onChange={(ev) => updateEval(i, { notes: ev.target.value })} className="bg-white" rows={2} />
+
+              {/* ── Plage sourate / verset récitée ── */}
+              <div className="space-y-2 pt-1 border-t border-border">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Plage récitée (optionnel)</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Début */}
+                  <div className="space-y-1">
+                    <Label className="text-xs text-emerald-700 font-semibold">Début</Label>
+                    <Select
+                      value={e.surah_start ? String(e.surah_start) : ""}
+                      onValueChange={(v) => {
+                        const updated = { ...e, surah_start: +v, verse_start: 1 };
+                        updateEval(i, updated);
+                        resolvePages(i, updated);
+                      }}
+                    >
+                      <SelectTrigger className="bg-white h-8 text-xs">
+                        <SelectValue placeholder="Sourate…" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-64">
+                        {surahList.map((s) => (
+                          <SelectItem key={s.number} value={String(s.number)} className="text-xs">
+                            {s.number}. {s.nameArabic} — {s.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      type="number" min={1}
+                      max={surahList.find((s) => s.number === e.surah_start)?.versesCount ?? 999}
+                      placeholder="Verset"
+                      value={e.verse_start ?? ""}
+                      className="h-8 text-xs bg-white"
+                      onChange={(ev) => updateEval(i, { verse_start: +ev.target.value })}
+                      onBlur={() => resolvePages(i, e)}
+                    />
+                  </div>
+                  {/* Fin */}
+                  <div className="space-y-1">
+                    <Label className="text-xs text-amber-700 font-semibold">Fin</Label>
+                    <Select
+                      value={e.surah_end ? String(e.surah_end) : ""}
+                      onValueChange={(v) => {
+                        const updated = { ...e, surah_end: +v, verse_end: 1 };
+                        updateEval(i, updated);
+                        resolvePages(i, updated);
+                      }}
+                    >
+                      <SelectTrigger className="bg-white h-8 text-xs">
+                        <SelectValue placeholder="Sourate…" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-64">
+                        {surahList.map((s) => (
+                          <SelectItem key={s.number} value={String(s.number)} className="text-xs">
+                            {s.number}. {s.nameArabic} — {s.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      type="number" min={1}
+                      max={surahList.find((s) => s.number === e.surah_end)?.versesCount ?? 999}
+                      placeholder="Verset"
+                      value={e.verse_end ?? ""}
+                      className="h-8 text-xs bg-white"
+                      onChange={(ev) => updateEval(i, { verse_end: +ev.target.value })}
+                      onBlur={() => resolvePages(i, e)}
+                    />
+                  </div>
+                </div>
+
+                {/* Pages calculées */}
+                {loadingPage[i] ? (
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Calcul des pages…
+                  </div>
+                ) : e.page_start ? (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg">
+                      📖 Pages Mushaf : {e.page_start}{e.page_end && e.page_end !== e.page_start ? `–${e.page_end}` : ""}
+                    </span>
+                    <a
+                      href={`https://cdn.islamic.network/quran/images/high-resolution/${String(e.page_start).padStart(3,"0")}.png`}
+                      target="_blank" rel="noreferrer"
+                      className="text-xs text-blue-600 underline"
+                    >
+                      Voir page {e.page_start} ↗
+                    </a>
+                  </div>
+                ) : null}
+              </div>
             </CardContent>
           </Card>
         ))}
