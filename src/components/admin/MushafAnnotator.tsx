@@ -1,7 +1,7 @@
-// Mushaf annotator — img normale + canvas transparent superposé
-// Pas besoin de CORS : on exporte UNIQUEMENT la couche d'annotation (PNG transparent)
-// Le composant est stabilisé par key={studentId} dans AnnotateTab
-import { useCallback, useEffect, useRef, useState } from "react";
+// Mushaf annotator — version finale simplifiée
+// Pas d'état de visibilité, pas de race condition
+// img normale (pas de CORS) + canvas transparent superposé
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -32,14 +32,17 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
 
   const [page, setPage]           = useState(initialPage);
   const [pageInput, setPageInput] = useState(String(initialPage));
-  const [imgOk, setImgOk]         = useState(false);   // image affichée et dimensionnée
+  const [ready, setReady]         = useState(false);   // uniquement pour l'indicateur UI
 
   const [tool, setTool]   = useState<"pen" | "eraser">("pen");
   const [color, setColor] = useState(COLORS[0]);
   const [size, setSize]   = useState(SIZES[1]);
-  const drawing           = useRef(false);
-  const lastPt            = useRef<{ x: number; y: number } | null>(null);
-  const [history, setHistory]     = useState<ImageData[]>([]);
+
+  const isDrawing = useRef(false);
+  const lastPt    = useRef<{ x: number; y: number } | null>(null);
+  const canvasOk  = useRef(false);   // ref (pas state) pour éviter les re-renders
+
+  const [history, setHistory]       = useState<ImageData[]>([]);
   const [hasStrokes, setHasStrokes] = useState(false);
   const [zoom, setZoom]   = useState(1);
   const [saving, setSaving] = useState(false);
@@ -48,86 +51,58 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
   const imgRef    = useRef<HTMLImageElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // ── Dimensionner le canvas sur la taille affichée de l'image ─────────────────
-  const sizeCanvas = useCallback(() => {
+  // ── Image chargée → dimensionner le canvas une seule fois ────────────────────
+  const onImgLoad = () => {
     const img = imgRef.current;
     const cv  = canvasRef.current;
     if (!img || !cv) return;
-    const w = img.offsetWidth;
-    const h = img.offsetHeight;
+    const w = img.offsetWidth  || img.naturalWidth;
+    const h = img.offsetHeight || img.naturalHeight;
     if (!w || !h) return;
-    if (cv.width === w && cv.height === h) return; // déjà OK
-    const ctx = cv.getContext("2d")!;
-    // Préserver les traits existants lors d'un resize
-    const prev = cv.width > 0 && cv.height > 0
-      ? ctx.getImageData(0, 0, cv.width, cv.height) : null;
     cv.width  = w;
     cv.height = h;
-    if (prev) {
-      const tmp = document.createElement("canvas");
-      tmp.width = prev.width; tmp.height = prev.height;
-      tmp.getContext("2d")!.putImageData(prev, 0, 0);
-      ctx.drawImage(tmp, 0, 0, w, h);
-    }
-    setImgOk(true);
-  }, []);
-
-  // Appelé par onLoad de l'img ET vérifie img.complete pour les images en cache
-  const handleImgReady = useCallback(() => {
-    // Laisser le layout browser se stabiliser avant de lire offsetWidth
-    requestAnimationFrame(() => {
-      sizeCanvas();
-      setHasStrokes(false);
-      setHistory([]);
-    });
-  }, [sizeCanvas]);
-
-  // Quand la page change : réinitialiser
-  useEffect(() => {
-    setImgOk(false);
-    setHasStrokes(false);
-    setHistory([]);
-    const cv = canvasRef.current;
-    if (cv) cv.getContext("2d")!.clearRect(0, 0, cv.width, cv.height);
-  }, [page]);
-
-  // Gérer les images déjà en cache (onLoad ne se déclenche pas toujours)
-  useEffect(() => {
-    const img = imgRef.current;
-    if (img?.complete && img.naturalWidth > 0) {
-      handleImgReady();
-    }
-  }, [page, handleImgReady]);
+    cv.getContext("2d")!.clearRect(0, 0, w, h);
+    canvasOk.current = true;
+    setReady(true);        // indicateur UI seulement, pas lié à la visibilité
+  };
 
   // ── Navigation ────────────────────────────────────────────────────────────────
   const goTo = (p: number) => {
     const c = Math.max(1, Math.min(604, p));
     if (c === page) return;
+    canvasOk.current = false;
+    setReady(false);
+    setHasStrokes(false);
+    setHistory([]);
+    // Vider le canvas sans changer ses dimensions (pas de flash)
+    const cv = canvasRef.current;
+    if (cv) cv.getContext("2d")!.clearRect(0, 0, cv.width, cv.height);
     setPage(c);
     setPageInput(String(c));
   };
 
-  // ── Pointer coords : display px → canvas px ──────────────────────────────────
+  // ── Coords pointer → canvas ───────────────────────────────────────────────────
   const getPt = (e: React.PointerEvent) => {
     const cv   = canvasRef.current!;
     const rect = cv.getBoundingClientRect();
-    const scaleX = cv.width  / rect.width;
-    const scaleY = cv.height / rect.height;
-    return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
+    return {
+      x: (e.clientX - rect.left) * (cv.width  / rect.width),
+      y: (e.clientY - rect.top)  * (cv.height / rect.height),
+    };
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
-    if (!imgOk) return;
-    const cv = canvasRef.current!;
+    if (!canvasOk.current) return;
+    const cv  = canvasRef.current!;
     const ctx = cv.getContext("2d")!;
     setHistory(h => [...h.slice(-30), ctx.getImageData(0, 0, cv.width, cv.height)]);
-    drawing.current = true;
-    lastPt.current  = getPt(e);
+    isDrawing.current = true;
+    lastPt.current    = getPt(e);
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
-    if (!drawing.current || !lastPt.current || !imgOk) return;
+    if (!isDrawing.current || !lastPt.current || !canvasOk.current) return;
     const cv  = canvasRef.current!;
     const ctx = cv.getContext("2d")!;
     const pt  = getPt(e);
@@ -149,7 +124,7 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
     setHasStrokes(true);
   };
 
-  const onPointerUp = () => { drawing.current = false; lastPt.current = null; };
+  const onPointerUp = () => { isDrawing.current = false; lastPt.current = null; };
 
   const undo = () => {
     if (!history.length) return;
@@ -165,7 +140,6 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
     setHasStrokes(false);
   };
 
-  // ── Sauvegarde : PNG transparent (annotation uniquement, pas de CORS) ─────────
   const save = async () => {
     if (!hasStrokes) { toast({ title: "Aucune annotation", variant: "destructive" }); return; }
     setSaving(true);
@@ -254,31 +228,31 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
           <Trash2 className="h-3.5 w-3.5" />
         </Button>
 
-        {imgOk && (
-          <span className="text-xs text-emerald-600 font-medium ml-1">✓ Prêt à annoter</span>
-        )}
+        <span className="text-xs ml-1" style={{ color: ready ? "#16a34a" : "#9ca3af" }}>
+          {ready ? "✓ Prêt" : "Chargement…"}
+        </span>
       </div>
 
-      {/* Zone d'annotation */}
+      {/* Zone — div block simple, pas de inline-block ni line-height tricks */}
       <div className="rounded-xl border border-border overflow-auto bg-stone-100" style={{ maxHeight: "72vh" }}>
-        <div style={{ transform: `scale(${zoom})`, transformOrigin: "top center", display: "inline-block", minWidth: "100%" }}>
+        <div style={{ transform: `scale(${zoom})`, transformOrigin: "top center", width: "100%" }}>
           {/*
-            position:relative sur le wrapper
-            img : affichage normal (pas de crossOrigin), charge sans CORS
-            canvas : position:absolute, couvre exactement l'img, transparent
+            Layout le plus simple possible :
+            - div relative, largeur 100%
+            - img : block, width 100%
+            - canvas : absolute couvrant exactement l'img
+            Aucun display:inline-block, line-height, ou grid — sources de bugs mobile
           */}
-          <div style={{ position: "relative", display: "inline-block", lineHeight: 0 }}>
+          <div style={{ position: "relative", width: "100%", maxWidth: "700px", margin: "0 auto" }}>
             <img
               ref={imgRef}
               key={page}
               src={getMushafUrl(page)}
-              alt={`Page ${page} du Mushaf`}
+              alt={`Page ${page}`}
+              onLoad={onImgLoad}
               draggable={false}
-              onLoad={handleImgReady}
-              style={{ display: "block", maxWidth: "700px", width: "100%", userSelect: "none" }}
+              style={{ display: "block", width: "100%", userSelect: "none" }}
             />
-
-            {/* Canvas transparent — toujours présent, jamais caché */}
             <canvas
               ref={canvasRef}
               onPointerDown={onPointerDown}
@@ -287,25 +261,12 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
               onPointerLeave={onPointerUp}
               style={{
                 position: "absolute",
-                top: 0, left: 0,
-                width: "100%",
-                height: "100%",
-                cursor: imgOk ? (tool === "eraser" ? "cell" : "crosshair") : "wait",
+                top: 0, left: 0, right: 0, bottom: 0,
+                width: "100%", height: "100%",
+                cursor: ready ? (tool === "eraser" ? "cell" : "crosshair") : "wait",
                 touchAction: "none",
-                // background volontairement absent : canvas est transparent par défaut
               }}
             />
-
-            {/* Indicateur de chargement discret */}
-            {!imgOk && (
-              <div style={{
-                position: "absolute", inset: 0,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                pointerEvents: "none",
-              }}>
-                <Loader2 className="h-8 w-8 animate-spin text-emerald-700 opacity-60" />
-              </div>
-            )}
           </div>
         </div>
       </div>
