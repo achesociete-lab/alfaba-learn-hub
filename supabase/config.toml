@@ -23,3 +23,5 @@ project_id = "ruqudrizhrrnxowirito"
     verify_jwt = true
   [functions.notify-presentiel-approved]
     verify_jwt = true
+  [functions.notify-presentiel-correction]
+    verify_jwt = true

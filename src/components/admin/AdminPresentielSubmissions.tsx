@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  CheckCircle2, XCircle, Loader2, MessageSquare, Image as ImageIcon, Mic, Search, Pencil,
+  CheckCircle2, XCircle, Loader2, MessageSquare, Image as ImageIcon, Mic, Search, Pencil, Trash2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -144,6 +144,30 @@ const AdminPresentielSubmissions = () => {
       setEditing(null);
       setFeedbackDraft("");
       load();
+
+      // Notify student by email
+      const student = students[sub.user_id];
+      const course = courses[sub.course_id];
+      supabase.functions.invoke("notify-presentiel-correction", {
+        body: {
+          userId: sub.user_id,
+          studentName: student ? `${student.first_name} ${student.last_name}` : undefined,
+          courseName: course?.title,
+          stepType: sub.step_type,
+          status,
+          feedback: feedback ?? sub.feedback ?? undefined,
+        },
+      }).catch((err) => console.error("notify-presentiel-correction failed", err));
+    }
+  };
+
+  const deleteSubmission = async (id: string) => {
+    const { error } = await supabase.from("presentiel_submissions").delete().eq("id", id);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Soumission supprimée");
+      load();
     }
   };
 
@@ -221,6 +245,7 @@ const AdminPresentielSubmissions = () => {
                   onChangeFeedback={setFeedbackDraft}
                   onValidate={() => updateStatus(s, "validee", feedbackDraft || undefined)}
                   onReject={() => updateStatus(s, "a_corriger", feedbackDraft || undefined)}
+                  onDelete={() => deleteSubmission(s.id)}
                   onAnnotate={(idx, url) => setAnnotating({ subId: s.id, photoIndex: idx, url })}
                   onReload={load}
                 />
@@ -235,6 +260,7 @@ const AdminPresentielSubmissions = () => {
                 sub={s}
                 course={courses[s.course_id]}
                 student={students[s.user_id]}
+                onDelete={() => deleteSubmission(s.id)}
                 onAnnotate={(idx, url) => setAnnotating({ subId: s.id, photoIndex: idx, url })}
                 onReload={load}
                 readonly
@@ -289,7 +315,7 @@ const AdminPresentielSubmissions = () => {
 
 function SubmissionCard({
   sub, course, student, editing, feedbackDraft,
-  onEdit, onChangeFeedback, onValidate, onReject, onAnnotate, onReload, readonly,
+  onEdit, onChangeFeedback, onValidate, onReject, onDelete, onAnnotate, onReload, readonly,
 }: {
   sub: Submission;
   course?: CourseLite;
@@ -300,6 +326,7 @@ function SubmissionCard({
   onChangeFeedback?: (v: string) => void;
   onValidate?: () => void;
   onReject?: () => void;
+  onDelete?: () => void;
   onAnnotate?: (photoIndex: number, url: string) => void;
   onReload?: () => void;
   readonly?: boolean;
@@ -403,25 +430,32 @@ function SubmissionCard({
               )}
 
               {/* Action buttons */}
-              {!readonly && (
-                <div className="flex flex-wrap gap-2 pt-2">
-                  {!editing && (
-                    <Button size="sm" variant="outline" onClick={onEdit} className="gap-1">
-                      <MessageSquare className="h-3 w-3" /> Commentaire
+              <div className="flex flex-wrap gap-2 pt-2">
+                {!readonly && (
+                  <>
+                    {!editing && (
+                      <Button size="sm" variant="outline" onClick={onEdit} className="gap-1">
+                        <MessageSquare className="h-3 w-3" /> Commentaire
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      onClick={onValidate}
+                      className="gap-1 gradient-emerald border-0 text-primary-foreground"
+                    >
+                      <CheckCircle2 className="h-4 w-4" /> Correct ✅
                     </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    onClick={onValidate}
-                    className="gap-1 gradient-emerald border-0 text-primary-foreground"
-                  >
-                    <CheckCircle2 className="h-4 w-4" /> Correct ✅
+                    <Button size="sm" variant="destructive" onClick={onReject} className="gap-1">
+                      <XCircle className="h-4 w-4" /> À corriger ❌
+                    </Button>
+                  </>
+                )}
+                {onDelete && (
+                  <Button size="sm" variant="ghost" onClick={onDelete} className="gap-1 text-destructive hover:text-destructive hover:bg-destructive/10">
+                    <Trash2 className="h-4 w-4" /> Supprimer
                   </Button>
-                  <Button size="sm" variant="destructive" onClick={onReject} className="gap-1">
-                    <XCircle className="h-4 w-4" /> À corriger ❌
-                  </Button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </CardContent>
