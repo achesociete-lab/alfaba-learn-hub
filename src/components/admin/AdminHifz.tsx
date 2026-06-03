@@ -269,6 +269,13 @@ function SessionsTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
   const [loading, setLoading] = useState(true);
   const [meetLinks, setMeetLinks] = useState<Record<string, string>>({});
 
+  // Report professeur → élève
+  const [proposingFor, setProposingFor] = useState<Session | null>(null);
+  const [availableSlots, setAvailableSlots] = useState<Slot[]>([]);
+  const [proposalSlot, setProposalSlot] = useState<Slot | null>(null);
+  const [proposalMessage, setProposalMessage] = useState("");
+  const [submittingProposal, setSubmittingProposal] = useState(false);
+
   const fetchSessions = async () => {
     setLoading(true);
     const { data } = await supabase
@@ -293,6 +300,54 @@ function SessionsTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
   };
 
   useEffect(() => { fetchSessions(); }, []);
+
+  const openProposalDialog = async (s: Session) => {
+    setProposingFor(s);
+    setProposalSlot(null);
+    setProposalMessage("");
+    const { data } = await supabase
+      .from("admin_hifz_slots")
+      .select("*")
+      .gte("slot_date", format(new Date(), "yyyy-MM-dd"))
+      .order("slot_date").order("start_time");
+    setAvailableSlots((data as any) || []);
+  };
+
+  const submitProposal = async () => {
+    if (!proposingFor) return;
+    setSubmittingProposal(true);
+    const update: any = {
+      reschedule_type: "reporter",
+      reschedule_initiated_by: "professeur",
+      reschedule_message: proposalMessage.trim() || null,
+      reschedule_proposed_date: proposalSlot?.slot_date || null,
+      reschedule_proposed_time: proposalSlot?.start_time || null,
+      reschedule_requested_at: new Date().toISOString(),
+    };
+    await supabase.from("hifz_sessions").update(update).eq("id", proposingFor.id);
+
+    // Notifier l'élève par email
+    const p = profiles[proposingFor.student_id];
+    const studentName = p ? `${p.first_name} ${p.last_name}`.trim() : "Élève";
+    try {
+      await supabase.functions.invoke("notify-hifz-reschedule-proposal", {
+        body: {
+          userId: proposingFor.student_id,
+          studentName,
+          sessionDate: format(parseISO(proposingFor.session_date), "EEEE d MMMM yyyy", { locale: fr }),
+          sessionTime: proposingFor.session_time.slice(0, 5),
+          proposedDate: proposalSlot ? format(parseISO(proposalSlot.slot_date), "EEEE d MMMM yyyy", { locale: fr }) : null,
+          proposedTime: proposalSlot ? proposalSlot.start_time.slice(0, 5) : null,
+          message: proposalMessage.trim() || null,
+        },
+      });
+    } catch {}
+
+    setSubmittingProposal(false);
+    setProposingFor(null);
+    toast({ title: "Report proposé — l'élève a été notifié par email ✓" });
+    fetchSessions();
+  };
 
   const getStudentEmail = async (userId: string): Promise<string | null> => {
     if (emails[userId]) return emails[userId];
@@ -483,14 +538,28 @@ function SessionsTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
                 </div>
               )}
               {s.status === "confirmee" && (
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
                   {s.meet_link && (
                     <a href={s.meet_link} target="_blank" rel="noreferrer" className="text-emerald-700 text-sm underline">
                       <Mail className="inline h-3 w-3" /> {s.meet_link}
                     </a>
                   )}
-                  <Button size="sm" variant="outline" onClick={() => cancelSession(s)} className="border-red-300 text-red-700">
-                    Annuler
+                  <div className="flex gap-2">
+                    {!s.reschedule_type && (
+                      <Button size="sm" variant="outline" onClick={() => openProposalDialog(s)} className="border-blue-300 text-blue-700 hover:bg-blue-50 gap-1">
+                        <CalendarClock className="h-3.5 w-3.5" /> Proposer un report
+                      </Button>
+                    )}
+                    <Button size="sm" variant="outline" onClick={() => cancelSession(s)} className="border-red-300 text-red-700">
+                      Annuler
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {s.status === "en_attente" && !s.reschedule_type && (
+                <div className="flex justify-end">
+                  <Button size="sm" variant="ghost" onClick={() => openProposalDialog(s)} className="text-blue-600 hover:text-blue-800 gap-1 text-xs">
+                    <CalendarClock className="h-3.5 w-3.5" /> Proposer un report
                   </Button>
                 </div>
               )}
@@ -498,6 +567,81 @@ function SessionsTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
           </Card>
         );
       })}
+
+      {/* Dialog : proposition de report professeur → élève */}
+      {proposingFor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
+            <div className="flex items-center gap-2">
+              <CalendarClock className="h-5 w-5 text-blue-700" />
+              <h3 className="font-bold text-lg text-blue-800">Proposer un report</h3>
+            </div>
+
+            {/* Séance concernée */}
+            <div className="px-3 py-2 rounded-lg bg-muted text-sm text-muted-foreground">
+              Séance de{" "}
+              <strong className="text-foreground">
+                {profiles[proposingFor.student_id]
+                  ? `${profiles[proposingFor.student_id].first_name} ${profiles[proposingFor.student_id].last_name}`
+                  : "l'élève"}
+              </strong>{" "}
+              — {format(parseISO(proposingFor.session_date), "EEEE d MMMM yyyy", { locale: fr })} à{" "}
+              {proposingFor.session_time.slice(0, 5)}
+            </div>
+
+            {/* Nouveau créneau */}
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Nouveau créneau à proposer</Label>
+              {availableSlots.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic">Aucun créneau disponible — vous pouvez tout de même envoyer un message.</p>
+              ) : (
+                <div className="max-h-44 overflow-y-auto space-y-1.5 pr-1">
+                  {availableSlots.map((sl) => (
+                    <button
+                      key={sl.id}
+                      onClick={() => setProposalSlot(proposalSlot?.id === sl.id ? null : sl)}
+                      className={`w-full text-left p-2.5 rounded-lg border text-sm transition-all ${
+                        proposalSlot?.id === sl.id
+                          ? "border-blue-500 bg-blue-50 font-semibold"
+                          : "border-border hover:border-blue-300"
+                      }`}
+                    >
+                      <span className="capitalize">{format(parseISO(sl.slot_date), "EEEE d MMM yyyy", { locale: fr })}</span>
+                      {" · "}<span className="text-blue-700 font-medium">{sl.start_time.slice(0, 5)} – {sl.end_time.slice(0, 5)}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Message */}
+            <div>
+              <Label className="text-sm font-semibold">Message pour l'élève</Label>
+              <Textarea
+                value={proposalMessage}
+                onChange={(e) => setProposalMessage(e.target.value)}
+                placeholder="Je ne serai pas disponible ce soir, je vous propose le créneau ci-dessus…"
+                className="mt-1.5 resize-none text-sm"
+                rows={3}
+              />
+            </div>
+
+            <div className="flex gap-2 justify-end pt-1">
+              <Button variant="outline" onClick={() => setProposingFor(null)}>Annuler</Button>
+              <Button
+                onClick={submitProposal}
+                disabled={submittingProposal || (!proposalSlot && !proposalMessage.trim())}
+                className="bg-blue-700 hover:bg-blue-800 text-white gap-1"
+              >
+                {submittingProposal
+                  ? <><Loader2 className="h-4 w-4 animate-spin" /> Envoi…</>
+                  : <><Send className="h-4 w-4" /> Notifier l'élève</>
+                }
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

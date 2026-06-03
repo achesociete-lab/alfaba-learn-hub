@@ -32,7 +32,7 @@ const PAGES_PER_HIZB = 10;
 
 type HifzConfig = { id: string; hizb_already_memo: number; duration_months: number; start_date: string };
 type Slot = { id: string; slot_date: string; start_time: string; end_time: string; capacity: number; notes: string | null };
-type Session = { id: string; session_date: string; session_time: string; status: string; meet_link: string | null; notes_eleve: string | null; session_type?: string | null; juz_number?: number | null };
+type Session = { id: string; session_date: string; session_time: string; status: string; meet_link: string | null; notes_eleve: string | null; session_type?: string | null; juz_number?: number | null; reschedule_type?: string | null; reschedule_initiated_by?: string | null; reschedule_message?: string | null; reschedule_proposed_date?: string | null; reschedule_proposed_time?: string | null };
 type Evaluation = { id: string; session_id: string | null; hizb_number: number; status: string; niveau: string | null; notes: string | null; evaluated_at: string; session_type?: string | null };
 
 const NIVEAU_LABEL: Record<string, string> = { mediocre: "Médiocre", moyen: "Moyen", bon: "Bon", excellent: "Excellent" };
@@ -1033,16 +1033,77 @@ export default function Hifz() {
                         {s.status === "confirmee" && !s.meet_link && (
                           <p className="text-xs text-amber-700/80 italic">Le lien Meet sera ajouté par votre professeur avant la séance.</p>
                         )}
-                        {(s as any).reschedule_type && (
+                        {/* Proposition de report du PROFESSEUR */}
+                        {s.reschedule_type && s.reschedule_initiated_by === "professeur" && (
+                          <div className="space-y-2 p-3 rounded-xl border-2 border-blue-300 bg-blue-50">
+                            <div className="flex items-center gap-2 text-blue-800 font-semibold text-sm">
+                              <CalendarClock className="h-4 w-4 shrink-0" />
+                              Votre professeur propose de reporter cette séance
+                            </div>
+                            {s.reschedule_proposed_date && (
+                              <p className="text-sm font-bold text-blue-700">
+                                Nouveau créneau : {format(parseISO(s.reschedule_proposed_date), "EEEE d MMMM yyyy", { locale: fr })}
+                                {s.reschedule_proposed_time && ` à ${s.reschedule_proposed_time.slice(0, 5)}`}
+                              </p>
+                            )}
+                            {s.reschedule_message && (
+                              <p className="text-xs text-blue-700 italic">« {s.reschedule_message} »</p>
+                            )}
+                            <div className="flex gap-2 flex-wrap">
+                              {s.reschedule_proposed_date && (
+                                <Button
+                                  size="sm"
+                                  className="bg-blue-700 hover:bg-blue-800 text-white gap-1"
+                                  onClick={async () => {
+                                    await supabase.from("hifz_sessions").update({
+                                      session_date: s.reschedule_proposed_date!,
+                                      session_time: s.reschedule_proposed_time || s.session_time,
+                                      reschedule_type: null,
+                                      reschedule_initiated_by: null,
+                                      reschedule_message: null,
+                                      reschedule_proposed_date: null,
+                                      reschedule_proposed_time: null,
+                                      reschedule_requested_at: null,
+                                    } as any).eq("id", s.id);
+                                    toast({ title: "Report accepté ✓", description: "La séance a été déplacée." });
+                                    fetchAll();
+                                  }}
+                                >
+                                  <CheckCircle2 className="h-3.5 w-3.5" /> Accepter le report
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-blue-300 text-blue-700"
+                                onClick={async () => {
+                                  await supabase.from("hifz_sessions").update({
+                                    reschedule_type: null, reschedule_initiated_by: null,
+                                    reschedule_message: null, reschedule_proposed_date: null,
+                                    reschedule_proposed_time: null, reschedule_requested_at: null,
+                                  } as any).eq("id", s.id);
+                                  toast({ title: "Report refusé — la séance reste inchangée." });
+                                  fetchAll();
+                                }}
+                              >
+                                Garder le créneau original
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Demande de l'ÉLÈVE en attente */}
+                        {s.reschedule_type && s.reschedule_initiated_by !== "professeur" && (
                           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-700">
                             <CalendarClock className="h-3.5 w-3.5 shrink-0" />
                             <span>
-                              {(s as any).reschedule_type === "retard" ? "⚠️ Retard signalé" : "📅 Report demandé"} — en attente de réponse du professeur
+                              {s.reschedule_type === "retard" ? "⚠️ Retard signalé" : "📅 Report demandé"} — en attente de réponse du professeur
                             </span>
                           </div>
                         )}
+
                         <div className="flex items-center gap-3 flex-wrap">
-                          {!(s as any).reschedule_type && (
+                          {!s.reschedule_type && (
                             <button
                               onClick={() => {
                                 setRescheduleSession(s);
