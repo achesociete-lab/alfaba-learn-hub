@@ -144,18 +144,11 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
     if (!hasStrokes) { toast({ title: "Aucune annotation", variant: "destructive" }); return; }
     setSaving(true);
     try {
-      // Composite : page Mushaf + traits dessinés → une seule image
-      const img = imgRef.current!;
+      // Sauvegarde : uniquement les traits (canvas transparent)
+      // La composition avec la page Mushaf est faite à l'affichage (CSS overlay)
       const cv  = canvasRef.current!;
-      const offscreen = document.createElement("canvas");
-      offscreen.width  = cv.width;
-      offscreen.height = cv.height;
-      const ctx = offscreen.getContext("2d")!;
-      ctx.drawImage(img, 0, 0, cv.width, cv.height); // fond : page Mushaf
-      ctx.drawImage(cv, 0, 0);                        // dessus : annotations
-
       const blob: Blob = await new Promise((res, rej) =>
-        offscreen.toBlob(b => b ? res(b) : rej(new Error("toBlob failed")), "image/png")
+        cv.toBlob(b => b ? res(b) : rej(new Error("toBlob failed")), "image/png")
       );
       const path = `hifz-annotations/${studentId}/page-${page}-${Date.now()}.png`;
       const { error: upErr } = await supabase.storage.from("presentiel-courses")
@@ -261,7 +254,6 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
               alt={`Page ${page}`}
               onLoad={onImgLoad}
               draggable={false}
-              crossOrigin="anonymous"
               style={{ display: "block", width: "100%", userSelect: "none" }}
             />
             <canvas
