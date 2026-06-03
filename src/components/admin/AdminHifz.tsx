@@ -1427,10 +1427,20 @@ function AnnotateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
   const [selectedSessionId, setSelectedSessionId] = useState<string>("");
   const [annotations, setAnnotations] = useState<any[]>([]);
   const [loadingAnnotations, setLoadingAnnotations] = useState(false);
+  const [viewAnnotation, setViewAnnotation] = useState<{ page: number; url: string; note?: string } | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.from("profiles").select("user_id, first_name, last_name")
-      .then(({ data }) => setStudents((data as any) || []));
+    // Seulement les élèves inscrits au Hifd (avec une hifz_config)
+    supabase.from("hifz_config").select("student_id")
+      .then(async ({ data: cfgs }) => {
+        const ids = (cfgs || []).map((c: any) => c.student_id);
+        if (!ids.length) { setStudents([]); return; }
+        const { data: profs } = await supabase.from("profiles")
+          .select("user_id, first_name, last_name")
+          .in("user_id", ids);
+        setStudents((profs as any) || []);
+      });
   }, []);
 
   useEffect(() => {
@@ -1532,10 +1542,7 @@ function AnnotateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
                     <button
                       type="button"
                       className="block w-full text-left"
-                      onClick={() => {
-                        const evt = new CustomEvent("view-annotation", { detail: { page: a.page_number, url: a.annotated_image_url, note: a.note } });
-                        window.dispatchEvent(evt);
-                      }}
+                      onClick={() => setViewAnnotation({ page: a.page_number, url: a.annotated_image_url, note: a.note })}
                     >
                       <div style={{ position: "relative", width: "100%", maxHeight: 140, overflow: "hidden" }}>
                         <img
@@ -1554,15 +1561,27 @@ function AnnotateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
                     </button>
                     <div className="px-2 py-1 text-xs bg-background/90 flex items-center justify-between gap-1">
                       <span className="font-medium">Page {a.page_number}</span>
-                      <button
-                        className="text-destructive hover:underline text-[10px]"
-                        onClick={async () => {
-                          await supabase.from("hifz_mushaf_annotations" as any).delete().eq("id", a.id);
-                          loadAnnotations();
-                        }}
-                      >
-                        Suppr.
-                      </button>
+                      {deleteConfirmId === a.id ? (
+                        <div className="flex items-center gap-1">
+                          <button
+                            className="text-destructive font-semibold text-[10px] px-1.5 py-0.5 rounded bg-red-50 border border-red-200"
+                            onClick={async () => {
+                              await supabase.from("hifz_mushaf_annotations" as any).delete().eq("id", a.id);
+                              setDeleteConfirmId(null);
+                              loadAnnotations();
+                            }}
+                          >Confirmer</button>
+                          <button
+                            className="text-muted-foreground text-[10px] px-1.5 py-0.5 rounded border border-border"
+                            onClick={() => setDeleteConfirmId(null)}
+                          >Annuler</button>
+                        </div>
+                      ) : (
+                        <button
+                          className="text-destructive hover:underline text-[10px]"
+                          onClick={() => setDeleteConfirmId(a.id)}
+                        >Suppr.</button>
+                      )}
                     </div>
                     {a.note && (
                       <p className="px-2 pb-1 text-[10px] text-muted-foreground truncate">{a.note}</p>
@@ -1573,6 +1592,46 @@ function AnnotateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
             </div>
           )}
         </>
+      )}
+
+      {/* Modal annotation composée */}
+      {viewAnnotation && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setViewAnnotation(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+              <div>
+                <span className="font-semibold text-emerald-800">Page {viewAnnotation.page} / 604</span>
+                {viewAnnotation.note && (
+                  <p className="text-xs text-muted-foreground mt-0.5 italic">« {viewAnnotation.note} »</p>
+                )}
+              </div>
+              <button
+                onClick={() => setViewAnnotation(null)}
+                className="text-muted-foreground hover:text-foreground text-xl leading-none"
+              >✕</button>
+            </div>
+            <div className="overflow-auto max-h-[75vh]">
+              <div style={{ position: "relative", width: "100%" }}>
+                <img
+                  src={`https://www.mp3quran.net/api/quran_pages_arabic/${String(viewAnnotation.page).padStart(3,"0")}.png`}
+                  alt={`Page ${viewAnnotation.page}`}
+                  style={{ display: "block", width: "100%" }}
+                />
+                <img
+                  src={viewAnnotation.url}
+                  alt="Annotations"
+                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
