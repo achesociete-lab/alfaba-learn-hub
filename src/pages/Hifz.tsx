@@ -1197,45 +1197,11 @@ export default function Hifz() {
                                   </div>
                                   {/* Plage récitée */}
                                   {(e as any).surah_start && (
-                                    <div className="mt-1.5 space-y-1">
-                                      <p className="text-xs font-medium text-emerald-700">
-                                        📖 Récité : S.{(e as any).surah_start}:{(e as any).verse_start ?? 1}
-                                        {(e as any).surah_end ? ` → S.${(e as any).surah_end}:${(e as any).verse_end ?? "fin"}` : ""}
-                                        {(e as any).page_start ? ` (p.${(e as any).page_start}${(e as any).page_end && (e as any).page_end !== (e as any).page_start ? `–${(e as any).page_end}` : ""})` : ""}
-                                      </p>
-                                      {/* Annotations du professeur sur ces pages */}
-                                      {(e as any).page_start && (() => {
-                                        const ps = (e as any).page_start as number;
-                                        const pe = ((e as any).page_end ?? ps) as number;
-                                        const relevant = mushafAnnotations.filter((a: any) =>
-                                          a.page_number >= ps && a.page_number <= pe
-                                        );
-                                        if (!relevant.length) return null;
-                                        return (
-                                          <div className="flex flex-wrap gap-1.5 mt-1">
-                                            {relevant.map((a: any) => (
-                                              <a
-                                                key={a.id}
-                                                href={`https://www.mp3quran.net/api/quran_pages_arabic/${String(a.page_number).padStart(3,"0")}.png`}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="block rounded-lg overflow-hidden border-2 border-emerald-400 hover:shadow-md transition-shadow group"
-                                              >
-                                                  <img
-                                                  src={a.annotated_image_url}
-                                                  alt={`Correction p.${a.page_number}`}
-                                                  className="object-cover group-hover:opacity-90"
-                                                  style={{ height: 80, width: 60 }}
-                                                />
-                                                <div className="bg-emerald-50 text-[9px] text-emerald-700 text-center font-semibold px-1">
-                                                  p.{a.page_number}
-                                                </div>
-                                              </a>
-                                            ))}
-                                          </div>
-                                        );
-                                      })()}
-                                    </div>
+                                    <p className="text-xs font-medium text-emerald-700 mt-1.5">
+                                      📖 Récité : S.{(e as any).surah_start}:{(e as any).verse_start ?? 1}
+                                      {(e as any).surah_end ? ` → S.${(e as any).surah_end}:${(e as any).verse_end ?? "fin"}` : ""}
+                                      {(e as any).page_start ? ` (p.${(e as any).page_start}${(e as any).page_end && (e as any).page_end !== (e as any).page_start ? `–${(e as any).page_end}` : ""})` : ""}
+                                    </p>
                                   )}
                                   {e.notes && (
                                     <p className="text-xs text-gray-500 mt-1.5 italic border-l-2 border-gray-200 pl-2">"{e.notes}"</p>
@@ -1244,6 +1210,49 @@ export default function Hifz() {
                               ))}
                             </div>
                           )}
+                          {/* ── Annotations Mushaf du professeur pour cette séance ── */}
+                          {(() => {
+                            const evPageRanges = evs.flatMap(e =>
+                              (e as any).page_start
+                                ? Array.from({ length: ((e as any).page_end ?? (e as any).page_start) - (e as any).page_start + 1 }, (_, i) => (e as any).page_start + i)
+                                : []
+                            );
+                            const sessionAnnotations = mushafAnnotations.filter((a: any) =>
+                              a.session_id === s.id ||
+                              (a.session_id == null && evPageRanges.includes(a.page_number))
+                            );
+                            if (!sessionAnnotations.length) return null;
+                            return (
+                              <div className="mt-3 pt-3 border-t border-emerald-100 space-y-2">
+                                <p className="text-[11px] font-semibold text-emerald-700 uppercase tracking-wider flex items-center gap-1">
+                                  🖊️ Corrections du Mushaf ({sessionAnnotations.length})
+                                </p>
+                                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                  {sessionAnnotations.map((a: any) => (
+                                    <a
+                                      key={a.id}
+                                      href={a.annotated_image_url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="block rounded-xl overflow-hidden border-2 border-emerald-300 hover:shadow-lg transition-shadow group"
+                                    >
+                                      <img
+                                        src={a.annotated_image_url}
+                                        alt={`Correction p.${a.page_number}`}
+                                        className="w-full object-cover group-hover:opacity-90 transition"
+                                        style={{ maxHeight: 120 }}
+                                      />
+                                      <div className="px-1.5 py-1 bg-emerald-50 text-center">
+                                        <span className="text-[10px] font-semibold text-emerald-800 block">p.{a.page_number}</span>
+                                        {a.note && <span className="text-[9px] text-muted-foreground line-clamp-1">{a.note}</span>}
+                                      </div>
+                                    </a>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })()}
+
                           {s.status === "confirmee" && s.meet_link && (
                             <a
                               href={/^https?:\/\//i.test(s.meet_link) ? s.meet_link : `https://${s.meet_link}`}
