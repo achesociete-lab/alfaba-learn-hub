@@ -226,12 +226,18 @@ export type Database = {
           id: string
           niveau: string | null
           notes: string | null
+          page_end: number | null
+          page_start: number | null
           ready_to_advance: boolean | null
           session_id: string | null
           session_type: string
           status: string
           student_id: string
+          surah_end: number | null
+          surah_start: number | null
           teacher_id: string | null
+          verse_end: number | null
+          verse_start: number | null
           without_mushaf: boolean | null
         }
         Insert: {
@@ -241,12 +247,18 @@ export type Database = {
           id?: string
           niveau?: string | null
           notes?: string | null
+          page_end?: number | null
+          page_start?: number | null
           ready_to_advance?: boolean | null
           session_id?: string | null
           session_type?: string
           status: string
           student_id: string
+          surah_end?: number | null
+          surah_start?: number | null
           teacher_id?: string | null
+          verse_end?: number | null
+          verse_start?: number | null
           without_mushaf?: boolean | null
         }
         Update: {
@@ -256,12 +268,18 @@ export type Database = {
           id?: string
           niveau?: string | null
           notes?: string | null
+          page_end?: number | null
+          page_start?: number | null
           ready_to_advance?: boolean | null
           session_id?: string | null
           session_type?: string
           status?: string
           student_id?: string
+          surah_end?: number | null
+          surah_start?: number | null
           teacher_id?: string | null
+          verse_end?: number | null
+          verse_start?: number | null
           without_mushaf?: boolean | null
         }
         Relationships: [
@@ -274,6 +292,39 @@ export type Database = {
           },
         ]
       }
+      hifz_mushaf_annotations: {
+        Row: {
+          annotated_image_url: string
+          created_at: string
+          created_by: string | null
+          id: string
+          note: string | null
+          page_number: number
+          session_id: string | null
+          student_id: string
+        }
+        Insert: {
+          annotated_image_url: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          page_number: number
+          session_id?: string | null
+          student_id: string
+        }
+        Update: {
+          annotated_image_url?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          page_number?: number
+          session_id?: string | null
+          student_id?: string
+        }
+        Relationships: []
+      }
       hifz_sessions: {
         Row: {
           created_at: string | null
@@ -281,6 +332,12 @@ export type Database = {
           juz_number: number | null
           meet_link: string | null
           notes_eleve: string | null
+          reschedule_initiated_by: string | null
+          reschedule_message: string | null
+          reschedule_proposed_date: string | null
+          reschedule_proposed_time: string | null
+          reschedule_requested_at: string | null
+          reschedule_type: string | null
           session_date: string
           session_time: string
           session_type: string
@@ -293,6 +350,12 @@ export type Database = {
           juz_number?: number | null
           meet_link?: string | null
           notes_eleve?: string | null
+          reschedule_initiated_by?: string | null
+          reschedule_message?: string | null
+          reschedule_proposed_date?: string | null
+          reschedule_proposed_time?: string | null
+          reschedule_requested_at?: string | null
+          reschedule_type?: string | null
           session_date: string
           session_time: string
           session_type?: string
@@ -305,6 +368,12 @@ export type Database = {
           juz_number?: number | null
           meet_link?: string | null
           notes_eleve?: string | null
+          reschedule_initiated_by?: string | null
+          reschedule_message?: string | null
+          reschedule_proposed_date?: string | null
+          reschedule_proposed_time?: string | null
+          reschedule_requested_at?: string | null
+          reschedule_type?: string | null
           session_date?: string
           session_time?: string
           session_type?: string
