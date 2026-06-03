@@ -449,7 +449,20 @@ const AdminPresentielCourses = () => {
           photo_urls: dictationRefPhotos,
         },
       });
-      if (error) throw error;
+
+      // Extraire le vrai message d'erreur depuis la réponse HTTP
+      if (error) {
+        let actualMsg = error.message || "Erreur fonction";
+        try {
+          const body = await (error as any).context?.json?.();
+          if (body?.error) actualMsg = body.error;
+          // Détection : ancienne version de la fonction (mode non reconnu)
+          if (actualMsg === "level requis") {
+            actualMsg = "La fonction n'est pas encore à jour. Allez dans Lovable → publiez le projet pour redéployer la fonction.";
+          }
+        } catch { /* ignore */ }
+        throw new Error(actualMsg);
+      }
       if (data?.error) throw new Error(data.error);
       if (!data?.dictation_text) throw new Error("Aucun texte généré");
       setDraft((d) => ({ ...d, dictation_text: data.dictation_text, dictation_sentence_audios: [] }));
@@ -457,9 +470,11 @@ const AdminPresentielCourses = () => {
     } catch (e: any) {
       const msg = e.message || "";
       if (msg.includes("402") || msg.toLowerCase().includes("credit")) {
-        toast.error("Crédits IA épuisés.", { duration: 8000 });
+        toast.error("Crédits IA épuisés — ajoutez des crédits dans Lovable.", { duration: 8000 });
+      } else if (msg.includes("429")) {
+        toast.error("Trop de requêtes — réessayez dans 30 secondes.");
       } else {
-        toast.error(msg || "Erreur génération texte");
+        toast.error(msg || "Erreur génération texte", { duration: 8000 });
       }
     } finally {
       setGeneratingDictationText(false);
