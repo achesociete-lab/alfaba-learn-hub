@@ -1,5 +1,5 @@
 // Admin: création et gestion complète des cours présentiel (Niveau 1 & 2)
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import {
   MapPin, Trash2, Loader2, Users, Save, Plus, X, BookOpen, Languages, Headphones,
   HelpCircle, ListOrdered, Pencil, Sparkles, Wand2, Image as ImageIcon, Upload,
   MessageCircle, ExternalLink, ChevronDown, ChevronUp, Copy, CheckCircle2, Mic,
+  Square, Volume2, RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -35,6 +36,7 @@ interface CourseDraft {
   comprehension_questions: ComprehensionQ[];
   reorder_exercises: ReorderEx[];
   dictation_words: string[];
+  dictation_word_audios: string[];
   assigned_user_ids: string[];
   photo_url: string | null;
   lesson_photos: string[];
@@ -50,6 +52,7 @@ const emptyDraft = (): CourseDraft => ({
   comprehension_questions: [{ question: "", answer: "" }],
   reorder_exercises: [{ words: [], correct_order: [] }],
   dictation_words: [],
+  dictation_word_audios: [],
   assigned_user_ids: [],
   photo_url: null,
   lesson_photos: [],
@@ -72,6 +75,10 @@ const AdminPresentielCourses = () => {
   const [dictationRefPhotos, setDictationRefPhotos] = useState<string[]>([]);
   const [uploadingDictationPhoto, setUploadingDictationPhoto] = useState(false);
   const [generatingDictation, setGeneratingDictation] = useState(false);
+  const [recordingWordIdx, setRecordingWordIdx] = useState<number | null>(null);
+  const [uploadingWordAudio, setUploadingWordAudio] = useState<number | null>(null);
+  const wordMediaRef = useRef<MediaRecorder | null>(null);
+  const wordChunksRef = useRef<Blob[]>([]);
   const [expandedProgress, setExpandedProgress] = useState<string | null>(null);
   const [courseProgressMap, setCourseProgressMap] = useState<Record<string, any[]>>({});
   const [loadingProgress, setLoadingProgress] = useState<string | null>(null);
@@ -308,6 +315,62 @@ const AdminPresentielCourses = () => {
     }
   };
 
+  const startWordRecording = async (wordIdx: number) => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mr = new MediaRecorder(stream);
+      wordChunksRef.current = [];
+      mr.ondataavailable = (e) => wordChunksRef.current.push(e.data);
+      mr.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(wordChunksRef.current, { type: "audio/webm" });
+        await uploadWordAudio(wordIdx, blob);
+      };
+      mr.start();
+      wordMediaRef.current = mr;
+      setRecordingWordIdx(wordIdx);
+    } catch {
+      toast.error("Microphone non accessible");
+    }
+  };
+
+  const stopWordRecording = () => {
+    wordMediaRef.current?.stop();
+    setRecordingWordIdx(null);
+  };
+
+  const uploadWordAudio = async (wordIdx: number, blob: Blob) => {
+    if (!user) return;
+    setUploadingWordAudio(wordIdx);
+    try {
+      const path = `${user.id}/dictation-word-${wordIdx}-${Date.now()}.webm`;
+      const { error: upErr } = await supabase.storage
+        .from("presentiel-courses")
+        .upload(path, blob, { contentType: "audio/webm" });
+      if (upErr) throw upErr;
+      const { data: { publicUrl } } = supabase.storage.from("presentiel-courses").getPublicUrl(path);
+      setDraft((d) => {
+        const audios = [...d.dictation_word_audios];
+        while (audios.length <= wordIdx) audios.push("");
+        audios[wordIdx] = publicUrl;
+        return { ...d, dictation_word_audios: audios };
+      });
+      toast.success(`Audio du mot n°${wordIdx + 1} enregistré`);
+    } catch (e: any) {
+      toast.error(e.message || "Erreur upload audio");
+    } finally {
+      setUploadingWordAudio(null);
+    }
+  };
+
+  const deleteWordAudio = (wordIdx: number) => {
+    setDraft((d) => {
+      const audios = [...d.dictation_word_audios];
+      audios[wordIdx] = "";
+      return { ...d, dictation_word_audios: audios };
+    });
+  };
+
   const fetchData = async () => {
     const { data: c } = await supabase
       .from("presentiel_courses")
@@ -340,6 +403,7 @@ const AdminPresentielCourses = () => {
         ? c.reorder_exercises
         : [{ words: [], correct_order: [] }],
       dictation_words: Array.isArray(c.dictation_words) ? c.dictation_words : [],
+      dictation_word_audios: Array.isArray(c.dictation_word_audios) ? c.dictation_word_audios : [],
       assigned_user_ids: (c.presentiel_course_assignments || []).map((a: any) => a.user_id),
       photo_url: c.photo_url || null,
       lesson_photos: Array.isArray(c.lesson_photos) ? c.lesson_photos : [],
@@ -363,6 +427,7 @@ const AdminPresentielCourses = () => {
         comprehension_questions: draft.comprehension_questions.filter(q => q.question.trim() && q.answer.trim()) as any,
         reorder_exercises: draft.reorder_exercises.filter(r => r.correct_order.length > 0) as any,
         dictation_words: draft.dictation_words.filter(w => w.trim()) as any,
+        dictation_word_audios: draft.dictation_word_audios as any,
         photo_url: draft.photo_url,
         lesson_photos: draft.lesson_photos as any,
         audio_url: draft.audio_url,
@@ -1085,14 +1150,89 @@ const AdminPresentielCourses = () => {
                 }}
                 placeholder="كلمة، كلمة، كلمة — ou génère depuis les photos ci-dessus"
               />
-              {draft.dictation_words.length > 0 && (
-                <div className="flex flex-wrap gap-1 pt-1">
-                  {draft.dictation_words.map((w, i) => (
-                    <Badge key={i} variant="secondary" className="font-amiri text-base">{w}</Badge>
-                  ))}
-                </div>
-              )}
             </div>
+
+            {/* Enregistrement audio par mot */}
+            {draft.dictation_words.length > 0 && (
+              <div className="space-y-2 p-4 rounded-lg border border-dashed border-emerald-400/50 bg-emerald-50/20 dark:bg-emerald-950/10">
+                <Label className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
+                  <Mic className="h-4 w-4" /> Enregistrer votre voix pour chaque mot
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Cliquez sur <Mic className="h-3 w-3 inline" /> pour enregistrer votre prononciation de chaque mot — l'élève entendra votre voix au lieu de la synthèse IA.
+                </p>
+                <div className="space-y-2">
+                  {draft.dictation_words.map((word, i) => {
+                    const audioUrl = draft.dictation_word_audios[i] || "";
+                    const isRecording = recordingWordIdx === i;
+                    const isUploading = uploadingWordAudio === i;
+                    return (
+                      <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-background border border-border">
+                        {/* Numéro + mot */}
+                        <span className="text-xs font-semibold text-muted-foreground w-5 text-center shrink-0">{i + 1}</span>
+                        <span dir="rtl" className="font-amiri text-xl flex-1 text-right">{word}</span>
+
+                        {/* Lecteur si enregistré */}
+                        {audioUrl && !isRecording && (
+                          <audio
+                            controls
+                            src={audioUrl}
+                            style={{ height: 32, width: 140 }}
+                            className="rounded shrink-0"
+                          />
+                        )}
+
+                        {/* Boutons */}
+                        <div className="flex gap-1 shrink-0">
+                          {isUploading ? (
+                            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                          ) : isRecording ? (
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={stopWordRecording}
+                              className="gap-1 animate-pulse"
+                            >
+                              <Square className="h-3 w-3" /> Stop
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant={audioUrl ? "outline" : "default"}
+                              onClick={() => startWordRecording(i)}
+                              disabled={recordingWordIdx !== null}
+                              className={`gap-1 ${!audioUrl ? "gradient-emerald border-0 text-primary-foreground" : ""}`}
+                              title={audioUrl ? "Ré-enregistrer" : "Enregistrer"}
+                            >
+                              <Mic className="h-3 w-3" />
+                              {audioUrl ? <RotateCcw className="h-3 w-3" /> : "Enregistrer"}
+                            </Button>
+                          )}
+                          {audioUrl && !isRecording && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => deleteWordAudio(i)}
+                              title="Supprimer cet enregistrement"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+
+                        {/* Badge voix enregistrée */}
+                        {audioUrl && (
+                          <Badge variant="outline" className="text-[10px] shrink-0 border-emerald-500 text-emerald-600">
+                            ✓ Voix enregistrée
+                          </Badge>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Assignations */}

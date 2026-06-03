@@ -29,6 +29,7 @@ export interface PresentielCourseV2 {
   lesson_text: string | null;
   vocabulary: { arabic: string; french: string }[];
   dictation_words: string[];
+  dictation_word_audios?: string[];
   comprehension_questions?: { question: string; answer: string }[];
   reorder_exercises?: { words: string[]; correct_order: string[] }[];
   photo_url?: string | null;
@@ -1205,7 +1206,10 @@ const PresentielCourseDetail = ({ course: rawCourse, userProgress, onProgressUpd
               title="Étape — Dictée"
               maxPhotos={3}
               instruction={
-                <DicteeInstruction words={course.dictation_words || []} />
+                <DicteeInstruction
+                  words={course.dictation_words || []}
+                  wordAudios={course.dictation_word_audios}
+                />
               }
               onDone={async () => {
                 if (user) {
@@ -1244,7 +1248,7 @@ function waitMs(ms: number): Promise<void> {
 const DICTEE_PAUSE_SEC = 6; // secondes d'écriture entre chaque mot
 
 // Helper: dictée — mode mot par mot (clic par clic)
-function DicteeInstruction({ words }: { words: string[] }) {
+function DicteeInstruction({ words, wordAudios }: { words: string[]; wordAudios?: string[] }) {
   const { speak } = useArabicSpeech();
   const [mode, setMode] = useState<"intro" | "guided" | "list">("intro");
 
@@ -1266,7 +1270,13 @@ function DicteeInstruction({ words }: { words: string[] }) {
   };
 
   const handleListen = async () => {
-    await speak(words[idx]);
+    const teacherAudio = wordAudios?.[idx];
+    if (teacherAudio) {
+      const audio = new Audio(teacherAudio);
+      await audio.play().catch(() => speak(words[idx]));
+    } else {
+      await speak(words[idx]);
+    }
     setPlayed((p) => { const n = [...p]; n[idx] = true; return n; });
   };
 
@@ -1313,11 +1323,22 @@ function DicteeInstruction({ words }: { words: string[] }) {
           Liste des mots — cliquez sur un numéro pour écouter :
         </p>
         <div className="flex flex-wrap gap-2">
-          {words.map((w, i) => (
-            <Button key={i} size="sm" variant="outline" onClick={() => speak(w)} className="gap-1 font-amiri text-lg">
-              <Volume2 className="h-3 w-3" /> {i + 1}
-            </Button>
-          ))}
+          {words.map((w, i) => {
+            const teacherAudio = wordAudios?.[i];
+            const playWord = () => {
+              if (teacherAudio) {
+                new Audio(teacherAudio).play().catch(() => speak(w));
+              } else {
+                speak(w);
+              }
+            };
+            return (
+              <Button key={i} size="sm" variant="outline" onClick={playWord} className="gap-1 font-amiri text-lg">
+                <Volume2 className="h-3 w-3" /> {i + 1}
+                {teacherAudio && <span className="text-[9px] text-emerald-600 ml-0.5">●</span>}
+              </Button>
+            );
+          })}
         </div>
         <Button variant="ghost" size="sm" onClick={() => setMode("intro")} className="text-xs">
           ← Retour
