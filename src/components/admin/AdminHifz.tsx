@@ -801,7 +801,7 @@ function EvaluateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
 
   const addEval = () => setEvals([...evals, { hizb_number: 1, status: "", niveau: "", notes: "" }]);
   const updateEval = (i: number, patch: Partial<EvalDraft>) =>
-    setEvals(evals.map((e, idx) => (idx === i ? { ...e, ...patch } : e)));
+    setEvals(prev => prev.map((e, idx) => (idx === i ? { ...e, ...patch } : e)));
   const removeEval = (i: number) => setEvals(evals.filter((_, idx) => idx !== i));
 
   const tirageDhor = () => {
@@ -941,17 +941,16 @@ function EvaluateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h4 className="font-semibold text-emerald-800">
-            {sessionType === "sabaq" ? "Hizb nouvellement mémorisé" :
-             sessionType === "sabaq_para" ? "Hizb récité sans mushaf" :
-             sessionType === "dhor" ? "Ancien hizb en rotation" :
-             sessionType === "rattrapage" ? "Hizb à retravailler" :
+            {sessionType === "sabaq_para" ? "Récité sans mushaf" :
+             sessionType === "dhor" ? "Révision (dhor)" :
+             sessionType === "rattrapage" ? "À retravailler" :
              sessionType === "test_surprise" ? "Test surprise" :
-             sessionType === "khatm_partiel" ? `Khatm Juz ${selectedSession?.juz_number ?? ""}` :
-             "Hizb évalués"}
+             sessionType === "khatm_partiel" ? `Khatm — Juz ${selectedSession?.juz_number ?? ""}` :
+             "Évaluation"}
           </h4>
           {sessionType !== "khatm_partiel" && (
             <Button size="sm" variant="outline" onClick={addEval} className="border-emerald-300 text-emerald-700">
-              <Plus className="h-4 w-4" /> Ajouter un hizb
+              <Plus className="h-4 w-4" /> Ajouter une évaluation
             </Button>
           )}
         </div>
@@ -989,12 +988,17 @@ function EvaluateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
 
               {/* Champs spécifiques par type */}
               {sessionType === "sabaq" && e.status === "valide" && (
-                <div>
-                  <Label className="text-xs">Prêt à avancer au hizb suivant ?</Label>
-                  <div className="flex gap-2 mt-1">
-                    <Button size="sm" variant={e.ready_to_advance === true ? "default" : "outline"} onClick={() => updateEval(i, { ready_to_advance: true })} className={e.ready_to_advance === true ? "bg-emerald-700 text-white" : ""}>Oui</Button>
-                    <Button size="sm" variant={e.ready_to_advance === false ? "default" : "outline"} onClick={() => updateEval(i, { ready_to_advance: false })} className={e.ready_to_advance === false ? "bg-amber-600 text-white" : ""}>Non</Button>
-                  </div>
+                <div className="flex gap-2">
+                  <Button size="sm" variant={e.ready_to_advance === true ? "default" : "outline"}
+                    onClick={() => updateEval(i, { ready_to_advance: true })}
+                    className={e.ready_to_advance === true ? "bg-emerald-700 text-white" : ""}>
+                    ✅ Prêt à avancer
+                  </Button>
+                  <Button size="sm" variant={e.ready_to_advance === false ? "default" : "outline"}
+                    onClick={() => updateEval(i, { ready_to_advance: false })}
+                    className={e.ready_to_advance === false ? "bg-amber-600 text-white" : ""}>
+                    🔁 À refaire
+                  </Button>
                 </div>
               )}
               {sessionType === "sabaq_para" && (
