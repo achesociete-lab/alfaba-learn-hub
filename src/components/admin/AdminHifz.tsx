@@ -22,6 +22,8 @@ import {
   Clock,
   CalendarClock,
   PenLine,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import MushafAnnotator from "./MushafAnnotator";
 import { Button } from "@/components/ui/button";
@@ -701,6 +703,7 @@ function EvaluateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
   const [surahList, setSurahList] = useState<SurahInfo[]>([]);
   const [loadingPage, setLoadingPage] = useState<Record<number, boolean>>({});
   const [previewPage, setPreviewPage] = useState<number | null>(null);
+  const [showAnnotator, setShowAnnotator] = useState(false);
 
   const selectedSession = sessions.find((s) => s.id === sessionId);
   const sessionType = (selectedSession?.session_type || "sabaq") as HifzSessionType;
@@ -1129,6 +1132,37 @@ function EvaluateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
       <Button onClick={submit} disabled={saving} className="bg-emerald-700 hover:bg-emerald-800 text-white">
         {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Enregistrer l'évaluation
       </Button>
+
+      {/* ── Annotation Mushaf inline ── */}
+      {studentId && (
+        <div className="border border-emerald-200 rounded-xl overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowAnnotator((o) => !o)}
+            className="w-full flex items-center justify-between px-4 py-3 bg-emerald-50 hover:bg-emerald-100 text-sm font-semibold text-emerald-800 transition-colors"
+          >
+            <span className="flex items-center gap-2">
+              <PenLine className="h-4 w-4" /> Annoter le Mushaf de l'élève
+            </span>
+            {showAnnotator
+              ? <ChevronUp className="h-4 w-4" />
+              : <ChevronDown className="h-4 w-4" />}
+          </button>
+          {showAnnotator && (
+            <div className="p-4">
+              <MushafAnnotator
+                studentId={studentId}
+                studentName={(() => {
+                  const s = students.find((st) => st.student_id === studentId);
+                  return s ? `${s.first_name} ${s.last_name}`.trim() : "";
+                })()}
+                sessionId={sessionId || null}
+                initialPage={evals.find((e) => e.page_start)?.page_start ?? 1}
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Historique des évaluations de l'élève ── */}
       {studentId && studentEvals.length > 0 && (
