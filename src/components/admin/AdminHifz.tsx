@@ -1130,6 +1130,69 @@ function EvaluateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
         {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Enregistrer l'évaluation
       </Button>
 
+      {/* ── Historique des évaluations de l'élève ── */}
+      {studentId && studentEvals.length > 0 && (
+        <div className="space-y-2 pt-4 border-t border-border">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+            <Clock className="h-3.5 w-3.5" /> Historique des évaluations ({studentEvals.length})
+          </p>
+          <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
+            {[...studentEvals]
+              .sort((a, b) => new Date(b.evaluated_at).getTime() - new Date(a.evaluated_at).getTime())
+              .map((ev: any) => {
+                const ti = getSessionType(ev.session_type || "sabaq");
+                return (
+                  <div key={ev.id} className={`p-3 rounded-lg border text-sm flex flex-col gap-1 ${
+                    ev.status === "valide"
+                      ? "border-emerald-200 bg-emerald-50/50"
+                      : "border-red-200 bg-red-50/30"
+                  }`}>
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-foreground">
+                          {ev.surah_start
+                            ? `S.${ev.surah_start}:${ev.verse_start ?? 1}${ev.surah_end ? ` → S.${ev.surah_end}:${ev.verse_end ?? "fin"}` : ""}`
+                            : `Hizb ${ev.hizb_number}`}
+                        </span>
+                        <Badge className={`${ti.badgeBg} ${ti.badgeText} border-0 text-[10px]`}>
+                          {ti.icon} {ti.label}
+                        </Badge>
+                        {ev.status === "valide" && ev.niveau && (
+                          <Badge className={`border-0 text-[10px] text-white ${
+                            ev.niveau === "excellent" ? "bg-emerald-700" :
+                            ev.niveau === "bon" ? "bg-emerald-500" :
+                            ev.niveau === "moyen" ? "bg-amber-500" : "bg-red-500"
+                          }`}>
+                            {ev.niveau.charAt(0).toUpperCase() + ev.niveau.slice(1)}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className={`text-xs font-semibold ${ev.status === "valide" ? "text-emerald-700" : "text-red-600"}`}>
+                          {ev.status === "valide" ? "✅ Validé" : "❌ À retravailler"}
+                        </span>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          {format(parseISO(ev.evaluated_at), "d MMM yyyy · HH:mm", { locale: fr })}
+                        </p>
+                      </div>
+                    </div>
+                    {ev.page_start && (
+                      <p className="text-[10px] text-emerald-700">
+                        📖 p.{ev.page_start}{ev.page_end && ev.page_end !== ev.page_start ? `–${ev.page_end}` : ""}
+                      </p>
+                    )}
+                    {ev.notes && (
+                      <p className="text-xs text-muted-foreground italic border-l-2 border-muted pl-2">
+                        « {ev.notes} »
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      )}
+
       {/* Modal prévisualisation page Mushaf */}
       {previewPage !== null && (
         <div
@@ -1263,6 +1326,7 @@ function AnnotateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
       ) : (
         <>
           <MushafAnnotator
+            key={selectedStudent.user_id}
             studentId={selectedStudent.user_id}
             studentName={`${selectedStudent.first_name} ${selectedStudent.last_name}`}
             sessionId={selectedSessionId || null}
