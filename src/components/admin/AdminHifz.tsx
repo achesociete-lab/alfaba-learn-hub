@@ -21,7 +21,9 @@ import {
   Mail,
   Clock,
   CalendarClock,
+  PenLine,
 } from "lucide-react";
+import MushafAnnotator from "./MushafAnnotator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -96,20 +98,24 @@ export default function AdminHifz() {
       </CardHeader>
       <CardContent>
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="grid grid-cols-3 w-full bg-emerald-50 border border-emerald-100">
-            <TabsTrigger value="slots" className="data-[state=active]:bg-emerald-700 data-[state=active]:text-white">
+          <TabsList className="grid grid-cols-4 w-full bg-emerald-50 border border-emerald-100">
+            <TabsTrigger value="slots" className="data-[state=active]:bg-emerald-700 data-[state=active]:text-white text-xs">
               Créneaux
             </TabsTrigger>
-            <TabsTrigger value="sessions" className="data-[state=active]:bg-emerald-700 data-[state=active]:text-white">
+            <TabsTrigger value="sessions" className="data-[state=active]:bg-emerald-700 data-[state=active]:text-white text-xs">
               Sessions
             </TabsTrigger>
-            <TabsTrigger value="evaluate" className="data-[state=active]:bg-emerald-700 data-[state=active]:text-white">
+            <TabsTrigger value="evaluate" className="data-[state=active]:bg-emerald-700 data-[state=active]:text-white text-xs">
               Évaluer
+            </TabsTrigger>
+            <TabsTrigger value="annotate" className="data-[state=active]:bg-emerald-700 data-[state=active]:text-white text-xs gap-1">
+              <PenLine className="h-3.5 w-3.5" /> Mushaf
             </TabsTrigger>
           </TabsList>
           <TabsContent value="slots" className="mt-4"><SlotsTab toast={toast} /></TabsContent>
           <TabsContent value="sessions" className="mt-4"><SessionsTab toast={toast} /></TabsContent>
           <TabsContent value="evaluate" className="mt-4"><EvaluateTab toast={toast} /></TabsContent>
+          <TabsContent value="annotate" className="mt-4"><AnnotateTab toast={toast} /></TabsContent>
         </Tabs>
       </CardContent>
     </Card>
@@ -968,6 +974,149 @@ function EvaluateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
       <Button onClick={submit} disabled={saving} className="bg-emerald-700 hover:bg-emerald-800 text-white">
         {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Enregistrer l'évaluation
       </Button>
+    </div>
+  );
+}
+
+/* ────────────────── Onglet Annotations Mushaf ────────────────── */
+function AnnotateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] }) {
+  const [students, setStudents] = useState<Array<{ user_id: string; first_name: string; last_name: string }>>([]);
+  const [selectedStudent, setSelectedStudent] = useState<{ user_id: string; first_name: string; last_name: string } | null>(null);
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [selectedSessionId, setSelectedSessionId] = useState<string>("");
+  const [annotations, setAnnotations] = useState<any[]>([]);
+  const [loadingAnnotations, setLoadingAnnotations] = useState(false);
+
+  useEffect(() => {
+    supabase.from("profiles").select("user_id, first_name, last_name")
+      .then(({ data }) => setStudents((data as any) || []));
+  }, []);
+
+  useEffect(() => {
+    if (!selectedStudent) { setSessions([]); return; }
+    supabase
+      .from("hifz_sessions")
+      .select("id, session_date, session_time, status, meet_link, notes_eleve, session_type, juz_number")
+      .eq("student_id", selectedStudent.user_id)
+      .in("status", ["confirmee", "effectuee"])
+      .order("session_date", { ascending: false })
+      .limit(10)
+      .then(({ data }) => setSessions((data as any) || []));
+  }, [selectedStudent]);
+
+  const loadAnnotations = async () => {
+    if (!selectedStudent) return;
+    setLoadingAnnotations(true);
+    const { data } = await supabase
+      .from("hifz_mushaf_annotations" as any)
+      .select("*")
+      .eq("student_id", selectedStudent.user_id)
+      .order("created_at", { ascending: false })
+      .limit(20);
+    setAnnotations((data as any) || []);
+    setLoadingAnnotations(false);
+  };
+
+  useEffect(() => { if (selectedStudent) loadAnnotations(); }, [selectedStudent]);
+
+  return (
+    <div className="space-y-4">
+      {/* Sélection élève */}
+      <div className="flex gap-3 flex-wrap items-end">
+        <div className="space-y-1 flex-1 min-w-[180px]">
+          <Label className="text-sm font-medium flex items-center gap-1">
+            <PenLine className="h-4 w-4 text-emerald-700" /> Élève
+          </Label>
+          <Select
+            value={selectedStudent?.user_id || ""}
+            onValueChange={(id) => {
+              const s = students.find((s) => s.user_id === id) || null;
+              setSelectedStudent(s);
+              setSelectedSessionId("");
+            }}
+          >
+            <SelectTrigger><SelectValue placeholder="Choisir un élève…" /></SelectTrigger>
+            <SelectContent>
+              {students.map((s) => (
+                <SelectItem key={s.user_id} value={s.user_id}>
+                  {s.first_name} {s.last_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {sessions.length > 0 && (
+          <div className="space-y-1 flex-1 min-w-[200px]">
+            <Label className="text-sm font-medium">Associer à une séance (optionnel)</Label>
+            <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
+              <SelectTrigger><SelectValue placeholder="Aucune séance sélectionnée" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Aucune</SelectItem>
+                {sessions.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {format(parseISO(s.session_date), "d MMM yyyy", { locale: fr })} · {s.session_time.slice(0, 5)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+      </div>
+
+      {!selectedStudent ? (
+        <div className="flex flex-col items-center justify-center py-16 gap-3 text-center border border-dashed border-emerald-200 rounded-xl bg-emerald-50/30">
+          <PenLine className="h-10 w-10 text-emerald-300" />
+          <p className="text-sm text-muted-foreground">Sélectionnez un élève pour ouvrir le Mushaf de Médine et annoter directement.</p>
+        </div>
+      ) : (
+        <>
+          <MushafAnnotator
+            studentId={selectedStudent.user_id}
+            studentName={`${selectedStudent.first_name} ${selectedStudent.last_name}`}
+            sessionId={selectedSessionId || null}
+            onSaved={loadAnnotations}
+          />
+
+          {/* Annotations déjà sauvegardées */}
+          {annotations.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Annotations sauvegardées ({annotations.length})
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {annotations.map((a: any) => (
+                  <div key={a.id} className="relative group rounded-lg overflow-hidden border border-border">
+                    <a href={a.annotated_image_url} target="_blank" rel="noreferrer">
+                      <img
+                        src={a.annotated_image_url}
+                        alt={`Page ${a.page_number}`}
+                        className="w-full object-cover hover:opacity-90 transition"
+                        style={{ maxHeight: 140 }}
+                      />
+                    </a>
+                    <div className="px-2 py-1 text-xs bg-background/90 flex items-center justify-between gap-1">
+                      <span className="font-medium">Page {a.page_number}</span>
+                      <button
+                        className="text-destructive hover:underline text-[10px]"
+                        onClick={async () => {
+                          await supabase.from("hifz_mushaf_annotations" as any).delete().eq("id", a.id);
+                          loadAnnotations();
+                        }}
+                      >
+                        Suppr.
+                      </button>
+                    </div>
+                    {a.note && (
+                      <p className="px-2 pb-1 text-[10px] text-muted-foreground truncate">{a.note}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

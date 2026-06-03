@@ -130,6 +130,7 @@ export default function Hifz() {
   const [booking, setBooking] = useState(false);
   const [confirmedRepetition, setConfirmedRepetition] = useState(false);
   const [cancelling, setCancelling] = useState<string | null>(null);
+  const [mushafAnnotations, setMushafAnnotations] = useState<any[]>([]);
 
   // Report / retard
   const [rescheduleSession, setRescheduleSession] = useState<Session | null>(null);
@@ -146,16 +147,18 @@ export default function Hifz() {
   const fetchAll = async () => {
     if (!user) return;
     setLoading(true);
-    const [{ data: cfg }, { data: evals }, { data: sess }, { data: slt }] = await Promise.all([
+    const [{ data: cfg }, { data: evals }, { data: sess }, { data: slt }, { data: annots }] = await Promise.all([
       supabase.from("hifz_config").select("*").eq("student_id", user.id).maybeSingle(),
       supabase.from("hifz_evaluations").select("*").eq("student_id", user.id),
       supabase.from("hifz_sessions").select("*").eq("student_id", user.id).order("session_date", { ascending: false }),
       supabase.from("admin_hifz_slots").select("*").gte("slot_date", format(new Date(), "yyyy-MM-dd")).order("slot_date"),
+      supabase.from("hifz_mushaf_annotations" as any).select("*").eq("student_id", user.id).order("created_at", { ascending: false }),
     ]);
     setConfig((cfg as any) ?? null);
     setEvaluations((evals as any) ?? []);
     setSessions((sess as any) ?? []);
     setSlots((slt as any) ?? []);
+    setMushafAnnotations((annots as any) ?? []);
     setLoading(false);
   };
 
@@ -1214,6 +1217,37 @@ export default function Hifz() {
                   })}
                 </Accordion>
               ) : null}
+
+              {/* Annotations Mushaf du professeur */}
+              {mushafAnnotations.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-emerald-700 uppercase tracking-widest flex items-center gap-1">
+                    <span>🖊️</span> Corrections Mushaf de votre professeur ({mushafAnnotations.length})
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {mushafAnnotations.map((a: any) => (
+                      <a
+                        key={a.id}
+                        href={a.annotated_image_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block rounded-xl border border-emerald-200 overflow-hidden hover:shadow-md transition-shadow group"
+                      >
+                        <img
+                          src={a.annotated_image_url}
+                          alt={`Correction page ${a.page_number}`}
+                          className="w-full object-cover group-hover:opacity-90 transition"
+                          style={{ maxHeight: 140 }}
+                        />
+                        <div className="px-2 py-1 bg-emerald-50 text-xs text-emerald-800 font-medium">
+                          Page {a.page_number}
+                          {a.note && <span className="block text-[10px] text-muted-foreground truncate">{a.note}</span>}
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
             </TabsContent>
 
             {/* ═══════════════════════════════════════════════════════════════
