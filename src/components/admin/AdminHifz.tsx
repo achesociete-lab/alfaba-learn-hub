@@ -1265,14 +1265,20 @@ function AnnotateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {annotations.map((a: any) => (
                   <div key={a.id} className="relative group rounded-lg overflow-hidden border border-border">
-                    <a href={a.annotated_image_url} target="_blank" rel="noreferrer">
+                    {/* Composite: Mushaf base + annotation overlay */}
+                    <div className="relative" style={{ maxHeight: 140, overflow: "hidden" }}>
                       <img
-                        src={a.annotated_image_url}
+                        src={getMedinaPageUrl(a.page_number)}
                         alt={`Page ${a.page_number}`}
-                        className="w-full object-cover hover:opacity-90 transition"
+                        className="w-full object-cover"
                         style={{ maxHeight: 140 }}
                       />
-                    </a>
+                      <img
+                        src={a.annotated_image_url}
+                        alt="annotation"
+                        className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                      />
+                    </div>
                     <div className="px-2 py-1 text-xs bg-background/90 flex items-center justify-between gap-1">
                       <span className="font-medium">Page {a.page_number}</span>
                       <button

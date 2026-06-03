@@ -1216,17 +1216,24 @@ export default function Hifz() {
                                             {relevant.map((a: any) => (
                                               <a
                                                 key={a.id}
-                                                href={a.annotated_image_url}
+                                                href={`https://www.mp3quran.net/api/quran_pages_arabic/${String(a.page_number).padStart(3,"0")}.png`}
                                                 target="_blank"
                                                 rel="noreferrer"
                                                 className="block rounded-lg overflow-hidden border-2 border-emerald-400 hover:shadow-md transition-shadow group"
                                               >
-                                                <img
-                                                  src={a.annotated_image_url}
-                                                  alt={`Correction p.${a.page_number}`}
-                                                  className="object-cover group-hover:opacity-90"
-                                                  style={{ height: 80, width: 60 }}
-                                                />
+                                                {/* Composite: Mushaf base + annotation overlay */}
+                                                <div className="relative" style={{ height: 80, width: 60 }}>
+                                                  <img
+                                                    src={`https://www.mp3quran.net/api/quran_pages_arabic/${String(a.page_number).padStart(3,"0")}.png`}
+                                                    alt={`Page ${a.page_number}`}
+                                                    className="w-full h-full object-cover"
+                                                  />
+                                                  <img
+                                                    src={a.annotated_image_url}
+                                                    alt="annotation"
+                                                    className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                                                  />
+                                                </div>
                                                 <div className="bg-emerald-50 text-[9px] text-emerald-700 text-center font-semibold px-1">
                                                   p.{a.page_number}
                                                 </div>
@@ -1267,26 +1274,37 @@ export default function Hifz() {
                     <span>🖊️</span> Corrections Mushaf de votre professeur ({mushafAnnotations.length})
                   </p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {mushafAnnotations.map((a: any) => (
-                      <a
-                        key={a.id}
-                        href={a.annotated_image_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="block rounded-xl border border-emerald-200 overflow-hidden hover:shadow-md transition-shadow group"
-                      >
-                        <img
-                          src={a.annotated_image_url}
-                          alt={`Correction page ${a.page_number}`}
-                          className="w-full object-cover group-hover:opacity-90 transition"
-                          style={{ maxHeight: 140 }}
-                        />
-                        <div className="px-2 py-1 bg-emerald-50 text-xs text-emerald-800 font-medium">
-                          Page {a.page_number}
-                          {a.note && <span className="block text-[10px] text-muted-foreground truncate">{a.note}</span>}
-                        </div>
-                      </a>
-                    ))}
+                    {mushafAnnotations.map((a: any) => {
+                      const mushafUrl = `https://www.mp3quran.net/api/quran_pages_arabic/${String(a.page_number).padStart(3,"0")}.png`;
+                      return (
+                        <a
+                          key={a.id}
+                          href={mushafUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="block rounded-xl border border-emerald-200 overflow-hidden hover:shadow-md transition-shadow group"
+                        >
+                          {/* Composite: Mushaf base + annotation overlay */}
+                          <div className="relative" style={{ maxHeight: 140, overflow: "hidden" }}>
+                            <img
+                              src={mushafUrl}
+                              alt={`Page ${a.page_number}`}
+                              className="w-full object-cover group-hover:opacity-90 transition"
+                              style={{ maxHeight: 140 }}
+                            />
+                            <img
+                              src={a.annotated_image_url}
+                              alt="annotation"
+                              className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                            />
+                          </div>
+                          <div className="px-2 py-1 bg-emerald-50 text-xs text-emerald-800 font-medium">
+                            Page {a.page_number}
+                            {a.note && <span className="block text-[10px] text-muted-foreground truncate">{a.note}</span>}
+                          </div>
+                        </a>
+                      );
+                    })}
                   </div>
                 </div>
               )}

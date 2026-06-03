@@ -1,5 +1,8 @@
-// Visualiseur du Mushaf de Médine (1-604 pages) avec annotation directe au stylo
-import { useEffect, useRef, useState, useCallback } from "react";
+// Visualiseur du Mushaf de Médine avec annotation directe (stylo/gomme)
+// Architecture : <img> normale pour afficher la page (pas de CORS),
+// canvas transparent superposé pour les annotations uniquement.
+// La sauvegarde exporte seulement la couche d'annotation (PNG transparent).
+import { useCallback, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -15,8 +18,7 @@ const COLORS = ["#ef4444", "#22c55e", "#3b82f6", "#eab308", "#a855f7", "#000000"
 const SIZES  = [2, 5, 10, 18];
 
 function getMushafUrl(page: number) {
-  const p = String(page).padStart(3, "0");
-  return `https://www.mp3quran.net/api/quran_pages_arabic/${p}.png`;
+  return `https://www.mp3quran.net/api/quran_pages_arabic/${String(page).padStart(3, "0")}.png`;
 }
 
 interface Props {
@@ -30,15 +32,9 @@ interface Props {
 export default function MushafAnnotator({ studentId, studentName, sessionId, initialPage = 1, onSaved }: Props) {
   const { toast } = useToast();
 
-  // Navigation
   const [page, setPage]         = useState(initialPage);
   const [pageInput, setPageInput] = useState(String(initialPage));
-
-  // Canvas
-  const canvasRef  = useRef<HTMLCanvasElement>(null);
-  const overlayRef = useRef<HTMLCanvasElement>(null); // annotation layer
-  const imgRef     = useRef<HTMLImageElement | null>(null);
-  const [imgLoaded, setImgLoaded] = useState(false);
+  const [imgReady, setImgReady]   = useState(false);
   const [imgError, setImgError]   = useState(false);
 
   // Drawing
@@ -50,50 +46,53 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
   const [history, setHistory] = useState<ImageData[]>([]);
   const [hasStrokes, setHasStrokes] = useState(false);
 
-  // Zoom
   const [zoom, setZoom] = useState(1);
-
-  // Save
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState("");
 
-  // ── Load image into the base canvas ──────────────────────────────────────────
-  const loadPage = useCallback((p: number) => {
-    setImgLoaded(false);
-    setImgError(false);
-    setHistory([]);
+  // Refs
+  const imgRef     = useRef<HTMLImageElement>(null);
+  const overlayRef = useRef<HTMLCanvasElement>(null);
+
+  // ── Sync canvas size to image natural dimensions when image loads ─────────────
+  const onImgLoad = useCallback(() => {
+    const img = imgRef.current;
+    const ov  = overlayRef.current;
+    if (!img || !ov) return;
+    ov.width  = img.naturalWidth;
+    ov.height = img.naturalHeight;
+    ov.getContext("2d")!.clearRect(0, 0, ov.width, ov.height);
+    setImgReady(true);
     setHasStrokes(false);
-
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-
-    img.onload = () => {
-      imgRef.current = img;
-      const canvas  = canvasRef.current!;
-      const overlay = overlayRef.current!;
-      const maxW = 900;
-      const scale = Math.min(1, maxW / img.naturalWidth);
-      const w = Math.round(img.naturalWidth  * scale);
-      const h = Math.round(img.naturalHeight * scale);
-      canvas.width  = overlay.width  = w;
-      canvas.height = overlay.height = h;
-      const ctx = canvas.getContext("2d")!;
-      ctx.drawImage(img, 0, 0, w, h);
-      overlay.getContext("2d")!.clearRect(0, 0, w, h);
-      setImgLoaded(true);
-    };
-    img.onerror = () => setImgError(true);
-    img.src = getMushafUrl(p);
+    setHistory([]);
   }, []);
 
-  useEffect(() => { loadPage(page); }, [page, loadPage]);
+  const onImgError = useCallback(() => setImgError(true), []);
 
-  // ── Pointer events on overlay canvas ─────────────────────────────────────────
-  const getPt = (e: React.PointerEvent) => {
-    const rect = overlayRef.current!.getBoundingClientRect();
+  // ── Navigate ──────────────────────────────────────────────────────────────────
+  const goTo = (p: number) => {
+    const c = Math.max(1, Math.min(TOTAL_PAGES, p));
+    setPage(c);
+    setPageInput(String(c));
+    setImgReady(false);
+    setImgError(false);
+    setHasStrokes(false);
+    setHistory([]);
+    // Clear overlay immediately
+    const ov = overlayRef.current;
+    if (ov) ov.getContext("2d")!.clearRect(0, 0, ov.width, ov.height);
+  };
+
+  // ── Pointer → canvas coordinates (scale from display px to natural px) ────────
+  const getPt = (e: React.PointerEvent): { x: number; y: number } => {
+    const img = imgRef.current!;
+    const ov  = overlayRef.current!;
+    const rect = img.getBoundingClientRect();
+    const scaleX = ov.width  / rect.width;
+    const scaleY = ov.height / rect.height;
     return {
-      x: (e.clientX - rect.left) / zoom,
-      y: (e.clientY - rect.top)  / zoom,
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top)  * scaleY,
     };
   };
 
@@ -104,7 +103,7 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
-    if (!imgLoaded) return;
+    if (!imgReady) return;
     pushHistory();
     setDrawing(true);
     lastPt.current = getPt(e);
@@ -116,15 +115,15 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
     const ctx = overlayRef.current!.getContext("2d")!;
     const pt  = getPt(e);
     ctx.beginPath();
-    ctx.lineCap    = "round";
-    ctx.lineJoin   = "round";
+    ctx.lineCap  = "round";
+    ctx.lineJoin = "round";
     if (tool === "eraser") {
       ctx.globalCompositeOperation = "destination-out";
-      ctx.lineWidth = size * 3;
+      ctx.lineWidth   = size * 4;
       ctx.strokeStyle = "rgba(0,0,0,1)";
     } else {
       ctx.globalCompositeOperation = "source-over";
-      ctx.lineWidth   = size;
+      ctx.lineWidth   = size * 2; // upscaled because canvas is at natural resolution
       ctx.strokeStyle = color;
     }
     ctx.moveTo(lastPt.current.x, lastPt.current.y);
@@ -134,15 +133,11 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
     setHasStrokes(true);
   };
 
-  const onPointerUp = () => {
-    setDrawing(false);
-    lastPt.current = null;
-  };
+  const onPointerUp = () => { setDrawing(false); lastPt.current = null; };
 
   const undo = () => {
     if (!history.length) return;
-    const prev = history[history.length - 1];
-    overlayRef.current!.getContext("2d")!.putImageData(prev, 0, 0);
+    overlayRef.current!.getContext("2d")!.putImageData(history[history.length - 1], 0, 0);
     setHistory((h) => h.slice(0, -1));
     if (history.length <= 1) setHasStrokes(false);
   };
@@ -154,30 +149,23 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
     setHasStrokes(false);
   };
 
-  // ── Merge base + overlay → blob → upload ─────────────────────────────────────
+  // ── Save : export only the annotation overlay (transparent PNG) ───────────────
   const save = async () => {
-    if (!imgRef.current || !hasStrokes) {
+    if (!hasStrokes) {
       toast({ title: "Aucune annotation à sauvegarder", variant: "destructive" });
       return;
     }
     setSaving(true);
     try {
-      // Merge the two canvases
-      const merged = document.createElement("canvas");
-      merged.width  = canvasRef.current!.width;
-      merged.height = canvasRef.current!.height;
-      const mCtx = merged.getContext("2d")!;
-      mCtx.drawImage(canvasRef.current!, 0, 0);
-      mCtx.drawImage(overlayRef.current!, 0, 0);
-
+      const ov = overlayRef.current!;
       const blob: Blob = await new Promise((res, rej) =>
-        merged.toBlob((b) => (b ? res(b) : rej(new Error("toBlob failed"))), "image/jpeg", 0.9)
+        ov.toBlob((b) => b ? res(b) : rej(new Error("toBlob failed")), "image/png")
       );
 
-      const path = `hifz-annotations/${studentId}/page-${page}-${Date.now()}.jpg`;
+      const path = `hifz-annotations/${studentId}/page-${page}-${Date.now()}.png`;
       const { error: upErr } = await supabase.storage
         .from("presentiel-courses")
-        .upload(path, blob, { contentType: "image/jpeg", upsert: false });
+        .upload(path, blob, { contentType: "image/png", upsert: false });
       if (upErr) throw upErr;
 
       const { data: { publicUrl } } = supabase.storage.from("presentiel-courses").getPublicUrl(path);
@@ -191,7 +179,7 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
       });
       if (dbErr) throw dbErr;
 
-      toast({ title: `Page ${page} annotée sauvegardée ✓`, description: `Pour ${studentName}` });
+      toast({ title: `Page ${page} annotée ✓`, description: `Pour ${studentName}` });
       clear();
       setNote("");
       onSaved?.();
@@ -202,21 +190,12 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
     }
   };
 
-  // ── Navigate ──────────────────────────────────────────────────────────────────
-  const goTo = (p: number) => {
-    const clamped = Math.max(1, Math.min(TOTAL_PAGES, p));
-    setPage(clamped);
-    setPageInput(String(clamped));
-  };
-
   return (
     <div className="space-y-3">
-      {/* Toolbar */}
+      {/* ── Toolbar ── */}
       <div className="flex flex-wrap items-center gap-2 p-3 bg-muted/40 rounded-xl border border-border">
-
-        {/* Navigation */}
         <Button size="sm" variant="outline" onClick={() => goTo(page - 1)} disabled={page <= 1}>
-          <ChevronRight className="h-4 w-4" /> {/* RTL: right = previous */}
+          <ChevronRight className="h-4 w-4" />
         </Button>
         <div className="flex items-center gap-1">
           <Input
@@ -235,25 +214,13 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
 
         <div className="w-px h-5 bg-border mx-1" />
 
-        {/* Tools */}
-        <Button
-          size="sm"
-          variant={tool === "pen" ? "default" : "outline"}
-          onClick={() => setTool("pen")}
-          className="gap-1"
-        >
+        <Button size="sm" variant={tool === "pen" ? "default" : "outline"} onClick={() => setTool("pen")} className="gap-1">
           <Pencil className="h-3.5 w-3.5" /> Stylo
         </Button>
-        <Button
-          size="sm"
-          variant={tool === "eraser" ? "default" : "outline"}
-          onClick={() => setTool("eraser")}
-          className="gap-1"
-        >
+        <Button size="sm" variant={tool === "eraser" ? "default" : "outline"} onClick={() => setTool("eraser")} className="gap-1">
           <Eraser className="h-3.5 w-3.5" /> Gomme
         </Button>
 
-        {/* Colors */}
         <div className="flex gap-1">
           {COLORS.map((c) => (
             <button
@@ -265,7 +232,6 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
           ))}
         </div>
 
-        {/* Sizes */}
         <div className="flex gap-1 items-center">
           {SIZES.map((s) => (
             <button
@@ -279,7 +245,6 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
 
         <div className="w-px h-5 bg-border mx-1" />
 
-        {/* Zoom */}
         <Button size="sm" variant="outline" onClick={() => setZoom((z) => Math.min(2, z + 0.25))} className="px-2">
           <ZoomIn className="h-4 w-4" />
         </Button>
@@ -290,37 +255,50 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
 
         <div className="w-px h-5 bg-border mx-1" />
 
-        <Button size="sm" variant="outline" onClick={undo} disabled={!history.length} className="gap-1">
-          <Undo2 className="h-3.5 w-3.5" />
-        </Button>
-        <Button size="sm" variant="outline" onClick={clear} disabled={!hasStrokes} className="gap-1 text-destructive border-destructive/30">
+        <Button size="sm" variant="outline" onClick={undo} disabled={!history.length}><Undo2 className="h-3.5 w-3.5" /></Button>
+        <Button size="sm" variant="outline" onClick={clear} disabled={!hasStrokes} className="text-destructive border-destructive/30">
           <Trash2 className="h-3.5 w-3.5" />
         </Button>
       </div>
 
-      {/* Canvas zone */}
-      <div className="rounded-xl border border-border overflow-auto bg-stone-100 dark:bg-stone-900"
-           style={{ maxHeight: "70vh" }}>
+      {/* ── Canvas zone ── */}
+      <div
+        className="rounded-xl border border-border overflow-auto bg-stone-100"
+        style={{ maxHeight: "70vh" }}
+      >
         <div style={{ transform: `scale(${zoom})`, transformOrigin: "top center", display: "inline-block", minWidth: "100%" }}>
-          <div className="relative inline-block" style={{ direction: "ltr" }}>
-            {/* Base image canvas */}
-            <canvas ref={canvasRef} className="block" />
-            {/* Annotation overlay */}
+          {/* Relative container : img + canvas overlay perfectly stacked */}
+          <div className="relative inline-block select-none" style={{ direction: "ltr" }}>
+            {/* Base Mushaf image — standard <img>, no crossOrigin needed */}
+            <img
+              ref={imgRef}
+              src={getMushafUrl(page)}
+              alt={`Page ${page} du Mushaf`}
+              onLoad={onImgLoad}
+              onError={onImgError}
+              draggable={false}
+              className="block w-full max-w-2xl"
+              style={{ display: imgError ? "none" : "block" }}
+            />
+
+            {/* Annotation canvas — transparent overlay, same visual size as img */}
             <canvas
               ref={overlayRef}
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
               onPointerLeave={onPointerUp}
-              className="absolute inset-0 touch-none"
+              className="absolute inset-0 touch-none w-full h-full"
               style={{
                 cursor: tool === "eraser" ? "cell" : "crosshair",
-                opacity: imgLoaded ? 1 : 0,
+                opacity: imgReady ? 1 : 0,
+                pointerEvents: imgReady ? "auto" : "none",
               }}
             />
-            {/* Loading state */}
-            {!imgLoaded && !imgError && (
-              <div className="absolute inset-0 flex items-center justify-center bg-stone-100 dark:bg-stone-900" style={{ minWidth: 300, minHeight: 400 }}>
+
+            {/* States */}
+            {!imgReady && !imgError && (
+              <div className="absolute inset-0 flex items-center justify-center bg-stone-100/80" style={{ minHeight: 300 }}>
                 <Loader2 className="h-8 w-8 animate-spin text-emerald-700" />
               </div>
             )}
@@ -333,7 +311,7 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
         </div>
       </div>
 
-      {/* Save row */}
+      {/* ── Save row ── */}
       <div className="flex gap-2 items-center flex-wrap">
         <Input
           value={note}
@@ -353,7 +331,7 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
         </Button>
         {hasStrokes && (
           <Badge variant="outline" className="border-emerald-500 text-emerald-600 text-xs">
-            Annotation non sauvegardée
+            Non sauvegardé
           </Badge>
         )}
       </div>
