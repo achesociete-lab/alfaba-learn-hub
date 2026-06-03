@@ -1256,12 +1256,19 @@ function EvaluateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
                               title={a.note || `Page ${a.page_number}`}
                               className="block rounded-lg overflow-hidden border-2 border-emerald-400 hover:shadow-md transition-shadow group shrink-0"
                             >
-                              <img
-                                src={a.annotated_image_url}
-                                alt={`Annotation p.${a.page_number}`}
-                                className="object-cover group-hover:opacity-90 transition"
-                                style={{ height: 72, width: 52 }}
-                              />
+                              <div style={{ position: "relative", height: 72, width: 52, overflow: "hidden" }}>
+                                <img
+                                  src={`https://www.mp3quran.net/api/quran_pages_arabic/${String(a.page_number).padStart(3,"0")}.png`}
+                                  alt=""
+                                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                                />
+                                <img
+                                  src={a.annotated_image_url}
+                                  alt={`Annotation p.${a.page_number}`}
+                                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                                  className="group-hover:opacity-90 transition"
+                                />
+                              </div>
                               <div className="bg-emerald-50 text-[9px] text-emerald-700 text-center font-semibold px-1 py-0.5">
                                 p.{a.page_number}
                               </div>
