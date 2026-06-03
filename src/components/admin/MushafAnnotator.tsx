@@ -51,6 +51,14 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
   const imgRef    = useRef<HTMLImageElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  // Préchargement de la page suivante et précédente
+  useEffect(() => {
+    [page - 1, page + 1].filter(p => p >= 1 && p <= 604).forEach(p => {
+      const img = new Image();
+      img.src = getMushafUrl(p);
+    });
+  }, [page]);
+
   // ── Image chargée → dimensionner le canvas une seule fois ────────────────────
   const onImgLoad = () => {
     const img = imgRef.current;
@@ -74,6 +82,7 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
     setReady(false);
     setHasStrokes(false);
     setHistory([]);
+    setZoom(1);
     // Vider le canvas sans changer ses dimensions (pas de flash)
     const cv = canvasRef.current;
     if (cv) cv.getContext("2d")!.clearRect(0, 0, cv.width, cv.height);
