@@ -853,7 +853,16 @@ function EvaluateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
       if (e.page_end)    row.page_end   = e.page_end;
       return row;
     });
-    const { error } = await supabase.from("hifz_evaluations").insert(rows);
+
+    // Tentative avec colonnes sourate/page ; si elles n'existent pas encore en base,
+    // on réessaie sans elles (migration pas encore appliquée)
+    let { error } = await supabase.from("hifz_evaluations").insert(rows);
+    if (error?.message?.includes("page_end") || error?.message?.includes("surah_start")) {
+      const coreRows = rows.map(({ surah_start, verse_start, surah_end, verse_end, page_start, page_end, ...rest }) => rest);
+      const retry = await supabase.from("hifz_evaluations").insert(coreRows);
+      error = retry.error;
+      if (!retry.error) toast({ title: "Info", description: "Les champs sourate/page seront disponibles après déploiement.", variant: "default" });
+    }
     if (error) {
       setSaving(false);
       return toast({ title: "Erreur", description: error.message, variant: "destructive" });
@@ -1269,20 +1278,14 @@ function AnnotateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {annotations.map((a: any) => (
                   <div key={a.id} className="relative group rounded-lg overflow-hidden border border-border">
-                    {/* Composite: Mushaf base + annotation overlay */}
-                    <div className="relative" style={{ maxHeight: 140, overflow: "hidden" }}>
-                      <img
-                        src={getMedinaPageUrl(a.page_number)}
-                        alt={`Page ${a.page_number}`}
-                        className="w-full object-cover"
-                        style={{ maxHeight: 140 }}
-                      />
+                    <a href={a.annotated_image_url} target="_blank" rel="noreferrer">
                       <img
                         src={a.annotated_image_url}
-                        alt="annotation"
-                        className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                        alt={`Page ${a.page_number} annotée`}
+                        className="w-full object-cover hover:opacity-90 transition"
+                        style={{ maxHeight: 140 }}
                       />
-                    </div>
+                    </a>
                     <div className="px-2 py-1 text-xs bg-background/90 flex items-center justify-between gap-1">
                       <span className="font-medium">Page {a.page_number}</span>
                       <button

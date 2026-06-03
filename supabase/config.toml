@@ -27,3 +27,5 @@ project_id = "ruqudrizhrrnxowirito"
     verify_jwt = true
   [functions.notify-hifz-reschedule-proposal]
     verify_jwt = true
+  [functions.mushaf-proxy]
+    verify_jwt = false
