@@ -705,6 +705,7 @@ function EvaluateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
   const [previewPage, setPreviewPage] = useState<number | null>(null);
   const [showAnnotator, setShowAnnotator] = useState(false);
   const [annotatingEval, setAnnotatingEval] = useState<{ evalId: string; sessionId: string | null; page: number; label: string } | null>(null);
+  const [studentAnnotations, setStudentAnnotations] = useState<any[]>([]);
 
   const selectedSession = sessions.find((s) => s.id === sessionId);
   const sessionType = (selectedSession?.session_type || "sabaq") as HifzSessionType;
@@ -763,8 +764,17 @@ function EvaluateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
     });
   };
 
+  const refreshAnnotations = async (sid: string) => {
+    const { data } = await supabase
+      .from("hifz_mushaf_annotations" as any)
+      .select("*")
+      .eq("student_id", sid)
+      .order("created_at", { ascending: false });
+    setStudentAnnotations((data as any) || []);
+  };
+
   useEffect(() => {
-    if (!studentId) { setSessions([]); setSessionId(""); setStudentEvals([]); return; }
+    if (!studentId) { setSessions([]); setSessionId(""); setStudentEvals([]); setStudentAnnotations([]); return; }
     (async () => {
       const [{ data: sess }, { data: evs }] = await Promise.all([
         supabase.from("hifz_sessions").select("*").eq("student_id", studentId).eq("status", "confirmee").order("session_date", { ascending: false }),
@@ -772,6 +782,7 @@ function EvaluateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
       ]);
       setSessions((sess as any) || []);
       setStudentEvals((evs as any) || []);
+      await refreshAnnotations(studentId);
     })();
   }, [studentId]);
 
@@ -1159,6 +1170,7 @@ function EvaluateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
                 })()}
                 sessionId={sessionId || null}
                 initialPage={evals.find((e) => e.page_start)?.page_start ?? 1}
+                onSaved={() => { setShowAnnotator(false); refreshAnnotations(studentId); }}
               />
             </div>
           )}
@@ -1221,6 +1233,43 @@ function EvaluateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
                         « {ev.notes} »
                       </p>
                     )}
+                    {/* Annotations existantes liées à cette éval */}
+                    {(() => {
+                      const ps = ev.page_start as number | undefined;
+                      const pe = (ev.page_end ?? ps) as number | undefined;
+                      const related = studentAnnotations.filter((a: any) =>
+                        (ev.session_id && a.session_id === ev.session_id && ps
+                          ? a.page_number >= ps && a.page_number <= (pe ?? ps)
+                          : ev.session_id
+                            ? a.session_id === ev.session_id
+                            : ps && a.session_id == null && a.page_number >= ps && a.page_number <= (pe ?? ps))
+                      );
+                      if (!related.length) return null;
+                      return (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {related.map((a: any) => (
+                            <a
+                              key={a.id}
+                              href={a.annotated_image_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              title={a.note || `Page ${a.page_number}`}
+                              className="block rounded-lg overflow-hidden border-2 border-emerald-400 hover:shadow-md transition-shadow group shrink-0"
+                            >
+                              <img
+                                src={a.annotated_image_url}
+                                alt={`Annotation p.${a.page_number}`}
+                                className="object-cover group-hover:opacity-90 transition"
+                                style={{ height: 72, width: 52 }}
+                              />
+                              <div className="bg-emerald-50 text-[9px] text-emerald-700 text-center font-semibold px-1 py-0.5">
+                                p.{a.page_number}
+                              </div>
+                            </a>
+                          ))}
+                        </div>
+                      );
+                    })()}
                     {/* Bouton annoter cette séance passée */}
                     <div className="flex justify-end pt-1">
                       <button
@@ -1276,7 +1325,7 @@ function EvaluateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
                   })()}
                   sessionId={annotatingEval.sessionId}
                   initialPage={annotatingEval.page}
-                  onSaved={() => setAnnotatingEval(null)}
+                  onSaved={() => { setAnnotatingEval(null); refreshAnnotations(studentId); }}
                 />
               </div>
             </div>
