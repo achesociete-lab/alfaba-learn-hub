@@ -22,6 +22,7 @@ import { template as hifzSessionCancelled } from './hifz-session-cancelled.tsx'
 import { template as hifzSessionEvaluated } from './hifz-session-evaluated.tsx'
 import { template as hifzSessionReminder } from './hifz-session-reminder.tsx'
 import { template as hifzDailyReminder } from './hifz-daily-reminder.tsx'
+import { template as hifzRescheduleRequest } from './hifz-reschedule-request.tsx'
 import { template as presentielCorrection } from './presentiel-correction.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
@@ -38,5 +39,6 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'hifz-session-evaluated': hifzSessionEvaluated,
   'hifz-session-reminder': hifzSessionReminder,
   'hifz-daily-reminder': hifzDailyReminder,
+  'hifz-reschedule-request': hifzRescheduleRequest,
   'presentiel-correction': presentielCorrection,
 }

@@ -281,6 +281,11 @@ export type Database = {
           juz_number: number | null
           meet_link: string | null
           notes_eleve: string | null
+          reschedule_message: string | null
+          reschedule_proposed_date: string | null
+          reschedule_proposed_time: string | null
+          reschedule_requested_at: string | null
+          reschedule_type: string | null
           session_date: string
           session_time: string
           session_type: string
@@ -293,6 +298,11 @@ export type Database = {
           juz_number?: number | null
           meet_link?: string | null
           notes_eleve?: string | null
+          reschedule_message?: string | null
+          reschedule_proposed_date?: string | null
+          reschedule_proposed_time?: string | null
+          reschedule_requested_at?: string | null
+          reschedule_type?: string | null
           session_date: string
           session_time: string
           session_type?: string
@@ -305,6 +315,11 @@ export type Database = {
           juz_number?: number | null
           meet_link?: string | null
           notes_eleve?: string | null
+          reschedule_message?: string | null
+          reschedule_proposed_date?: string | null
+          reschedule_proposed_time?: string | null
+          reschedule_requested_at?: string | null
+          reschedule_type?: string | null
           session_date?: string
           session_time?: string
           session_type?: string

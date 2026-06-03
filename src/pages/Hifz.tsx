@@ -5,7 +5,7 @@ import { fr } from "date-fns/locale";
 import {
   Crown, Lock, Sparkles, BookOpen, CheckCircle2, Loader2, ChevronRight,
   RotateCcw, Target,
-  CalendarDays, Clock, TrendingUp, Star, AlertCircle, CalendarCheck,
+  CalendarDays, Clock, TrendingUp, Star, AlertCircle, CalendarCheck, CalendarClock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -131,6 +131,12 @@ export default function Hifz() {
   const [confirmedRepetition, setConfirmedRepetition] = useState(false);
   const [cancelling, setCancelling] = useState<string | null>(null);
 
+  // Report / retard
+  const [rescheduleSession, setRescheduleSession] = useState<Session | null>(null);
+  const [rescheduleType, setRescheduleType] = useState<"retard" | "reporter">("retard");
+  const [rescheduleMessage, setRescheduleMessage] = useState("");
+  const [rescheduleSlot, setRescheduleSlot] = useState<Slot | null>(null);
+  const [submittingReschedule, setSubmittingReschedule] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -279,6 +285,58 @@ export default function Hifz() {
       toast({ title: "Réservation annulée" });
       fetchAll();
     }
+  };
+
+  const handleReschedule = async () => {
+    if (!rescheduleSession || !user) return;
+    if (rescheduleType === "reporter" && !rescheduleSlot) {
+      toast({ title: "Créneau requis", description: "Choisissez un créneau pour le report.", variant: "destructive" });
+      return;
+    }
+    setSubmittingReschedule(true);
+    const update: any = {
+      reschedule_type: rescheduleType,
+      reschedule_message: rescheduleMessage.trim() || null,
+      reschedule_requested_at: new Date().toISOString(),
+      reschedule_proposed_date: rescheduleType === "reporter" ? rescheduleSlot!.slot_date : null,
+      reschedule_proposed_time: rescheduleType === "reporter" ? rescheduleSlot!.start_time : null,
+    };
+    const { error } = await supabase.from("hifz_sessions").update(update).eq("id", rescheduleSession.id);
+    if (error) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+      setSubmittingReschedule(false);
+      return;
+    }
+
+    // Email à l'admin
+    const studentName = `${profile?.first_name || ""} ${profile?.last_name || ""}`.trim() || (user.email ?? "Élève");
+    const sessionDateStr = format(parseISO(rescheduleSession.session_date), "EEEE d MMMM yyyy", { locale: fr });
+    try {
+      await supabase.functions.invoke("send-transactional-email", {
+        body: {
+          templateName: "hifz-reschedule-request",
+          templateData: {
+            studentName,
+            sessionDate: sessionDateStr,
+            sessionTime: rescheduleSession.session_time.slice(0, 5),
+            rescheduleType,
+            message: rescheduleMessage.trim() || null,
+            proposedDate: rescheduleSlot ? format(parseISO(rescheduleSlot.slot_date), "EEEE d MMMM yyyy", { locale: fr }) : null,
+            proposedTime: rescheduleSlot ? rescheduleSlot.start_time.slice(0, 5) : null,
+          },
+        },
+      });
+    } catch {}
+
+    setSubmittingReschedule(false);
+    setRescheduleSession(null);
+    setRescheduleMessage("");
+    setRescheduleSlot(null);
+    toast({
+      title: rescheduleType === "retard" ? "Retard signalé ✓" : "Demande de report envoyée ✓",
+      description: "Votre professeur a été notifié.",
+    });
+    fetchAll();
   };
 
   const handleGenerate = async () => {
@@ -975,13 +1033,36 @@ export default function Hifz() {
                         {s.status === "confirmee" && !s.meet_link && (
                           <p className="text-xs text-amber-700/80 italic">Le lien Meet sera ajouté par votre professeur avant la séance.</p>
                         )}
-                        <button
-                          onClick={() => handleCancel(s.id, s.status === "confirmee")}
-                          disabled={cancelling === s.id}
-                          className="text-xs text-red-500 hover:text-red-700 hover:underline disabled:opacity-50 transition-colors text-left"
-                        >
-                          {cancelling === s.id ? "Annulation…" : "Annuler la réservation"}
-                        </button>
+                        {(s as any).reschedule_type && (
+                          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-700">
+                            <CalendarClock className="h-3.5 w-3.5 shrink-0" />
+                            <span>
+                              {(s as any).reschedule_type === "retard" ? "⚠️ Retard signalé" : "📅 Report demandé"} — en attente de réponse du professeur
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-3 flex-wrap">
+                          {!(s as any).reschedule_type && (
+                            <button
+                              onClick={() => {
+                                setRescheduleSession(s);
+                                setRescheduleType("retard");
+                                setRescheduleMessage("");
+                                setRescheduleSlot(null);
+                              }}
+                              className="text-xs text-amber-600 hover:text-amber-800 hover:underline transition-colors flex items-center gap-1"
+                            >
+                              <CalendarClock className="h-3 w-3" /> Signaler un retard / Reporter
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleCancel(s.id, s.status === "confirmee")}
+                            disabled={cancelling === s.id}
+                            className="text-xs text-red-500 hover:text-red-700 hover:underline disabled:opacity-50 transition-colors"
+                          >
+                            {cancelling === s.id ? "Annulation…" : "Annuler la réservation"}
+                          </button>
+                        </div>
                       </div>
                     );
                   })}
@@ -1381,6 +1462,109 @@ export default function Hifz() {
               className="bg-emerald-700 hover:bg-emerald-800 text-white disabled:opacity-50"
             >
               {booking ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Enregistrement…</> : "Confirmer la réservation"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Dialog : Signaler un retard / Proposer un report ─── */}
+      <Dialog open={!!rescheduleSession} onOpenChange={(o) => !o && setRescheduleSession(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-amber-800 flex items-center gap-2">
+              <CalendarClock className="h-5 w-5" /> Signaler un problème de disponibilité
+            </DialogTitle>
+          </DialogHeader>
+
+          {rescheduleSession && (
+            <div className="space-y-4 pt-1">
+              {/* Séance concernée */}
+              <div className="px-3 py-2 rounded-lg bg-muted text-sm text-muted-foreground">
+                Séance du{" "}
+                <strong className="text-foreground capitalize">
+                  {format(parseISO(rescheduleSession.session_date), "EEEE d MMMM yyyy", { locale: fr })}
+                </strong>{" "}
+                à <strong className="text-foreground">{rescheduleSession.session_time.slice(0, 5)}</strong>
+              </div>
+
+              {/* Type */}
+              <div className="grid grid-cols-2 gap-2">
+                {([
+                  { value: "retard" as const, label: "⚠️ Je serai en retard", desc: "Je viens mais avec du retard" },
+                  { value: "reporter" as const, label: "📅 Je souhaite reporter", desc: "Je propose un autre créneau" },
+                ] as const).map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setRescheduleType(opt.value)}
+                    className={`p-3 rounded-xl border-2 text-left transition-all ${
+                      rescheduleType === opt.value
+                        ? "border-amber-400 bg-amber-50"
+                        : "border-border bg-background hover:border-amber-200"
+                    }`}
+                  >
+                    <p className="font-semibold text-sm">{opt.label}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{opt.desc}</p>
+                  </button>
+                ))}
+              </div>
+
+              {/* Si reporter : choisir un nouveau créneau parmi les dispo */}
+              {rescheduleType === "reporter" && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Créneau proposé :</p>
+                  {slots.length === 0 ? (
+                    <p className="text-xs text-muted-foreground italic">Aucun créneau disponible actuellement. Laissez un message à votre professeur.</p>
+                  ) : (
+                    <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
+                      {slots.map((sl) => (
+                        <button
+                          key={sl.id}
+                          onClick={() => setRescheduleSlot(sl)}
+                          className={`w-full text-left p-2.5 rounded-lg border text-sm transition-all ${
+                            rescheduleSlot?.id === sl.id
+                              ? "border-emerald-500 bg-emerald-50 font-semibold"
+                              : "border-border hover:border-emerald-300"
+                          }`}
+                        >
+                          <span className="capitalize">{format(parseISO(sl.slot_date), "EEEE d MMM", { locale: fr })}</span>
+                          {" · "}<span className="text-emerald-700 font-medium">{sl.start_time.slice(0, 5)} – {sl.end_time.slice(0, 5)}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Message */}
+              <div>
+                <Label className="text-sm">
+                  Message pour votre professeur{" "}
+                  <span className="text-muted-foreground font-normal">
+                    {rescheduleType === "retard" ? "(ex : je serai en retard de 15 min)" : "(optionnel)"}
+                  </span>
+                </Label>
+                <Textarea
+                  value={rescheduleMessage}
+                  onChange={(e) => setRescheduleMessage(e.target.value)}
+                  placeholder={rescheduleType === "retard" ? "Je serai en retard de 15 minutes environ…" : "Je ne serai pas disponible ce soir, je propose le créneau ci-dessus…"}
+                  className="mt-1.5 resize-none text-sm"
+                  rows={3}
+                />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 pt-2">
+            <Button variant="outline" onClick={() => setRescheduleSession(null)}>Annuler</Button>
+            <Button
+              onClick={handleReschedule}
+              disabled={submittingReschedule || (rescheduleType === "reporter" && !rescheduleSlot && slots.length > 0)}
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              {submittingReschedule
+                ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Envoi…</>
+                : rescheduleType === "retard" ? "Notifier le professeur" : "Envoyer la demande"
+              }
             </Button>
           </DialogFooter>
         </DialogContent>

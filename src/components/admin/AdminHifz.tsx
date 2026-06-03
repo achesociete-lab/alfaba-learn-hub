@@ -20,6 +20,7 @@ import {
   Send,
   Mail,
   Clock,
+  CalendarClock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -57,6 +58,10 @@ type Session = {
   notes_eleve: string | null;
   session_type?: string | null;
   juz_number?: number | null;
+  reschedule_type?: string | null;
+  reschedule_message?: string | null;
+  reschedule_proposed_date?: string | null;
+  reschedule_proposed_time?: string | null;
 };
 type Profile = { user_id: string; first_name: string; last_name: string };
 type EvalDraft = {
@@ -374,7 +379,10 @@ function SessionsTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
         const p = profiles[s.student_id];
         const name = p ? `${p.first_name} ${p.last_name}`.trim() : "—";
         return (
-          <Card key={s.id} className={s.status === "confirmee" ? "border-emerald-300" : "border-amber-200"}>
+          <Card key={s.id} className={
+              s.reschedule_type ? "border-amber-400 ring-2 ring-amber-200" :
+              s.status === "confirmee" ? "border-emerald-300" : "border-amber-200"
+            }>
             <CardContent className="pt-4 space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
@@ -383,10 +391,74 @@ function SessionsTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
                     {format(parseISO(s.session_date), "EEEE d MMMM yyyy", { locale: fr })} · {s.session_time.slice(0, 5)}
                   </p>
                 </div>
-                <Badge className={s.status === "confirmee" ? "bg-emerald-700" : "bg-amber-600"}>
-                  {s.status === "confirmee" ? "Confirmée" : "En attente"}
-                </Badge>
+                <div className="flex gap-2 items-center flex-wrap">
+                  {s.reschedule_type && (
+                    <Badge className="bg-amber-500 text-white gap-1">
+                      <CalendarClock className="h-3 w-3" />
+                      {s.reschedule_type === "retard" ? "Retard signalé" : "Report demandé"}
+                    </Badge>
+                  )}
+                  <Badge className={s.status === "confirmee" ? "bg-emerald-700" : "bg-slate-500"}>
+                    {s.status === "confirmee" ? "Confirmée" : "En attente"}
+                  </Badge>
+                </div>
               </div>
+
+              {/* Détail de la demande de report */}
+              {s.reschedule_type && (
+                <div className="p-3 rounded-lg bg-amber-50 border border-amber-300 space-y-1.5">
+                  <p className="text-xs font-bold text-amber-800 uppercase tracking-wide flex items-center gap-1">
+                    <CalendarClock className="h-3.5 w-3.5" />
+                    {s.reschedule_type === "retard" ? "⚠️ Retard signalé par l'élève" : "📅 Demande de report"}
+                  </p>
+                  {s.reschedule_message && (
+                    <p className="text-sm text-amber-900 italic">« {s.reschedule_message} »</p>
+                  )}
+                  {s.reschedule_type === "reporter" && s.reschedule_proposed_date && (
+                    <p className="text-sm font-semibold text-amber-800">
+                      Créneau proposé : {format(parseISO(s.reschedule_proposed_date), "EEEE d MMMM yyyy", { locale: fr })}
+                      {s.reschedule_proposed_time && ` à ${s.reschedule_proposed_time.slice(0, 5)}`}
+                    </p>
+                  )}
+                  {/* Accepter le report */}
+                  {s.reschedule_type === "reporter" && s.reschedule_proposed_date && (
+                    <Button
+                      size="sm"
+                      className="bg-amber-600 hover:bg-amber-700 text-white gap-1 mt-1"
+                      onClick={async () => {
+                        await supabase.from("hifz_sessions").update({
+                          session_date: s.reschedule_proposed_date!,
+                          session_time: s.reschedule_proposed_time || s.session_time,
+                          reschedule_type: null,
+                          reschedule_message: null,
+                          reschedule_proposed_date: null,
+                          reschedule_proposed_time: null,
+                          reschedule_requested_at: null,
+                        } as any).eq("id", s.id);
+                        toast({ title: "Report accepté — séance déplacée ✓" });
+                        fetchSessions();
+                      }}
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5" /> Accepter le report
+                    </Button>
+                  )}
+                  <button
+                    className="text-xs text-muted-foreground hover:underline"
+                    onClick={async () => {
+                      await supabase.from("hifz_sessions").update({
+                        reschedule_type: null, reschedule_message: null,
+                        reschedule_proposed_date: null, reschedule_proposed_time: null,
+                        reschedule_requested_at: null,
+                      } as any).eq("id", s.id);
+                      toast({ title: "Demande ignorée" });
+                      fetchSessions();
+                    }}
+                  >
+                    Ignorer la demande
+                  </button>
+                </div>
+              )}
+
               {s.notes_eleve && (
                 <p className="text-sm bg-amber-50 border border-amber-200 rounded p-2 italic">
                   « {s.notes_eleve} »
