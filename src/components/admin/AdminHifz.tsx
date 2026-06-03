@@ -357,11 +357,12 @@ function SessionsTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
   };
 
   const confirmSession = async (s: Session) => {
-    const link = meetLinks[s.id]?.trim();
-    if (!link) {
+    const raw = meetLinks[s.id]?.trim();
+    if (!raw) {
       toast({ title: "Lien Meet requis", description: "Entrez un lien Google Meet avant de confirmer.", variant: "destructive" });
       return;
     }
+    const link = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
     await supabase.from("hifz_sessions").update({ status: "confirmee", meet_link: link }).eq("id", s.id);
 
     // Envoi email — récupération email via admin-only n'est pas possible côté client.
@@ -538,13 +539,41 @@ function SessionsTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
                 </div>
               )}
               {s.status === "confirmee" && (
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  {s.meet_link && (
-                    <a href={s.meet_link} target="_blank" rel="noreferrer" className="text-emerald-700 text-sm underline">
-                      <Mail className="inline h-3 w-3" /> {s.meet_link}
-                    </a>
-                  )}
-                  <div className="flex gap-2">
+                <div className="space-y-2">
+                  {/* Lien Meet éditable */}
+                  <div className="flex gap-2 items-center flex-wrap">
+                    <Input
+                      value={meetLinks[s.id] ?? (s.meet_link || "")}
+                      onChange={(e) => setMeetLinks({ ...meetLinks, [s.id]: e.target.value })}
+                      placeholder="https://meet.google.com/xxx-yyyy-zzz"
+                      className="bg-white text-sm flex-1 min-w-0"
+                    />
+                    <Button
+                      size="sm"
+                      className="bg-emerald-700 hover:bg-emerald-800 text-white shrink-0"
+                      onClick={async () => {
+                        const raw = (meetLinks[s.id] ?? s.meet_link ?? "").trim();
+                        if (!raw) return;
+                        const link = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+                        await supabase.from("hifz_sessions").update({ meet_link: link }).eq("id", s.id);
+                        toast({ title: "Lien Meet mis à jour ✓" });
+                        fetchSessions();
+                      }}
+                    >
+                      <Send className="h-3.5 w-3.5" />
+                    </Button>
+                    {s.meet_link && (
+                      <a
+                        href={/^https?:\/\//i.test(s.meet_link) ? s.meet_link : `https://${s.meet_link}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs text-emerald-700 underline shrink-0"
+                      >
+                        Tester ↗
+                      </a>
+                    )}
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
                     {!s.reschedule_type && (
                       <Button size="sm" variant="outline" onClick={() => openProposalDialog(s)} className="border-blue-300 text-blue-700 hover:bg-blue-50 gap-1">
                         <CalendarClock className="h-3.5 w-3.5" /> Proposer un report
