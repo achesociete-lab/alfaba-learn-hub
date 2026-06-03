@@ -261,6 +261,7 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
               alt={`Page ${page}`}
               onLoad={onImgLoad}
               draggable={false}
+              crossOrigin="anonymous"
               style={{ display: "block", width: "100%", userSelect: "none" }}
             />
             <canvas
