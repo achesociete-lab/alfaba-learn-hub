@@ -1,0 +1,1 @@
+ALTER TABLE public.presentiel_courses ADD COLUMN IF NOT EXISTS dictation_sentence_audios jsonb NOT NULL DEFAULT '[]'::jsonb;
