@@ -704,6 +704,7 @@ function EvaluateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
   const [loadingPage, setLoadingPage] = useState<Record<number, boolean>>({});
   const [previewPage, setPreviewPage] = useState<number | null>(null);
   const [showAnnotator, setShowAnnotator] = useState(false);
+  const [annotatingEval, setAnnotatingEval] = useState<{ evalId: string; sessionId: string | null; page: number; label: string } | null>(null);
 
   const selectedSession = sessions.find((s) => s.id === sessionId);
   const sessionType = (selectedSession?.session_type || "sabaq") as HifzSessionType;
@@ -1220,10 +1221,66 @@ function EvaluateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
                         « {ev.notes} »
                       </p>
                     )}
+                    {/* Bouton annoter cette séance passée */}
+                    <div className="flex justify-end pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const label = ev.surah_start
+                            ? `S.${ev.surah_start}:${ev.verse_start ?? 1}${ev.surah_end ? ` → S.${ev.surah_end}:${ev.verse_end ?? "fin"}` : ""}`
+                            : `Hizb ${ev.hizb_number}`;
+                          const isSame = annotatingEval?.evalId === ev.id;
+                          setAnnotatingEval(isSame ? null : {
+                            evalId: ev.id,
+                            sessionId: ev.session_id ?? null,
+                            page: ev.page_start ?? 1,
+                            label,
+                          });
+                        }}
+                        className={`flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-md border transition-colors ${
+                          annotatingEval?.evalId === ev.id
+                            ? "bg-emerald-700 text-white border-emerald-700"
+                            : "text-emerald-700 border-emerald-300 hover:bg-emerald-50"
+                        }`}
+                      >
+                        <PenLine className="h-3 w-3" />
+                        {annotatingEval?.evalId === ev.id ? "Fermer" : "Annoter"}
+                      </button>
+                    </div>
                   </div>
                 );
               })}
           </div>
+
+          {/* Annotateur pour séance passée */}
+          {annotatingEval && (
+            <div className="border border-emerald-300 rounded-xl overflow-hidden mt-3">
+              <div className="flex items-center justify-between px-4 py-2.5 bg-emerald-700 text-white text-sm font-semibold">
+                <span className="flex items-center gap-2">
+                  <PenLine className="h-4 w-4" />
+                  Annotation — {annotatingEval.label}
+                  {annotatingEval.page > 1 && <span className="text-emerald-200 font-normal">· page {annotatingEval.page}</span>}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setAnnotatingEval(null)}
+                  className="text-emerald-200 hover:text-white text-lg leading-none"
+                >✕</button>
+              </div>
+              <div className="p-4">
+                <MushafAnnotator
+                  studentId={studentId}
+                  studentName={(() => {
+                    const s = students.find((st) => st.student_id === studentId);
+                    return s ? `${s.first_name} ${s.last_name}`.trim() : "";
+                  })()}
+                  sessionId={annotatingEval.sessionId}
+                  initialPage={annotatingEval.page}
+                  onSaved={() => setAnnotatingEval(null)}
+                />
+              </div>
+            </div>
+          )}
         </div>
       )}
 
