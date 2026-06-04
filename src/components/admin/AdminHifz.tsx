@@ -25,7 +25,7 @@ import {
   ChevronUp,
   ChevronDown,
 } from "lucide-react";
-import MushafAnnotator from "./MushafAnnotator";
+import MushafAnnotator, { parseTajwidNote, TajwidLegend } from "./MushafAnnotator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -1341,44 +1341,48 @@ function EvaluateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
       )}
 
       {/* Modal annotation composée */}
-      {viewAnnotation && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
-          onClick={() => setViewAnnotation(null)}
-        >
+      {viewAnnotation && (() => {
+        const { rules, note: cleanNote } = parseTajwidNote(viewAnnotation.note);
+        return (
           <div
-            className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+            onClick={() => setViewAnnotation(null)}
           >
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-              <div>
-                <span className="font-semibold text-emerald-800">Page {viewAnnotation.page} / 604</span>
-                {viewAnnotation.note && (
-                  <p className="text-xs text-muted-foreground mt-0.5 italic">« {viewAnnotation.note} »</p>
-                )}
+            <div
+              className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                <div>
+                  <span className="font-semibold text-emerald-800">Page {viewAnnotation.page} / 604</span>
+                  {cleanNote && (
+                    <p className="text-xs text-muted-foreground mt-0.5 italic">« {cleanNote} »</p>
+                  )}
+                </div>
+                <button
+                  onClick={() => setViewAnnotation(null)}
+                  className="text-muted-foreground hover:text-foreground text-xl leading-none"
+                >✕</button>
               </div>
-              <button
-                onClick={() => setViewAnnotation(null)}
-                className="text-muted-foreground hover:text-foreground text-xl leading-none"
-              >✕</button>
-            </div>
-            <div className="overflow-auto max-h-[75vh]">
-              <div style={{ position: "relative", width: "100%" }}>
-                <img
-                  src={`https://www.mp3quran.net/api/quran_pages_arabic/${String(viewAnnotation.page).padStart(3,"0")}.png`}
-                  alt={`Page ${viewAnnotation.page}`}
-                  style={{ display: "block", width: "100%" }}
-                />
-                <img
-                  src={viewAnnotation.url}
-                  alt="Annotations"
-                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
-                />
+              <div className="overflow-auto max-h-[70vh]">
+                <div style={{ position: "relative", width: "100%" }}>
+                  <img
+                    src={`https://www.mp3quran.net/api/quran_pages_arabic/${String(viewAnnotation.page).padStart(3,"0")}.png`}
+                    alt={`Page ${viewAnnotation.page}`}
+                    style={{ display: "block", width: "100%" }}
+                  />
+                  <img
+                    src={viewAnnotation.url}
+                    alt="Annotations"
+                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                </div>
               </div>
+              <TajwidLegend rules={rules} />
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Modal prévisualisation page Mushaf */}
       {previewPage !== null && (
@@ -1595,44 +1599,48 @@ function AnnotateTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
       )}
 
       {/* Modal annotation composée */}
-      {viewAnnotation && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
-          onClick={() => setViewAnnotation(null)}
-        >
+      {viewAnnotation && (() => {
+        const { rules, note: cleanNote } = parseTajwidNote(viewAnnotation.note);
+        return (
           <div
-            className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+            onClick={() => setViewAnnotation(null)}
           >
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-              <div>
-                <span className="font-semibold text-emerald-800">Page {viewAnnotation.page} / 604</span>
-                {viewAnnotation.note && (
-                  <p className="text-xs text-muted-foreground mt-0.5 italic">« {viewAnnotation.note} »</p>
-                )}
+            <div
+              className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                <div>
+                  <span className="font-semibold text-emerald-800">Page {viewAnnotation.page} / 604</span>
+                  {cleanNote && (
+                    <p className="text-xs text-muted-foreground mt-0.5 italic">« {cleanNote} »</p>
+                  )}
+                </div>
+                <button
+                  onClick={() => setViewAnnotation(null)}
+                  className="text-muted-foreground hover:text-foreground text-xl leading-none"
+                >✕</button>
               </div>
-              <button
-                onClick={() => setViewAnnotation(null)}
-                className="text-muted-foreground hover:text-foreground text-xl leading-none"
-              >✕</button>
-            </div>
-            <div className="overflow-auto max-h-[75vh]">
-              <div style={{ position: "relative", width: "100%" }}>
-                <img
-                  src={`https://www.mp3quran.net/api/quran_pages_arabic/${String(viewAnnotation.page).padStart(3,"0")}.png`}
-                  alt={`Page ${viewAnnotation.page}`}
-                  style={{ display: "block", width: "100%" }}
-                />
-                <img
-                  src={viewAnnotation.url}
-                  alt="Annotations"
-                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
-                />
+              <div className="overflow-auto max-h-[70vh]">
+                <div style={{ position: "relative", width: "100%" }}>
+                  <img
+                    src={`https://www.mp3quran.net/api/quran_pages_arabic/${String(viewAnnotation.page).padStart(3,"0")}.png`}
+                    alt={`Page ${viewAnnotation.page}`}
+                    style={{ display: "block", width: "100%" }}
+                  />
+                  <img
+                    src={viewAnnotation.url}
+                    alt="Annotations"
+                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                </div>
               </div>
+              <TajwidLegend rules={rules} />
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
