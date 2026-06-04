@@ -5,6 +5,7 @@ import HifzWhySection from "@/components/HifzWhySection";
 import ArabicLevelsSection from "@/components/ArabicLevelsSection";
 import HifzPricingCTA from "@/components/HifzPricingCTA";
 import HifzFaqSection from "@/components/HifzFaqSection";
+import LibrairieSection from "@/components/LibrairieSection";
 import HifzFinalCTA from "@/components/HifzFinalCTA";
 import Footer from "@/components/Footer";
 
@@ -17,6 +18,7 @@ const Index = () => (
     <ArabicLevelsSection />
     <HifzPricingCTA />
     <HifzFaqSection />
+    <LibrairieSection />
     <HifzFinalCTA />
     <Footer />
   </div>
