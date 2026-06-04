@@ -1,11 +1,12 @@
-// Mushaf annotator — avec mode Tajwid intégré + légende éducative interactive
+// Mushaf annotator — mode Tajwid + outil Étiquette (capsule de règle sur la page)
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   ChevronLeft, ChevronRight, Eraser, Undo2, Trash2,
-  Save, Loader2, ZoomIn, ZoomOut, Pencil, BookOpen, X, ChevronDown, ChevronUp,
+  Save, Loader2, ZoomIn, ZoomOut, Pencil, BookOpen, X, Tag,
+  ChevronDown, ChevronUp,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -16,23 +17,23 @@ export const TAJWID_RULES = [
     id: "ghunna",
     ar: "غُنَّة", fr: "Ghunna", color: "#22c55e",
     desc: "Son nasal sur Nûn/Mîm chaddées",
-    detail: "La Ghunna est un son nasal obligatoire de 2 temps (2 mouvements de doigt) sur la lettre Nûn (ن) ou Mîm (م) portant un Chaddah (ّ). La résonance vient du nez, pas de la bouche.",
+    detail: "La Ghunna est un son nasal obligatoire de 2 temps sur Nûn (ن) ou Mîm (م) portant un Chaddah (ّ). La résonance vient du nez, pas de la bouche.",
     letters: ["نّ", "مّ"],
-    tip: "Imagine le son 'nnn' prolongé dans le mot 'innocent' — tout passe par le nez.",
+    tip: "Imagine le son 'nnn' prolongé dans 'innocent' — tout passe par le nez.",
   },
   {
     id: "ikhfa",
     ar: "إخفاء", fr: "Ikhfâ", color: "#f97316",
     desc: "Dissimulation nasale (2 temps)",
-    detail: "Devant 15 lettres, la Nûn sâkinah (نْ) ou le Tanwîn ne se prononce ni complètement ni complètement effacé : on entend une résonance nasale de 2 temps avec la langue qui s'approche sans toucher le point d'articulation de la lettre suivante.",
+    detail: "Devant 15 lettres, la Nûn sâkinah (نْ) ou le Tanwîn est dissimulée : ni complètement prononcée ni effacée — résonance nasale de 2 temps.",
     letters: ["ت","ث","ج","د","ذ","ز","س","ش","ص","ض","ط","ظ","ف","ق","ك"],
-    tip: "Entre l'Izhâr (clair) et l'Idghâm (fondu) — un son intermédiaire, 'caché' avec nasalité.",
+    tip: "Entre l'Izhâr (clair) et l'Idghâm (fondu) — son intermédiaire avec nasalité.",
   },
   {
     id: "idgham",
     ar: "إدغام", fr: "Idghâm", color: "#3b82f6",
     desc: "Assimilation / fusion de Nûn",
-    detail: "La Nûn sâkinah (نْ) ou le Tanwîn fusionne avec la lettre suivante (ي ر م ل و ن). Avec Ghunna devant م et ن, sans Ghunna devant ل et ر. La Nûn disparaît dans la lettre suivante.",
+    detail: "La Nûn sâkinah (نْ) ou le Tanwîn fusionne dans la lettre suivante (ي ر م ل و ن). Avec Ghunna devant م et ن, sans Ghunna devant ل et ر.",
     letters: ["ي","ر","م","ل","و","ن"],
     tip: "La Nûn s'efface complètement dans la lettre suivante — deux sons deviennent un seul.",
   },
@@ -40,63 +41,63 @@ export const TAJWID_RULES = [
     id: "iqlab",
     ar: "إقلاب", fr: "Iqlâb", color: "#ec4899",
     desc: "Transformation de Nûn en Mîm",
-    detail: "La Nûn sâkinah (نْ) ou le Tanwîn se transforme en un son de Mîm (م) caché avec Ghunna, uniquement devant la lettre Bâ (ب). Les lèvres se ferment légèrement sans se toucher complètement.",
+    detail: "La Nûn sâkinah (نْ) ou le Tanwîn devient un son de Mîm (م) caché avec Ghunna, uniquement devant la lettre Bâ (ب).",
     letters: ["ب"],
-    tip: "Devant ب, pense à prononcer un 'm' nasal discret. Ex : مِن بَعْدِ → on entend un 'm' caché.",
+    tip: "Devant ب, prononce un 'm' nasal discret. Ex : مِن بَعْدِ → on entend un 'm' caché.",
   },
   {
     id: "izhar",
     ar: "إظهار", fr: "Izhâr", color: "#8b5cf6",
     desc: "Prononciation claire et nette",
-    detail: "La Nûn sâkinah (نْ) ou le Tanwîn est prononcée clairement et distinctement, sans nasalité ni fusion, devant les 6 lettres de gorge (حروف الحلق). Aucun Ghunna.",
+    detail: "La Nûn sâkinah (نْ) ou le Tanwîn est prononcée clairement, sans nasalité ni fusion, devant les 6 lettres de gorge (حروف الحلق).",
     letters: ["ء","ه","ع","ح","غ","خ"],
-    tip: "Prononciation franche et distincte — la Nûn reste entière, sans aucune résonance nasale ajoutée.",
+    tip: "Prononciation franche et distincte — la Nûn reste entière, sans aucune résonance nasale.",
   },
   {
     id: "madd",
     ar: "مَدّ", fr: "Madd", color: "#14b8a6",
     desc: "Prolongation d'une voyelle",
-    detail: "Allongement d'une voyelle (alif, wâw, yâ) sur 2, 4 ou 6 temps selon le type : Tabî'î (2t), Muttasil/Munfasil (4-5t), Lâzim (6t). Une ligne (~) dans le texte l'indique souvent.",
+    detail: "Allongement d'une voyelle (alif, wâw, yâ) sur 2, 4 ou 6 temps selon le type. Tabî'î (2t) est naturel, Muttasil/Munfasil (4-5t), Lâzim (6t).",
     letters: ["ا","و","ي"],
-    tip: "Compte les temps avec ton doigt. Madd Tabî'î = 2t (naturel), Madd Lâzim = 6t (obligatoire).",
+    tip: "Compte les temps avec ton doigt. Une ligne (~) dans le texte l'indique souvent.",
   },
   {
     id: "qalqala",
     ar: "قَلْقَلَة", fr: "Qalqala", color: "#eab308",
     desc: "Vibration/écho en fin de syllabe",
-    detail: "Les 5 lettres de Qalqala (ق ط ب ج د) produisent un léger rebond sonore quand elles portent un Sukûn, surtout à l'arrêt (waqf). L'intensité est plus forte au waqf qu'en milieu de récitation.",
+    detail: "Les 5 lettres de Qalqala (ق ط ب ج د) produisent un léger rebond sonore quand elles portent un Sukûn, surtout au waqf.",
     letters: ["ق","ط","ب","ج","د"],
-    tip: "Imagine que la lettre 'rebondit' un peu en s'arrêtant. Plus fort à la fin du verset.",
+    tip: "Imagine que la lettre 'rebondit' en s'arrêtant. Plus fort à la fin du verset.",
   },
   {
     id: "tafkhim",
     ar: "تَفْخِيم", fr: "Tafkhîm", color: "#dc2626",
     desc: "Son grave/épais (lettres lourdes)",
-    detail: "Son prononcé du fond de la bouche, grave et plein, pour les lettres emphatiques (خ ص ض غ ط ق ظ) et le Raa (ر) dans certains contextes. La bouche s'arrondit légèrement.",
+    detail: "Son prononcé du fond de la bouche, grave et plein, pour les lettres emphatiques (خ ص ض غ ط ق ظ) et le Raa (ر) dans certains contextes.",
     letters: ["خ","ص","ض","غ","ط","ق","ظ","ر"],
-    tip: "Bouche légèrement arrondie, son qui résonne 'en arrière'. Opposé du Tarqîq (léger).",
+    tip: "Bouche légèrement arrondie, son qui résonne 'en arrière'. Opposé du Tarqîq.",
   },
   {
     id: "tarqiq",
     ar: "تَرْقِيق", fr: "Tarqîq", color: "#0ea5e9",
     desc: "Son fin/léger (lettres légères)",
-    detail: "Prononciation fine et à l'avant de la bouche, pour le Raa (ر) dans certains contextes (quand il est kasrah, ou au waqf après kasrah) et la lettre Lâm dans le nom Allah (الله) précédé de kasrah.",
+    detail: "Prononciation fine, à l'avant de la bouche, pour le Raa (ر) dans certains contextes et la lettre Lâm dans الله précédé de kasrah.",
     letters: ["ر","ل"],
-    tip: "Son 'à l'avant de la bouche', léger et étiré vers le haut. Contraire du Tafkhîm.",
+    tip: "Son léger et étiré vers le haut. Contraire du Tafkhîm.",
   },
   {
     id: "waqf",
     ar: "وَقْف", fr: "Waqf", color: "#6b7280",
     desc: "Arrêt / Pause lors de la récitation",
-    detail: "Règles de pause et d'arrêt. Les signes dans le Mushaf indiquent : م = arrêt obligatoire (waqf lâzim), ج = pause autorisée, ط = arrêt absolu, لا = ne pas s'arrêter ici, ص = pause sans couper le souffle.",
+    detail: "Règles de pause : م = arrêt obligatoire, ج = pause autorisée, ط = arrêt absolu, لا = pas d'arrêt, ص = pause sans couper le souffle.",
     letters: ["م","ج","ط","ز","لا","ص"],
-    tip: "Respecte les signes de waqf : ils donnent le sens correct à la récitation. Un mauvais arrêt peut changer le sens.",
+    tip: "Respecte les signes de waqf : ils donnent le sens correct à la récitation.",
   },
 ] as const;
 
 export type TajwidRuleId = typeof TAJWID_RULES[number]["id"];
 
-// ── Utilitaire — parsing du préfixe [tajwid:…] (sans impact sur la DB) ────────
+// ── Utilitaire — parsing du préfixe [tajwid:…] ────────────────────────────────
 export function parseTajwidNote(raw: string | null | undefined): {
   rules: TajwidRuleId[];
   note: string;
@@ -108,16 +109,15 @@ export function parseTajwidNote(raw: string | null | undefined): {
   return { rules: ids, note: m[2] };
 }
 
-// ── Légende Tajwid éducative — cartes dépliables ─────────────────────────────
+// ── Légende éducative dépliable ───────────────────────────────────────────────
 export function TajwidLegend({ rules }: { rules: TajwidRuleId[] }) {
   const [expanded, setExpanded] = useState<TajwidRuleId | null>(null);
   if (!rules.length) return null;
-
   return (
     <div className="border-t border-emerald-100 bg-gradient-to-b from-emerald-50/80 to-white">
       <div className="px-4 pt-3 pb-1">
         <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-700 flex items-center gap-1.5">
-          <BookOpen className="h-3 w-3" /> Règles de Tajwid — cliquez pour comprendre
+          <BookOpen className="h-3 w-3" /> Règles annotées — cliquez pour comprendre
         </p>
       </div>
       <div className="px-3 pb-3 space-y-1.5">
@@ -127,62 +127,38 @@ export function TajwidLegend({ rules }: { rules: TajwidRuleId[] }) {
           return (
             <div key={id} className="rounded-xl overflow-hidden border transition-all"
               style={{ borderColor: isOpen ? rule.color + "60" : "#e5e7eb" }}>
-
-              {/* En-tête cliquable */}
-              <button
-                type="button"
+              <button type="button"
                 onClick={() => setExpanded(isOpen ? null : id)}
                 className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-gray-50/80"
-                style={{ backgroundColor: isOpen ? rule.color + "0c" : "transparent" }}
-              >
+                style={{ backgroundColor: isOpen ? rule.color + "0c" : "transparent" }}>
                 <span className="w-4 h-4 rounded-full shrink-0 shadow-sm border border-white/60"
                   style={{ backgroundColor: rule.color }} />
-                <span className="font-arabic text-lg leading-none shrink-0" style={{ color: rule.color }}>
-                  {rule.ar}
-                </span>
+                <span className="font-arabic text-lg leading-none shrink-0" style={{ color: rule.color }}>{rule.ar}</span>
                 <span className="font-semibold text-sm text-gray-800 shrink-0">{rule.fr}</span>
                 <span className="text-xs text-gray-400 flex-1 truncate">— {rule.desc}</span>
-                {isOpen
-                  ? <ChevronUp className="h-3.5 w-3.5 text-gray-400 shrink-0" />
-                  : <ChevronDown className="h-3.5 w-3.5 text-gray-400 shrink-0" />}
+                {isOpen ? <ChevronUp className="h-3.5 w-3.5 text-gray-400 shrink-0" /> : <ChevronDown className="h-3.5 w-3.5 text-gray-400 shrink-0" />}
               </button>
-
-              {/* Contenu éducatif dépliable */}
               {isOpen && (
                 <div className="px-4 pb-4 pt-1 space-y-3 border-t"
                   style={{ borderColor: rule.color + "30", backgroundColor: rule.color + "06" }}>
-
                   <p className="text-sm text-gray-700 leading-relaxed">{rule.detail}</p>
-
-                  {/* Lettres concernées */}
                   {rule.letters.length > 0 && (
                     <div className="space-y-1">
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
-                        Lettres concernées
-                      </p>
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Lettres concernées</p>
                       <div className="flex flex-wrap gap-1.5">
                         {rule.letters.map((l, i) => (
-                          <span key={i}
-                            className="font-arabic text-lg px-2.5 py-1 rounded-lg border font-medium"
-                            style={{
-                              borderColor: rule.color + "50",
-                              backgroundColor: rule.color + "12",
-                              color: rule.color,
-                            }}>
+                          <span key={i} className="font-arabic text-lg px-2.5 py-1 rounded-lg border font-medium"
+                            style={{ borderColor: rule.color + "50", backgroundColor: rule.color + "12", color: rule.color }}>
                             {l}
                           </span>
                         ))}
                       </div>
                     </div>
                   )}
-
-                  {/* Conseil pratique */}
                   <div className="flex gap-2 items-start px-3 py-2 rounded-lg"
                     style={{ backgroundColor: rule.color + "14" }}>
                     <span className="text-base shrink-0 mt-0.5">💡</span>
-                    <p className="text-xs leading-relaxed" style={{ color: rule.color }}>
-                      {rule.tip}
-                    </p>
+                    <p className="text-xs leading-relaxed" style={{ color: rule.color }}>{rule.tip}</p>
                   </div>
                 </div>
               )}
@@ -202,6 +178,47 @@ function getMushafUrl(page: number) {
   return `https://www.mp3quran.net/api/quran_pages_arabic/${String(page).padStart(3, "0")}.png`;
 }
 
+// ── Dessin d'une étiquette capsule sur le canvas ──────────────────────────────
+function stampLabel(
+  ctx: CanvasRenderingContext2D,
+  pt: { x: number; y: number },
+  text: string,
+  color: string,
+  canvasWidth: number,
+) {
+  const fontSize = Math.max(14, Math.round(canvasWidth / 38));
+  ctx.save();
+  ctx.font = `bold ${fontSize}px ui-sans-serif, system-ui, sans-serif`;
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "left";
+
+  const metrics = ctx.measureText(text);
+  const padX = fontSize * 0.55;
+  const padY = fontSize * 0.35;
+  const w = metrics.width + padX * 2;
+  const h = fontSize + padY * 2;
+  const x = pt.x - w / 2;
+  const y = pt.y - h / 2;
+  const r = h / 2;
+
+  // Capsule colorée
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+  ctx.fill();
+
+  // Texte blanc
+  ctx.fillStyle = "white";
+  ctx.fillText(text, x + padX, pt.y);
+  ctx.restore();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 interface Props {
   studentId: string;
   studentName: string;
@@ -217,7 +234,8 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
   const [pageInput, setPageInput] = useState(String(initialPage));
   const [ready, setReady]         = useState(false);
 
-  const [tool, setTool]   = useState<"pen" | "eraser">("pen");
+  // "pen" | "eraser" | "label"
+  const [tool, setTool]   = useState<"pen" | "eraser" | "label">("pen");
   const [color, setColor] = useState(FREE_COLORS[0]);
   const [size, setSize]   = useState(SIZES[1]);
 
@@ -262,8 +280,8 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
   const goTo = (p: number) => {
     const c = Math.max(1, Math.min(604, p));
     if (c === page) return;
-    canvasOk.current = false; setReady(false); setHasStrokes(false); setHistory([]); setZoom(1);
-    setUsedRuleIds(new Set());
+    canvasOk.current = false; setReady(false); setHasStrokes(false);
+    setHistory([]); setZoom(1); setUsedRuleIds(new Set());
     const cv = canvasRef.current;
     if (cv) cv.getContext("2d")!.clearRect(0, 0, cv.width, cv.height);
     setPage(c); setPageInput(String(c));
@@ -271,14 +289,39 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
 
   const getPt = (e: React.PointerEvent) => {
     const cv = canvasRef.current!; const rect = cv.getBoundingClientRect();
-    return { x: (e.clientX - rect.left) * (cv.width / rect.width), y: (e.clientY - rect.top) * (cv.height / rect.height) };
+    return {
+      x: (e.clientX - rect.left) * (cv.width / rect.width),
+      y: (e.clientY - rect.top) * (cv.height / rect.height),
+    };
+  };
+
+  const recordUsedRule = () => {
+    if (tajwidMode && activeRuleId) {
+      setUsedRuleIds(prev => {
+        if (prev.has(activeRuleId)) return prev;
+        const next = new Set(prev); next.add(activeRuleId); return next;
+      });
+    }
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
     if (!canvasOk.current) return;
     const cv = canvasRef.current!; const ctx = cv.getContext("2d")!;
+    const pt = getPt(e);
+
+    // ── Outil étiquette : pose la capsule au clic, pas de drag ──────────────
+    if (tool === "label" && tajwidMode && activeRuleId) {
+      const rule = TAJWID_RULES.find(r => r.id === activeRuleId)!;
+      setHistory(h => [...h.slice(-30), ctx.getImageData(0, 0, cv.width, cv.height)]);
+      stampLabel(ctx, pt, rule.fr, rule.color, cv.width);
+      setHasStrokes(true);
+      recordUsedRule();
+      return;
+    }
+
     setHistory(h => [...h.slice(-30), ctx.getImageData(0, 0, cv.width, cv.height)]);
-    isDrawing.current = true; lastPt.current = getPt(e);
+    isDrawing.current = true;
+    lastPt.current = pt;
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   };
 
@@ -292,12 +335,7 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
     } else {
       ctx.globalCompositeOperation = "source-over";
       ctx.lineWidth = size; ctx.strokeStyle = effectiveColor;
-      if (tajwidMode && activeRuleId) {
-        setUsedRuleIds(prev => {
-          if (prev.has(activeRuleId)) return prev;
-          const next = new Set(prev); next.add(activeRuleId); return next;
-        });
-      }
+      recordUsedRule();
     }
     ctx.moveTo(lastPt.current.x, lastPt.current.y); ctx.lineTo(pt.x, pt.y); ctx.stroke();
     lastPt.current = pt; setHasStrokes(true);
@@ -344,17 +382,28 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
     } finally { setSaving(false); }
   };
 
-  const selectRule = (id: TajwidRuleId) => { setActiveRuleId(id); setTool("pen"); };
+  const selectRule = (id: TajwidRuleId) => {
+    setActiveRuleId(id);
+    if (tool === "eraser") setTool("pen"); // repasser en pen si on était en gomme
+  };
+
   const toggleTajwidMode = () => {
-    setTajwidMode(m => { if (!m) setActiveRuleId(TAJWID_RULES[0].id); else setActiveRuleId(null); return !m; });
+    setTajwidMode(m => {
+      if (!m) { setActiveRuleId(TAJWID_RULES[0].id); }
+      else { setActiveRuleId(null); if (tool === "label") setTool("pen"); }
+      return !m;
+    });
   };
 
   const activeRule = TAJWID_RULES.find(r => r.id === activeRuleId);
 
   return (
     <div className="space-y-3">
-      {/* ── Toolbar ──────────────────────────────────────────────────────── */}
+
+      {/* ── Toolbar principale ────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-2 p-3 bg-muted/40 rounded-xl border border-border">
+
+        {/* Navigation */}
         <Button size="sm" variant="outline" onClick={() => goTo(page - 1)} disabled={page <= 1}>
           <ChevronRight className="h-4 w-4" />
         </Button>
@@ -372,24 +421,46 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
 
         <div className="w-px h-5 bg-border mx-1" />
 
-        <Button size="sm" variant={tool === "pen" ? "default" : "outline"} onClick={() => setTool("pen")} className="gap-1">
+        {/* Outils de dessin */}
+        <Button size="sm" variant={tool === "pen" ? "default" : "outline"}
+          onClick={() => setTool("pen")} className="gap-1">
           <Pencil className="h-3.5 w-3.5" /> Stylo
         </Button>
-        <Button size="sm" variant={tool === "eraser" ? "default" : "outline"} onClick={() => setTool("eraser")} className="gap-1">
+        <Button size="sm" variant={tool === "eraser" ? "default" : "outline"}
+          onClick={() => setTool("eraser")} className="gap-1">
           <Eraser className="h-3.5 w-3.5" /> Gomme
         </Button>
 
+        {/* Outil étiquette — uniquement en mode Tajwid */}
+        {tajwidMode && (
+          <Button size="sm"
+            variant={tool === "label" ? "default" : "outline"}
+            onClick={() => setTool(tool === "label" ? "pen" : "label")}
+            className={`gap-1 ${tool === "label" ? "" : "border-dashed"}`}
+            style={tool === "label" && activeRule
+              ? { backgroundColor: activeRule.color, borderColor: activeRule.color, color: "white" }
+              : {}}>
+            <Tag className="h-3.5 w-3.5" />
+            Étiquette
+          </Button>
+        )}
+
         <div className="w-px h-5 bg-border mx-1" />
 
+        {/* Toggle mode Tajwid */}
         <Button size="sm" variant={tajwidMode ? "default" : "outline"} onClick={toggleTajwidMode}
-          className={`gap-1.5 font-medium ${tajwidMode ? "bg-emerald-700 hover:bg-emerald-800 text-white border-0" : "border-emerald-400 text-emerald-700 hover:bg-emerald-50"}`}>
+          className={`gap-1.5 font-medium ${tajwidMode
+            ? "bg-emerald-700 hover:bg-emerald-800 text-white border-0"
+            : "border-emerald-400 text-emerald-700 hover:bg-emerald-50"}`}>
           <BookOpen className="h-3.5 w-3.5" />
           Tajwid
           {tajwidMode && activeRule && (
-            <span className="w-3 h-3 rounded-full border border-white/40 ml-0.5" style={{ backgroundColor: activeRule.color }} />
+            <span className="w-3 h-3 rounded-full border border-white/40 ml-0.5"
+              style={{ backgroundColor: activeRule.color }} />
           )}
         </Button>
 
+        {/* Palette couleurs libres (hors mode Tajwid) */}
         {!tajwidMode && (
           <div className="flex gap-1">
             {FREE_COLORS.map(c => (
@@ -400,13 +471,16 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
           </div>
         )}
 
-        <div className="flex gap-1 items-center">
-          {SIZES.map(s => (
-            <button key={s} onClick={() => setSize(s)}
-              className={`rounded-full bg-foreground transition-all ${size === s ? "opacity-100 ring-2 ring-primary ring-offset-1" : "opacity-30"}`}
-              style={{ width: Math.max(8, s + 4), height: Math.max(8, s + 4) }} />
-          ))}
-        </div>
+        {/* Tailles */}
+        {tool !== "label" && (
+          <div className="flex gap-1 items-center">
+            {SIZES.map(s => (
+              <button key={s} onClick={() => setSize(s)}
+                className={`rounded-full bg-foreground transition-all ${size === s ? "opacity-100 ring-2 ring-primary ring-offset-1" : "opacity-30"}`}
+                style={{ width: Math.max(8, s + 4), height: Math.max(8, s + 4) }} />
+            ))}
+          </div>
+        )}
 
         <div className="w-px h-5 bg-border mx-1" />
 
@@ -423,7 +497,8 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
         <Button size="sm" variant="outline" onClick={undo} disabled={!history.length}>
           <Undo2 className="h-3.5 w-3.5" />
         </Button>
-        <Button size="sm" variant="outline" onClick={clear} disabled={!hasStrokes} className="text-destructive border-destructive/30">
+        <Button size="sm" variant="outline" onClick={clear} disabled={!hasStrokes}
+          className="text-destructive border-destructive/30">
           <Trash2 className="h-3.5 w-3.5" />
         </Button>
 
@@ -437,12 +512,15 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
         <div className="rounded-xl border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-3 space-y-2">
           <div className="flex items-center justify-between">
             <p className="text-xs font-bold uppercase tracking-widest text-emerald-700 flex items-center gap-1.5">
-              <BookOpen className="h-3.5 w-3.5" /> Sélectionnez une règle, puis dessinez
+              <BookOpen className="h-3.5 w-3.5" />
+              Sélectionnez une règle, puis{" "}
+              {tool === "label" ? "cliquez pour poser une étiquette" : "dessinez sur la lettre"}
             </p>
             <button onClick={toggleTajwidMode} className="text-muted-foreground hover:text-foreground">
               <X className="h-4 w-4" />
             </button>
           </div>
+
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
             {TAJWID_RULES.map(rule => {
               const isActive = activeRuleId === rule.id;
@@ -450,9 +528,11 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
                 <button key={rule.id} type="button" onClick={() => selectRule(rule.id)}
                   className={`flex items-center gap-2 px-2.5 py-2 rounded-lg border-2 text-left transition-all ${isActive ? "shadow-md scale-[1.03]" : "border-transparent bg-white hover:border-gray-200 hover:shadow-sm"}`}
                   style={isActive ? { borderColor: rule.color, backgroundColor: rule.color + "18" } : {}}>
-                  <span className="w-4 h-4 rounded-full shrink-0 border border-white/50 shadow-sm" style={{ backgroundColor: rule.color }} />
+                  <span className="w-4 h-4 rounded-full shrink-0 border border-white/50 shadow-sm"
+                    style={{ backgroundColor: rule.color }} />
                   <span className="flex flex-col min-w-0">
-                    <span className="font-arabic text-sm leading-none" style={{ color: rule.color, fontWeight: isActive ? 700 : 500 }}>{rule.ar}</span>
+                    <span className="font-arabic text-sm leading-none"
+                      style={{ color: rule.color, fontWeight: isActive ? 700 : 500 }}>{rule.ar}</span>
                     <span className="text-[10px] text-gray-500 leading-tight truncate">{rule.fr}</span>
                   </span>
                 </button>
@@ -460,6 +540,7 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
             })}
           </div>
 
+          {/* Info règle active */}
           {activeRule && (
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium"
               style={{ backgroundColor: activeRule.color + "15", color: activeRule.color }}>
@@ -467,9 +548,19 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
               <span className="font-arabic text-base">{activeRule.ar}</span>
               <span className="font-semibold">{activeRule.fr}</span>
               <span className="text-xs font-normal opacity-70">— {activeRule.desc}</span>
+
+              {/* Astuce outil étiquette */}
+              {tool === "label" && (
+                <span className="ml-auto flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-white/60 border"
+                  style={{ borderColor: activeRule.color + "50" }}>
+                  <Tag className="h-3 w-3" />
+                  Clic = pose une capsule « {activeRule.fr} »
+                </span>
+              )}
             </div>
           )}
 
+          {/* Règles déjà utilisées */}
           {usedRuleIds.size > 0 && (
             <div className="flex flex-wrap gap-1.5 pt-1 border-t border-emerald-100">
               <span className="text-[10px] text-muted-foreground self-center">Utilisées :</span>
@@ -488,7 +579,7 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
         </div>
       )}
 
-      {/* ── Canvas ───────────────────────────────────────────────────────── */}
+      {/* ── Canvas Mushaf ───────────────────────────────────────────────── */}
       <div className="rounded-xl border border-border overflow-auto bg-stone-100" style={{ maxHeight: "72vh" }}>
         <div style={{ transform: `scale(${zoom})`, transformOrigin: "top center", width: "100%" }}>
           <div style={{ position: "relative", width: "100%", maxWidth: "700px", margin: "0 auto" }}>
@@ -501,17 +592,33 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
               style={{
                 position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
                 width: "100%", height: "100%",
-                cursor: ready ? (tool === "eraser" ? "cell" : "crosshair") : "wait",
+                cursor: ready
+                  ? (tool === "eraser" ? "cell" : tool === "label" ? "copy" : "crosshair")
+                  : "wait",
                 touchAction: "none",
               }} />
-            {ready && tool === "pen" && (
+
+            {/* Indicateur outil actif (coin bas-droit) */}
+            {ready && (
               <div className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-white/90 backdrop-blur-sm rounded-full px-2.5 py-1.5 shadow-lg border border-white/50 pointer-events-none">
-                <span className="w-4 h-4 rounded-full border border-gray-200" style={{ backgroundColor: effectiveColor }} />
-                {tajwidMode && activeRule
-                  ? <span className="text-[10px] font-semibold" style={{ color: effectiveColor }}>{activeRule.fr}</span>
-                  : <span className="text-[10px] text-gray-500">Libre</span>}
-                <span className="text-[10px] text-gray-400">·</span>
-                <span className="text-[10px] text-gray-500">{size}px</span>
+                {tool === "label" && activeRule
+                  ? <>
+                      <Tag className="h-3.5 w-3.5" style={{ color: activeRule.color }} />
+                      <span className="text-[10px] font-semibold" style={{ color: activeRule.color }}>
+                        Étiquette · {activeRule.fr}
+                      </span>
+                    </>
+                  : tool === "eraser"
+                    ? <span className="text-[10px] text-gray-500">Gomme</span>
+                    : <>
+                        <span className="w-4 h-4 rounded-full border border-gray-200"
+                          style={{ backgroundColor: effectiveColor }} />
+                        {tajwidMode && activeRule
+                          ? <span className="text-[10px] font-semibold" style={{ color: effectiveColor }}>{activeRule.fr}</span>
+                          : <span className="text-[10px] text-gray-500">Libre</span>}
+                        <span className="text-[10px] text-gray-400">·</span>
+                        <span className="text-[10px] text-gray-500">{size}px</span>
+                      </>}
               </div>
             )}
           </div>
@@ -537,8 +644,7 @@ export default function MushafAnnotator({ studentId, studentName, sessionId, ini
             return (
               <span key={id} className="flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border"
                 style={{ borderColor: r.color + "60", backgroundColor: r.color + "12", color: r.color }}>
-                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: r.color }} />
-                {r.fr}
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: r.color }} />{r.fr}
               </span>
             );
           })}
