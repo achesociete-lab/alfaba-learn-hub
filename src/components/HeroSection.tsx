@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowRight, BookOpen, Star, Users, ChevronDown, ShieldCheck } from "lucide-react";
+import { ArrowRight, Star, ChevronDown, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
@@ -17,18 +17,6 @@ const HeroSection = () => (
 
     <div className="container mx-auto px-4 relative z-10 pt-28 pb-10 flex-1 flex flex-col justify-center">
       <div className="max-w-4xl mx-auto text-center">
-
-        {/* Social proof pill */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="inline-flex items-center gap-2 bg-white/10 border border-white/15 backdrop-blur-sm px-4 py-1.5 rounded-full mb-5"
-        >
-          <Users className="h-3.5 w-3.5 text-emerald-300" />
-          <span className="text-xs font-semibold text-emerald-200 tracking-wide">Rejoignez +150 élèves déjà inscrits</span>
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-        </motion.div>
 
         {/* Badge */}
         <motion.div
