@@ -2,7 +2,6 @@ import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
 import HifzPillarsSection from "@/components/HifzPillarsSection";
 import HifzWhySection from "@/components/HifzWhySection";
-import TestimonialsSection from "@/components/TestimonialsSection";
 import ArabicLevelsSection from "@/components/ArabicLevelsSection";
 import HifzPricingCTA from "@/components/HifzPricingCTA";
 import HifzFaqSection from "@/components/HifzFaqSection";
@@ -15,7 +14,6 @@ const Index = () => (
     <HeroSection />
     <HifzPillarsSection />
     <HifzWhySection />
-    <TestimonialsSection />
     <ArabicLevelsSection />
     <HifzPricingCTA />
     <HifzFaqSection />
