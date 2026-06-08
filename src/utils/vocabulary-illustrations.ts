@@ -8,6 +8,43 @@
 // normalisation (articles, parenthèses, casse, accents). Si aucun
 // emoji approprié n'existe, on retourne `null` au lieu de deviner.
 
+
+// ── Images vectorielles générées par IA (style illustration islamique) ──
+// Ces mots ont une vraie illustration — priorité sur les emojis.
+const imageMap: Record<string, string> = {
+  "maison": "/vocab/maison.png",
+  "livre": "/vocab/livre.png",
+  "chameau": "/vocab/chameau.png",
+  "dromadaire": "/vocab/chameau.png",
+  "soleil": "/vocab/soleil.png",
+  "mosquée": "/vocab/mosquee.png",
+  "porte": "/vocab/porte.png",
+  "arbre": "/vocab/arbre.png",
+  "eau": "/vocab/eau.png",
+  "lune": "/vocab/lune.png",
+  "école": "/vocab/ecole.png",
+  "père": "/vocab/pere.png",
+  "mère": "/vocab/mere.png",
+  "garçon": "/vocab/garcon.png",
+  "fille": "/vocab/fille.png",
+  "pain": "/vocab/pain.png",
+  "fruit": "/vocab/fruit.png",
+  "nourriture": "/vocab/nourriture.png",
+  "étoile": "/vocab/etoile.png",
+  "prière": "/vocab/priere.png",
+  "cœur": "/vocab/coeur.png",
+  "stylo": "/vocab/stylo.png",
+  "cahier": "/vocab/cahier.png",
+  "chaise": "/vocab/chaise.png",
+  "main": "/vocab/main.png",
+  "chat": "/vocab/chat.png",
+  "fleur": "/vocab/fleur.png",
+  "terre": "/vocab/terre.png",
+  "montagne": "/vocab/montagne.png",
+  "mer": "/vocab/mer.png",
+  "marché": "/vocab/marche.png",
+};
+
 const illustrationMap: Record<string, string> = {
   // ── Personnes & famille ──
   "je / moi": "🙋",
@@ -339,16 +376,17 @@ export function getIllustration(meaning: string): string | null {
   if (!meaning) return null;
   const key = normalize(meaning);
   if (!key) return null;
-  if (illustrationMap[key]) return illustrationMap[key];
 
-  // Variantes courantes : retire un préfixe d'article si présent
-  const stripped = key.replace(
-    /^(un |une |le |la |l'|les |des |deux |mon |ton |son |ma |ta |sa )/,
-    "",
-  );
-  if (stripped !== key && illustrationMap[stripped]) {
-    return illustrationMap[stripped];
-  }
+  const articleRx = /^(un |une |le |la |l'|les |des |deux |mon |ton |son |ma |ta |sa )/;
+  const stripped = key.replace(articleRx, "");
+
+  // 1. Image vectorielle en priorité
+  if (imageMap[key]) return imageMap[key];
+  if (stripped !== key && imageMap[stripped]) return imageMap[stripped];
+
+  // 2. Fallback emoji
+  if (illustrationMap[key]) return illustrationMap[key];
+  if (stripped !== key && illustrationMap[stripped]) return illustrationMap[stripped];
 
   return null;
 }
