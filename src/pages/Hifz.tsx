@@ -539,7 +539,7 @@ export default function Hifz() {
                   {
                     step: "2", icon: "📅",
                     title: "Réservez une séance",
-                    desc: "Allez dans « Réserver » → choisissez un créneau disponible dans le calendrier. Précisez le type de séance (Sabaq, Sabaq al-jadīd ou Manzil), les pages à travailler, puis envoyez la demande. Vous recevrez un e-mail de confirmation.",
+                    desc: "Allez dans « Réserver » → choisissez un créneau disponible dans le calendrier. Précisez le type de séance (📗 Nouvel apprentissage, 📙 Révision récente, 📘 Révision ancienne…), les pages à travailler, puis envoyez la demande. Vous recevrez un e-mail de confirmation.",
                   },
                   {
                     step: "3", icon: "🎙️",
