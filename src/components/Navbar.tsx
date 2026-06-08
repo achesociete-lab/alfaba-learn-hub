@@ -37,7 +37,6 @@ const getAuthNavLinks = (level: string | null, typeEleve: string | null, hasHifz
   links.push({ to: "/hifz", label: "📖 Hifd" });
   links.push({ to: "/conversation", label: "🎙️ مساعد المعلم" });
   links.push({ to: "/tuteur", label: "🎓 مساري" });
-  links.push({ to: "/dashboard", label: "Espace Élève" });
 
   return links;
 };
