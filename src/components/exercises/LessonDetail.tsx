@@ -72,11 +72,11 @@ function TheorySectionView({ section }: { section: TheorySection }) {
       {section.arabicExamples && (
         <div className="space-y-2">
           {section.arabicExamples.map((ex, i) => {
-            const emoji = getIllustration(ex.meaning);
+            const illustration = getIllustration(ex.meaning);
             return (
               <div key={i} onClick={() => speak(ex.arabic)} className="flex items-center justify-between p-3 rounded-lg bg-muted cursor-pointer hover:bg-primary/10 transition-colors">
                 <div className="flex items-center gap-2"><Volume2 className="h-4 w-4 text-muted-foreground shrink-0" /><p className="font-arabic text-2xl text-foreground">{ex.arabic}</p></div>
-                <div className="flex items-center gap-2"><p className="text-sm text-foreground font-medium">{ex.meaning}</p>{emoji && <span className="text-2xl" role="img">{emoji}</span>}</div>
+                <div className="flex items-center gap-2"><p className="text-sm text-foreground font-medium">{ex.meaning}</p>{illustration && (illustration.startsWith('/') ? <img src={illustration} alt={ex.meaning} className="w-10 h-10 object-contain rounded" loading="lazy" /> : <span className="text-2xl" role="img">{illustration}</span>)}</div>
               </div>
             );
           })}
