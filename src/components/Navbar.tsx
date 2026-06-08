@@ -15,7 +15,7 @@ const publicNavLinks = [
   { to: "/coran", label: "Coran" },
 ];
 
-const getAuthNavLinks = (level: string | null, typeEleve: string | null, hasHifzAccess = false) => {
+const getAuthNavLinks = (level: string | null, typeEleve: string | null, hasHifzAccess = false, isAdmin = false) => {
   // Présentiel : accès limité
   if (typeEleve === "presentiel") {
     const links = [{ to: "/cours-presentiel", label: "Espace Élève" }];
@@ -27,7 +27,11 @@ const getAuthNavLinks = (level: string | null, typeEleve: string | null, hasHifz
     { to: "/dashboard", label: "Accueil" },
   ];
 
-  if (level === "niveau_1") {
+  if (isAdmin) {
+    // L'admin voit les deux niveaux pour pouvoir tester la vue élève
+    links.push({ to: "/niveau-1", label: "Niveau 1" });
+    links.push({ to: "/niveau-2", label: "Niveau 2" });
+  } else if (level === "niveau_1") {
     links.push({ to: "/niveau-1", label: "Niveau 1" });
   } else if (level === "niveau_2") {
     links.push({ to: "/niveau-2", label: "Niveau 2" });
@@ -61,7 +65,7 @@ const Navbar = () => {
       });
   }, [user]);
 
-  const navLinks = user ? getAuthNavLinks(userLevel, userType, isHifz || isPremium) : publicNavLinks;
+  const navLinks = user ? getAuthNavLinks(userLevel, userType, isHifz || isPremium, isAdmin) : publicNavLinks;
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
