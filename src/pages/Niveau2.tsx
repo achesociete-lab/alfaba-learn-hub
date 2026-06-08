@@ -1,11 +1,15 @@
-import { useState } from "react";
+import { useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
-import { BookOpen, PenTool, FileText, GraduationCap, ArrowRight } from "lucide-react";
+import { BookOpen, PenTool, FileText, GraduationCap, ArrowRight, Lock, CheckCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useLessonProgress } from "@/hooks/use-lesson-progress";
+import { useProfile } from "@/hooks/use-profile";
+import { useIsAdmin } from "@/hooks/use-admin";
+import { useAuth } from "@/contexts/AuthContext";
 import LessonProgressBar from "@/components/LessonProgressBar";
 
 const lessons = [
@@ -34,7 +38,27 @@ const grammarTopics = [
 ];
 
 const Niveau2 = () => {
+  const navigate = useNavigate();
+  const { loading: authLoading } = useAuth();
+  const { profile, loading: profileLoading } = useProfile();
+  const { isAdmin, loading: adminLoading } = useIsAdmin();
   const { completedN2Lessons } = useLessonProgress();
+
+  // Guard : les élèves niveau_1 sont renvoyés vers leur niveau
+  useEffect(() => {
+    if (authLoading || profileLoading || adminLoading) return;
+    if (!isAdmin && profile && profile.level === "niveau_1") {
+      navigate("/niveau-1", { replace: true });
+    }
+  }, [profile, profileLoading, authLoading, adminLoading, isAdmin, navigate]);
+
+  if (authLoading || profileLoading || adminLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-7 w-7 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -53,7 +77,7 @@ const Niveau2 = () => {
             </p>
           </motion.div>
 
-          {/* Grammar topics */}
+          {/* Points de grammaire */}
           <section className="mb-16">
             <h2 className="text-2xl font-bold text-foreground mb-6 text-center">Points de grammaire</h2>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 max-w-3xl mx-auto">
@@ -68,38 +92,71 @@ const Niveau2 = () => {
             </div>
           </section>
 
-          {/* Lessons */}
+          {/* Leçons avec verrouillage séquentiel */}
           <section>
             <h2 className="text-2xl font-bold text-foreground mb-6 text-center">Programme des leçons</h2>
 
-            {/* Progress bar with stars */}
             <div className="max-w-2xl mx-auto mb-6 p-4 rounded-xl border border-border bg-card">
               <LessonProgressBar completedLessons={completedN2Lessons} totalLessons={lessons.length} label="Mes leçons" />
             </div>
 
-            <div className="max-w-2xl mx-auto space-y-3">
-              {lessons.map((lesson, i) => {
-                const isCompleted = completedN2Lessons.includes(lesson.num);
-                return (
-                  <motion.div key={lesson.num} initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }} transition={{ delay: i * 0.05 }}
-                    className={`flex items-center gap-4 p-4 rounded-xl border transition-colors ${
-                      isCompleted ? "border-gold/30 bg-gold/5" : "border-border bg-card hover:border-gold/30"
-                    }`}>
-                    <div className="h-10 w-10 rounded-lg gradient-gold flex items-center justify-center shrink-0">
-                      <lesson.icon className="h-5 w-5 text-primary-foreground" />
+            <TooltipProvider>
+              <div className="max-w-2xl mx-auto space-y-3">
+                {lessons.map((lesson, i) => {
+                  const isCompleted = completedN2Lessons.includes(lesson.num);
+                  const isPrevCompleted = i === 0 || completedN2Lessons.includes(lessons[i - 1].num);
+                  const isProgressLocked = !isAdmin && !isPrevCompleted;
+                  const linkTarget = isProgressLocked ? "#" : `/exercices?lesson=${lesson.num}&level=niveau_2`;
+
+                  const card = (
+                    <div key={lesson.num}>
+                      <Link to={linkTarget} onClick={(e) => isProgressLocked && e.preventDefault()}>
+                        <motion.div
+                          initial={{ opacity: 0, x: -20 }}
+                          whileInView={{ opacity: 1, x: 0 }}
+                          viewport={{ once: true }}
+                          transition={{ delay: i * 0.05 }}
+                          className={`flex items-center gap-4 p-4 rounded-xl border transition-colors ${
+                            isCompleted
+                              ? "border-gold/30 bg-gold/5"
+                              : isProgressLocked
+                              ? "border-border/50 bg-muted/30 opacity-50 cursor-not-allowed"
+                              : "border-border bg-card hover:border-gold/30"
+                          }`}
+                        >
+                          <div className="h-10 w-10 rounded-lg gradient-gold flex items-center justify-center shrink-0">
+                            {isCompleted
+                              ? <CheckCircle className="h-5 w-5 text-primary-foreground" />
+                              : isProgressLocked
+                              ? <Lock className="h-4 w-4 text-primary-foreground/60" />
+                              : <lesson.icon className="h-5 w-5 text-primary-foreground" />}
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-sm font-semibold text-foreground">Leçon {lesson.num} — {lesson.title}</h3>
+                            <p className="text-xs text-muted-foreground">{lesson.desc}</p>
+                          </div>
+                          {isCompleted
+                            ? <CheckCircle className="h-4 w-4 text-gold shrink-0" />
+                            : isProgressLocked
+                            ? <Lock className="h-4 w-4 text-muted-foreground shrink-0" />
+                            : <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />}
+                        </motion.div>
+                      </Link>
                     </div>
-                    <div className="flex-1">
-                      <h3 className="text-sm font-semibold text-foreground">Leçon {lesson.num} — {lesson.title}</h3>
-                      <p className="text-xs text-muted-foreground">{lesson.desc}</p>
-                    </div>
-                    {isCompleted
-                      ? <span className="text-yellow-500 text-lg">★</span>
-                      : <ArrowRight className="h-4 w-4 text-muted-foreground" />}
-                  </motion.div>
-                );
-              })}
-            </div>
+                  );
+
+                  if (isProgressLocked) {
+                    return (
+                      <Tooltip key={lesson.num}>
+                        <TooltipTrigger asChild>{card}</TooltipTrigger>
+                        <TooltipContent><p>Termine la leçon précédente pour débloquer</p></TooltipContent>
+                      </Tooltip>
+                    );
+                  }
+                  return card;
+                })}
+              </div>
+            </TooltipProvider>
           </section>
 
           <div className="text-center mt-12">
