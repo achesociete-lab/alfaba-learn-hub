@@ -4,8 +4,8 @@ import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
 import {
   BookOpen, Upload, CheckCircle, ClipboardList, BarChart3,
-  FileText, PenTool, Calendar, LogOut, User, Brain, Trophy, Video,
-  GraduationCap,
+  FileText, PenTool, Calendar, LogOut, User, Brain, Trophy,
+  GraduationCap, BookMarked,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -340,10 +340,10 @@ const Dashboard = () => {
                 <div><p className="text-sm font-semibold text-foreground">Exercices interactifs</p><p className="text-xs text-muted-foreground">QCM, dictées et compréhension</p></div>
               </div>
             </Link>
-            <Link to="/classe-virtuelle">
-              <div className="p-4 rounded-xl border border-border bg-card hover:border-primary/30 transition-colors flex items-center gap-3 cursor-pointer">
-                <div className="h-10 w-10 rounded-lg gradient-gold flex items-center justify-center shrink-0"><Video className="h-5 w-5 text-primary-foreground" /></div>
-                <div><p className="text-sm font-semibold text-foreground">Classe virtuelle</p><p className="text-xs text-muted-foreground">Cours en direct avec le professeur</p></div>
+            <Link to="/hifz">
+              <div className="p-4 rounded-xl border border-border bg-card hover:border-amber-300/40 transition-colors flex items-center gap-3 cursor-pointer">
+                <div className="h-10 w-10 rounded-lg gradient-gold flex items-center justify-center shrink-0"><BookMarked className="h-5 w-5 text-primary-foreground" /></div>
+                <div><p className="text-sm font-semibold text-foreground">Module Hifd</p><p className="text-xs text-muted-foreground">Mémorisation et suivi des hizb</p></div>
               </div>
             </Link>
           </div>
