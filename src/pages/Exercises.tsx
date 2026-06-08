@@ -15,6 +15,8 @@ import Niveau2LessonSelector from "@/components/exercises/Niveau2LessonSelector"
 import Niveau2LessonDetail from "@/components/exercises/Niveau2LessonDetail";
 import { useLessonProgress } from "@/hooks/use-lesson-progress";
 import { useNiveau1Lessons, useNiveau2Lessons } from "@/hooks/use-lessons";
+import { useIsAdmin } from "@/hooks/use-admin";
+import { Button } from "@/components/ui/button";
 
 type Level = "niveau_1" | "niveau_2";
 
