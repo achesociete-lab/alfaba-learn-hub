@@ -519,6 +519,54 @@ export default function Hifz() {
           )}
         </div>
 
+        {/* ─── Guide pas à pas ─── */}
+        <Accordion type="single" collapsible defaultValue="guide" className="mb-6">
+          <AccordionItem value="guide" className="border border-emerald-100 rounded-xl bg-white shadow-sm overflow-hidden">
+            <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-emerald-50/50 transition-colors">
+              <div className="flex items-center gap-2 text-emerald-800">
+                <span className="text-base">📖</span>
+                <span className="text-sm font-semibold">Comment utiliser ce module ?</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-4 pb-5">
+              <ol className="space-y-4 mt-2">
+                {([
+                  {
+                    step: "1", icon: "⚙️",
+                    title: "Configurez votre programme",
+                    desc: "Allez dans l'onglet « Programme » → indiquez les hizb que vous avez déjà mémorisés et la durée souhaitée. Le système calcule votre rythme quotidien et vous affiche une date de fin estimée.",
+                  },
+                  {
+                    step: "2", icon: "📅",
+                    title: "Réservez une séance",
+                    desc: "Allez dans « Réserver » → choisissez un créneau disponible dans le calendrier. Précisez le type de séance (Sabaq, Sabaq al-jadīd ou Manzil), les pages à travailler, puis envoyez la demande. Vous recevrez un e-mail de confirmation.",
+                  },
+                  {
+                    step: "3", icon: "🎙️",
+                    title: "Récitez avec le professeur",
+                    desc: "Le lien de la séance (Google Meet) apparaît directement dans votre espace. Vous récitez vos pages ; le professeur évalue votre niveau (Médiocre → Excellent) et peut annoter des règles de tajwid sur le Mushaf.",
+                  },
+                  {
+                    step: "4", icon: "🔁",
+                    title: "Suivez vos révisions",
+                    desc: "Dans l'onglet « Historique », le système affiche quels hizb sont à réviser selon un calendrier espacé adapté à votre niveau. Plus votre niveau est bon, plus l'intervalle entre révisions s'allonge — ce qui libère du temps pour avancer.",
+                  },
+                ] as Array<{ step: string; icon: string; title: string; desc: string }>).map(({ step, icon, title, desc }) => (
+                  <li key={step} className="flex gap-3">
+                    <div className="shrink-0 w-6 h-6 rounded-full bg-emerald-700 text-white text-xs font-bold flex items-center justify-center mt-0.5">
+                      {step}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-emerald-900">{icon} {title}</p>
+                      <p className="text-xs text-amber-800/70 mt-0.5 leading-relaxed">{desc}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+
         {loading ? (
           <div className="flex flex-col items-center justify-center py-24 gap-3">
             <Loader2 className="h-8 w-8 animate-spin text-emerald-700" />
