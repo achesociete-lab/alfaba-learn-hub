@@ -79,7 +79,7 @@ function GrammarTab({ lesson }: { lesson: Niveau2Lesson }) {
               <motion.div key={i} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
                 onClick={() => speak(ex.arabic)} className="flex items-center justify-between p-3 rounded-lg bg-muted cursor-pointer hover:bg-primary/10 transition-colors">
                 <div className="flex items-center gap-2"><Volume2 className="h-4 w-4 text-muted-foreground shrink-0" /><span className="font-arabic text-xl text-foreground">{ex.arabic}</span></div>
-                <div className="flex items-center gap-2"><span className="text-sm text-foreground">{label}</span>{emoji && <span className="text-xl">{emoji}</span>}</div>
+                <div className="flex items-center gap-2"><span className="text-sm text-foreground">{label}</span>{emoji && (emoji.startsWith('/') ? <img src={emoji} alt={label} className="w-10 h-10 object-contain rounded" loading="lazy" /> : <span className="text-xl">{emoji}</span>)}</div>
               </motion.div>
             );
           })}
