@@ -129,6 +129,7 @@ const Exercises = () => {
   const navigate = useNavigate();
   const [level, setLevel] = useState<Level>("niveau_1");
   const { maxLessons, isFreePlan, loading: subLoading } = useSubscription();
+  const { isAdmin } = useIsAdmin();
   const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
 
   // No redirect for unauthenticated users — lessons 1-3 are free
@@ -161,6 +162,24 @@ const Exercises = () => {
                 ? "L'alphabet arabe lettre par lettre"
                 : "Grammaire, compréhension & dictée avancée"}
             </p>
+            {isAdmin && (
+              <div className="flex justify-center gap-2 mt-4">
+                <Button
+                  size="sm"
+                  variant={level === "niveau_1" ? "default" : "outline"}
+                  onClick={() => { setCurrentLesson(null); setLevel("niveau_1"); }}
+                >
+                  Niveau 1
+                </Button>
+                <Button
+                  size="sm"
+                  variant={level === "niveau_2" ? "default" : "outline"}
+                  onClick={() => { setCurrentLesson(null); setLevel("niveau_2"); }}
+                >
+                  Niveau 2
+                </Button>
+              </div>
+            )}
             {isFreePlan && !user && (
               <p className="text-sm text-muted-foreground mt-2">
                 🔒 Inscris-toi gratuitement pour continuer ton apprentissage →{" "}
