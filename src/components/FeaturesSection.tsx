@@ -1,43 +1,36 @@
 import { motion } from "framer-motion";
-import {
-  BookOpen,
-  Mic,
-  Bot,
-  Landmark,
-  BarChart3,
-  Lock,
-} from "lucide-react";
+import { BookOpen, Headphones, BarChart3, Moon, Volume2, Smartphone } from "lucide-react";
 
 const features = [
   {
     icon: BookOpen,
-    title: "Leçons structurées",
-    desc: "De l'alphabet aux textes avancés, progressez à votre rythme.",
+    title: "Leçons progressives",
+    desc: "De l'alphabet arabe aux textes du Coran — 10 leçons par niveau, débloquées au fur et à mesure de votre avancement.",
   },
   {
-    icon: Mic,
-    title: "Dictées audio",
-    desc: "Entraînez votre oreille et votre prononciation arabe.",
+    icon: Headphones,
+    title: "Dictées et QCM interactifs",
+    desc: "Exercices de reconnaissance des lettres, dictées vocales et quiz corrigés instantanément avec explication.",
   },
   {
-    icon: Bot,
-    title: "Professeur IA",
-    desc: "Un assistant disponible 24h/24 qui s'adapte à votre niveau.",
+    icon: Volume2,
+    title: "Audio intégré",
+    desc: "Chaque lettre, mot et exemple s'écoute d'un clic. Entraînez votre oreille à la prononciation authentique.",
   },
   {
-    icon: Landmark,
-    title: "Module Coran",
-    desc: "Apprenez à réciter avec tajwid.",
+    icon: Moon,
+    title: "Module Hifd",
+    desc: "Suivi personnalisé de la mémorisation du Coran : 60 hizb tracés, 3 types de révision, séances avec professeur.",
   },
   {
     icon: BarChart3,
     title: "Suivi de progression",
-    desc: "Visualisez vos progrès leçon par leçon.",
+    desc: "Tableau de bord clair : leçons complétées, score aux exercices, badges et objectif quotidien.",
   },
   {
-    icon: Lock,
-    title: "Accès sécurisé",
-    desc: "Votre espace personnel et privé.",
+    icon: Smartphone,
+    title: "Accessible partout",
+    desc: "Sur mobile, tablette ou ordinateur — progressez à votre rythme, où que vous soyez.",
   },
 ];
 
@@ -45,11 +38,17 @@ const FeaturesSection = () => (
   <section className="py-20 bg-card">
     <div className="container mx-auto px-4">
       <div className="text-center mb-14">
+        <span className="text-xs font-bold uppercase tracking-widest text-emerald-600 mb-3 block">
+          La méthode
+        </span>
         <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-3">
-          Tout ce qu'il faut pour <span className="text-gradient-gold">apprendre l'arabe</span>
+          Tout pour apprendre{" "}
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-amber-600">
+            vraiment l'arabe
+          </span>
         </h2>
         <p className="text-muted-foreground max-w-lg mx-auto">
-          Une méthode complète, progressive et adaptée à chaque élève.
+          Une méthode structurée, des exercices interactifs et un suivi réel — pas juste des vidéos à regarder passivement.
         </p>
       </div>
 
@@ -60,14 +59,14 @@ const FeaturesSection = () => (
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ delay: i * 0.1 }}
-            className="p-6 rounded-xl border border-border bg-background hover:border-primary/30 transition-colors"
+            transition={{ delay: i * 0.08 }}
+            className="p-6 rounded-2xl border border-border bg-background hover:border-primary/30 hover:shadow-md transition-all"
           >
-            <div className="h-10 w-10 rounded-lg gradient-emerald flex items-center justify-center mb-4">
-              <f.icon className="h-5 w-5 text-primary-foreground" />
+            <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+              <f.icon className="h-5 w-5 text-primary" />
             </div>
             <h3 className="font-semibold text-foreground mb-2">{f.title}</h3>
-            <p className="text-sm text-muted-foreground">{f.desc}</p>
+            <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
           </motion.div>
         ))}
       </div>
