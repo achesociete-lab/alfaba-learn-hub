@@ -14,7 +14,7 @@ interface LessonAudioPlayerProps {
   fallbackText?: string;
 }
 
-export default function LessonAudioPlayer({ level, lessonNumber, isTeacher }: LessonAudioPlayerProps) {
+export default function LessonAudioPlayer({ level, lessonNumber, isTeacher, fallbackText }: LessonAudioPlayerProps) {
   const { user } = useAuth();
   const { isRecording, audioBlob, audioUrl: recorderUrl, duration, startRecording, stopRecording, reset } = useAudioRecorder();
   const [savedUrl, setSavedUrl] = useState<string | null>(null);
