@@ -95,21 +95,26 @@ export default function LessonAudioPlayer({ level, lessonNumber, isTeacher, fall
 
   if (loading) return null;
 
-  // Student view: just play if recording exists
+  // Student view: play teacher recording if it exists, otherwise AI fallback
   if (!isTeacher) {
-    if (!savedUrl) return null;
-    return (
-      <div className="flex justify-center">
-        <Button
-          variant="outline"
-          onClick={() => isPlaying ? stopAudio() : playAudio(savedUrl)}
-          className={`gap-2 rounded-full px-6 ${isPlaying ? "border-primary bg-primary/10" : ""}`}
-        >
-          {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-          {isPlaying ? "⏸ Pause" : "🎧 Écouter l'enregistrement du professeur"}
-        </Button>
-      </div>
-    );
+    if (savedUrl) {
+      return (
+        <div className="flex justify-center">
+          <Button
+            variant="outline"
+            onClick={() => isPlaying ? stopAudio() : playAudio(savedUrl)}
+            className={`gap-2 rounded-full px-6 ${isPlaying ? "border-primary bg-primary/10" : ""}`}
+          >
+            {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+            {isPlaying ? "⏸ Pause" : "🎧 Écouter l'enregistrement du professeur"}
+          </Button>
+        </div>
+      );
+    }
+    if (fallbackText && fallbackText.trim()) {
+      return <AIFallbackButton text={fallbackText} />;
+    }
+    return null;
   }
 
   // Teacher view: record, preview, upload, delete
