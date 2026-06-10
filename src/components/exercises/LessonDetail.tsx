@@ -88,9 +88,13 @@ function TheorySectionView({ section }: { section: TheorySection }) {
 
 function LessonTab({ lesson }: { lesson: Lesson }) {
   const { isAdmin } = useIsAdmin();
+  const fallbackText = (lesson.theory || [])
+    .flatMap((s) => (s.arabicExamples || []).map((e) => e.arabic))
+    .filter(Boolean)
+    .join(" - ");
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      <LessonAudioPlayer level="niveau_1" lessonNumber={lesson.id} isTeacher={isAdmin} />
+      <LessonAudioPlayer level="niveau_1" lessonNumber={lesson.id} isTeacher={isAdmin} fallbackText={fallbackText} />
       {lesson.videoUrl && (
         <div className="rounded-xl overflow-hidden border border-border bg-card"><div className="aspect-video">
           {lesson.videoUrl.includes("youtube.com") || lesson.videoUrl.includes("youtu.be")
