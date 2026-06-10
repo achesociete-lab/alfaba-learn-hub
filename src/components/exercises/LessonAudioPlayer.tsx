@@ -1,15 +1,17 @@
 import { useState, useEffect, useRef } from "react";
-import { Mic, Square, Play, Pause, Trash2, Upload, Volume2 } from "lucide-react";
+import { Mic, Square, Play, Pause, Trash2, Upload, Volume2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAudioRecorder } from "@/hooks/use-audio-recorder";
+import { useArabicSpeech } from "@/hooks/use-arabic-speech";
 import { toast } from "@/hooks/use-toast";
 
 interface LessonAudioPlayerProps {
   level: "niveau_1" | "niveau_2";
   lessonNumber: number;
   isTeacher: boolean;
+  fallbackText?: string;
 }
 
 export default function LessonAudioPlayer({ level, lessonNumber, isTeacher }: LessonAudioPlayerProps) {
