@@ -174,3 +174,27 @@ export default function LessonAudioPlayer({ level, lessonNumber, isTeacher, fall
     </div>
   );
 }
+
+function AIFallbackButton({ text }: { text: string }) {
+  const { speak, stop } = useArabicSpeech();
+  const [playing, setPlaying] = useState(false);
+
+  const handle = async () => {
+    if (playing) { stop(); setPlaying(false); return; }
+    setPlaying(true);
+    try { await speak(text, 0.8); } finally { setPlaying(false); }
+  };
+
+  return (
+    <div className="flex justify-center">
+      <Button
+        variant="outline"
+        onClick={handle}
+        className={`gap-2 rounded-full px-6 ${playing ? "border-primary bg-primary/10" : ""}`}
+      >
+        {playing ? <Pause className="h-4 w-4" /> : <Sparkles className="h-4 w-4 text-primary" />}
+        {playing ? "⏸ Pause" : "🎧 Écouter (voix IA)"}
+      </Button>
+    </div>
+  );
+}
