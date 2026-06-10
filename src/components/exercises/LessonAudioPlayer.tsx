@@ -1,18 +1,20 @@
 import { useState, useEffect, useRef } from "react";
-import { Mic, Square, Play, Pause, Trash2, Upload, Volume2 } from "lucide-react";
+import { Mic, Square, Play, Pause, Trash2, Upload, Volume2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAudioRecorder } from "@/hooks/use-audio-recorder";
+import { useArabicSpeech } from "@/hooks/use-arabic-speech";
 import { toast } from "@/hooks/use-toast";
 
 interface LessonAudioPlayerProps {
   level: "niveau_1" | "niveau_2";
   lessonNumber: number;
   isTeacher: boolean;
+  fallbackText?: string;
 }
 
-export default function LessonAudioPlayer({ level, lessonNumber, isTeacher }: LessonAudioPlayerProps) {
+export default function LessonAudioPlayer({ level, lessonNumber, isTeacher, fallbackText }: LessonAudioPlayerProps) {
   const { user } = useAuth();
   const { isRecording, audioBlob, audioUrl: recorderUrl, duration, startRecording, stopRecording, reset } = useAudioRecorder();
   const [savedUrl, setSavedUrl] = useState<string | null>(null);
@@ -93,21 +95,26 @@ export default function LessonAudioPlayer({ level, lessonNumber, isTeacher }: Le
 
   if (loading) return null;
 
-  // Student view: just play if recording exists
+  // Student view: play teacher recording if it exists, otherwise AI fallback
   if (!isTeacher) {
-    if (!savedUrl) return null;
-    return (
-      <div className="flex justify-center">
-        <Button
-          variant="outline"
-          onClick={() => isPlaying ? stopAudio() : playAudio(savedUrl)}
-          className={`gap-2 rounded-full px-6 ${isPlaying ? "border-primary bg-primary/10" : ""}`}
-        >
-          {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-          {isPlaying ? "⏸ Pause" : "🎧 Écouter l'enregistrement du professeur"}
-        </Button>
-      </div>
-    );
+    if (savedUrl) {
+      return (
+        <div className="flex justify-center">
+          <Button
+            variant="outline"
+            onClick={() => isPlaying ? stopAudio() : playAudio(savedUrl)}
+            className={`gap-2 rounded-full px-6 ${isPlaying ? "border-primary bg-primary/10" : ""}`}
+          >
+            {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+            {isPlaying ? "⏸ Pause" : "🎧 Écouter l'enregistrement du professeur"}
+          </Button>
+        </div>
+      );
+    }
+    if (fallbackText && fallbackText.trim()) {
+      return <AIFallbackButton text={fallbackText} />;
+    }
+    return null;
   }
 
   // Teacher view: record, preview, upload, delete
@@ -164,6 +171,30 @@ export default function LessonAudioPlayer({ level, lessonNumber, isTeacher }: Le
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+function AIFallbackButton({ text }: { text: string }) {
+  const { speak, stop } = useArabicSpeech();
+  const [playing, setPlaying] = useState(false);
+
+  const handle = async () => {
+    if (playing) { stop(); setPlaying(false); return; }
+    setPlaying(true);
+    try { await speak(text, 0.8); } finally { setPlaying(false); }
+  };
+
+  return (
+    <div className="flex justify-center">
+      <Button
+        variant="outline"
+        onClick={handle}
+        className={`gap-2 rounded-full px-6 ${playing ? "border-primary bg-primary/10" : ""}`}
+      >
+        {playing ? <Pause className="h-4 w-4" /> : <Sparkles className="h-4 w-4 text-primary" />}
+        {playing ? "⏸ Pause" : "🎧 Écouter (voix IA)"}
+      </Button>
     </div>
   );
 }
