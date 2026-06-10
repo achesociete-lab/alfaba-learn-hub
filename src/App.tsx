@@ -18,6 +18,7 @@ import NotFound from "./pages/NotFound.tsx";
 import CompleteProfile from "./pages/CompleteProfile.tsx";
 import CompteEnAttente from "./pages/CompteEnAttente.tsx";
 import Unsubscribe from "./pages/Unsubscribe.tsx";
+import Faq from "./pages/Faq.tsx";
 
 // Lazy-loaded (heavy pages — improves initial bundle size)
 const Niveau1 = lazy(() => import("./pages/Niveau1.tsx"));
@@ -74,6 +75,7 @@ const App = () => (
               <Route path="/unsubscribe" element={<Unsubscribe />} />
               <Route path="/complete-profile" element={<CompleteProfile />} />
               <Route path="/tarifs" element={<Tarifs />} />
+              <Route path="/faq" element={<Faq />} />
               <Route path="/mentions-legales" element={<MentionsLegales />} />
               <Route path="/politique-de-confidentialite" element={<PolitiqueConfidentialite />} />
 

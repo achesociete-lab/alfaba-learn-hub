@@ -22,17 +22,24 @@ const HifzFinalCTA = () => (
           « Nous avons certes facilité le Coran pour la méditation » — Sourate Al-Qamar (54:17)
         </p>
         <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-          Commencez votre hifd aujourd'hui
+          Prêt à commencer ?
         </h2>
         <p className="text-emerald-200/70 mb-10 max-w-md mx-auto">
-          Rejoignez le programme, réservez votre première séance et commencez votre mémorisation avec un professeur dédié.
+          Choisissez votre parcours — apprendre l'arabe gratuitement ou rejoindre le programme Hifd avec un professeur dédié.
         </p>
-        <Button asChild size="lg" className="bg-gradient-to-r from-amber-400 to-yellow-300 hover:from-amber-500 hover:to-yellow-400 text-emerald-950 font-bold text-base px-12 h-14 rounded-2xl shadow-2xl shadow-amber-500/30 border-0">
-          <Link to="/hifz">
-            Démarrer le programme — 79€/mois <ArrowRight className="ml-2 h-5 w-5" />
-          </Link>
-        </Button>
-        <p className="text-emerald-500/50 text-xs mt-4">Sans engagement · Résiliable à tout moment</p>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Button asChild size="lg" className="bg-gradient-to-r from-amber-400 to-yellow-300 hover:from-amber-500 hover:to-yellow-400 text-emerald-950 font-bold text-base px-10 h-14 rounded-2xl shadow-2xl shadow-amber-500/30 border-0">
+            <Link to="/auth">
+              Commencer gratuitement <ArrowRight className="ml-2 h-5 w-5" />
+            </Link>
+          </Button>
+          <Button asChild size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10 text-base px-10 h-14 rounded-2xl bg-white/5 backdrop-blur-sm">
+            <Link to="/hifz">
+              Programme Hifd — 79€/mois →
+            </Link>
+          </Button>
+        </div>
+        <p className="text-emerald-500/50 text-xs mt-6">Sans engagement · Résiliable à tout moment</p>
       </motion.div>
     </div>
   </section>
