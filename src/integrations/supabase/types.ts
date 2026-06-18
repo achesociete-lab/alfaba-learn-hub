@@ -748,6 +748,7 @@ export type Database = {
           created_at: string
           feedback: string | null
           feedback_audio_url: string | null
+          feedback_audio_urls: Json
           id: string
           photo_url: string | null
           photo_urls: Json
@@ -766,6 +767,7 @@ export type Database = {
           created_at?: string
           feedback?: string | null
           feedback_audio_url?: string | null
+          feedback_audio_urls?: Json
           id?: string
           photo_url?: string | null
           photo_urls?: Json
@@ -784,6 +786,7 @@ export type Database = {
           created_at?: string
           feedback?: string | null
           feedback_audio_url?: string | null
+          feedback_audio_urls?: Json
           id?: string
           photo_url?: string | null
           photo_urls?: Json
