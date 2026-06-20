@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/use-admin";
 
-export type Plan = "découverte" | "essentiel" | "premium" | "hifz";
+export type Plan = "découverte" | "essentiel" | "premium" | "famille" | "hifz";
 
 const FREE_LESSON_LIMIT = 3;
 
@@ -86,7 +86,8 @@ export function useSubscription() {
   const isFreePlan = plan === "découverte";
   const isPremium = plan === "premium";
   const isHifz = plan === "hifz";
+  const isFamille = plan === "famille";
   const maxLessons = isFreePlan ? FREE_LESSON_LIMIT : Infinity;
 
-  return { plan, isFreePlan, isPremium, isHifz, maxLessons, loading: loading || adminLoading };
+  return { plan, isFreePlan, isPremium, isHifz, isFamille, maxLessons, loading: loading || adminLoading };
 }
