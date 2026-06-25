@@ -4,12 +4,14 @@ import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
 const PRICE_PLANS: Record<string, string> = {
   "price_1TLAA8KXotpKdlTPXckHIYZl": "essentiel",
-  "price_1TLAAUKXotpKdlTP01ELN0ky": "premium",
+  "price_1TL9cdKXotpKdlTPxDQaUrF0": "premium",
+  "price_1TkJIOKXotpKdlTPNgtsDI4a": "famille",
 };
 
 const PLAN_AMOUNTS: Record<string, string> = {
-  "essentiel": "9.99",
-  "premium": "19.99",
+  "essentiel": "7.00",
+  "premium": "12.00",
+  "famille": "19.00",
 };
 
 async function sendTransactionalEmail(

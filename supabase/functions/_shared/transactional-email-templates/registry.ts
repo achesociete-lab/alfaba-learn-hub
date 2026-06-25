@@ -25,6 +25,8 @@ import { template as hifzDailyReminder } from './hifz-daily-reminder.tsx'
 import { template as hifzRescheduleRequest } from './hifz-reschedule-request.tsx'
 import { template as hifzRescheduleProposal } from './hifz-reschedule-proposal.tsx'
 import { template as presentielCorrection } from './presentiel-correction.tsx'
+import { template as hifzApplicationAdmin } from './hifz-application-admin.tsx'
+import { template as familyInvite } from './family-invite.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'admin-pending-signup': adminPendingSignup,
@@ -43,4 +45,6 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'hifz-reschedule-request': hifzRescheduleRequest,
   'hifz-reschedule-proposal': hifzRescheduleProposal,
   'presentiel-correction': presentielCorrection,
+  'hifz-application-admin': hifzApplicationAdmin,
+  'family-invite': familyInvite,
 }

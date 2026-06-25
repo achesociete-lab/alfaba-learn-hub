@@ -7,9 +7,8 @@ export type Plan = "découverte" | "essentiel" | "premium" | "famille" | "hifz";
 
 const FREE_LESSON_LIMIT = 3;
 
-// Simple in-memory cache to avoid redundant Supabase calls across renders
 const cache: Record<string, { plan: Plan; at: number }> = {};
-const CACHE_TTL_MS = 60_000; // 1 minute
+const CACHE_TTL_MS = 60_000;
 
 export function useSubscription() {
   const { user } = useAuth();
@@ -32,7 +31,6 @@ export function useSubscription() {
       return;
     }
 
-    // Use cache if still fresh
     const cached = cache[user.id];
     if (cached && Date.now() - cached.at < CACHE_TTL_MS) {
       setPlan(cached.plan);
@@ -50,7 +48,28 @@ export function useSubscription() {
         .limit(1)
         .maybeSingle();
 
-      const resolvedPlan: Plan = data ? (data.plan as Plan) : "découverte";
+      let resolvedPlan: Plan = data ? (data.plan as Plan) : "découverte";
+
+      if (resolvedPlan === "découverte") {
+        const { data: memberRow } = await supabase
+          .from("family_profiles")
+          .select("owner_id")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (memberRow) {
+          const { data: ownerSub } = await supabase
+            .from("subscriptions")
+            .select("plan")
+            .eq("user_id", memberRow.owner_id)
+            .eq("plan", "famille")
+            .eq("status", "active")
+            .maybeSingle();
+
+          if (ownerSub) resolvedPlan = "famille";
+        }
+      }
+
       cache[user.id] = { plan: resolvedPlan, at: Date.now() };
       setPlan(resolvedPlan);
       setLoading(false);
@@ -58,7 +77,6 @@ export function useSubscription() {
 
     fetchPlan();
 
-    // Realtime subscription to catch instant upgrades/cancellations
     const channel = supabase
       .channel(`subscription:${user.id}`)
       .on(
@@ -78,16 +96,24 @@ export function useSubscription() {
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [user, isAdmin, adminLoading]);
 
   const isFreePlan = plan === "découverte";
-  const isPremium = plan === "premium";
-  const isHifz = plan === "hifz";
   const isFamille = plan === "famille";
-  const maxLessons = isFreePlan ? FREE_LESSON_LIMIT : Infinity;
+  const isPremium = plan === "premium" || plan === "famille";
+  const hasLessonAccess = plan === "essentiel" || plan === "premium" || plan === "famille";
+  const isHifz = plan === "hifz";
+  const maxLessons = hasLessonAccess ? Infinity : FREE_LESSON_LIMIT;
 
-  return { plan, isFreePlan, isPremium, isHifz, isFamille, maxLessons, loading: loading || adminLoading };
+  return {
+    plan,
+    isFreePlan,
+    isPremium,
+    isFamille,
+    isHifz,
+    hasLessonAccess,
+    maxLessons,
+    loading: loading || adminLoading,
+  };
 }

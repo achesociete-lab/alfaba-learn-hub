@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import HifzApplicationDialog from "@/components/HifzApplicationDialog";
 
 const included = [
   "2 séances individuelles par semaine (8/mois)",
@@ -14,8 +15,9 @@ const included = [
 
 const otherPlans = [
   { name: "Découverte", price: "Gratuit", desc: "3 premières leçons d'arabe", to: "/niveau-1" },
-  { name: "Essentiel", price: "7€/mois", desc: "Niveaux 1 & 2 + Tuteur IA", to: "/auth" },
-  { name: "Premium", price: "15€/mois", desc: "Essentiel + module Coran", to: "/auth" },
+  { name: "Essentiel", price: "7€/mois", desc: "Niveaux 1 & 2 + Tuteur IA", to: "/tarifs" },
+  { name: "Premium", price: "12€/mois", desc: "Essentiel + مساري complet", to: "/tarifs" },
+  { name: "Famille", price: "19€/mois", desc: "Premium · jusqu'à 5 profils", to: "/tarifs" },
 ];
 
 const HifzPricingCTA = () => (
@@ -52,9 +54,10 @@ const HifzPricingCTA = () => (
               <p className="text-emerald-300/70 text-sm">2 séances individuelles / semaine</p>
             </div>
             <div className="text-right shrink-0">
-              <div className="text-5xl font-extrabold text-white">79€</div>
-              <div className="text-emerald-400 text-sm mt-1">/ mois · sans engagement</div>
-              <div className="text-emerald-500/60 text-xs mt-0.5">soit 9,87€ la séance</div>
+              <div className="text-sm font-semibold text-amber-300 bg-white/10 px-3 py-1.5 rounded-full">
+                Paiement direct
+              </div>
+              <div className="text-emerald-400 text-xs mt-2">PayPal / virement · contact d'abord</div>
             </div>
           </div>
 
@@ -67,13 +70,12 @@ const HifzPricingCTA = () => (
             ))}
           </ul>
 
-          <Button asChild size="lg" className="w-full bg-gradient-to-r from-amber-400 to-yellow-300 hover:from-amber-500 hover:to-yellow-400 text-emerald-950 font-bold text-base h-14 rounded-xl border-0 shadow-lg shadow-amber-500/20">
-            <Link to="/hifz">
-              S'inscrire au programme Hifd <ArrowRight className="ml-2 h-5 w-5" />
-            </Link>
-          </Button>
+          <HifzApplicationDialog
+            triggerClassName="w-full bg-gradient-to-r from-amber-400 to-yellow-300 hover:from-amber-500 hover:to-yellow-400 text-emerald-950 font-bold text-base h-14 rounded-xl border-0 shadow-lg shadow-amber-500/20 inline-flex items-center justify-center gap-2"
+            triggerLabel="Demander à rejoindre le programme"
+          />
 
-          <p className="text-center text-xs text-emerald-500/60 mt-4">Sans engagement · Résiliable à tout moment</p>
+          <p className="text-center text-xs text-emerald-500/60 mt-4">Le professeur vous recontacte sous 24h</p>
         </div>
       </motion.div>
 
@@ -82,10 +84,10 @@ const HifzPricingCTA = () => (
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        className="max-w-2xl mx-auto"
+        className="max-w-3xl mx-auto"
       >
         <p className="text-center text-sm text-muted-foreground mb-5">Vous souhaitez d'abord apprendre l'arabe ?</p>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {otherPlans.map(({ name, price, desc, to }) => (
             <Link
               key={name}

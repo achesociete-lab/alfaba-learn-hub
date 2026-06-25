@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useSubscription } from "@/hooks/use-subscription";
+import { useFamilyProfile } from "@/contexts/FamilyProfileContext";
 import { type Lesson } from "@/data/niveau1-lessons";
 import { type Niveau2Lesson } from "@/data/niveau2-lessons";
 import LessonSelector from "@/components/exercises/LessonSelector";
@@ -128,17 +129,17 @@ const Exercises = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [level, setLevel] = useState<Level>("niveau_1");
-  const { maxLessons, isFreePlan, loading: subLoading } = useSubscription();
-  const { isAdmin } = useIsAdmin();
+  const { maxLessons, isFreePlan, hasLessonAccess, loading: subLoading } = useSubscription();
+  const { activeProfile } = useFamilyProfile();
   const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
 
-  // No redirect for unauthenticated users — lessons 1-3 are free
-
   useEffect(() => {
+    // Child profile: use profile's level directly
+    if (activeProfile) { setLevel(activeProfile.level as Level); return; }
     if (!user) return;
     supabase.from("profiles").select("level").eq("user_id", user.id).single()
       .then(({ data }) => { if (data) setLevel(data.level as Level); });
-  }, [user]);
+  }, [user, activeProfile]);
 
   if (authLoading || subLoading) {
     return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground">Chargement...</p></div>;
@@ -177,7 +178,20 @@ const Exercises = () => {
             )}
           </motion.div>
 
-          {level === "niveau_1" ? <Niveau1Lessons maxLessons={maxLessons} onLessonChange={setCurrentLesson} /> : <Niveau2Lessons />}
+          {level === "niveau_1"
+            ? <Niveau1Lessons maxLessons={maxLessons} onLessonChange={setCurrentLesson} />
+            : hasLessonAccess
+              ? <Niveau2Lessons />
+              : (
+                <div className="text-center py-16 space-y-4">
+                  <p className="text-lg font-semibold text-foreground">🔒 Niveau 2 — Plan Essentiel requis</p>
+                  <p className="text-sm text-muted-foreground">Le Niveau 2 est accessible avec les plans Essentiel, Premium et Famille.</p>
+                  <Link to="/tarifs" className="inline-block mt-2 px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition">
+                    Voir les plans →
+                  </Link>
+                </div>
+              )
+          }
         </div>
       </main>
       <Footer />

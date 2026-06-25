@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import HifzApplicationDialog from "@/components/HifzApplicationDialog";
 
 const HifzFinalCTA = () => (
   <section className="py-24 bg-gradient-to-br from-emerald-950 via-emerald-900 to-amber-950 relative overflow-hidden">
@@ -33,13 +34,12 @@ const HifzFinalCTA = () => (
               Commencer gratuitement <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
           </Button>
-          <Button asChild size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10 text-base px-10 h-14 rounded-2xl bg-white/5 backdrop-blur-sm">
-            <Link to="/hifz">
-              Programme Hifd — 79€/mois →
-            </Link>
-          </Button>
+          <HifzApplicationDialog
+            triggerClassName="border-white/20 text-white hover:bg-white/10 text-base px-10 h-14 rounded-2xl bg-white/5 backdrop-blur-sm border inline-flex items-center justify-center gap-2 font-bold"
+            triggerLabel="Rejoindre le programme Hifd →"
+          />
         </div>
-        <p className="text-emerald-500/50 text-xs mt-6">Sans engagement · Résiliable à tout moment</p>
+        <p className="text-emerald-500/50 text-xs mt-6">Sans engagement · Le professeur vous recontacte sous 24h</p>
       </motion.div>
     </div>
   </section>

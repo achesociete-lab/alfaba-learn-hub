@@ -5,6 +5,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { FamilyProfileProvider } from "@/contexts/FamilyProfileContext";
+import FamilyProfileBanner from "@/components/FamilyProfileBanner";
 import ProfileGuard from "@/components/ProfileGuard";
 import RouteTracker from "./components/RouteTracker";
 import PendingPresentielHandler from "./components/PendingPresentielHandler";
@@ -39,6 +41,7 @@ const SubscriptionManagement = lazy(() => import("./pages/SubscriptionManagement
 const AdminPromoManagement = lazy(() => import("./pages/AdminPromoManagement.tsx"));
 const AdminRevenueMetrics = lazy(() => import("./pages/AdminRevenueMetrics.tsx"));
 const Hifz = lazy(() => import("./pages/Hifz.tsx"));
+const Famille = lazy(() => import("./pages/Famille.tsx"));
 
 const PageLoader = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
@@ -62,6 +65,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <FamilyProfileProvider>
+          <FamilyProfileBanner />
           <RouteTracker />
           <PagePersistenceTracker />
           <PendingPresentielHandler />
@@ -97,11 +102,13 @@ const App = () => (
                 <Route path="/admin/promo" element={<AdminPromoManagement />} />
                 <Route path="/admin/revenue" element={<AdminRevenueMetrics />} />
                 <Route path="/hifz" element={<Hifz />} />
+                <Route path="/famille" element={<Famille />} />
               </Route>
 
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
+          </FamilyProfileProvider>
         </AuthProvider>
         <WhatsAppButton />
       </BrowserRouter>

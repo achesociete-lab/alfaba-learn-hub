@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
-import { Users, Search, Trash2, Check, Clock } from "lucide-react";
+import { Users, Search, Trash2, Check, Clock, BookOpen } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,21 @@ interface StudentProfile {
   created_at: string;
 }
 
+type ManualPlan = "essentiel" | "premium" | "famille" | "hifz";
+
+const PLAN_LABELS: Record<ManualPlan, string> = {
+  essentiel: "Essentiel",
+  premium: "Premium",
+  famille: "Famille",
+  hifz: "Hifd",
+};
+const PLAN_COLORS: Record<ManualPlan, string> = {
+  essentiel: "bg-blue-100 text-blue-800 border-blue-300",
+  premium: "bg-emerald-100 text-emerald-800 border-emerald-300",
+  famille: "bg-violet-100 text-violet-800 border-violet-300",
+  hifz: "bg-amber-100 text-amber-800 border-amber-300",
+};
+
 const AdminStudents = () => {
   const [students, setStudents] = useState<StudentProfile[]>([]);
   const [search, setSearch] = useState("");
@@ -34,6 +49,8 @@ const AdminStudents = () => {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [togglingType, setTogglingType] = useState<string | null>(null);
   const [togglingLevel, setTogglingLevel] = useState<string | null>(null);
+  const [activatingPlan, setActivatingPlan] = useState<string | null>(null);
+  const [studentPlans, setStudentPlans] = useState<Record<string, ManualPlan>>({});
 
   const [validating, setValidating] = useState<string | null>(null);
 
@@ -56,18 +73,52 @@ const AdminStudents = () => {
   };
 
   const fetchStudents = async () => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("user_id, first_name, last_name, level, type_eleve, created_at")
-      .order("created_at", { ascending: false });
-    if (data) {
-      // Pending first
-      const sorted = [...data].sort((a, b) => {
+    const [{ data: profileData }, { data: subData }] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("user_id, first_name, last_name, level, type_eleve, created_at")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("subscriptions")
+        .select("user_id, plan")
+        .eq("status", "active")
+        .order("created_at", { ascending: false }),
+    ]);
+    if (profileData) {
+      const sorted = [...profileData].sort((a, b) => {
         const aPending = a.type_eleve === "en_attente" ? 0 : 1;
         const bPending = b.type_eleve === "en_attente" ? 0 : 1;
         return aPending - bPending;
       });
       setStudents(sorted);
+    }
+    if (subData) {
+      // Keep the most recent active plan per user
+      const planMap: Record<string, ManualPlan> = {};
+      for (const row of subData) {
+        if (!planMap[row.user_id] && row.plan !== "découverte") {
+          planMap[row.user_id] = row.plan as ManualPlan;
+        }
+      }
+      setStudentPlans(planMap);
+    }
+  };
+
+  const handleGrantPlan = async (s: StudentProfile, plan: ManualPlan) => {
+    setActivatingPlan(s.user_id);
+    try {
+      const { error } = await supabase.from("subscriptions").insert({
+        user_id: s.user_id,
+        plan,
+        status: "active",
+      } as any);
+      if (error) throw error;
+      setStudentPlans((prev) => ({ ...prev, [s.user_id]: plan }));
+      toast.success(`Plan ${PLAN_LABELS[plan]} activé pour ${s.first_name}`);
+    } catch (err: any) {
+      toast.error(err.message || "Erreur lors de l'activation");
+    } finally {
+      setActivatingPlan(null);
     }
   };
 
@@ -233,6 +284,28 @@ const AdminStudents = () => {
               >
                 {s.type_eleve === "presentiel" ? "📍 Présentiel" : "💻 En ligne"}
               </button>
+            )}
+
+            {/* Plan actuel + sélecteur d'accès manuel */}
+            {studentPlans[s.user_id] ? (
+              <Badge className={`border text-xs shrink-0 ${PLAN_COLORS[studentPlans[s.user_id]]}`}>
+                {studentPlans[s.user_id] === "hifz" && <BookOpen className="h-3 w-3 mr-1" />}
+                {PLAN_LABELS[studentPlans[s.user_id]]}
+              </Badge>
+            ) : (
+              <div className="flex gap-1 shrink-0 flex-wrap">
+                {(["essentiel", "premium", "famille", "hifz"] as ManualPlan[]).map((p) => (
+                  <button
+                    key={p}
+                    disabled={activatingPlan === s.user_id}
+                    onClick={() => handleGrantPlan(s, p)}
+                    title={`Accorder accès ${PLAN_LABELS[p]}`}
+                    className={`px-2 py-1 rounded-lg text-[10px] font-semibold border transition-colors hover:opacity-80 ${PLAN_COLORS[p]}`}
+                  >
+                    {activatingPlan === s.user_id ? "…" : PLAN_LABELS[p]}
+                  </button>
+                ))}
+              </div>
             )}
 
             <AlertDialog>

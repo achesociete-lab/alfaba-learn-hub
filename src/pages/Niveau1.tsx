@@ -61,12 +61,12 @@ const FREE_LESSON_LIMIT = 3;
 
 const Niveau1 = () => {
   const { user } = useAuth();
-  const { isFreePlan } = useSubscription();
+  const { hasLessonAccess } = useSubscription();
   const { isAdmin } = useIsAdmin();
   const { completedLessons } = useLessonProgress();
   const [selectedLetter, setSelectedLetter] = useState<typeof alphabet[0] | null>(null);
 
-  const shouldLock = !isAdmin && (!user || isFreePlan);
+  const shouldLock = !isAdmin && (!user || !hasLessonAccess);
 
   return (
     <div className="min-h-screen bg-background">

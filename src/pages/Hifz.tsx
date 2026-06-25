@@ -72,7 +72,7 @@ function CircleProgress({ percent }: { percent: number }) {
 export default function Hifz() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const { isHifz, isPremium, loading: subLoading } = useSubscription();
+  const { isHifz, loading: subLoading } = useSubscription();
   const { profile } = useProfile();
   const { toast } = useToast();
 
@@ -169,7 +169,7 @@ export default function Hifz() {
     setLoading(false);
   };
 
-  useEffect(() => { if (user && (isHifz || isPremium)) fetchAll(); }, [user, isHifz, isPremium]);
+  useEffect(() => { if (user && isHifz) fetchAll(); }, [user, isHifz]);
 
   const validatedHizbNumbers = useMemo(() => {
     const set = new Set<number>();
@@ -459,7 +459,7 @@ export default function Hifz() {
     );
   }
   if (!user) return null;
-  if (!isHifz && !isPremium) return <UpsellPage />;
+  if (!isHifz) return <UpsellPage />;
 
   // Preview calculations for onboarding form
   const previewRemaining = TOTAL_HIZB - memoCount;

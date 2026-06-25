@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Zap, Crown, BookOpen, Headphones, Clock, Loader2, Tag, X, GraduationCap } from "lucide-react";
+import { Check, Zap, Crown, BookOpen, Headphones, Clock, Loader2, Tag, X, GraduationCap, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link, useNavigate } from "react-router-dom";
@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { usePromoCode } from "@/hooks/usePromoCode";
+import HifzApplicationDialog from "@/components/HifzApplicationDialog";
 
 export const STRIPE_PLANS = {
   essentiel: {
@@ -15,15 +16,17 @@ export const STRIPE_PLANS = {
     product_id: "prod_UJnlNTP9hF3J5Q",
     price: 7,
   },
+  // Prix 12€ — à créer dans Stripe et renseigner ci-dessous
   premium: {
-    price_id: "price_1TLAAUKXotpKdlTP01ELN0ky",
-    product_id: "prod_UJnmdJC4o0hInW",
-    price: 15,
+    price_id: "price_1TL9cdKXotpKdlTPxDQaUrF0",
+    product_id: "prod_UJnD6AmnqnlxTh",
+    price: 12,
   },
-  hifz: {
-    price_id: "price_1TdpPgKXotpKdlTPO74jJFBb",
-    product_id: "prod_Uc1RFQIChfKUTr",
-    price: 79,
+  // Famille 19€ — à créer dans Stripe et renseigner ci-dessous
+  famille: {
+    price_id: "price_1TkJIOKXotpKdlTPNgtsDI4a",
+    product_id: "",
+    price: 19,
   },
 } as const;
 
@@ -36,14 +39,14 @@ const plans = [
     subtitle: "Explorez la plateforme librement",
     icon: BookOpen,
     features: [
-      "Accès aux 3 premières leçons",
+      "3 premières leçons Niveau 1",
       "QCM de démonstration",
       "1 dictée audio d'essai",
-      "Aperçu du module Coran",
+      "Aperçu مساري (lecture seule)",
     ],
     limitations: [
       "Pas de suivi de progression",
-      "Pas d'enregistrement vocal",
+      "Pas d'accès Niveau 2",
     ],
     cta: "Commencer gratuitement",
     planKey: null,
@@ -55,15 +58,15 @@ const plans = [
     price: "7€",
     priceNum: 7,
     period: "/mois",
-    subtitle: "L'apprentissage à votre rythme",
+    subtitle: "Niveau 1 & 2 complets",
     icon: Zap,
     features: [
-      "Tous les cours Niveau 1 & 2",
+      "Niveau 1 complet (10 leçons)",
+      "Niveau 2 complet",
       "Exercices interactifs illimités",
       "Dictées audio progressives",
+      "Tuteur IA Musa'id illimité",
       "Suivi de progression complet",
-      "Professeur Virtuel IA",
-      "Support par email",
     ],
     limitations: [],
     cta: "Choisir Essentiel",
@@ -73,24 +76,43 @@ const plans = [
   },
   {
     name: "Premium",
-    price: "15€",
-    priceNum: 15,
+    price: "12€",
+    priceNum: 12,
     period: "/mois",
-    subtitle: "L'expérience complète",
+    subtitle: "Essentiel + مساري",
     icon: Crown,
     features: [
       "Tout le plan Essentiel inclus",
-      "Module Coran avec IA de récitation",
-      "Corrections personnalisées par l'enseignant",
-      "Classe virtuelle interactive",
-      "Certificat de fin de niveau",
-      "Support prioritaire",
+      "مساري — Parcours personnalisé par IA",
+      "Flashcards & exercices ciblés",
+      "Devoirs avec correction automatique",
+      "Plan hebdomadaire sur mesure",
+      "Rapport de progression par email",
     ],
     limitations: [],
     cta: "Choisir Premium",
     planKey: "premium" as const,
     featured: true,
     badge: "Le plus populaire",
+  },
+  {
+    name: "Famille",
+    price: "19€",
+    priceNum: 19,
+    period: "/mois",
+    subtitle: "Premium pour toute la famille",
+    icon: Users,
+    features: [
+      "Tout le plan Premium inclus",
+      "Jusqu'à 5 profils",
+      "Tableau de bord famille",
+      "Suivi individuel par profil",
+    ],
+    limitations: [],
+    cta: "Choisir Famille",
+    planKey: "famille" as const,
+    featured: false,
+    badge: null,
   },
 ];
 
@@ -225,15 +247,21 @@ const PricingSection = () => {
     return discounted.toFixed(2);
   };
 
-  const handleCheckout = async (planKey: "essentiel" | "premium" | "hifz") => {
+  const handleCheckout = async (planKey: "essentiel" | "premium" | "famille") => {
     if (!user) {
       navigate("/auth");
       return;
     }
 
+    const priceId = STRIPE_PLANS[planKey].price_id;
+    if (!priceId) {
+      toast.error("Ce plan n'est pas encore disponible. Revenez bientôt !");
+      return;
+    }
+
     setLoadingPlan(planKey);
     try {
-      const body: Record<string, any> = { priceId: STRIPE_PLANS[planKey].price_id };
+      const body: Record<string, any> = { priceId };
       if (promoResult?.valid && promoResult.codeId) {
         body.promoCodeId = promoResult.codeId;
       }
@@ -348,7 +376,7 @@ const PricingSection = () => {
         </motion.div>
 
         {/* Pricing cards */}
-        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto mb-20">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto mb-20">
           {plans.map((plan, i) => {
             const Icon = plan.icon;
             const isLoading = loadingPlan === plan.planKey;
@@ -416,7 +444,7 @@ const PricingSection = () => {
 
                 {plan.planKey ? (
                   <Button
-                    onClick={() => handleCheckout(plan.planKey!)}
+                    onClick={() => handleCheckout(plan.planKey as "essentiel" | "premium" | "famille")}
                     disabled={isLoading}
                     className={
                       plan.featured
@@ -462,25 +490,17 @@ const PricingSection = () => {
                 <h3 className="font-display text-lg font-bold text-emerald-900">Hifd al-Qur'ān</h3>
               </div>
               <div className="mb-1">
-                <span className="text-3xl font-extrabold text-emerald-800">79€</span>
-                <span className="text-sm text-amber-800/70">/mois</span>
+                <span className="text-sm font-semibold text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full">
+                  Paiement direct — contact d'abord
+                </span>
               </div>
-              <p className="text-sm text-amber-800/80 mb-5">
-                2 séances individuelles par semaine avec votre professeur. Programme complet de mémorisation avec suivi personnalisé.
+              <p className="text-sm text-amber-800/80 mb-5 mt-3">
+                2 séances individuelles par semaine avec votre professeur. Le paiement se fait directement (PayPal / virement) après votre premier échange.
               </p>
-              <Button
-                onClick={() => handleCheckout("hifz")}
-                disabled={loadingPlan === "hifz" || !STRIPE_PLANS.hifz.price_id}
-                className="w-full h-11 text-sm font-semibold bg-gradient-to-r from-emerald-700 to-amber-700 hover:opacity-90 border-0 text-white"
-              >
-                {loadingPlan === "hifz" ? (
-                  <><Loader2 className="h-4 w-4 animate-spin mr-2" />Redirection...</>
-                ) : !STRIPE_PLANS.hifz.price_id ? (
-                  "Bientôt disponible"
-                ) : (
-                  "S'inscrire au programme"
-                )}
-              </Button>
+              <HifzApplicationDialog
+                triggerClassName="w-full h-11 text-sm font-semibold bg-gradient-to-r from-emerald-700 to-amber-700 hover:opacity-90 border-0 text-white rounded-md inline-flex items-center justify-center"
+                triggerLabel="Demander à rejoindre le programme"
+              />
             </div>
 
             {/* Right: features */}

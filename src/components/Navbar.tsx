@@ -15,7 +15,7 @@ const publicNavLinks = [
   { to: "/coran", label: "Coran" },
 ];
 
-const getAuthNavLinks = (level: string | null, typeEleve: string | null, hasHifzAccess = false, isAdmin = false) => {
+const getAuthNavLinks = (level: string | null, typeEleve: string | null, hasHifzAccess = false, hasFamilleAccess = false, isAdmin = false) => {
   // Présentiel : accès limité
   if (typeEleve === "presentiel") {
     const links = [{ to: "/cours-presentiel", label: "Espace Élève" }];
@@ -41,6 +41,8 @@ const getAuthNavLinks = (level: string | null, typeEleve: string | null, hasHifz
   links.push({ to: "/hifz", label: "📖 Hifd" });
   links.push({ to: "/conversation", label: "🎙️ مساعد المعلم" });
   links.push({ to: "/tuteur", label: "🎓 مساري" });
+  if (hasFamilleAccess) links.push({ to: "/famille", label: "👨‍👩‍👧‍👦 Ma famille" });
+  links.push({ to: "/dashboard", label: "Espace Élève" });
 
   return links;
 };
@@ -50,7 +52,7 @@ const Navbar = () => {
   const location = useLocation();
   const { user, signOut } = useAuth();
   const { isAdmin } = useIsAdmin();
-  const { isHifz, isPremium } = useSubscription();
+  const { isHifz, isFamille } = useSubscription();
   const [userLevel, setUserLevel] = useState<string | null>(null);
   const [userType, setUserType] = useState<string | null>(null);
 
@@ -65,7 +67,7 @@ const Navbar = () => {
       });
   }, [user]);
 
-  const navLinks = user ? getAuthNavLinks(userLevel, userType, isHifz || isPremium, isAdmin) : publicNavLinks;
+  const navLinks = user ? getAuthNavLinks(userLevel, userType, isHifz, isFamille, isAdmin) : publicNavLinks;
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">

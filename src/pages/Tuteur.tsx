@@ -126,7 +126,7 @@ const Tuteur = () => {
   const [demoRevealed, setDemoRevealed] = useState(false);
   const [demoSelected, setDemoSelected] = useState<number | null>(null);
 
-  const isPremium = plan === "premium";
+  const isPremium = plan === "premium" || plan === "famille";
 
   // Auto-rotate demo questions
   useEffect(() => {
