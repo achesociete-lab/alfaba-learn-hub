@@ -191,6 +191,36 @@ export type Database = {
         }
         Relationships: []
       }
+      family_profiles: {
+        Row: {
+          avatar: string
+          created_at: string
+          display_name: string
+          id: string
+          level: string
+          owner_id: string
+          pin: string | null
+        }
+        Insert: {
+          avatar?: string
+          created_at?: string
+          display_name: string
+          id?: string
+          level?: string
+          owner_id: string
+          pin?: string | null
+        }
+        Update: {
+          avatar?: string
+          created_at?: string
+          display_name?: string
+          id?: string
+          level?: string
+          owner_id?: string
+          pin?: string | null
+        }
+        Relationships: []
+      }
       hifz_config: {
         Row: {
           created_at: string | null
