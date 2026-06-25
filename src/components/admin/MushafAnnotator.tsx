@@ -14,6 +14,29 @@ import { useToast } from "@/hooks/use-toast";
 const COLORS = ["#ef4444", "#22c55e", "#3b82f6", "#eab308", "#a855f7", "#000000"];
 const SIZES  = [2, 4, 8, 14];
 
+// ── Tajwid notes helpers ─────────────────────────────────────────────────────
+// Format attendu (optionnel) dans la note : "[rule1,rule2] texte libre"
+export function parseTajwidNote(raw?: string | null): { rules: string[]; note: string } {
+  if (!raw) return { rules: [], note: "" };
+  const m = raw.match(/^\s*\[([^\]]*)\]\s*(.*)$/s);
+  if (!m) return { rules: [], note: raw.trim() };
+  const rules = m[1].split(",").map(s => s.trim()).filter(Boolean);
+  return { rules, note: (m[2] || "").trim() };
+}
+
+export function TajwidLegend({ rules }: { rules: string[] }) {
+  if (!rules || rules.length === 0) return null;
+  return (
+    <div className="px-4 py-3 border-t border-border bg-muted/30 flex flex-wrap gap-2">
+      {rules.map((r, i) => (
+        <span key={i} className="text-xs px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+          {r}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function getMushafUrl(page: number) {
   return `https://www.mp3quran.net/api/quran_pages_arabic/${String(page).padStart(3, "0")}.png`;
 }
