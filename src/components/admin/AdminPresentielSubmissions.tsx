@@ -31,6 +31,7 @@ interface Submission {
   status: "en_attente" | "validee" | "a_corriger";
   feedback: string | null;
   feedback_audio_url?: string | null;
+  feedback_audio_urls?: string[] | null;
   created_at: string;
   reviewed_at: string | null;
 }
@@ -81,11 +82,11 @@ const AdminPresentielSubmissions = () => {
     if (!annotating) return;
     const sub = submissions.find((s) => s.id === annotating.subId);
     if (!sub) return;
-    const path = `annotations/${sub.user_id}/${sub.id}-${annotating.photoIndex}-${Date.now()}.jpg`;
+    const path = `${sub.user_id}/annotations/${sub.id}-${annotating.photoIndex}-${Date.now()}.jpg`;
     const { error: upErr } = await supabase.storage
       .from("presentiel-submissions")
       .upload(path, blob, { contentType: "image/jpeg", upsert: true });
-    if (upErr) { toast.error(upErr.message); return; }
+    if (upErr) { toast.error(upErr.message); throw upErr; }
     const { data: { publicUrl } } = supabase.storage.from("presentiel-submissions").getPublicUrl(path);
 
     const photos: string[] = (sub.photo_urls && sub.photo_urls.length > 0)
@@ -99,7 +100,7 @@ const AdminPresentielSubmissions = () => {
       .from("presentiel_submissions")
       .update({ annotated_photo_urls: next as any })
       .eq("id", sub.id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(error.message); throw error; }
     toast.success("Annotation enregistrée ✏️");
     setAnnotating(null);
     load();
@@ -411,21 +412,26 @@ function SubmissionCard({
                 </div>
               ) : null}
 
-              {/* Voice correction — primarily useful for lecture step */}
+              {/* Voice corrections — multiple recordings supported */}
               {!readonly && sub.step_type === "lecture" && onReload && (
                 <VoiceFeedbackRecorder
                   submissionId={sub.id}
                   userId={sub.user_id}
-                  existingUrl={sub.feedback_audio_url}
+                  existingUrls={sub.feedback_audio_urls ?? (sub.feedback_audio_url ? [sub.feedback_audio_url] : [])}
                   onSaved={onReload}
                 />
               )}
-              {readonly && sub.feedback_audio_url && (
+              {readonly && ((sub.feedback_audio_urls?.length ?? 0) > 0 || sub.feedback_audio_url) && (
                 <div className="space-y-1">
                   <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
-                    <Mic className="h-3 w-3" /> Correction vocale envoyée
+                    <Mic className="h-3 w-3" /> Correction(s) vocale(s) envoyée(s)
                   </p>
-                  <audio controls src={sub.feedback_audio_url} className="w-full" style={{ height: 36 }} />
+                  {(sub.feedback_audio_urls?.length
+                    ? sub.feedback_audio_urls
+                    : sub.feedback_audio_url ? [sub.feedback_audio_url] : []
+                  ).map((url, i) => (
+                    <audio key={i} controls src={url} className="w-full" style={{ height: 36 }} />
+                  ))}
                 </div>
               )}
 

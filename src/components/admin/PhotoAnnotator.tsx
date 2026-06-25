@@ -159,7 +159,9 @@ export default function PhotoAnnotator({ open, onOpenChange, imageUrl, onSave }:
         canvas.toBlob((b) => (b ? res(b) : rej(new Error("toBlob failed"))), "image/jpeg", 0.9)
       );
       await onSave(blob);
-      onOpenChange(false);
+      onOpenChange(false); // only closes if onSave resolves without throwing
+    } catch {
+      // error already toasted by caller — keep modal open so teacher can retry
     } finally {
       setSaving(false);
     }

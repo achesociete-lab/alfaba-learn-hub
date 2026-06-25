@@ -95,6 +95,13 @@ function LectureStep({ course, onDone }: { course: PresentielCourseV2; onDone: (
 
   useEffect(() => { refresh(); }, [user, course.id]);
 
+  // Auto-refresh tant que la correction n'est pas arrivée
+  useEffect(() => {
+    if (!submission || (submission as any).status !== "en_attente") return;
+    const id = setInterval(refresh, 20_000);
+    return () => clearInterval(id);
+  }, [(submission as any)?.id, (submission as any)?.status]);
+
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -237,11 +244,14 @@ function LectureStep({ course, onDone }: { course: PresentielCourseV2; onDone: (
             )}
 
             {submission.status === "en_attente" && (
-              <div className="p-3 rounded-lg border border-border bg-muted/40">
+              <div className="p-3 rounded-lg border border-border bg-muted/40 space-y-2">
                 <Badge variant="outline">⏳ En attente de validation par votre professeur</Badge>
-                <p className="text-xs text-muted-foreground mt-2">
+                <p className="text-xs text-muted-foreground">
                   Vous pouvez continuer la leçon en attendant la correction.
                 </p>
+                <Button size="sm" variant="ghost" onClick={refresh} className="gap-1.5 text-xs h-7 px-2">
+                  <RotateCcw className="h-3 w-3" /> Vérifier les corrections
+                </Button>
               </div>
             )}
             {submission.status !== "en_attente" && (
@@ -255,14 +265,6 @@ function LectureStep({ course, onDone }: { course: PresentielCourseV2; onDone: (
                 }`}>
                   {submission.status === "validee" ? "✅ Validée par votre professeur" : "❌ À refaire"}
                 </p>
-                {submission.feedback_audio_url && (
-                  <div className="mt-3 p-3 rounded bg-background/60 border border-border space-y-1">
-                    <p className="text-xs font-semibold flex items-center gap-1">
-                      <Mic className="h-3 w-3" /> Correction vocale du professeur
-                    </p>
-                    <audio controls src={submission.feedback_audio_url} className="w-full" style={{ height: 40 }} />
-                  </div>
-                )}
                 {submission.feedback && (
                   <div className="mt-3 p-3 rounded bg-background/60 border border-border">
                     <p className="text-xs font-semibold mb-1">Commentaire du professeur :</p>
@@ -271,6 +273,28 @@ function LectureStep({ course, onDone }: { course: PresentielCourseV2; onDone: (
                 )}
               </div>
             )}
+
+            {/* Corrections vocales — visibles dès qu'elles existent, quel que soit le statut */}
+            {(() => {
+              const urls: string[] = [
+                ...((submission as any).feedback_audio_urls ?? []),
+              ];
+              if (submission.feedback_audio_url && !urls.includes(submission.feedback_audio_url)) {
+                urls.unshift(submission.feedback_audio_url);
+              }
+              if (!urls.length) return null;
+              return (
+                <div className="p-3 rounded-lg bg-background/60 border border-border space-y-2">
+                  <p className="text-xs font-semibold flex items-center gap-1.5">
+                    <Mic className="h-3 w-3 text-primary" />
+                    Correction{urls.length > 1 ? `s vocales (${urls.length})` : " vocale"} de votre professeur
+                  </p>
+                  {urls.map((url, i) => (
+                    <audio key={i} controls src={url} className="w-full" style={{ height: 40 }} />
+                  ))}
+                </div>
+              );
+            })()}
 
             <div className="flex justify-end">
               <Button onClick={onDone} className="gap-2">
@@ -374,6 +398,13 @@ function PhotoUploadStep({
     refresh();
   }, [user, course.id, stepType]);
 
+  // Auto-refresh tant que la correction n'est pas arrivée
+  useEffect(() => {
+    if (!previousSubmission || previousSubmission.status !== "en_attente") return;
+    const id = setInterval(refresh, 20_000);
+    return () => clearInterval(id);
+  }, [previousSubmission?.id, previousSubmission?.status]);
+
   const handleFiles = async (files: FileList) => {
     if (!user) return;
     const list = Array.from(files).slice(0, maxPhotos);
@@ -471,7 +502,12 @@ function PhotoUploadStep({
               </div>
             )}
             {previousSubmission.status === "en_attente" && (
-              <Badge variant="outline">⏳ En attente de correction</Badge>
+              <div className="flex items-center gap-3 flex-wrap">
+                <Badge variant="outline">⏳ En attente de correction</Badge>
+                <Button size="sm" variant="ghost" onClick={refresh} className="gap-1.5 text-xs h-7 px-2">
+                  <RotateCcw className="h-3 w-3" /> Vérifier les corrections
+                </Button>
+              </div>
             )}
 
             {hasAnyAnnotation && (
