@@ -86,11 +86,11 @@ const App = () => (
 
               {/* Public course pages */}
               <Route path="/niveau-1" element={<Niveau1 />} />
+              <Route path="/niveau-2" element={<Niveau2 />} />
               <Route path="/exercices" element={<Exercises />} />
 
               {/* Protected routes requiring complete profile */}
               <Route element={<ProfileGuard />}>
-                <Route path="/niveau-2" element={<Niveau2 />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/cours-presentiel" element={<CoursPresentiel />} />
                 <Route path="/classe-virtuelle" element={<ClasseVirtuelle />} />

@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/hooks/use-subscription";
 import { useLessonProgress } from "@/hooks/use-lesson-progress";
+import { useNiveau1Lessons } from "@/hooks/use-lessons";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useState } from "react";
@@ -44,18 +45,6 @@ const alphabet = [
   { letter: "ي", name: "Ya", nameAr: "يَاء", prononciation: "y / i", isolated: "ي", initial: "يـ", medial: "ـيـ", final: "ـي" },
 ];
 
-const lessons = [
-  { num: 1, title: "Les lettres isolées", desc: "Découverte des 28 lettres de l'alphabet arabe", icon: "📖" },
-  { num: 2, title: "Les formes des lettres", desc: "Début, milieu et fin de mot", icon: "✍️" },
-  { num: 3, title: "Les voyelles courtes", desc: "Fatha, Damma, Kasra et Soukoun", icon: "🎵" },
-  { num: 4, title: "Lecture de syllabes", desc: "Combinaison lettres + voyelles", icon: "🔤" },
-  { num: 5, title: "Les lettres solaires et lunaires", desc: "Assimilation du Lam de l'article", icon: "☀️" },
-  { num: 6, title: "Lecture de mots simples", desc: "Premier vocabulaire en arabe", icon: "📝" },
-  { num: 7, title: "Les voyelles longues", desc: "Alif, Waw et Ya comme voyelles", icon: "🎶" },
-  { num: 8, title: "La Shadda et le Tanwin", desc: "Redoublement et nunation", icon: "✨" },
-  { num: 9, title: "Lecture de phrases courtes", desc: "Premières phrases complètes", icon: "💬" },
-  { num: 10, title: "Dictée finale Niveau 1", desc: "Évaluation complète de l'alphabet", icon: "🏆" },
-];
 
 const FREE_LESSON_LIMIT = 3;
 
@@ -64,6 +53,7 @@ const Niveau1 = () => {
   const { hasLessonAccess } = useSubscription();
   const { isAdmin } = useIsAdmin();
   const { completedLessons } = useLessonProgress();
+  const { lessons } = useNiveau1Lessons();
   const [selectedLetter, setSelectedLetter] = useState<typeof alphabet[0] | null>(null);
 
   const shouldLock = !isAdmin && (!user || !hasLessonAccess);
@@ -112,16 +102,16 @@ const Niveau1 = () => {
             <TooltipProvider>
             <div className="max-w-2xl mx-auto space-y-3">
               {lessons.map((lesson, i) => {
-                const isPaywalled = shouldLock && lesson.num > FREE_LESSON_LIMIT;
-                const isCompleted = completedLessons.includes(lesson.num);
-                const isPrevCompleted = i === 0 || completedLessons.includes(lessons[i - 1].num);
+                const isPaywalled = shouldLock && lesson.id > FREE_LESSON_LIMIT;
+                const isCompleted = completedLessons.includes(lesson.id);
+                const isPrevCompleted = i === 0 || completedLessons.includes(lessons[i - 1].id);
                 const isProgressLocked = !isAdmin && !isPrevCompleted && !isPaywalled;
                 const isLocked = isPaywalled || isProgressLocked;
-                const linkTarget = isPaywalled ? (user ? "/tarifs" : "/auth") : isProgressLocked ? "#" : `/exercices?lesson=${lesson.num}`;
+                const linkTarget = isPaywalled ? (user ? "/tarifs" : "/auth") : isProgressLocked ? "#" : `/exercices?lesson=${lesson.id}`;
 
                 const card = (
-                  <div key={lesson.num}>
-                    {lesson.num === 4 && shouldLock && (
+                  <div key={lesson.id}>
+                    {lesson.id === 4 && shouldLock && (
                       <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
                         className="mb-3 p-5 rounded-xl bg-primary/10 border border-primary/30 text-center">
                         <p className="text-lg font-bold text-foreground mb-1">🔓 Débloquer toutes les leçons</p>
@@ -148,8 +138,8 @@ const Niveau1 = () => {
                           {isCompleted ? <CheckCircle className="h-5 w-5 text-primary" /> : isLocked ? <Lock className="h-4 w-4 text-muted-foreground" /> : lesson.icon}
                         </div>
                         <div className="flex-1">
-                          <h3 className="text-sm font-semibold text-foreground">Leçon {lesson.num} — {lesson.title}</h3>
-                          <p className="text-xs text-muted-foreground">{lesson.desc}</p>
+                          <h3 className="text-sm font-semibold text-foreground">Leçon {lesson.id} — {lesson.title}</h3>
+                          <p className="text-xs text-muted-foreground">{lesson.subtitle}</p>
                           <p className="text-xs text-muted-foreground mt-0.5">⏱️ 15 min</p>
                         </div>
                         {isCompleted ? <CheckCircle className="h-4 w-4 text-primary shrink-0" />
@@ -162,7 +152,7 @@ const Niveau1 = () => {
 
                 if (isProgressLocked) {
                   return (
-                    <Tooltip key={lesson.num}>
+                    <Tooltip key={lesson.id}>
                       <TooltipTrigger asChild>{card}</TooltipTrigger>
                       <TooltipContent><p>Termine la leçon précédente pour débloquer</p></TooltipContent>
                     </Tooltip>

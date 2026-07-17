@@ -1,15 +1,14 @@
-import { useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
-import { BookOpen, PenTool, FileText, GraduationCap, ArrowRight, Lock, CheckCircle, Loader2 } from "lucide-react";
+import { BookOpen, PenTool, FileText, GraduationCap, ArrowRight, Lock, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useLessonProgress } from "@/hooks/use-lesson-progress";
-import { useProfile } from "@/hooks/use-profile";
 import { useIsAdmin } from "@/hooks/use-admin";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSubscription } from "@/hooks/use-subscription";
 import LessonProgressBar from "@/components/LessonProgressBar";
 
 const lessons = [
@@ -38,27 +37,12 @@ const grammarTopics = [
 ];
 
 const Niveau2 = () => {
-  const navigate = useNavigate();
-  const { loading: authLoading } = useAuth();
-  const { profile, loading: profileLoading } = useProfile();
-  const { isAdmin, loading: adminLoading } = useIsAdmin();
+  const { user } = useAuth();
+  const { isAdmin } = useIsAdmin();
+  const { hasLessonAccess } = useSubscription();
   const { completedN2Lessons } = useLessonProgress();
 
-  // Guard : les élèves niveau_1 sont renvoyés vers leur niveau
-  useEffect(() => {
-    if (authLoading || profileLoading || adminLoading) return;
-    if (!isAdmin && profile && profile.level === "niveau_1") {
-      navigate("/niveau-1", { replace: true });
-    }
-  }, [profile, profileLoading, authLoading, adminLoading, isAdmin, navigate]);
-
-  if (authLoading || profileLoading || adminLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-7 w-7 animate-spin text-primary" />
-      </div>
-    );
-  }
+  const shouldLock = !isAdmin && (!user || !hasLessonAccess);
 
   return (
     <div className="min-h-screen bg-background">
@@ -103,13 +87,35 @@ const Niveau2 = () => {
             <TooltipProvider>
               <div className="max-w-2xl mx-auto space-y-3">
                 {lessons.map((lesson, i) => {
+                  const isPaywalled = shouldLock;
                   const isCompleted = completedN2Lessons.includes(lesson.num);
                   const isPrevCompleted = i === 0 || completedN2Lessons.includes(lessons[i - 1].num);
-                  const isProgressLocked = !isAdmin && !isPrevCompleted;
-                  const linkTarget = isProgressLocked ? "#" : `/exercices?lesson=${lesson.num}&level=niveau_2`;
+                  const isProgressLocked = !isAdmin && !isPaywalled && !isPrevCompleted;
+                  const isLocked = isPaywalled || isProgressLocked;
+                  const linkTarget = isPaywalled
+                    ? (user ? "/tarifs" : "/auth")
+                    : isProgressLocked ? "#"
+                    : `/exercices?lesson=${lesson.num}&level=niveau_2`;
 
                   const card = (
                     <div key={lesson.num}>
+                      {i === 0 && shouldLock && (
+                        <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+                          className="mb-3 p-5 rounded-xl bg-gold/10 border border-gold/30 text-center">
+                          <p className="text-lg font-bold text-foreground mb-1">🔓 Accéder au Niveau 2</p>
+                          {user ? (
+                            <>
+                              <p className="text-sm text-muted-foreground mb-3">Passez au plan Essentiel pour accéder à toutes les leçons du Niveau 2</p>
+                              <Button asChild className="gradient-gold border-0 text-primary-foreground"><Link to="/tarifs">Passer à l'Essentiel →</Link></Button>
+                            </>
+                          ) : (
+                            <>
+                              <p className="text-sm text-muted-foreground mb-3">Inscrivez-vous pour accéder au programme complet</p>
+                              <Button asChild className="gradient-gold border-0 text-primary-foreground"><Link to="/auth">S'inscrire gratuitement →</Link></Button>
+                            </>
+                          )}
+                        </motion.div>
+                      )}
                       <Link to={linkTarget} onClick={(e) => isProgressLocked && e.preventDefault()}>
                         <motion.div
                           initial={{ opacity: 0, x: -20 }}
@@ -119,7 +125,7 @@ const Niveau2 = () => {
                           className={`flex items-center gap-4 p-4 rounded-xl border transition-colors ${
                             isCompleted
                               ? "border-gold/30 bg-gold/5"
-                              : isProgressLocked
+                              : isLocked
                               ? "border-border/50 bg-muted/30 opacity-50 cursor-not-allowed"
                               : "border-border bg-card hover:border-gold/30"
                           }`}
@@ -127,7 +133,7 @@ const Niveau2 = () => {
                           <div className="h-10 w-10 rounded-lg gradient-gold flex items-center justify-center shrink-0">
                             {isCompleted
                               ? <CheckCircle className="h-5 w-5 text-primary-foreground" />
-                              : isProgressLocked
+                              : isLocked
                               ? <Lock className="h-4 w-4 text-primary-foreground/60" />
                               : <lesson.icon className="h-5 w-5 text-primary-foreground" />}
                           </div>
@@ -137,7 +143,7 @@ const Niveau2 = () => {
                           </div>
                           {isCompleted
                             ? <CheckCircle className="h-4 w-4 text-gold shrink-0" />
-                            : isProgressLocked
+                            : isLocked
                             ? <Lock className="h-4 w-4 text-muted-foreground shrink-0" />
                             : <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />}
                         </motion.div>
@@ -159,11 +165,13 @@ const Niveau2 = () => {
             </TooltipProvider>
           </section>
 
-          <div className="text-center mt-12">
-            <Button asChild size="lg" className="gradient-emerald border-0 text-primary-foreground">
-              <Link to="/dashboard">Accéder à mon espace élève</Link>
-            </Button>
-          </div>
+          {user && (
+            <div className="text-center mt-12">
+              <Button asChild size="lg" className="gradient-emerald border-0 text-primary-foreground">
+                <Link to="/dashboard">Accéder à mon espace élève</Link>
+              </Button>
+            </div>
+          )}
         </div>
       </main>
       <Footer />
