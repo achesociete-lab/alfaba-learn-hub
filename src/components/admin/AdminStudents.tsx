@@ -192,13 +192,14 @@ const AdminStudents = () => {
   });
 
   const handleExportCSV = () => {
-    const headers = ["Nom", "Prénom", "Email", "Niveau", "Type", "Date d'inscription"];
+    const headers = ["Nom", "Prénom", "Email", "Niveau", "Type", "Plan", "Date d'inscription"];
     const rows = filtered.map((s) => [
       s.last_name,
       s.first_name,
       studentEmails[s.user_id] || "N/A",
       s.level === "niveau_1" ? "Niveau 1" : "Niveau 2",
       s.type_eleve === "en_ligne" ? "En ligne" : s.type_eleve === "presentiel" ? "Présentiel" : "En attente",
+      studentPlans[s.user_id] ? PLAN_LABELS[studentPlans[s.user_id]] : "Découverte",
       new Date(s.created_at).toLocaleDateString("fr-FR"),
     ]);
 
@@ -288,6 +289,11 @@ const AdminStudents = () => {
               <p className="text-xs text-muted-foreground">
                 Inscrit le {new Date(s.created_at).toLocaleDateString("fr-FR")}
               </p>
+              {studentPlans[s.user_id] && (
+                <p className="text-xs font-medium text-primary mt-1">
+                  Plan: {PLAN_LABELS[studentPlans[s.user_id]]}
+                </p>
+              )}
             </div>
             <button
               disabled={togglingLevel === s.user_id}
