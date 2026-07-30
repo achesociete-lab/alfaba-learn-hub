@@ -25,12 +25,14 @@ export default function AdminRevenueTab() {
   useEffect(() => {
     const load = async () => {
       const [{ data: subs }, { count: users }, { data: allSubs }] = await Promise.all([
-        supabase.from("subscriptions").select("plan, status").eq("status", "active"),
+        supabase.from("subscriptions").select("user_id, plan, status").eq("status", "active"),
         supabase.from("profiles").select("*", { count: "exact", head: true }),
-        supabase.from("subscriptions").select("plan, status"),
+        supabase.from("subscriptions").select("user_id, plan, status"),
       ]);
 
+      // Count unique users with active subscriptions (not total subscriptions)
       const active = subs || [];
+      const uniqueActiveUsers = new Set(active.map(s => s.user_id));
       const mrrTotal = active.reduce((sum, s) => sum + (PLAN_PRICES[s.plan] || 0), 0);
 
       // Count all subscriptions by plan (including inactive)
@@ -57,7 +59,7 @@ export default function AdminRevenueTab() {
       }));
       setPlanBreakdown(fullBreakdown);
       setMrr(mrrTotal);
-      setActiveCount(active.length);
+      setActiveCount(uniqueActiveUsers.size); // Count unique users, not total subscriptions
       setTotalUsers(users || 0);
       setLoading(false);
     };
