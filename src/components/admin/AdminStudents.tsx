@@ -75,7 +75,7 @@ const AdminStudents = () => {
   };
 
   const fetchStudents = async () => {
-    const [{ data: profileData }, { data: subData }, { data: authData }] = await Promise.all([
+    const [{ data: profileData }, { data: subData }, emailRes] = await Promise.all([
       supabase
         .from("profiles")
         .select("user_id, first_name, last_name, level, type_eleve, created_at")
@@ -85,7 +85,7 @@ const AdminStudents = () => {
         .select("user_id, plan")
         .eq("status", "active")
         .order("created_at", { ascending: false }),
-      supabase.auth.admin.listUsers(),
+      supabase.functions.invoke("get-student-emails"),
     ]);
     if (profileData) {
       const sorted = [...profileData].sort((a, b) => {
@@ -105,14 +105,8 @@ const AdminStudents = () => {
       }
       setStudentPlans(planMap);
     }
-    if (authData?.users) {
-      const emailMap: Record<string, string> = {};
-      for (const user of authData.users) {
-        if (user.email) {
-          emailMap[user.id] = user.email;
-        }
-      }
-      setStudentEmails(emailMap);
+    if (emailRes.data?.emails) {
+      setStudentEmails(emailRes.data.emails);
     }
   };
 
