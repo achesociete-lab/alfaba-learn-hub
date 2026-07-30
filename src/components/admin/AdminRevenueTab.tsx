@@ -9,7 +9,10 @@ import { DollarSign, Users, TrendingUp, Activity, Crown, Zap, BookOpen } from "l
 
 const PLAN_PRICES: Record<string, number> = {
   essentiel: 7,
-  premium: 15,
+  premium: 12,
+  famille: 19,
+  hifz: 0, // À définir si payant
+  découverte: 0, // Gratuit
 };
 
 export default function AdminRevenueTab() {
@@ -21,24 +24,38 @@ export default function AdminRevenueTab() {
 
   useEffect(() => {
     const load = async () => {
-      const [{ data: subs }, { count: users }] = await Promise.all([
+      const [{ data: subs }, { count: users }, { data: allSubs }] = await Promise.all([
         supabase.from("subscriptions").select("plan, status").eq("status", "active"),
         supabase.from("profiles").select("*", { count: "exact", head: true }),
+        supabase.from("subscriptions").select("plan, status"),
       ]);
 
       const active = subs || [];
       const mrrTotal = active.reduce((sum, s) => sum + (PLAN_PRICES[s.plan] || 0), 0);
 
+      // Count all subscriptions by plan (including inactive)
+      const allBreakdown: Record<string, { active: number; total: number }> = {};
+      (allSubs || []).forEach((s) => {
+        if (!allBreakdown[s.plan]) {
+          allBreakdown[s.plan] = { active: 0, total: 0 };
+        }
+        allBreakdown[s.plan].total++;
+        if (s.status === 'active') {
+          allBreakdown[s.plan].active++;
+        }
+      });
+
       const breakdown: Record<string, number> = {};
       active.forEach((s) => { breakdown[s.plan] = (breakdown[s.plan] || 0) + 1; });
 
-      setPlanBreakdown(
-        Object.entries(breakdown).map(([plan, count]) => ({
-          name: plan.charAt(0).toUpperCase() + plan.slice(1),
-          count,
-          revenue: count * (PLAN_PRICES[plan] || 0),
-        }))
-      );
+      // Include all plans in breakdown, even if no active subscriptions
+      const allPlans = ['essentiel', 'premium', 'famille', 'hifz'];
+      const fullBreakdown = allPlans.map(plan => ({
+        name: plan === 'hifz' ? 'Hifd' : plan.charAt(0).toUpperCase() + plan.slice(1),
+        count: breakdown[plan] || 0,
+        revenue: (breakdown[plan] || 0) * (PLAN_PRICES[plan] || 0),
+      }));
+      setPlanBreakdown(fullBreakdown);
       setMrr(mrrTotal);
       setActiveCount(active.length);
       setTotalUsers(users || 0);
@@ -97,6 +114,19 @@ export default function AdminRevenueTab() {
           </ResponsiveContainer>
         </div>
       )}
+
+      <div className="p-6 rounded-xl border border-border bg-card">
+        <h3 className="font-semibold mb-2">Détails des plans</h3>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {planBreakdown.map((plan) => (
+            <div key={plan.name} className="p-4 rounded-lg bg-background border border-border">
+              <p className="text-sm font-medium text-muted-foreground">{plan.name}</p>
+              <p className="text-2xl font-bold mt-1">{plan.count}</p>
+              <p className="text-xs text-muted-foreground mt-1">€{plan.revenue}/mois</p>
+            </div>
+          ))}
+        </div>
+      </div>
 
       <div className="p-6 rounded-xl border border-border bg-card">
         <h3 className="font-semibold mb-2">Prochaines actions recommandées</h3>

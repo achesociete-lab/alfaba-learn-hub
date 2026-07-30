@@ -27,8 +27,14 @@ import { template as hifzRescheduleProposal } from './hifz-reschedule-proposal.t
 import { template as presentielCorrection } from './presentiel-correction.tsx'
 import { template as hifzApplicationAdmin } from './hifz-application-admin.tsx'
 import { template as familyInvite } from './family-invite.tsx'
+import { template as adminNewStudentSignup } from './admin-new-student-signup.tsx'
+import { template as followupLevel1Online } from './followup-level1-online.tsx'
+import { template as followupLevel2Online } from './followup-level2-online.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
+  'followup-level1-online': followupLevel1Online,
+  'followup-level2-online': followupLevel2Online,
+  'admin-new-student-signup': adminNewStudentSignup,
   'admin-pending-signup': adminPendingSignup,
   'tutor-weekly-report': tutorWeeklyReport,
   'presentiel-access-granted': presentielAccessGranted,

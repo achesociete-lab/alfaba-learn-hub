@@ -128,6 +128,20 @@ const Auth = () => {
         return;
       }
 
+      // Send notification email to admin
+      if (data.user) {
+        supabase.functions
+          .invoke("notify-new-student-signup", {
+            body: {
+              studentName: `${firstName} ${lastName}`,
+              studentEmail: email,
+              studentLevel: finalLevel === "niveau_1" ? "Niveau 1" : "Niveau 2",
+              userId: data.user.id,
+            },
+          })
+          .catch((err) => console.warn("notify-new-student-signup failed", err));
+      }
+
       setShowVerification(true);
     } catch (err: any) {
       toast.error(err.message || "Une erreur est survenue");

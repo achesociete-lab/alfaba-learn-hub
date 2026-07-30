@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
-import { Users, Search, Trash2, Check, Clock, BookOpen } from "lucide-react";
+import { Users, Search, Trash2, Check, Clock, BookOpen, Mail, Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ interface StudentProfile {
   level: "niveau_1" | "niveau_2";
   type_eleve: "en_ligne" | "presentiel" | "en_attente";
   created_at: string;
+  email?: string;
 }
 
 type ManualPlan = "essentiel" | "premium" | "famille" | "hifz";
@@ -53,6 +54,7 @@ const AdminStudents = () => {
   const [studentPlans, setStudentPlans] = useState<Record<string, ManualPlan>>({});
 
   const [validating, setValidating] = useState<string | null>(null);
+  const [studentEmails, setStudentEmails] = useState<Record<string, string>>({});
 
   const handleToggleLevel = async (s: StudentProfile) => {
     setTogglingLevel(s.user_id);
@@ -73,7 +75,7 @@ const AdminStudents = () => {
   };
 
   const fetchStudents = async () => {
-    const [{ data: profileData }, { data: subData }] = await Promise.all([
+    const [{ data: profileData }, { data: subData }, { data: authData }] = await Promise.all([
       supabase
         .from("profiles")
         .select("user_id, first_name, last_name, level, type_eleve, created_at")
@@ -83,6 +85,7 @@ const AdminStudents = () => {
         .select("user_id, plan")
         .eq("status", "active")
         .order("created_at", { ascending: false }),
+      supabase.auth.admin.listUsers(),
     ]);
     if (profileData) {
       const sorted = [...profileData].sort((a, b) => {
@@ -101,6 +104,15 @@ const AdminStudents = () => {
         }
       }
       setStudentPlans(planMap);
+    }
+    if (authData?.users) {
+      const emailMap: Record<string, string> = {};
+      for (const user of authData.users) {
+        if (user.email) {
+          emailMap[user.id] = user.email;
+        }
+      }
+      setStudentEmails(emailMap);
     }
   };
 
@@ -179,10 +191,39 @@ const AdminStudents = () => {
 
   const filtered = students.filter((s) => {
     const matchSearch =
-      `${s.first_name} ${s.last_name}`.toLowerCase().includes(search.toLowerCase());
+      `${s.first_name} ${s.last_name}`.toLowerCase().includes(search.toLowerCase()) ||
+      studentEmails[s.user_id]?.toLowerCase().includes(search.toLowerCase());
     const matchLevel = filterLevel === "all" || s.level === filterLevel;
     return matchSearch && matchLevel;
   });
+
+  const handleExportCSV = () => {
+    const headers = ["Nom", "Prénom", "Email", "Niveau", "Type", "Date d'inscription"];
+    const rows = filtered.map((s) => [
+      s.last_name,
+      s.first_name,
+      studentEmails[s.user_id] || "N/A",
+      s.level === "niveau_1" ? "Niveau 1" : "Niveau 2",
+      s.type_eleve === "en_ligne" ? "En ligne" : s.type_eleve === "presentiel" ? "Présentiel" : "En attente",
+      new Date(s.created_at).toLocaleDateString("fr-FR"),
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `eleves_${new Date().toISOString().split("T")[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Export CSV téléchargé");
+  };
 
   return (
     <div>
@@ -195,7 +236,7 @@ const AdminStudents = () => {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Rechercher un élève..."
+            placeholder="Rechercher un élève ou un email..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
@@ -216,6 +257,15 @@ const AdminStudents = () => {
             </button>
           ))}
         </div>
+        <Button
+          onClick={handleExportCSV}
+          variant="outline"
+          size="sm"
+          className="gap-2"
+        >
+          <Download className="h-4 w-4" />
+          Export CSV
+        </Button>
       </div>
 
       <div className="space-y-2">
@@ -232,6 +282,15 @@ const AdminStudents = () => {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-foreground">{s.first_name} {s.last_name}</p>
+              <p className="text-xs text-muted-foreground">
+                {studentEmails[s.user_id] ? (
+                  <a href={`mailto:${studentEmails[s.user_id]}`} className="hover:underline">
+                    {studentEmails[s.user_id]}
+                  </a>
+                ) : (
+                  "Email non disponible"
+                )}
+              </p>
               <p className="text-xs text-muted-foreground">
                 Inscrit le {new Date(s.created_at).toLocaleDateString("fr-FR")}
               </p>
@@ -306,6 +365,18 @@ const AdminStudents = () => {
                   </button>
                 ))}
               </div>
+            )}
+
+            {studentEmails[s.user_id] && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="shrink-0 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                title="Envoyer un email"
+                onClick={() => window.location.href = `mailto:${studentEmails[s.user_id]}`}
+              >
+                <Mail className="h-4 w-4" />
+              </Button>
             )}
 
             <AlertDialog>
