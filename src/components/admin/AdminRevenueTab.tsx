@@ -24,14 +24,19 @@ export default function AdminRevenueTab() {
 
   useEffect(() => {
     const load = async () => {
-      const [{ data: subs }, { count: users }, { data: allSubs }] = await Promise.all([
+      const [{ data: subs }, { count: users }, { data: allSubs }, { data: testUsers }] = await Promise.all([
         supabase.from("subscriptions").select("user_id, plan, status").eq("status", "active"),
-        supabase.from("profiles").select("*", { count: "exact", head: true }),
+        supabase.from("profiles").select("*", { count: "exact", head: true }).eq("is_test", false),
         supabase.from("subscriptions").select("user_id, plan, status"),
+        supabase.from("profiles").select("user_id").eq("is_test", true),
       ]);
 
+      // Get test user IDs to exclude from stats
+      const testUserIds = new Set((testUsers || []).map(u => u.user_id));
+
       // Count unique users with active subscriptions (not total subscriptions)
-      const active = subs || [];
+      // Exclude test accounts
+      const active = (subs || []).filter(s => !testUserIds.has(s.user_id));
       const uniqueActiveUsers = new Set(active.map(s => s.user_id));
       const mrrTotal = active.reduce((sum, s) => sum + (PLAN_PRICES[s.plan] || 0), 0);
 
@@ -60,7 +65,7 @@ export default function AdminRevenueTab() {
       setPlanBreakdown(fullBreakdown);
       setMrr(mrrTotal);
       setActiveCount(uniqueActiveUsers.size); // Count unique users, not total subscriptions
-      setTotalUsers(users || 0);
+      setTotalUsers((users || 0) - (testUsers?.length || 0)); // Exclude test users from total
       setLoading(false);
     };
     load();

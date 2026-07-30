@@ -26,6 +26,7 @@ interface StudentProfile {
   type_eleve: "en_ligne" | "presentiel" | "en_attente";
   created_at: string;
   email?: string;
+  is_test?: boolean;
 }
 
 type ManualPlan = "essentiel" | "premium" | "famille" | "hifz";
@@ -55,6 +56,7 @@ const AdminStudents = () => {
 
   const [validating, setValidating] = useState<string | null>(null);
   const [studentEmails, setStudentEmails] = useState<Record<string, string>>({});
+  const [togglingTest, setTogglingTest] = useState<string | null>(null);
 
   const handleToggleLevel = async (s: StudentProfile) => {
     setTogglingLevel(s.user_id);
@@ -74,11 +76,29 @@ const AdminStudents = () => {
     setTogglingLevel(null);
   };
 
+  const handleToggleTest = async (s: StudentProfile) => {
+    setTogglingTest(s.user_id);
+    const newTestStatus = !s.is_test;
+    const { error } = await supabase
+      .from("profiles")
+      .update({ is_test: newTestStatus } as any)
+      .eq("user_id", s.user_id);
+    if (error) {
+      toast.error("Erreur lors de la mise à jour");
+    } else {
+      setStudents((prev) =>
+        prev.map((st) => (st.user_id === s.user_id ? { ...st, is_test: newTestStatus } : st))
+      );
+      toast.success(`${s.first_name} marqué comme ${newTestStatus ? "compte test" : "compte réel"}`);
+    }
+    setTogglingTest(null);
+  };
+
   const fetchStudents = async () => {
     const [{ data: profileData }, { data: subData }, emailRes] = await Promise.all([
       supabase
         .from("profiles")
-        .select("user_id, first_name, last_name, level, type_eleve, created_at")
+        .select("user_id, first_name, last_name, level, type_eleve, created_at, is_test")
         .order("created_at", { ascending: false }),
       supabase
         .from("subscriptions")
@@ -294,6 +314,11 @@ const AdminStudents = () => {
                   Plan: {PLAN_LABELS[studentPlans[s.user_id]]}
                 </p>
               )}
+              {s.is_test && (
+                <p className="text-xs font-medium text-orange-500 mt-1">
+                  ⚠️ Compte test
+                </p>
+              )}
             </div>
             <button
               disabled={togglingLevel === s.user_id}
@@ -307,6 +332,20 @@ const AdminStudents = () => {
             >
               {togglingLevel === s.user_id ? "…" : s.level === "niveau_1" ? "Niveau 1" : "Niveau 2"}
             </button>
+            {/* Test account toggle */}
+            <button
+              disabled={togglingTest === s.user_id}
+              onClick={() => handleToggleTest(s)}
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${
+                s.is_test
+                  ? "border-orange-300 bg-orange-50 text-orange-700"
+                  : "border-border text-muted-foreground hover:border-orange-300"
+              }`}
+              title={s.is_test ? "Cliquer pour marquer comme réel" : "Cliquer pour marquer comme test"}
+            >
+              {togglingTest === s.user_id ? "…" : s.is_test ? "🧪 Test" : "👤 Réel"}
+            </button>
+
             {s.type_eleve === "en_attente" ? (
               <>
                 <Badge variant="destructive" className="gap-1">
