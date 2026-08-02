@@ -98,7 +98,7 @@ const AdminStudents = () => {
     const [{ data: profileData }, { data: subData }, emailRes] = await Promise.all([
       supabase
         .from("profiles")
-        .select("user_id, first_name, last_name, level, type_eleve, created_at, is_test")
+        .select("user_id, first_name, last_name, level, type_eleve, created_at")
         .order("created_at", { ascending: false }),
       supabase
         .from("subscriptions")
@@ -108,7 +108,7 @@ const AdminStudents = () => {
       supabase.functions.invoke("get-student-emails"),
     ]);
     if (profileData) {
-      const sorted = [...profileData].sort((a, b) => {
+      const sorted = [...profileData].map(p => ({ ...p, is_test: false })).sort((a, b) => {
         const aPending = a.type_eleve === "en_attente" ? 0 : 1;
         const bPending = b.type_eleve === "en_attente" ? 0 : 1;
         return aPending - bPending;
