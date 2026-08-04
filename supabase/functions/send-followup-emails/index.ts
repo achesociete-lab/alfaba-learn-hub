@@ -83,6 +83,9 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Admin copy email
+    const ADMIN_COPY_EMAIL = 'abdelkarim7@gmail.com'
+
     // Send emails
     let successCount = 0
     let failureCount = 0
@@ -92,6 +95,9 @@ Deno.serve(async (req) => {
         ? 'followup-level1-online'
         : 'followup-level2-online'
 
+      const today = new Date().toISOString().split('T')[0]
+
+      // Send to the student
       const emailRes = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
         method: 'POST',
         headers: {
@@ -102,7 +108,7 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           templateName,
           recipientEmail: emailData.email,
-          idempotencyKey: `followup-manual-${emailData.student_id}-${new Date().toISOString().split('T')[0]}`,
+          idempotencyKey: `followup-manual-${emailData.student_id}-${today}`,
           templateData: {
             studentName: emailData.first_name,
             studentEmail: emailData.email,
@@ -113,6 +119,25 @@ Deno.serve(async (req) => {
       if (emailRes.ok) {
         successCount++
         console.log(`Email sent to ${emailData.email}`)
+
+        // Send a copy to admin
+        await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${serviceKey}`,
+            apikey: serviceKey,
+          },
+          body: JSON.stringify({
+            templateName,
+            recipientEmail: ADMIN_COPY_EMAIL,
+            idempotencyKey: `followup-admin-copy-${emailData.student_id}-${today}`,
+            templateData: {
+              studentName: emailData.first_name,
+              studentEmail: emailData.email,
+            },
+          }),
+        }).catch(err => console.warn('Admin copy failed:', err))
       } else {
         failureCount++
         const errorBody = await emailRes.text()
