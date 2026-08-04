@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
     }
 
     // Admin copy email
-    const ADMIN_COPY_EMAIL = 'abdelkarim7@gmail.com'
+    const ADMIN_COPY_EMAIL = 'ache.societe@gmail.com'
 
     // Send emails
     let successCount = 0
