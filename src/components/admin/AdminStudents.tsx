@@ -57,6 +57,7 @@ const AdminStudents = () => {
   const [validating, setValidating] = useState<string | null>(null);
   const [studentEmails, setStudentEmails] = useState<Record<string, string>>({});
   const [togglingTest, setTogglingTest] = useState<string | null>(null);
+  const [sendingRelance, setSendingRelance] = useState(false);
 
   const handleToggleLevel = async (s: StudentProfile) => {
     setTogglingLevel(s.user_id);
@@ -211,6 +212,45 @@ const AdminStudents = () => {
     return matchSearch && matchLevel;
   });
 
+  const handleSendRelance = async () => {
+    setSendingRelance(true);
+    // Get students without a paid plan
+    const unpaidStudents = students.filter(
+      (s) => !studentPlans[s.user_id] && s.type_eleve !== "en_attente"
+    );
+    let successCount = 0;
+    let errorCount = 0;
+    for (const s of unpaidStudents) {
+      const email = studentEmails[s.user_id];
+      if (!email) continue;
+      try {
+        const res = await supabase.functions.invoke("send-followup-emails", {
+          body: {
+            userId: s.user_id,
+            email,
+            firstName: s.first_name,
+            level: s.level,
+          },
+        });
+        if (res.error) throw res.error;
+        successCount++;
+      } catch (err) {
+        console.error(`Erreur pour ${s.first_name}:`, err);
+        errorCount++;
+      }
+    }
+    setSendingRelance(false);
+    if (successCount > 0) {
+      toast.success(`${successCount} email(s) de relance envoyé(s) avec succès !`);
+    }
+    if (errorCount > 0) {
+      toast.error(`${errorCount} email(s) n'ont pas pu être envoyés.`);
+    }
+    if (successCount === 0 && errorCount === 0) {
+      toast.info("Aucun élève à relancer (tous ont déjà un plan ou pas d'email).");
+    }
+  };
+
   const handleExportCSV = () => {
     const headers = ["Nom", "Prénom", "Email", "Niveau", "Type", "Plan", "Date d'inscription"];
     const rows = filtered.map((s) => [
@@ -281,6 +321,31 @@ const AdminStudents = () => {
           <Download className="h-4 w-4" />
           Export CSV
         </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="default"
+              size="sm"
+              className="gap-2 gradient-emerald border-0 text-primary-foreground"
+              disabled={sendingRelance}
+            >
+              <Mail className="h-4 w-4" />
+              {sendingRelance ? "Envoi en cours..." : "Envoyer la relance"}
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Envoyer les emails de relance</AlertDialogTitle>
+              <AlertDialogDescription>
+                Cela va envoyer un email personnalisé (selon leur niveau) à tous les élèves qui n'ont pas encore de plan payant. Êtes-vous sûr(e) ?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Annuler</AlertDialogCancel>
+              <AlertDialogAction onClick={handleSendRelance}>Oui, envoyer</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       <div className="space-y-2">
