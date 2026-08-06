@@ -838,6 +838,7 @@ export type Database = {
           first_name: string
           gender: string | null
           id: string
+          is_test: boolean | null
           last_name: string
           level: Database["public"]["Enums"]["class_level"]
           type_eleve: Database["public"]["Enums"]["student_type"]
@@ -851,6 +852,7 @@ export type Database = {
           first_name?: string
           gender?: string | null
           id?: string
+          is_test?: boolean | null
           last_name?: string
           level?: Database["public"]["Enums"]["class_level"]
           type_eleve?: Database["public"]["Enums"]["student_type"]
@@ -864,6 +866,7 @@ export type Database = {
           first_name?: string
           gender?: string | null
           id?: string
+          is_test?: boolean | null
           last_name?: string
           level?: Database["public"]["Enums"]["class_level"]
           type_eleve?: Database["public"]["Enums"]["student_type"]
