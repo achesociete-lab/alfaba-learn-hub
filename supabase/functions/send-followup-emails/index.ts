@@ -136,7 +136,7 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           templateName: 'admin-relance-summary',
           recipientEmail: ADMIN_COPY_EMAIL,
-          idempotencyKey: `followup-admin-summary-${today}`,
+          idempotencyKey: `followup-admin-summary-${today}-${Date.now()}`,
           templateData: {
             students: relancedStudents,
             successCount,
