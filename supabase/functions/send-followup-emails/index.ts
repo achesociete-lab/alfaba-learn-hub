@@ -83,21 +83,18 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Admin copy email
     const ADMIN_COPY_EMAIL = 'ache.societe@gmail.com'
+    const today = new Date().toISOString().split('T')[0]
 
-    // Send emails
     let successCount = 0
     let failureCount = 0
+    const relancedStudents: { name: string; email: string; level: string }[] = []
 
     for (const emailData of emailsToSend) {
       const templateName = emailData.level === 'niveau_1'
         ? 'followup-level1-online'
         : 'followup-level2-online'
 
-      const today = new Date().toISOString().split('T')[0]
-
-      // Send to the student
       const emailRes = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
         method: 'POST',
         headers: {
@@ -118,31 +115,35 @@ Deno.serve(async (req) => {
 
       if (emailRes.ok) {
         successCount++
+        relancedStudents.push({ name: emailData.first_name, email: emailData.email, level: emailData.level })
         console.log(`Email sent to ${emailData.email}`)
-
-        // Send a copy to admin
-        await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${serviceKey}`,
-            apikey: serviceKey,
-          },
-          body: JSON.stringify({
-            templateName,
-            recipientEmail: ADMIN_COPY_EMAIL,
-            idempotencyKey: `followup-admin-copy-${emailData.student_id}-${today}`,
-            templateData: {
-              studentName: emailData.first_name,
-              studentEmail: emailData.email,
-            },
-          }),
-        }).catch(err => console.warn('Admin copy failed:', err))
       } else {
         failureCount++
         const errorBody = await emailRes.text()
         console.error(`Failed to send email to ${emailData.email}:`, errorBody)
       }
+    }
+
+    // Send one summary email to admin if at least one student was relanced
+    if (relancedStudents.length > 0) {
+      await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${serviceKey}`,
+          apikey: serviceKey,
+        },
+        body: JSON.stringify({
+          templateName: 'admin-relance-summary',
+          recipientEmail: ADMIN_COPY_EMAIL,
+          idempotencyKey: `followup-admin-summary-${today}`,
+          templateData: {
+            students: relancedStudents,
+            successCount,
+            date: today,
+          },
+        }),
+      }).catch(err => console.warn('Admin summary email failed:', err))
     }
 
     return new Response(

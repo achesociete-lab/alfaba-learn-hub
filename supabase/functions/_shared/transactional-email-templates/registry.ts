@@ -30,10 +30,12 @@ import { template as familyInvite } from './family-invite.tsx'
 import { template as adminNewStudentSignup } from './admin-new-student-signup.tsx'
 import { template as followupLevel1Online } from './followup-level1-online.tsx'
 import { template as followupLevel2Online } from './followup-level2-online.tsx'
+import { template as adminRelanceSummary } from './admin-relance-summary.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'followup-level1-online': followupLevel1Online,
   'followup-level2-online': followupLevel2Online,
+  'admin-relance-summary': adminRelanceSummary,
   'admin-new-student-signup': adminNewStudentSignup,
   'admin-pending-signup': adminPendingSignup,
   'tutor-weekly-report': tutorWeeklyReport,
