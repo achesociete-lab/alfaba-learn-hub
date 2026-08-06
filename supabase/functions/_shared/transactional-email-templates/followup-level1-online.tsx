@@ -1,6 +1,6 @@
 import * as React from 'npm:react@18.3.1'
 import {
-  Body, Container, Head, Heading, Html, Preview, Text, Section, Button, Divider,
+  Body, Container, Head, Heading, Html, Preview, Text, Section, Button, Hr,
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
 
@@ -35,7 +35,7 @@ const FollowupLevel1OnlineEmail = ({ studentName, studentEmail }: FollowupLevel1
           </Text>
         </Section>
 
-        <Divider style={divider} />
+        <Hr style={divider} />
 
         <Section style={benefitsBox}>
           <Heading style={h2}>🎯 Débloquez votre potentiel avec le plan Essentiel</Heading>
