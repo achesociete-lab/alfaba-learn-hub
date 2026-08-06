@@ -216,7 +216,7 @@ const AdminStudents = () => {
     setSendingRelance(true);
     // Get students without a paid plan
     const unpaidStudents = students.filter(
-      (s) => !studentPlans[s.user_id] && s.type_eleve === "en_ligne" && !s.is_test
+      (s) => !studentPlans[s.user_id] && s.type_eleve === "en_ligne"
     );
     let successCount = 0;
     let errorCount = 0;
