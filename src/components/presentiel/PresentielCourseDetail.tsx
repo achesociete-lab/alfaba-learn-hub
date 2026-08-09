@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Mic, Square, Volume2, Camera, CheckCircle2, XCircle,
+  Volume2, Camera, CheckCircle2, XCircle,
   ArrowRight, Loader2, RotateCcw, Award, BookOpen, PenLine, Languages, Headphones,
   HelpCircle, ListOrdered, ChevronDown, ChevronUp,
 } from "lucide-react";
@@ -13,7 +13,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useArabicSpeech } from "@/hooks/use-arabic-speech";
-import { compareVerseWords, type WordMatch } from "@/utils/quran-api";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -49,10 +48,9 @@ interface Props {
   onProgressUpdate?: (p: any) => void;
 }
 
-type Step = "lecture" | "ecriture" | "traduction" | "comprehension" | "reorder" | "dictee" | "done";
+type Step = "ecriture" | "traduction" | "comprehension" | "reorder" | "dictee" | "done";
 
 const STEP_LABEL: Record<Exclude<Step, "done">, { label: string; icon: typeof BookOpen }> = {
-  lecture: { label: "Lecture", icon: BookOpen },
   ecriture: { label: "Écriture", icon: PenLine },
   traduction: { label: "Traduction", icon: Languages },
   comprehension: { label: "Compréhension", icon: HelpCircle },
@@ -60,265 +58,16 @@ const STEP_LABEL: Record<Exclude<Step, "done">, { label: string; icon: typeof Bo
   dictee: { label: "Dictée", icon: Headphones },
 };
 
-// ─── Step 1: Lecture (enregistrement soumis au professeur humain) ───
-function LectureStep({ course, onDone }: { course: PresentielCourseV2; onDone: () => void }) {
-  const { user } = useAuth();
-  const [recording, setRecording] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [submission, setSubmission] = useState<any>(null);
-  const mediaRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-
-  const hasTeacherAudio = !!(course.audio_url);
-
-  const refresh = async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from("presentiel_submissions")
-      .select("*")
-      .eq("course_id", course.id)
-      .eq("user_id", user.id)
-      .eq("step_type", "lecture" as any)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (data) {
-      setSubmission(data);
-      if ((data as any).status !== "en_attente" && !(data as any).seen_by_student) {
-        await supabase
-          .from("presentiel_submissions")
-          .update({ seen_by_student: true } as any)
-          .eq("id", (data as any).id);
-      }
-    }
-  };
-
-  useEffect(() => { refresh(); }, [user, course.id]);
-
-  // Auto-refresh tant que la correction n'est pas arrivée
-  useEffect(() => {
-    if (!submission || (submission as any).status !== "en_attente") return;
-    const id = setInterval(refresh, 20_000);
-    return () => clearInterval(id);
-  }, [(submission as any)?.id, (submission as any)?.status]);
-
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mr = new MediaRecorder(stream);
-      chunksRef.current = [];
-      mr.ondataavailable = (e) => chunksRef.current.push(e.data);
-      mr.onstop = async () => {
-        stream.getTracks().forEach((t) => t.stop());
-        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-        await uploadRecording(blob);
-      };
-      mr.start();
-      mediaRef.current = mr;
-      setRecording(true);
-    } catch (e: any) {
-      toast.error("Microphone non accessible");
-    }
-  };
-
-  const stopRecording = () => {
-    mediaRef.current?.stop();
-    setRecording(false);
-  };
-
-  const uploadRecording = async (blob: Blob) => {
-    if (!user) return;
-    setUploading(true);
-    try {
-      const path = `${user.id}/${course.id}/lecture-${Date.now()}.webm`;
-      const { error: upErr } = await supabase.storage
-        .from("presentiel-submissions")
-        .upload(path, blob, { contentType: "audio/webm" });
-      if (upErr) throw upErr;
-      const { data: { publicUrl } } = supabase.storage
-        .from("presentiel-submissions")
-        .getPublicUrl(path);
-
-      const { data, error } = await supabase
-        .from("presentiel_submissions")
-        .insert({
-          course_id: course.id,
-          user_id: user.id,
-          step_type: "lecture" as any,
-          audio_url: publicUrl,
-          photo_url: null as any,
-          photo_urls: [] as any,
-          status: "en_attente",
-        } as any)
-        .select()
-        .single();
-      if (error) throw error;
-      setSubmission(data);
-      toast.success("Lecture envoyée à votre professeur ✅");
-    } catch (e: any) {
-      toast.error(e.message || "Échec de l'envoi");
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const pages = Array.from(
-    new Set([
-      ...(course.photo_url ? [course.photo_url] : []),
-      ...(Array.isArray(course.lesson_photos) ? course.lesson_photos : []),
-    ])
-  );
-
-  return (
-    <Card>
-      <CardContent className="p-6 space-y-5">
-        <div className="flex items-center gap-2 mb-2">
-          <BookOpen className="h-5 w-5 text-primary" />
-          <h3 className="font-semibold text-foreground text-lg">Étape 1 — Lecture</h3>
-        </div>
-
-        {pages.length > 0 && (
-          <div className="space-y-3">
-            {pages.length > 1 && (
-              <p className="text-xs text-muted-foreground">
-                📖 {pages.length} pages — lisez la leçon directement depuis la photo
-              </p>
-            )}
-            {pages.map((url, i) => (
-              <div key={i} className="rounded-xl overflow-hidden border border-border bg-muted/20 relative">
-                {pages.length > 1 && (
-                  <Badge variant="secondary" className="absolute top-2 left-2 z-10">
-                    Page {i + 1}/{pages.length}
-                  </Badge>
-                )}
-                <img src={url} alt={`Page ${i + 1} de la leçon`} className="w-full max-h-[480px] object-contain bg-white" />
-              </div>
-            ))}
-          </div>
-        )}
-
-        {hasTeacherAudio && (
-          <div className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-              <Volume2 className="h-3 w-3" /> Voix de votre professeur — écoutez, puis lisez à voix haute
-            </p>
-            <audio controls src={course.audio_url!} className="w-full rounded-lg" style={{ height: "44px" }} />
-          </div>
-        )}
-
-        <div className="p-4 rounded-lg border border-dashed border-border bg-muted/20 text-sm text-muted-foreground">
-          🎙️ Lisez la leçon à voix haute, puis envoyez votre enregistrement à votre professeur pour validation.
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          {!recording ? (
-            <Button
-              onClick={startRecording}
-              disabled={uploading}
-              className="gap-2 gradient-emerald border-0 text-primary-foreground"
-            >
-              <Mic className="h-4 w-4" />
-              {uploading ? "Envoi…" : submission ? "Réenregistrer" : "Enregistrer ma lecture"}
-            </Button>
-          ) : (
-            <Button onClick={stopRecording} variant="destructive" className="gap-2 animate-pulse">
-              <Square className="h-4 w-4" /> Arrêter
-            </Button>
-          )}
-        </div>
-
-        {uploading && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> Envoi de votre enregistrement…
-          </div>
-        )}
-
-        {submission && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-3"
-          >
-            {submission.audio_url && (
-              <audio controls src={submission.audio_url} className="w-full rounded-lg" style={{ height: "44px" }} />
-            )}
-
-            {submission.status === "en_attente" && (
-              <div className="p-3 rounded-lg border border-border bg-muted/40 space-y-2">
-                <Badge variant="outline">⏳ En attente de validation par votre professeur</Badge>
-                <p className="text-xs text-muted-foreground">
-                  Vous pouvez continuer la leçon en attendant la correction.
-                </p>
-                <Button size="sm" variant="ghost" onClick={refresh} className="gap-1.5 text-xs h-7 px-2">
-                  <RotateCcw className="h-3 w-3" /> Vérifier les corrections
-                </Button>
-              </div>
-            )}
-            {submission.status !== "en_attente" && (
-              <div className={`p-4 rounded-lg border-2 ${
-                submission.status === "validee"
-                  ? "border-emerald-500 bg-emerald-500/10"
-                  : "border-destructive bg-destructive/10"
-              }`}>
-                <p className={`font-bold text-lg ${
-                  submission.status === "validee" ? "text-emerald-700" : "text-destructive"
-                }`}>
-                  {submission.status === "validee" ? "✅ Validée par votre professeur" : "❌ À refaire"}
-                </p>
-                {submission.feedback && (
-                  <div className="mt-3 p-3 rounded bg-background/60 border border-border">
-                    <p className="text-xs font-semibold mb-1">Commentaire du professeur :</p>
-                    <p className="text-foreground italic">« {submission.feedback} »</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Corrections vocales — visibles dès qu'elles existent, quel que soit le statut */}
-            {(() => {
-              const urls: string[] = [
-                ...((submission as any).feedback_audio_urls ?? []),
-              ];
-              if (submission.feedback_audio_url && !urls.includes(submission.feedback_audio_url)) {
-                urls.unshift(submission.feedback_audio_url);
-              }
-              if (!urls.length) return null;
-              return (
-                <div className="p-3 rounded-lg bg-background/60 border border-border space-y-2">
-                  <p className="text-xs font-semibold flex items-center gap-1.5">
-                    <Mic className="h-3 w-3 text-primary" />
-                    Correction{urls.length > 1 ? `s vocales (${urls.length})` : " vocale"} de votre professeur
-                  </p>
-                  {urls.map((url, i) => (
-                    <audio key={i} controls src={url} className="w-full" style={{ height: 40 }} />
-                  ))}
-                </div>
-              );
-            })()}
-
-            <div className="flex justify-end">
-              <Button onClick={onDone} className="gap-2">
-                Étape suivante <ArrowRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </motion.div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
 // ─── Helper : Référence leçon dépliable (utilisée dans Écriture) ───
 function LessonReference({ course }: { course: PresentielCourseV2 }) {
   const [open, setOpen] = useState(false);
-  const { speak } = useArabicSpeech();
   const photos = Array.from(
     new Set([
       ...(course.photo_url ? [course.photo_url] : []),
       ...(Array.isArray(course.lesson_photos) ? course.lesson_photos : []),
     ])
   );
-  if (photos.length === 0) return null;
+  if (photos.length === 0 && !course.audio_url) return null;
   return (
     <div className="border border-border rounded-lg overflow-hidden">
       <button
@@ -334,6 +83,14 @@ function LessonReference({ course }: { course: PresentielCourseV2 }) {
       </button>
       {open && (
         <div className="p-4 space-y-3 bg-background/60">
+          {course.audio_url && (
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Volume2 className="h-3 w-3" /> Lecture du professeur
+              </p>
+              <audio controls src={course.audio_url} className="w-full rounded" style={{ height: "40px" }} />
+            </div>
+          )}
           {photos.map((url, i) => (
             <img
               key={i}
@@ -1114,8 +871,8 @@ const PresentielCourseDetail = ({ course: rawCourse, userProgress, onProgressUpd
   const course = useMemo(() => dedupeCourse(rawCourse), [rawCourse]);
   const isN2 = course.level === "niveau_2";
   const stepsOrder: Exclude<Step, "done">[] = isN2
-    ? ["lecture", "ecriture", "traduction", "comprehension", "reorder", "dictee"]
-    : ["lecture", "ecriture", "traduction", "dictee"];
+    ? ["ecriture", "traduction", "comprehension", "reorder", "dictee"]
+    : ["ecriture", "traduction", "dictee"];
 
   const [step, setStep] = usePersistentState<Step>(
     userScopedKey(user?.id, `presentiel:${course.id}:step`),
@@ -1163,7 +920,7 @@ const PresentielCourseDetail = ({ course: rawCourse, userProgress, onProgressUpd
       </div>
 
       {/* Stepper */}
-      <div className={`grid gap-2 ${isN2 ? "grid-cols-3 sm:grid-cols-6" : "grid-cols-5"}`}>
+      <div className={`grid gap-2 ${isN2 ? "grid-cols-3 sm:grid-cols-5" : "grid-cols-3"}`}>
         {stepsOrder.map((s, i) => {
           const Icon = STEP_LABEL[s].icon;
           const isCurrent = s === step;
@@ -1198,9 +955,6 @@ const PresentielCourseDetail = ({ course: rawCourse, userProgress, onProgressUpd
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -30 }}
         >
-          {step === "lecture" && (
-            <LectureStep course={course} onDone={goNext} />
-          )}
           {step === "ecriture" && (() => {
             const isN2 = course.level === "niveau_2";
             return (
