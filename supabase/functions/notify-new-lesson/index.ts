@@ -189,6 +189,33 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Notifie l'admin pour les cours présentiel
+    if (mod === 'presentiel') {
+      try {
+        await fetch(`${SUPABASE_URL}/functions/v1/send-transactional-email`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${SERVICE_ROLE}`,
+            apikey: SERVICE_ROLE,
+          },
+          body: JSON.stringify({
+            templateName: 'new-lesson-published',
+            recipientEmail: 'ache.societe@gmail.com',
+            idempotencyKey: `new-lesson-admin-${idemSuffix}`,
+            templateData: {
+              studentName: 'Admin',
+              lessonTitle,
+              moduleLabel,
+              lessonUrl,
+            },
+          }),
+        })
+      } catch (e) {
+        console.error('admin notify error', e)
+      }
+    }
+
     return new Response(JSON.stringify({ ok: true, sent, failed, total: recipientUserIds.length }), {
       status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
