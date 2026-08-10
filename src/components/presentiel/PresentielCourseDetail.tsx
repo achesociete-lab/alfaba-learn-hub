@@ -1,4 +1,5 @@
-// Composant Niveau 1 — 4 étapes séquentielles : Lecture, Écriture, Traduction, Dictée
+// Composant Niveau 1 — 3 étapes séquentielles : Écriture, Traduction, Dictée
+// Composant Niveau 2 — 5 étapes séquentielles : Écriture, Traduction, Compréhension, Remise en ordre, Dictée
 // Présentiel — refonte from scratch
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -77,7 +78,7 @@ function LessonReference({ course }: { course: PresentielCourseV2 }) {
       >
         <span className="flex items-center gap-2">
           <BookOpen className="h-4 w-4 text-primary" />
-          📖 Voir la leçon à recopier
+          Afficher la leçon (support de référence)
         </span>
         {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
       </button>
@@ -86,7 +87,7 @@ function LessonReference({ course }: { course: PresentielCourseV2 }) {
           {course.audio_url && (
             <div className="space-y-1">
               <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <Volume2 className="h-3 w-3" /> Lecture du professeur
+                <Volume2 className="h-3 w-3" /> Enregistrement audio du professeur
               </p>
               <audio controls src={course.audio_url} className="w-full rounded" style={{ height: "40px" }} />
             </div>
@@ -375,9 +376,10 @@ function TraductionStep({ course, onDone }: { course: PresentielCourseV2; onDone
   if (items.length === 0) {
     return (
       <Card>
-        <CardContent className="py-8 text-center text-muted-foreground">
-          Aucun vocabulaire configuré pour ce cours.
-          <div className="mt-4">
+        <CardContent className="py-8 text-center text-muted-foreground space-y-3">
+          <p>Votre professeur n'a pas encore ajouté de vocabulaire pour ce cours.</p>
+          <p className="text-xs">Passez directement à l'étape suivante.</p>
+          <div className="mt-2">
             <Button onClick={onDone} variant="outline">Étape suivante</Button>
           </div>
         </CardContent>
@@ -413,14 +415,22 @@ function TraductionStep({ course, onDone }: { course: PresentielCourseV2; onDone
   };
 
   if (finished) {
+    const pct = Math.round((score / items.length) * 100);
+    const encouragement =
+      pct === 100
+        ? "Parfait ! Vous connaissez tout le vocabulaire de cette leçon."
+        : pct >= 75
+        ? "Très bien ! Quelques mots à retravailler, mais vous progressez."
+        : "Continuez, la répétition est la clé en arabe — revenez sur ces mots.";
     return (
       <Card>
         <CardContent className="p-6 text-center space-y-4">
           <Award className="h-12 w-12 text-gold mx-auto" />
-          <h3 className="text-xl font-bold">Traduction terminée !</h3>
+          <h3 className="text-xl font-bold">Vocabulaire terminé !</h3>
           <p className="text-muted-foreground">
             Score : <span className="font-bold text-foreground">{score}</span> / {items.length}
           </p>
+          <p className="text-sm text-muted-foreground italic">{encouragement}</p>
           <Button onClick={onDone} className="gap-2">
             Étape suivante <ArrowRight className="h-4 w-4" />
           </Button>
@@ -436,11 +446,16 @@ function TraductionStep({ course, onDone }: { course: PresentielCourseV2; onDone
       <CardContent className="p-6 space-y-5">
         <div className="flex items-center gap-2 mb-2">
           <Languages className="h-5 w-5 text-primary" />
-          <h3 className="font-semibold text-foreground text-lg">Étape 3 — Traduction</h3>
+          <h3 className="font-semibold text-foreground text-lg">Traduction — Vocabulaire</h3>
           <Badge variant="outline" className="ml-auto">
             {idx + 1} / {items.length}
           </Badge>
         </div>
+
+        <p className="text-sm text-muted-foreground">
+          Voici un mot arabe de la leçon. Sélectionnez sa traduction correcte en français parmi les 4 propositions.
+          Vous pouvez aussi cliquer sur « Écouter » pour entendre sa prononciation.
+        </p>
 
         <div
           dir="rtl"
@@ -451,7 +466,7 @@ function TraductionStep({ course, onDone }: { course: PresentielCourseV2; onDone
 
         <div className="flex justify-center">
           <Button variant="ghost" size="sm" onClick={() => speak(current.arabic)} className="gap-2">
-            <Volume2 className="h-4 w-4" /> Écouter
+            <Volume2 className="h-4 w-4" /> Écouter la prononciation
           </Button>
         </div>
 
@@ -533,7 +548,8 @@ function ComprehensionStep({ course, onDone }: { course: PresentielCourseV2; onD
     return (
       <Card>
         <CardContent className="py-8 text-center text-muted-foreground space-y-3">
-          <p>Aucune question de compréhension pour ce cours.</p>
+          <p>Votre professeur n'a pas encore ajouté de questions de compréhension pour ce cours.</p>
+          <p className="text-xs">Passez directement à l'étape suivante.</p>
           <Button onClick={onDone} variant="outline">Étape suivante</Button>
         </CardContent>
       </Card>
@@ -564,6 +580,13 @@ function ComprehensionStep({ course, onDone }: { course: PresentielCourseV2; onD
   };
 
   if (finished) {
+    const pct = Math.round((score / items.length) * 100);
+    const encouragement =
+      pct === 100
+        ? "Excellent ! Vous avez parfaitement compris le texte de la leçon."
+        : pct >= 75
+        ? "Bien joué ! La compréhension de textes arabes demande de la pratique."
+        : "Ne vous découragez pas — relisez le texte de la leçon et recommencez.";
     return (
       <Card>
         <CardContent className="p-6 text-center space-y-4">
@@ -572,6 +595,7 @@ function ComprehensionStep({ course, onDone }: { course: PresentielCourseV2; onD
           <p className="text-muted-foreground">
             Score : <span className="font-bold text-foreground">{score}</span> / {items.length}
           </p>
+          <p className="text-sm text-muted-foreground italic">{encouragement}</p>
           <Button onClick={onDone} className="gap-2">
             Étape suivante <ArrowRight className="h-4 w-4" />
           </Button>
@@ -587,9 +611,14 @@ function ComprehensionStep({ course, onDone }: { course: PresentielCourseV2; onD
       <CardContent className="p-6 space-y-5">
         <div className="flex items-center gap-2">
           <HelpCircle className="h-5 w-5 text-primary" />
-          <h3 className="font-semibold text-foreground text-lg">Étape — Compréhension</h3>
+          <h3 className="font-semibold text-foreground text-lg">Compréhension du texte</h3>
           <Badge variant="outline" className="ml-auto">{idx + 1} / {items.length}</Badge>
         </div>
+
+        <p className="text-sm text-muted-foreground">
+          Lisez la question en arabe, puis choisissez la bonne réponse parmi les propositions ci-dessous.
+          Vous pouvez écouter la question si besoin.
+        </p>
 
         {/* Question */}
         <div dir="rtl" className="p-5 rounded-xl bg-muted/40 border border-border text-2xl font-amiri text-right leading-loose">
@@ -683,7 +712,8 @@ function ReorderStep({ course, onDone }: { course: PresentielCourseV2; onDone: (
     return (
       <Card>
         <CardContent className="py-8 text-center text-muted-foreground space-y-3">
-          Aucun exercice de remise en ordre configuré.
+          <p>Votre professeur n'a pas encore ajouté d'exercice de remise en ordre pour ce cours.</p>
+          <p className="text-xs">Passez directement à l'étape suivante.</p>
           <div><Button onClick={onDone} variant="outline">Étape suivante</Button></div>
         </CardContent>
       </Card>
@@ -714,6 +744,13 @@ function ReorderStep({ course, onDone }: { course: PresentielCourseV2; onDone: (
   };
 
   if (finished) {
+    const pct = Math.round((score / items.length) * 100);
+    const encouragement =
+      pct === 100
+        ? "Bravo ! Vous maîtrisez bien la structure de la phrase arabe."
+        : pct >= 75
+        ? "Bon travail ! L'ordre des mots en arabe est différent du français — continuez à pratiquer."
+        : "En arabe, la structure de la phrase est différente du français. Relisez la leçon et réessayez.";
     return (
       <Card>
         <CardContent className="p-6 text-center space-y-4">
@@ -722,6 +759,7 @@ function ReorderStep({ course, onDone }: { course: PresentielCourseV2; onDone: (
           <p className="text-muted-foreground">
             Score : <span className="font-bold text-foreground">{score}</span> / {items.length}
           </p>
+          <p className="text-sm text-muted-foreground italic">{encouragement}</p>
           <Button onClick={onDone} className="gap-2">
             Étape suivante <ArrowRight className="h-4 w-4" />
           </Button>
@@ -742,7 +780,8 @@ function ReorderStep({ course, onDone }: { course: PresentielCourseV2; onDone: (
         </div>
 
         <p className="text-sm text-muted-foreground">
-          Cliquez sur les mots dans l'ordre correct pour reconstituer la phrase.
+          Reconstituez la phrase arabe en cliquant sur les mots dans le bon ordre (de droite à gauche).
+          L'arabe se lit et s'écrit de droite à gauche — l'ordre des mots est différent du français.
         </p>
 
         {/* Phrase en construction */}
@@ -919,6 +958,14 @@ const PresentielCourseDetail = ({ course: rawCourse, userProgress, onProgressUpd
         </p>
       </div>
 
+      {/* Info niveau */}
+      {isN2 && (
+        <p className="text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
+          Niveau 2 — Ce cours comporte 5 étapes : écriture, vocabulaire, compréhension du texte,
+          remise en ordre de phrases, puis dictée. Chaque étape se débloque après la précédente.
+        </p>
+      )}
+
       {/* Stepper */}
       <div className={`grid gap-2 ${isN2 ? "grid-cols-3 sm:grid-cols-5" : "grid-cols-3"}`}>
         {stepsOrder.map((s, i) => {
@@ -961,21 +1008,37 @@ const PresentielCourseDetail = ({ course: rawCourse, userProgress, onProgressUpd
               <PhotoUploadStep
                 course={course}
                 stepType="ecriture"
-                title="Étape — Écriture"
+                title="Écriture — Recopier la leçon à la main"
                 maxPhotos={3}
                 instruction={
                   isN2 ? (
-                    <>
-                      Recopiez la leçon <strong>une fois</strong> à la main sur votre cahier.
-                      Envoyez <strong>jusqu'à 3 photos</strong> (une par page) pour que votre
-                      professeur puisse voir votre travail complet.
-                    </>
+                    <div className="space-y-2 text-sm text-muted-foreground">
+                      <p>
+                        Recopiez le texte de la leçon <strong>une fois</strong> à la main sur votre cahier,
+                        en soignant l'écriture de chaque lettre.
+                      </p>
+                      <p>
+                        Envoyez <strong>jusqu'à 3 photos</strong> (une par page si nécessaire) pour que votre
+                        professeur puisse contrôler votre écriture et vous corriger.
+                      </p>
+                      <p className="text-xs">
+                        Conseil : utilisez votre plus belle écriture — la calligraphie s'améliore avec la régularité.
+                      </p>
+                    </div>
                   ) : (
-                    <>
-                      Recopiez la leçon <strong>3 fois</strong> à la main sur votre cahier.
-                      Envoyez <strong>jusqu'à 3 photos</strong> (une par page/série) pour que votre
-                      professeur puisse voir votre travail complet.
-                    </>
+                    <div className="space-y-2 text-sm text-muted-foreground">
+                      <p>
+                        Recopiez la leçon <strong>3 fois</strong> à la main sur votre cahier,
+                        en reproduisant soigneusement chaque lettre.
+                      </p>
+                      <p>
+                        Envoyez <strong>jusqu'à 3 photos</strong> (une par page) pour que votre
+                        professeur puisse vérifier votre travail.
+                      </p>
+                      <p className="text-xs">
+                        En Niveau 1, la répétition de l'écriture est essentielle pour ancrer les formes des lettres dans la mémoire.
+                      </p>
+                    </div>
                   )
                 }
                 onDone={goNext}
@@ -995,7 +1058,7 @@ const PresentielCourseDetail = ({ course: rawCourse, userProgress, onProgressUpd
             <PhotoUploadStep
               course={course}
               stepType="dictee"
-              title="Étape — Dictée"
+              title="Dictée — Exercice d'écoute et d'écriture"
               maxPhotos={3}
               instruction={
                 course.level === "niveau_2" && course.dictation_text ? (
@@ -1025,9 +1088,16 @@ const PresentielCourseDetail = ({ course: rawCourse, userProgress, onProgressUpd
             <Card>
               <CardContent className="p-8 text-center space-y-4">
                 <Award className="h-16 w-16 text-gold mx-auto" />
-                <h3 className="text-2xl font-bold">Cours terminé 🎉</h3>
+                <h3 className="text-2xl font-bold">Cours terminé !</h3>
                 <p className="text-muted-foreground">
-                  Bravo ! Votre professeur reviendra vers vous après correction des photos.
+                  Bien joué ! Vous avez complété toutes les étapes de ce cours.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Votre professeur va corriger vos photos d'écriture et de dictée.
+                  Vous recevrez un retour par email dès que la correction est prête.
+                </p>
+                <p className="text-sm font-medium text-primary">
+                  En attendant, vous pouvez revoir les étapes ou passer au cours suivant.
                 </p>
               </CardContent>
             </Card>
@@ -1073,7 +1143,12 @@ function DicteeInstructionN2({ text, sentenceAudios }: { text: string; sentenceA
   };
 
   if (sentences.length === 0) {
-    return <span className="text-sm text-muted-foreground">Aucune phrase configurée.</span>;
+    return (
+      <span className="text-sm text-muted-foreground">
+        Votre professeur n'a pas encore configuré les phrases de dictée pour ce cours.
+        Prenez une photo de votre feuille et envoyez-la.
+      </span>
+    );
   }
 
   if (done) {
@@ -1103,9 +1178,15 @@ function DicteeInstructionN2({ text, sentenceAudios }: { text: string; sentenceA
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
-        Écoutez chaque phrase et écrivez-la sur votre feuille. Envoyez ensuite une photo pour correction.
-      </p>
+      <div className="text-sm text-muted-foreground space-y-1">
+        <p>
+          <strong>Comment faire cette dictée :</strong> écoutez chaque phrase, puis écrivez-la sur votre feuille sans la regarder.
+          Vous pouvez réécouter autant de fois que nécessaire.
+        </p>
+        <p className="text-xs italic">
+          Quand vous avez fini toutes les phrases, prenez une photo de votre feuille et envoyez-la pour correction.
+        </p>
+      </div>
 
       {/* Barre de progression */}
       <div className="flex items-center gap-2">
@@ -1172,7 +1253,12 @@ function DicteeInstruction({ words, wordAudios }: { words: string[]; wordAudios?
   const [guidedDone, setGuidedDone] = useState(false);
 
   if (words.length === 0) {
-    return <span>Aucun mot configuré pour la dictée.</span>;
+    return (
+      <span className="text-sm text-muted-foreground">
+        Votre professeur n'a pas encore configuré les mots de dictée pour ce cours.
+        Prenez simplement une photo de votre feuille et envoyez-la.
+      </span>
+    );
   }
 
   // ── Guided mode ──
@@ -1205,23 +1291,31 @@ function DicteeInstruction({ words, wordAudios }: { words: string[]; wordAudios?
   if (mode === "intro") {
     return (
       <div className="space-y-3">
-        <p className="text-sm text-muted-foreground">
-          Écoutez chaque mot et écrivez-le à la main sur votre feuille.
-          Envoyez ensuite une photo de votre travail pour correction.
-        </p>
+        <div className="text-sm text-muted-foreground space-y-2">
+          <p>
+            <strong>Comment faire la dictée :</strong>
+          </p>
+          <ol className="list-decimal list-inside space-y-1 text-xs">
+            <li>Prenez une feuille vierge et un stylo.</li>
+            <li>Cliquez sur « Dictée mot par mot » et écoutez chaque mot.</li>
+            <li>Écrivez le mot en arabe sur votre feuille — sans regarder la liste !</li>
+            <li>Passez au mot suivant quand vous avez fini d'écrire.</li>
+            <li>Une fois tous les mots écrits, prenez une photo de votre feuille et envoyez-la.</li>
+          </ol>
+          <p className="text-xs italic">
+            Votre professeur corrigera chaque mot et vous renverra ses commentaires.
+          </p>
+        </div>
         <div className="flex flex-col gap-2">
           <Button
             onClick={startGuided}
             className="gap-2 gradient-emerald border-0 text-primary-foreground w-full"
           >
-            <Headphones className="h-4 w-4" /> Dictée mot par mot
+            <Headphones className="h-4 w-4" /> Commencer la dictée ({words.length} mot{words.length > 1 ? "s" : ""})
           </Button>
-          <p className="text-xs text-muted-foreground text-center">
-            Cliquez sur "Écouter" pour entendre chaque mot, puis sur "J'ai écrit" pour passer au suivant.
-          </p>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => setMode("list")} className="gap-1 flex-1">
-              Voir la liste
+              Voir la liste des mots
             </Button>
           </div>
         </div>

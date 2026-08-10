@@ -113,7 +113,9 @@ const CoursPresentiel = () => {
               <h1 className="text-3xl font-bold text-foreground">Mes cours en présentiel</h1>
             </div>
             <p className="text-muted-foreground">
-              Retrouvez les cours suivis sur place : QCM, traduction et dictée pour chacun.
+              Retrouvez ici vos cours en présentiel. Pour chaque séance, vous disposez d'exercices
+              d'écriture, de vocabulaire et de dictée à compléter à votre rythme.
+              Votre professeur corrige vos envois et vous laisse ses commentaires directement sur la plateforme.
             </p>
           </motion.div>
 
@@ -163,7 +165,7 @@ const CoursPresentiel = () => {
                         }`}
                         onClick={() => {
                           if (locked) {
-                            toast.info("Termine d'abord la leçon précédente pour débloquer celle-ci.");
+                            toast.info("Terminez les étapes du cours précédent pour accéder à celui-ci. Progressez à votre rythme !");
                             return;
                           }
                           setSelectedId(c.id);
@@ -193,10 +195,10 @@ const CoursPresentiel = () => {
                           </p>
                           <div className="flex flex-wrap gap-1.5 mb-3">
                             <Badge variant={p.qcm_completed ? "default" : "outline"} className="text-xs">
-                              <FileText className="h-3 w-3 mr-1" /> QCM {p.qcm_completed && p.qcm_score != null ? `${p.qcm_score}/10` : ""}
+                              <FileText className="h-3 w-3 mr-1" /> Vocabulaire
                             </Badge>
                             <Badge variant={p.translation_completed ? "default" : "outline"} className="text-xs">
-                              Traduction
+                              Écriture
                             </Badge>
                             <Badge variant={p.dictation_completed ? "default" : "outline"} className="text-xs">
                               <Headphones className="h-3 w-3 mr-1" /> Dictée
@@ -204,7 +206,7 @@ const CoursPresentiel = () => {
                           </div>
                           {locked ? (
                             <div className="flex items-center text-muted-foreground text-sm font-medium">
-                              <Lock className="h-4 w-4 mr-1" /> Verrouillé — termine la leçon précédente
+                              <Lock className="h-4 w-4 mr-1" /> Terminez le cours précédent pour débloquer
                             </div>
                           ) : (
                             <div className="flex items-center text-primary text-sm font-medium">

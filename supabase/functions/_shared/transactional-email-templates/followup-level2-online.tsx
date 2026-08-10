@@ -31,8 +31,8 @@ const FollowupLevel2OnlineEmail = ({ studentName }: Props) => (
 
         <Text style={text}>
           Si vous souhaitez continuer au-delà de la version découverte, le plan Premium
-          (12€/mois) donne accès à l'intégralité du Niveau 2, à مساري (votre parcours
-          personnalisé), aux corrections automatiques et au tuteur IA Musa'id.
+          (12€/mois) donne accès à l'intégralité du Niveau 2, à votre parcours personnalisé
+          (مساري — « mon chemin »), aux corrections automatiques et au tuteur IA Musa'id.
         </Text>
 
         <Text style={text}>
