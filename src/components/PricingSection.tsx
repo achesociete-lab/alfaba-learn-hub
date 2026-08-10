@@ -66,10 +66,12 @@ const plans = [
   },
   {
     name: "Essentiel",
+    annualName: "Essentiel Fidèle",
     price: "7€",
     priceNum: 7,
     period: "/mois",
     subtitle: "Niveau 1 & 2 complets",
+    annualSubtitle: "Engagement annuel · 2 mois offerts",
     icon: Zap,
     features: [
       "Niveau 1 complet (10 leçons)",
@@ -81,16 +83,19 @@ const plans = [
     ],
     limitations: [],
     cta: "Choisir Essentiel",
+    annualCta: "Choisir Essentiel Fidèle",
     planKey: "essentiel" as const,
     featured: false,
     badge: null,
   },
   {
     name: "Premium",
+    annualName: "Premium Fidèle",
     price: "12€",
     priceNum: 12,
     period: "/mois",
-    subtitle: "Essentiel + مساري",
+    subtitle: "Essentiel + مساري (mon chemin)",
+    annualSubtitle: "Engagement annuel · 2 mois offerts",
     icon: Crown,
     features: [
       "Tout le plan Essentiel inclus",
@@ -102,16 +107,19 @@ const plans = [
     ],
     limitations: [],
     cta: "Choisir Premium",
+    annualCta: "Choisir Premium Fidèle",
     planKey: "premium" as const,
     featured: true,
     badge: "Le plus populaire",
   },
   {
     name: "Famille",
+    annualName: "Famille Fidèle",
     price: "19€",
     priceNum: 19,
     period: "/mois",
     subtitle: "Premium pour toute la famille",
+    annualSubtitle: "Engagement annuel · 2 mois offerts",
     icon: Users,
     features: [
       "Tout le plan Premium inclus",
@@ -121,6 +129,7 @@ const plans = [
     ],
     limitations: [],
     cta: "Choisir Famille",
+    annualCta: "Choisir Famille Fidèle",
     planKey: "famille" as const,
     featured: false,
     badge: null,
@@ -473,7 +482,7 @@ const PricingSection = () => {
                   }`}>
                     <Icon className="h-5 w-5" />
                   </div>
-                  <h3 className="font-display text-lg font-bold text-foreground">{plan.name}</h3>
+                  <h3 className="font-display text-lg font-bold text-foreground">{isAnnual && plan.annualName ? plan.annualName : plan.name}</h3>
                 </div>
 
                 <div className="mb-1">
@@ -501,7 +510,7 @@ const PricingSection = () => {
                     </>
                   )}
                 </div>
-                <p className="text-sm text-muted-foreground mb-5">{plan.subtitle}</p>
+                <p className="text-sm text-muted-foreground mb-5">{isAnnual && plan.annualSubtitle ? plan.annualSubtitle : plan.subtitle}</p>
 
                 <ul className="space-y-2.5 flex-1 mb-6">
                   {plan.features.map((f) => (
@@ -530,7 +539,7 @@ const PricingSection = () => {
                     variant={plan.featured ? "default" : "outline"}
                   >
                     {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                    {isLoading ? "Redirection..." : plan.cta}
+                    {isLoading ? "Redirection..." : (isAnnual && plan.annualCta ? plan.annualCta : plan.cta)}
                   </Button>
                 ) : (
                   <Button asChild className="w-full h-11 text-sm font-semibold" variant="outline">

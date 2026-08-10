@@ -27,13 +27,13 @@ const ANNUAL_PRICES: Record<PlanKey, number> = {
 };
 
 const plans: Array<{
-  name: string; price: string; annualPrice: string; lines: string[];
-  buttonLabel: string; planKey: PlanKey | null; filled: boolean; popular: boolean;
+  name: string; annualName?: string; price: string; annualPrice: string; lines: string[];
+  buttonLabel: string; annualButtonLabel?: string; planKey: PlanKey | null; filled: boolean; popular: boolean;
 }> = [
   { name: "Découverte", price: "Gratuit", annualPrice: "Gratuit", lines: ["3 premières leçons N1", "Aperçu مساري (lecture seule)"], buttonLabel: "Commencer gratuitement", planKey: null, filled: false, popular: false },
-  { name: "Essentiel", price: "7€/mois", annualPrice: "70€/an", lines: ["Niveau 1 & 2 complets", "Tuteur IA Musa'id illimité"], buttonLabel: "Choisir Essentiel", planKey: "essentiel", filled: false, popular: false },
-  { name: "Premium", price: "12€/mois", annualPrice: "115€/an", lines: ["Tout Essentiel +", "مساري complet (parcours, devoirs, suivi)"], buttonLabel: "Choisir Premium", planKey: "premium", filled: true, popular: true },
-  { name: "Famille", price: "19€/mois", annualPrice: "185€/an", lines: ["Premium complet", "Jusqu'à 5 profils"], buttonLabel: "Choisir Famille", planKey: "famille", filled: false, popular: false },
+  { name: "Essentiel", annualName: "Essentiel Fidèle", price: "7€/mois", annualPrice: "70€/an", lines: ["Niveau 1 & 2 complets", "Tuteur IA Musa'id illimité"], buttonLabel: "Choisir Essentiel", annualButtonLabel: "Choisir Essentiel Fidèle", planKey: "essentiel", filled: false, popular: false },
+  { name: "Premium", annualName: "Premium Fidèle", price: "12€/mois", annualPrice: "115€/an", lines: ["Tout Essentiel +", "مساري complet (parcours, devoirs, suivi)"], buttonLabel: "Choisir Premium", annualButtonLabel: "Choisir Premium Fidèle", planKey: "premium", filled: true, popular: true },
+  { name: "Famille", annualName: "Famille Fidèle", price: "19€/mois", annualPrice: "185€/an", lines: ["Premium complet", "Jusqu'à 5 profils"], buttonLabel: "Choisir Famille", annualButtonLabel: "Choisir Famille Fidèle", planKey: "famille", filled: false, popular: false },
 ];
 
 const HomePricingSection = () => {
@@ -120,7 +120,7 @@ const HomePricingSection = () => {
                     <Badge className="absolute -top-3 right-3 bg-emerald-600 text-white text-xs">2 mois offerts</Badge>
                   )}
                   <CardHeader className="text-center pb-2">
-                    <CardTitle className="text-lg">{plan.name}</CardTitle>
+                    <CardTitle className="text-lg">{isAnnual && plan.annualName ? plan.annualName : plan.name}</CardTitle>
                     <p className="text-2xl font-bold text-foreground mt-2">{displayPrice}</p>
                     {isAnnual && plan.planKey && (
                       <p className="text-xs text-muted-foreground line-through">
@@ -141,7 +141,7 @@ const HomePricingSection = () => {
                       >
                         {loadingPlan === plan.planKey
                           ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Redirection...</>
-                          : plan.buttonLabel}
+                          : (isAnnual && plan.annualButtonLabel ? plan.annualButtonLabel : plan.buttonLabel)}
                       </Button>
                     ) : (
                       <Button asChild className="w-full border-primary text-primary hover:bg-primary/5" variant="outline">
