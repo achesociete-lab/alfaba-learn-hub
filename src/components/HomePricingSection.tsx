@@ -31,9 +31,9 @@ const plans: Array<{
   buttonLabel: string; annualButtonLabel?: string; planKey: PlanKey | null; filled: boolean; popular: boolean;
 }> = [
   { name: "Découverte", price: "Gratuit", annualPrice: "Gratuit", lines: ["3 premières leçons N1", "Aperçu مساري (lecture seule)"], buttonLabel: "Commencer gratuitement", planKey: null, filled: false, popular: false },
-  { name: "Essentiel", annualName: "Essentiel Fidèle", price: "7€/mois", annualPrice: "70€/an", lines: ["Niveau 1 & 2 complets", "Tuteur IA Musa'id illimité"], buttonLabel: "Choisir Essentiel", annualButtonLabel: "Choisir Essentiel Fidèle", planKey: "essentiel", filled: false, popular: false },
-  { name: "Premium", annualName: "Premium Fidèle", price: "12€/mois", annualPrice: "115€/an", lines: ["Tout Essentiel +", "مساري complet (parcours, devoirs, suivi)"], buttonLabel: "Choisir Premium", annualButtonLabel: "Choisir Premium Fidèle", planKey: "premium", filled: true, popular: true },
-  { name: "Famille", annualName: "Famille Fidèle", price: "19€/mois", annualPrice: "185€/an", lines: ["Premium complet", "Jusqu'à 5 profils"], buttonLabel: "Choisir Famille", annualButtonLabel: "Choisir Famille Fidèle", planKey: "famille", filled: false, popular: false },
+  { name: "Essentiel", annualName: "Essentiel Annuel", price: "7€/mois", annualPrice: "70€/an", lines: ["Niveau 1 & 2 complets", "Tuteur IA Musa'id illimité"], buttonLabel: "Choisir Essentiel", annualButtonLabel: "Choisir Essentiel Annuel", planKey: "essentiel", filled: false, popular: false },
+  { name: "Premium", annualName: "Premium Annuel", price: "12€/mois", annualPrice: "115€/an", lines: ["Tout Essentiel +", "مساري complet (parcours, devoirs, suivi)"], buttonLabel: "Choisir Premium", annualButtonLabel: "Choisir Premium Annuel", planKey: "premium", filled: true, popular: true },
+  { name: "Famille", annualName: "Famille Annuel", price: "19€/mois", annualPrice: "185€/an", lines: ["Premium complet", "Jusqu'à 5 profils"], buttonLabel: "Choisir Famille", annualButtonLabel: "Choisir Famille Annuel", planKey: "famille", filled: false, popular: false },
 ];
 
 const HomePricingSection = () => {
