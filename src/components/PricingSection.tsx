@@ -10,25 +10,36 @@ import { toast } from "sonner";
 import { usePromoCode } from "@/hooks/usePromoCode";
 import HifzApplicationDialog from "@/components/HifzApplicationDialog";
 
+// À remplacer après création dans Stripe dashboard
+const ANNUAL_PRICE_IDS = {
+  essentiel: "ANNUAL_ESSENTIEL_PRICE_ID", // 70€/an
+  premium: "ANNUAL_PREMIUM_PRICE_ID",     // 115€/an
+  famille: "ANNUAL_FAMILLE_PRICE_ID",     // 185€/an
+};
+
 export const STRIPE_PLANS = {
   essentiel: {
     price_id: "price_1TLAA8KXotpKdlTPXckHIYZl",
     product_id: "prod_UJnlNTP9hF3J5Q",
     price: 7,
   },
-  // Prix 12€ — à créer dans Stripe et renseigner ci-dessous
   premium: {
     price_id: "price_1TL9cdKXotpKdlTPxDQaUrF0",
     product_id: "prod_UJnD6AmnqnlxTh",
     price: 12,
   },
-  // Famille 19€ — à créer dans Stripe et renseigner ci-dessous
   famille: {
     price_id: "price_1TkJIOKXotpKdlTPNgtsDI4a",
     product_id: "",
     price: 19,
   },
 } as const;
+
+const ANNUAL_PRICES: Record<"essentiel" | "premium" | "famille", number> = {
+  essentiel: 70,
+  premium: 115,
+  famille: 185,
+};
 
 const plans = [
   {
@@ -222,6 +233,7 @@ const PricingSection = () => {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [promoInput, setPromoInput] = useState("");
   const [validatingPromo, setValidatingPromo] = useState(false);
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
   const { validate, clear, result: promoResult } = usePromoCode();
 
   const handleValidatePromo = async () => {
@@ -247,15 +259,20 @@ const PricingSection = () => {
     return discounted.toFixed(2);
   };
 
+  const getPriceId = (planKey: "essentiel" | "premium" | "famille") => {
+    if (billingCycle === "annual") return ANNUAL_PRICE_IDS[planKey];
+    return STRIPE_PLANS[planKey].price_id;
+  };
+
   const handleCheckout = async (planKey: "essentiel" | "premium" | "famille") => {
     if (!user) {
       navigate("/auth");
       return;
     }
 
-    const priceId = STRIPE_PLANS[planKey].price_id;
-    if (!priceId) {
-      toast.error("Ce plan n'est pas encore disponible. Revenez bientôt !");
+    const priceId = getPriceId(planKey);
+    if (!priceId || priceId.startsWith("ANNUAL_")) {
+      toast.error("Ce plan annuel n'est pas encore disponible. Revenez bientôt !");
       return;
     }
 
@@ -311,6 +328,42 @@ const PricingSection = () => {
           </motion.p>
           <Ticker />
         </div>
+
+        {/* Billing toggle */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="flex items-center justify-center gap-3 mb-10"
+        >
+          <button
+            onClick={() => setBillingCycle("monthly")}
+            className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
+              billingCycle === "monthly"
+                ? "bg-primary text-primary-foreground shadow"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Mensuel
+          </button>
+          <button
+            onClick={() => setBillingCycle("annual")}
+            className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold transition-all ${
+              billingCycle === "annual"
+                ? "bg-primary text-primary-foreground shadow"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Annuel
+            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+              billingCycle === "annual"
+                ? "bg-primary-foreground/20 text-primary-foreground"
+                : "bg-emerald-100 text-emerald-700"
+            }`}>
+              2 mois offerts
+            </span>
+          </button>
+        </motion.div>
 
         {/* Promo code banner */}
         <motion.div
@@ -380,7 +433,11 @@ const PricingSection = () => {
           {plans.map((plan, i) => {
             const Icon = plan.icon;
             const isLoading = loadingPlan === plan.planKey;
-            const discountedPrice = plan.priceNum > 0 ? getDiscountedPrice(plan.priceNum) : null;
+            const isAnnual = billingCycle === "annual" && plan.planKey !== null;
+            const annualPrice = plan.planKey ? ANNUAL_PRICES[plan.planKey] : null;
+            const displayedBasePrice = isAnnual && annualPrice ? annualPrice : plan.priceNum;
+            const discountedPrice = displayedBasePrice > 0 ? getDiscountedPrice(displayedBasePrice) : null;
+
             return (
               <motion.div
                 key={plan.name}
@@ -402,6 +459,14 @@ const PricingSection = () => {
                   </div>
                 )}
 
+                {isAnnual && (
+                  <div className="absolute -top-3 right-4">
+                    <span className="text-xs font-bold text-white bg-emerald-600 px-3 py-1 rounded-full shadow-md whitespace-nowrap">
+                      2 mois offerts
+                    </span>
+                  </div>
+                )}
+
                 <div className="flex items-center gap-3 mb-4 mt-1">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
                     plan.featured ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"
@@ -413,10 +478,21 @@ const PricingSection = () => {
 
                 <div className="mb-1">
                   {discountedPrice ? (
-                    <div className="flex items-baseline gap-2">
+                    <div className="flex items-baseline gap-2 flex-wrap">
                       <span className="text-3xl font-extrabold text-primary">€{discountedPrice}</span>
-                      <span className="text-sm text-muted-foreground line-through">{plan.price}</span>
-                      {plan.period && <span className="text-sm text-muted-foreground">{plan.period}</span>}
+                      <span className="text-sm text-muted-foreground line-through">
+                        {isAnnual ? `${annualPrice}€` : plan.price}
+                      </span>
+                      {!isAnnual && plan.period && <span className="text-sm text-muted-foreground">{plan.period}</span>}
+                      {isAnnual && <span className="text-sm text-muted-foreground">/an</span>}
+                    </div>
+                  ) : isAnnual && annualPrice ? (
+                    <div className="flex items-baseline gap-1.5 flex-wrap">
+                      <span className="text-3xl font-extrabold text-foreground">{annualPrice}€</span>
+                      <span className="text-sm text-muted-foreground">/an</span>
+                      <span className="text-xs text-muted-foreground/70 line-through ml-1">
+                        {plan.priceNum * 12}€
+                      </span>
                     </div>
                   ) : (
                     <>

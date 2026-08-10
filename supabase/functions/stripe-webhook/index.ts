@@ -2,10 +2,18 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
+// À remplacer après création dans Stripe dashboard
+const ANNUAL_PRICE_IDS: Record<string, string> = {
+  "ANNUAL_ESSENTIEL_PRICE_ID": "essentiel", // 70€/an
+  "ANNUAL_PREMIUM_PRICE_ID": "premium",     // 115€/an
+  "ANNUAL_FAMILLE_PRICE_ID": "famille",     // 185€/an
+};
+
 const PRICE_PLANS: Record<string, string> = {
   "price_1TLAA8KXotpKdlTPXckHIYZl": "essentiel",
   "price_1TL9cdKXotpKdlTPxDQaUrF0": "premium",
   "price_1TkJIOKXotpKdlTPNgtsDI4a": "famille",
+  ...ANNUAL_PRICE_IDS,
 };
 
 const PLAN_AMOUNTS: Record<string, string> = {
