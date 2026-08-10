@@ -160,7 +160,7 @@ const HomePricingSection = () => {
           className="max-w-md mx-auto mt-6 p-5 rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50/80 to-amber-50/60 text-center">
           <p className="text-xs font-bold uppercase tracking-widest text-emerald-700 mb-1">Programme spécialisé</p>
           <p className="font-bold text-lg text-emerald-900 mb-1">Hifd al-Qur'ān</p>
-          <p className="text-sm text-amber-800/70 mb-3">2 séances individuelles/semaine · Paiement direct</p>
+          <p className="text-sm text-amber-800/70 mb-3">Tarif fixé avec le professeur · Inscription par candidature</p>
           <HifzApplicationDialog
             triggerClassName="inline-flex items-center justify-center w-full px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-700 to-amber-700 text-white text-sm font-semibold hover:opacity-90 transition"
             triggerLabel="Demander à rejoindre →"

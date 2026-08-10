@@ -576,11 +576,11 @@ const PricingSection = () => {
               </div>
               <div className="mb-1">
                 <span className="text-sm font-semibold text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full">
-                  Paiement direct — contact d'abord
+                  Inscription par candidature uniquement
                 </span>
               </div>
               <p className="text-sm text-amber-800/80 mb-5 mt-3">
-                2 séances individuelles par semaine avec votre professeur. Le paiement se fait directement (PayPal / virement) après votre premier échange.
+                Tarif fixé directement avec le professeur lors du premier échange. 2 séances individuelles par semaine.
               </p>
               <HifzApplicationDialog
                 triggerClassName="w-full h-11 text-sm font-semibold bg-gradient-to-r from-emerald-700 to-amber-700 hover:opacity-90 border-0 text-white rounded-md inline-flex items-center justify-center"
