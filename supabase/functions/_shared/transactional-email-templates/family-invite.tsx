@@ -20,7 +20,8 @@ const FamilyInviteEmail = ({ ownerName, inviteUrl }: Props) => (
           <strong>{ownerName}</strong> vous invite à rejoindre son abonnement <strong>Famille</strong> sur ALFASL.
         </Text>
         <Text style={{ color: '#78350f', fontSize: 14 }}>
-          Vous aurez accès à l'intégralité de la plateforme : Niveau 1 & 2, Tuteur IA Musa'id et مساري — votre parcours personnalisé.
+          Vous aurez accès à l'intégralité de la plateforme : Niveau 1 &amp; 2, le tuteur IA Musa'id
+          et votre parcours personnalisé (مساري, « mon chemin » en arabe).
         </Text>
         <Hr style={{ borderColor: '#d1fae5', margin: '24px 0' }} />
         <Button
