@@ -30,7 +30,7 @@ const HifzBookingAdminEmail = ({ studentName, studentEmail, date, time, message 
 export const template = {
   component: HifzBookingAdminEmail,
   subject: (data: Record<string, any>) => `Nouvelle réservation Hifd — ${data.studentName || ''}`,
-  to: 'abdelkarim7@gmail.com',
+  to: 'contact@alfasl.fr',
   displayName: 'Réservation Hifd (admin)',
   previewData: { studentName: 'Yacine', studentEmail: 'y@example.com', date: '2026-06-01', time: '18:00', message: 'Hizb 30' },
 } satisfies TemplateEntry

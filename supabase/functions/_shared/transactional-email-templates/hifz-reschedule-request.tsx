@@ -70,7 +70,7 @@ export const template = {
     data.rescheduleType === 'retard'
       ? `⚠️ Retard signalé — ${data.studentName} · ${data.sessionDate}`
       : `📅 Demande de report — ${data.studentName} · ${data.sessionDate}`,
-  to: 'abdelkarim7@gmail.com',
+  to: 'contact@alfasl.fr',
   displayName: 'Hifd — demande de report/retard',
   previewData: {
     studentName: 'Yacine',
