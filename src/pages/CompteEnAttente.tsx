@@ -40,8 +40,8 @@ const CompteEnAttente = () => {
           <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mb-6 text-left">
             <p className="text-sm text-foreground">
               <strong>Besoin d'aide ?</strong> Contactez votre professeur ou écrivez à{" "}
-              <a href="mailto:abdelkarim7@gmail.com" className="text-primary hover:underline">
-                abdelkarim7@gmail.com
+              <a href="mailto:contact@alfasl.fr" className="text-primary hover:underline">
+                contact@alfasl.fr
               </a>
             </p>
           </div>

@@ -36,7 +36,7 @@ export default function HifzApplicationDialog({ trigger, triggerClassName, trigg
       const { error } = await supabase.functions.invoke("send-transactional-email", {
         body: {
           templateName: "hifz-application-admin",
-          recipientEmail: "abdelkarim7@gmail.com",
+          recipientEmail: "contact@alfasl.fr",
           templateData: {
             prenom: prenom.trim(),
             niveauArabe: niveauLabel,
