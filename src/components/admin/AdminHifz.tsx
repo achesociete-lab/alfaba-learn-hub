@@ -93,9 +93,77 @@ const NIVEAUX = [
 ];
 const FLUIDITY = ["Haché", "Correct", "Fluide", "Majestueux"];
 
+// ─── Candidatures Hifd ───
+function CandidaturesTab() {
+  const [applications, setApplications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from("hifz_applications")
+      .select("*")
+      .order("created_at", { ascending: false });
+    setApplications(data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const updateStatus = async (id: string, status: string) => {
+    await supabase.from("hifz_applications").update({ status }).eq("id", id);
+    load();
+  };
+
+  if (loading) return <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-emerald-700" /></div>;
+  if (applications.length === 0) return <p className="text-sm text-muted-foreground py-6 text-center">Aucune candidature reçue.</p>;
+
+  return (
+    <div className="space-y-3">
+      {applications.map((a) => (
+        <Card key={a.id} className={a.status === "en_attente" ? "border-amber-300 bg-amber-50/40" : "border-emerald-200"}>
+          <CardContent className="pt-4 space-y-2">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="font-semibold text-emerald-900">{a.prenom}</p>
+                <p className="text-xs text-muted-foreground">{new Date(a.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
+              </div>
+              <Badge variant={a.status === "en_attente" ? "outline" : "default"} className={a.status === "en_attente" ? "border-amber-500 text-amber-700" : "bg-emerald-600"}>
+                {a.status === "en_attente" ? "⏳ En attente" : a.status === "acceptee" ? "✅ Acceptée" : "❌ Refusée"}
+              </Badge>
+            </div>
+            <div className="text-sm space-y-1">
+              <p><span className="font-medium">Niveau :</span> {a.niveau_arabe}</p>
+              <p><span className="font-medium">Disponibilités :</span> {a.disponibilites}</p>
+              <p><span className="font-medium">Contact :</span> {a.contact}</p>
+              {a.message && <p><span className="font-medium">Message :</span> {a.message}</p>}
+            </div>
+            {a.status === "en_attente" && (
+              <div className="flex gap-2 pt-1">
+                <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1" onClick={() => updateStatus(a.id, "acceptee")}>
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Accepter
+                </Button>
+                <Button size="sm" variant="outline" className="text-destructive border-destructive/30" onClick={() => updateStatus(a.id, "refusee")}>
+                  <XCircle className="h-3.5 w-3.5 mr-1" /> Refuser
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
 export default function AdminHifz() {
   const { toast } = useToast();
-  const [tab, setTab] = useState("slots");
+  const [tab, setTab] = useState("candidatures");
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    supabase.from("hifz_applications").select("id", { count: "exact" }).eq("status", "en_attente")
+      .then(({ count }) => setPendingCount(count || 0));
+  }, []);
 
   return (
     <Card className="border-emerald-200">
@@ -107,7 +175,13 @@ export default function AdminHifz() {
       </CardHeader>
       <CardContent>
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="grid grid-cols-4 w-full bg-emerald-50 border border-emerald-100">
+          <TabsList className="grid grid-cols-5 w-full bg-emerald-50 border border-emerald-100">
+            <TabsTrigger value="candidatures" className="data-[state=active]:bg-emerald-700 data-[state=active]:text-white text-xs relative">
+              Candidatures
+              {pendingCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">{pendingCount}</span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="slots" className="data-[state=active]:bg-emerald-700 data-[state=active]:text-white text-xs">
               Créneaux
             </TabsTrigger>
@@ -121,6 +195,7 @@ export default function AdminHifz() {
               <PenLine className="h-3.5 w-3.5" /> Mushaf
             </TabsTrigger>
           </TabsList>
+          <TabsContent value="candidatures" className="mt-4"><CandidaturesTab /></TabsContent>
           <TabsContent value="slots" className="mt-4"><SlotsTab toast={toast} /></TabsContent>
           <TabsContent value="sessions" className="mt-4"><SessionsTab toast={toast} /></TabsContent>
           <TabsContent value="evaluate" className="mt-4"><EvaluateTab toast={toast} /></TabsContent>

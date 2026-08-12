@@ -33,7 +33,19 @@ export default function HifzApplicationDialog({ trigger, triggerClassName, trigg
     setSubmitting(true);
     try {
       const niveauLabel = niveauArabe === "sait_lire" ? "Sait lire l'arabe" : "Ne sait pas encore lire l'arabe";
-      const { error } = await supabase.functions.invoke("send-transactional-email", {
+
+      // Sauvegarde en base (source de vérité — indépendant de l'email)
+      const { error: dbError } = await supabase.from("hifz_applications").insert({
+        prenom: prenom.trim(),
+        niveau_arabe: niveauLabel,
+        disponibilites: disponibilites.trim(),
+        contact: contact.trim(),
+        message: message.trim() || null,
+      });
+      if (dbError) throw dbError;
+
+      // Notification email (best-effort — ne bloque pas si ça échoue)
+      supabase.functions.invoke("send-transactional-email", {
         body: {
           templateName: "hifz-application-admin",
           recipientEmail: "ache.societe@gmail.com",
@@ -45,8 +57,8 @@ export default function HifzApplicationDialog({ trigger, triggerClassName, trigg
             message: message.trim() || null,
           },
         },
-      });
-      if (error) throw error;
+      }).catch((err) => console.warn("Email notification failed", err));
+
       setSubmitted(true);
     } catch (err: any) {
       toast.error("Erreur lors de l'envoi. Veuillez réessayer.");
