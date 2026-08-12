@@ -440,7 +440,7 @@ export default function Hifz() {
       juzNumber: bookingType === "khatm_partiel" ? bookingJuz : null,
     };
     Promise.all([
-      supabase.functions.invoke("send-transactional-email", { body: { templateName: "hifz-booking-admin", recipientEmail: "contact@alfasl.fr", templateData: tplData } }),
+      supabase.functions.invoke("send-transactional-email", { body: { templateName: "hifz-booking-admin", recipientEmail: "ache.societe@gmail.com", templateData: tplData } }),
       user.email ? supabase.functions.invoke("send-transactional-email", { body: { templateName: "hifz-booking-confirmation", recipientEmail: user.email, templateData: tplData } }) : null,
     ].filter(Boolean)).catch(() => {});
 

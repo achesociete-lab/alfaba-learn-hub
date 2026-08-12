@@ -37,7 +37,7 @@ const HifzApplicationAdminEmail = ({ prenom, niveauArabe, disponibilites, emailO
 export const template = {
   component: HifzApplicationAdminEmail,
   subject: (data: Record<string, any>) => `Demande Hifd — ${data.prenom || 'Candidat'}`,
-  to: 'contact@alfasl.fr',
+  to: 'ache.societe@gmail.com',
   displayName: 'Demande programme Hifd (admin)',
   previewData: {
     prenom: 'Yacine',
