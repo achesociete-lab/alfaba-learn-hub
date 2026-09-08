@@ -1,8 +1,9 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, BookOpen, CheckCircle, XCircle, ArrowRight, Volume2 } from "lucide-react";
+import { Sparkles, CheckCircle, XCircle, ArrowRight, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { playCorrectSound, playWrongSound } from "@/utils/sound-feedback";
+import { useArabicSpeech } from "@/hooks/use-arabic-speech";
 
 // ── Word of the Day pools ──
 
@@ -150,6 +151,7 @@ const DailyExercise = ({ level, completedLessons }: DailyExerciseProps) => {
     return picked;
   }, [availableQCMs, dayIndex]);
 
+  const { speak } = useArabicSpeech();
   const [currentStep, setCurrentStep] = useState<"word" | "qcm" | "done">("word");
   const [qcmIndex, setQcmIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
@@ -216,9 +218,18 @@ const DailyExercise = ({ level, completedLessons }: DailyExerciseProps) => {
             className="space-y-4"
           >
             <p className="text-xs font-semibold text-secondary uppercase tracking-wider">📖 Mot du jour</p>
-            <div className="text-center py-4">
-              <p className="text-4xl font-arabic text-foreground mb-2" dir="rtl">{todayWord.arabic}</p>
-              <p className="text-lg font-semibold text-primary mt-1">{todayWord.meaning}</p>
+            <div className="text-center py-4 space-y-2">
+              <button
+                onClick={() => speak(todayWord.arabic)}
+                className="group inline-flex flex-col items-center gap-1 cursor-pointer"
+              >
+                <p className="text-5xl font-arabic text-foreground group-hover:text-primary transition-colors" dir="rtl">
+                  {todayWord.arabic}
+                </p>
+                <Volume2 className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+              </button>
+              <p className="text-sm text-muted-foreground">{todayWord.transliteration}</p>
+              <p className="text-lg font-semibold text-primary">{todayWord.meaning}</p>
             </div>
             <Button
               onClick={() => setCurrentStep(todayQCMs.length > 0 ? "qcm" : "done")}

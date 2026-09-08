@@ -3,7 +3,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
 import {
-  LogOut, User, Brain, Trophy, GraduationCap, BookMarked,
+  LogOut, User, Brain, Trophy, GraduationCap, BookMarked, ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -11,23 +11,68 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
 import { useLessonProgress } from "@/hooks/use-lesson-progress";
 import { useProfile } from "@/hooks/use-profile";
+import { useSubscription } from "@/hooks/use-subscription";
 import LevelUpTest from "@/components/LevelUpTest";
 import DailyExercise from "@/components/DailyExercise";
 import { BadgesSection } from "@/components/BadgesSection";
 
+const N1_TOTAL = 12;
+const N2_TOTAL = 12;
+
+const N1_TITLES = [
+  "Les lettres isolées",
+  "Les formes des lettres",
+  "Les voyelles courtes",
+  "Lecture de syllabes",
+  "Les voyelles longues",
+  "Lecture de mots simples",
+  "Le Tanwîn",
+  "La Shadda",
+  "Lecture de phrases",
+  "Récapitulatif & dictée finale",
+  "Les mots essentiels",
+  "Tâ Marbûta et la Hamza",
+];
+
+const N2_TITLES = [
+  "Révision & Lecture fluide",
+  "Les articles définis (ال)",
+  "Lecture de textes courts",
+  "Le nom et ses catégories",
+  "La phrase nominale",
+  "La phrase verbale",
+  "Compréhension de texte I",
+  "Les pronoms personnels",
+  "Compréhension de texte II",
+  "Les prépositions",
+  "Rédaction guidée",
+  "Dictée finale",
+];
+
 const Dashboard = () => {
   const { user, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
-  const { profile } = useProfile();
+  const { profile, refetch: refetchProfile } = useProfile();
   const { completedLessons, completedN2Lessons } = useLessonProgress();
+  const { isHifz } = useSubscription();
   const [showLevelTest, setShowLevelTest] = useState(false);
 
   const isPresentiel = profile?.type_eleve === "presentiel";
   const isN1 = profile?.level === "niveau_1";
-  const totalLessons = isN1 ? 10 : 13;
+  const totalLessons = isN1 ? N1_TOTAL : N2_TOTAL;
   const completed = isN1 ? completedLessons : completedN2Lessons;
   const progressPct = Math.round((completed.length / totalLessons) * 100);
-  const allN1Done = isN1 && completedLessons.length >= 10;
+  const allDone = completed.length >= totalLessons;
+  const allN1Done = isN1 && allDone;
+
+  const nextLessonNum = allDone ? null :
+    Array.from({ length: totalLessons }, (_, i) => i + 1).find(n => !completed.includes(n)) ?? null;
+  const nextLessonTitle = nextLessonNum
+    ? (isN1 ? N1_TITLES[nextLessonNum - 1] : N2_TITLES[nextLessonNum - 1])
+    : null;
+  const nextLessonLink = nextLessonNum
+    ? (isN1 ? `/exercices?lesson=${nextLessonNum}` : `/exercices?lesson=${nextLessonNum}&level=niveau_2`)
+    : null;
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -70,11 +115,37 @@ const Dashboard = () => {
             </Button>
           </motion.div>
 
+          {/* CTA Prochaine leçon */}
+          {nextLessonLink && nextLessonTitle && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="mb-6"
+            >
+              <Link to={nextLessonLink}>
+                <div className="p-5 rounded-xl border border-primary/40 bg-gradient-to-r from-primary/10 to-primary/5 hover:border-primary/60 hover:shadow-md transition-all flex items-center justify-between gap-4 cursor-pointer group">
+                  <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 rounded-xl gradient-emerald flex items-center justify-center shrink-0 text-xl">
+                      📖
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-primary uppercase tracking-wide">Continuer l'apprentissage</p>
+                      <p className="text-base font-bold text-foreground mt-0.5">Leçon {nextLessonNum} — {nextLessonTitle}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{isN1 ? "Niveau 1" : "Niveau 2"} · ~15 min</p>
+                    </div>
+                  </div>
+                  <ArrowRight className="h-5 w-5 text-primary shrink-0 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </Link>
+            </motion.div>
+          )}
+
           {/* Carte de progression */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
+            transition={{ delay: 0.15 }}
             className="mb-6 p-6 rounded-xl border border-border bg-card"
           >
             <div className="flex items-center gap-3 mb-4">
@@ -90,16 +161,19 @@ const Dashboard = () => {
             <Progress value={progressPct} className="h-2 mb-3" />
 
             {/* Grille des leçons */}
-            <div className="grid grid-cols-10 sm:grid-cols-13 gap-1.5 mt-4">
+            <div className="grid grid-cols-6 sm:grid-cols-12 gap-1.5 mt-4">
               {Array.from({ length: totalLessons }, (_, i) => {
                 const num = i + 1;
                 const done = completed.includes(num);
+                const isNext = num === nextLessonNum;
                 return (
                   <div
                     key={num}
                     className={`h-8 rounded-lg flex items-center justify-center text-xs font-bold transition-all ${
                       done
                         ? "bg-primary text-primary-foreground"
+                        : isNext
+                        ? "bg-primary/20 text-primary border border-primary/40"
                         : "bg-muted text-muted-foreground"
                     }`}
                   >
@@ -140,7 +214,7 @@ const Dashboard = () => {
           {showLevelTest && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-6">
               <LevelUpTest
-                onPass={() => { setShowLevelTest(false); window.location.reload(); }}
+                onPass={async () => { setShowLevelTest(false); await refetchProfile(); }}
                 onDismiss={() => setShowLevelTest(false)}
               />
             </motion.div>
@@ -163,7 +237,7 @@ const Dashboard = () => {
           <DailyExercise level={profile?.level || "niveau_1"} completedLessons={completed} />
 
           {/* Accès rapides */}
-          <div className="grid sm:grid-cols-2 gap-4 mt-6">
+          <div className={`grid ${isHifz ? "sm:grid-cols-2" : ""} gap-4 mt-6`}>
             <Link to="/exercices">
               <div className="p-4 rounded-xl border border-border bg-card hover:border-primary/30 transition-colors flex items-center gap-3 cursor-pointer">
                 <div className="h-10 w-10 rounded-lg gradient-emerald flex items-center justify-center shrink-0">
@@ -175,17 +249,19 @@ const Dashboard = () => {
                 </div>
               </div>
             </Link>
-            <Link to="/hifz">
-              <div className="p-4 rounded-xl border border-border bg-card hover:border-amber-300/40 transition-colors flex items-center gap-3 cursor-pointer">
-                <div className="h-10 w-10 rounded-lg gradient-gold flex items-center justify-center shrink-0">
-                  <BookMarked className="h-5 w-5 text-primary-foreground" />
+            {isHifz && (
+              <Link to="/hifz">
+                <div className="p-4 rounded-xl border border-border bg-card hover:border-amber-300/40 transition-colors flex items-center gap-3 cursor-pointer">
+                  <div className="h-10 w-10 rounded-lg gradient-gold flex items-center justify-center shrink-0">
+                    <BookMarked className="h-5 w-5 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">Module Hifd</p>
+                    <p className="text-xs text-muted-foreground">Mémorisation et suivi des hizb</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Module Hifd</p>
-                  <p className="text-xs text-muted-foreground">Mémorisation et suivi des hizb</p>
-                </div>
-              </div>
-            </Link>
+              </Link>
+            )}
           </div>
 
         </div>
