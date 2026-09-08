@@ -221,6 +221,42 @@ export type Database = {
         }
         Relationships: []
       }
+      hifz_applications: {
+        Row: {
+          contact: string
+          created_at: string
+          disponibilites: string
+          id: string
+          message: string | null
+          niveau_arabe: string
+          prenom: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          contact: string
+          created_at?: string
+          disponibilites: string
+          id?: string
+          message?: string | null
+          niveau_arabe: string
+          prenom: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          contact?: string
+          created_at?: string
+          disponibilites?: string
+          id?: string
+          message?: string | null
+          niveau_arabe?: string
+          prenom?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       hifz_config: {
         Row: {
           created_at: string | null
