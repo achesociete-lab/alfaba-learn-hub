@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, ArrowRight, BookOpen, Brain, PenTool, FileText,
@@ -89,41 +89,58 @@ function GrammarTab({ lesson }: { lesson: Niveau2Lesson }) {
   );
 }
 
-// BUG 3 FIX: ordre mélangé stable par session
+const PASS_THRESHOLD = 0.7;
+
 function ExercisesTab({ lesson, onAllCorrect }: { lesson: Niveau2Lesson; onAllCorrect: () => void }) {
   const { user } = useAuth();
   const baseKey = userScopedKey(user?.id, `n2:lesson:${lesson.id}:ex`);
   const shuffleKey = `${baseKey}:order`;
+  const [resetKey, setResetKey] = useState(0);
   const rawQuestions = useMemo(() => [
     ...lesson.comprehension.questions.map((q) => ({ ...q, type: "comprehension" as const })),
     ...lesson.qcm.map((q) => ({ ...q, type: "qcm" as const })),
   ], [lesson]);
-  const shuffledOrder = useMemo(() => getOrCreateShuffledOrder(shuffleKey, rawQuestions.length), [shuffleKey, rawQuestions.length]);
+  const shuffledOrder = useMemo(() => getOrCreateShuffledOrder(shuffleKey, rawQuestions.length), [shuffleKey, rawQuestions.length, resetKey]);
   const allQuestions = useMemo(() => shuffledOrder.map(i => rawQuestions[i]), [shuffledOrder, rawQuestions]);
 
   const [current, setCurrent] = usePersistentState<number>(`${baseKey}:current`, 0);
   const [selected, setSelected] = useState<number | null>(null);
   const [score, setScore] = usePersistentState<number>(`${baseKey}:score`, 0);
   const [finished, setFinished] = usePersistentState<boolean>(`${baseKey}:finished`, false);
-  const q = allQuestions[current];
+
+  const onAllCorrectRef = useRef(onAllCorrect);
+  onAllCorrectRef.current = onAllCorrect;
+
+  useEffect(() => {
+    if (!finished || allQuestions.length === 0) return;
+    const pct = score / allQuestions.length;
+    if (pct >= PASS_THRESHOLD) onAllCorrectRef.current();
+  }, [finished, score, allQuestions.length]);
+
+  if (allQuestions.length === 0) return <p className="text-center text-muted-foreground p-4">Aucun exercice disponible.</p>;
+  const q = allQuestions[Math.min(current, allQuestions.length - 1)];
 
   const handleSelect = (idx: number) => {
     if (selected !== null) return; setSelected(idx);
     const isCorrect = idx === q.correctIndex;
-    const newScore = isCorrect ? score + 1 : score;
-    if (isCorrect) { setScore(newScore); playCorrectSound(); } else { playWrongSound(); }
-    if (current + 1 >= allQuestions.length) setTimeout(() => { if (newScore === allQuestions.length) onAllCorrect(); }, 500);
+    if (isCorrect) { setScore(s => s + 1); playCorrectSound(); } else { playWrongSound(); }
   };
   const next = () => { if (current + 1 >= allQuestions.length) setFinished(true); else { setCurrent(c => c + 1); setSelected(null); } };
-  const reset = () => { clearShuffledOrder(shuffleKey); setCurrent(0); setSelected(null); setScore(0); setFinished(false); window.location.reload(); };
+  const reset = () => {
+    clearShuffledOrder(shuffleKey);
+    setResetKey(k => k + 1);
+    setCurrent(0); setSelected(null); setScore(0); setFinished(false);
+  };
 
   if (finished) {
+    const pct = Math.round((score / allQuestions.length) * 100);
+    const passed = pct >= PASS_THRESHOLD * 100;
     return (
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="p-8 rounded-xl border border-border bg-card text-center">
         <Trophy className="h-16 w-16 mx-auto mb-4 text-secondary" />
         <h3 className="text-2xl font-bold text-foreground mb-2">Exercices terminés !</h3>
-        <p className="text-lg text-muted-foreground mb-1">Score : <span className="font-bold text-primary">{score}</span> / {allQuestions.length}</p>
-        <p className="text-sm text-muted-foreground mb-6">{score === allQuestions.length ? "Parfait ! 🎉" : score >= allQuestions.length * 0.7 ? "Très bien ! 👏" : "Continue à t'entraîner 💪"}</p>
+        <p className="text-lg text-muted-foreground mb-1">Score : <span className="font-bold text-primary">{score}</span> / {allQuestions.length} ({pct}%)</p>
+        <p className="text-sm text-muted-foreground mb-6">{passed ? (score === allQuestions.length ? "Parfait ! 🎉" : "Très bien ! 👏") : "Il faut 70% pour valider. Encore un effort ! 💪"}</p>
         <Button onClick={reset} className="gap-2"><RotateCcw className="h-4 w-4" /> Recommencer</Button>
       </motion.div>
     );
@@ -156,13 +173,13 @@ function ExercisesTab({ lesson, onAllCorrect }: { lesson: Niveau2Lesson; onAllCo
   );
 }
 
-// BUG 3 FIX: shuffle pour la dictée N2
 function DictationTab({ lesson, onAllCorrect }: { lesson: Niveau2Lesson; onAllCorrect: () => void }) {
   const { user } = useAuth();
-  const { speak } = useArabicSpeech();
+  const { speak, stop: stopSpeech } = useArabicSpeech();
   const baseKey = userScopedKey(user?.id, `n2:lesson:${lesson.id}:dict`);
   const shuffleKey = `${baseKey}:order`;
-  const shuffledOrder = useMemo(() => getOrCreateShuffledOrder(shuffleKey, lesson.dictation.length), [shuffleKey, lesson.dictation.length]);
+  const [resetKey, setResetKey] = useState(0);
+  const shuffledOrder = useMemo(() => getOrCreateShuffledOrder(shuffleKey, lesson.dictation.length), [shuffleKey, lesson.dictation.length, resetKey]);
   const shuffledList = useMemo(() => shuffledOrder.map(i => lesson.dictation[i]), [shuffledOrder, lesson.dictation]);
 
   const [current, setCurrent] = usePersistentState<number>(`${baseKey}:current`, 0);
@@ -175,30 +192,49 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Niveau2Lesson; onAllCo
   const [answerChecked, setAnswerChecked] = useState(false);
   const [answerCorrect, setAnswerCorrect] = useState(false);
 
-  const d = shuffledList[current];
-  const correctArabic = d.options[d.correctIndex];
+  const onAllCorrectRef = useRef(onAllCorrect);
+  onAllCorrectRef.current = onAllCorrect;
+
+  const isEmpty = shuffledList.length === 0;
+  const d = isEmpty ? null : shuffledList[Math.min(current, shuffledList.length - 1)];
+  const correctArabic = d ? d.options[d.correctIndex] : "";
+
+  useEffect(() => {
+    if (isEmpty || !correctArabic) return;
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      if (cancelled) return;
+      setIsPlaying(true);
+      try { stopSpeech(); await speak(correctArabic, 0.75); }
+      catch (e) { console.warn("Dictation playback failed:", e); }
+      finally { if (!cancelled) setIsPlaying(false); }
+    }, 400);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [current, correctArabic]);
+
+  useEffect(() => {
+    if (!finished || shuffledList.length === 0) return;
+    const pct = score / shuffledList.length;
+    if (pct >= PASS_THRESHOLD) onAllCorrectRef.current();
+  }, [finished, score, shuffledList.length]);
+
+  if (isEmpty || !d) return <p className="text-center text-muted-foreground p-4">Aucune dictée disponible.</p>;
 
   const playDictation = async () => {
+    if (!correctArabic) return;
     setIsPlaying(true);
-    try { await speak(correctArabic, 0.75); } finally { setTimeout(() => setIsPlaying(false), 1500); }
+    try { stopSpeech(); await speak(correctArabic, 0.75); } catch (e) { console.warn("Dictation playback failed:", e); } finally { setIsPlaying(false); }
   };
-  const currentRef = useRef(current);
-  if (currentRef.current !== current) { currentRef.current = current; setTimeout(() => playDictation(), 400); }
 
   const handleSelect = (idx: number) => {
     if (selected !== null) return; setSelected(idx);
-    const isCorrect = idx === d.correctIndex;
-    const newScore = isCorrect ? score + 1 : score;
-    if (isCorrect) { setScore(newScore); playCorrectSound(); } else { playWrongSound(); }
-    if (current + 1 >= shuffledList.length) setTimeout(() => { if (newScore === shuffledList.length) onAllCorrect(); }, 500);
+    if (idx === d.correctIndex) { setScore(s => s + 1); playCorrectSound(); } else { playWrongSound(); }
   };
   const handleCheckTyped = () => {
-    if (answerChecked) return;
+    if (answerChecked || !correctArabic) return;
     const isCorrect = typedAnswer.trim() === correctArabic.trim();
     setAnswerChecked(true); setAnswerCorrect(isCorrect);
-    const newScore = isCorrect ? score + 1 : score;
-    if (isCorrect) { setScore(newScore); playCorrectSound(); } else { playWrongSound(); }
-    if (current + 1 >= shuffledList.length) setTimeout(() => { if (newScore === shuffledList.length) onAllCorrect(); }, 500);
+    if (isCorrect) { setScore(s => s + 1); playCorrectSound(); } else { playWrongSound(); }
   };
   const next = () => {
     if (current + 1 >= shuffledList.length) setFinished(true);
@@ -206,19 +242,21 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Niveau2Lesson; onAllCo
   };
   const reset = () => {
     clearShuffledOrder(shuffleKey);
+    setResetKey(k => k + 1);
     setCurrent(0); setSelected(null); setScore(0); setFinished(false);
     setTypedAnswer(""); setAnswerChecked(false); setAnswerCorrect(false);
-    window.location.reload();
   };
   const canAdvance = mode === "qcm" ? selected !== null : answerChecked;
 
   if (finished) {
+    const pct = Math.round((score / shuffledList.length) * 100);
+    const passed = pct >= PASS_THRESHOLD * 100;
     return (
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="p-8 rounded-xl border border-border bg-card text-center">
         <Trophy className="h-16 w-16 mx-auto mb-4 text-secondary" />
         <h3 className="text-2xl font-bold text-foreground mb-2">Dictée terminée !</h3>
-        <p className="text-lg text-muted-foreground mb-1">Score : <span className="font-bold text-primary">{score}</span> / {shuffledList.length}</p>
-        <p className="text-sm text-muted-foreground mb-6">{score === shuffledList.length ? "Excellent ! 🎉" : "Continue à t'entraîner 💪"}</p>
+        <p className="text-lg text-muted-foreground mb-1">Score : <span className="font-bold text-primary">{score}</span> / {shuffledList.length} ({pct}%)</p>
+        <p className="text-sm text-muted-foreground mb-6">{passed ? (score === shuffledList.length ? "Excellent ! 🎉" : "Très bien ! 👏") : "Il faut 70% pour valider. Continue ! 💪"}</p>
         <Button onClick={reset} className="gap-2"><RotateCcw className="h-4 w-4" /> Recommencer</Button>
       </motion.div>
     );
@@ -239,18 +277,23 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Niveau2Lesson; onAllCo
             </Button>
           </div>
           {mode === "qcm" ? (
-            <div className="grid grid-cols-2 gap-3">
-              {d.options.map((opt, idx) => {
-                let cls = "border border-border bg-background hover:bg-muted";
-                if (selected !== null) { if (idx === d.correctIndex) cls = "border-primary bg-primary/10 text-primary"; else if (idx === selected) cls = "border-destructive bg-destructive/10 text-destructive"; }
-                return (
-                  <button key={idx} onClick={() => handleSelect(idx)} disabled={selected !== null} className={`p-4 rounded-lg font-arabic text-2xl transition-all cursor-pointer hover:bg-primary/5 ${cls}`}>
-                    {opt}
-                    {selected !== null && idx === d.correctIndex && <CheckCircle className="h-4 w-4 inline ml-2" />}
-                    {selected !== null && idx === selected && idx !== d.correctIndex && <XCircle className="h-4 w-4 inline ml-2" />}
-                  </button>
-                );
-              })}
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                {d.options.map((opt, idx) => {
+                  let cls = "border border-border bg-background hover:bg-muted";
+                  if (selected !== null) { if (idx === d.correctIndex) cls = "border-primary bg-primary/10 text-primary"; else if (idx === selected) cls = "border-destructive bg-destructive/10 text-destructive"; }
+                  return (
+                    <button key={idx} onClick={() => handleSelect(idx)} disabled={selected !== null} className={`p-4 rounded-lg font-arabic text-2xl transition-all cursor-pointer hover:bg-primary/5 ${cls}`}>
+                      {opt}
+                      {selected !== null && idx === d.correctIndex && <CheckCircle className="h-4 w-4 inline ml-2" />}
+                      {selected !== null && idx === selected && idx !== d.correctIndex && <XCircle className="h-4 w-4 inline ml-2" />}
+                    </button>
+                  );
+                })}
+              </div>
+              {selected !== null && selected !== d.correctIndex && (
+                <p className="text-xs text-center text-muted-foreground">Translitération : <span className="font-medium text-foreground">{d.transliteration}</span></p>
+              )}
             </div>
           ) : (
             <div className="space-y-3">
@@ -264,7 +307,11 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Niveau2Lesson; onAllCo
                   className={`p-3 rounded-lg text-sm text-center ${answerCorrect ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"}`}>
                   {answerCorrect
                     ? <span className="flex items-center justify-center gap-2"><CheckCircle className="h-4 w-4" /> Correct ! 🎉</span>
-                    : <span className="flex flex-col items-center gap-1"><span className="flex items-center gap-2"><XCircle className="h-4 w-4" /> Incorrect</span><span className="font-arabic text-xl">Réponse : {correctArabic}</span></span>}
+                    : <span className="flex flex-col items-center gap-1">
+                        <span className="flex items-center gap-2"><XCircle className="h-4 w-4" /> Incorrect</span>
+                        <span className="font-arabic text-xl">Réponse : {correctArabic}</span>
+                        <span className="text-xs text-muted-foreground">({d.transliteration})</span>
+                      </span>}
                 </motion.div>
               )}
             </div>
