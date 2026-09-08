@@ -27,7 +27,7 @@ const HifzSessionReminderEmail = ({ studentName, date, time, sessionType, sessio
   return (
     <Html lang="fr" dir="ltr">
       <Head />
-      <Preview>Rappel — Votre séance Hifd est demain · {date} à {time}</Preview>
+      <Preview>{`Rappel — Votre séance Hifd est demain · ${date ?? ''} à ${time ?? ''}`}</Preview>
       <Body style={main}>
         <Container style={container}>
           <Section style={{ ...header, backgroundColor: meta.color }}>
