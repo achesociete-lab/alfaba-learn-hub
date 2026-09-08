@@ -156,6 +156,7 @@ function LettersScreen({ onNext }: { onNext: () => void }) {
 
 // ─── Screen 3: Letter Families ───
 function FamiliesScreen({ onNext }: { onNext: () => void }) {
+  const { speak } = useArabicSpeech();
   return (
     <motion.div
       initial={{ opacity: 0, x: 100 }}
@@ -165,7 +166,7 @@ function FamiliesScreen({ onNext }: { onNext: () => void }) {
     >
       <div className="text-center">
         <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">Les familles de lettres</h2>
-        <p className="text-sm text-muted-foreground">En connaissant les formes de base, tu maîtrises les 28 lettres !</p>
+        <p className="text-sm text-muted-foreground">En connaissant les formes de base, tu maîtrises les 28 lettres ! Clique pour écouter.</p>
       </div>
 
       <div className="grid gap-3 max-w-2xl mx-auto">
@@ -182,8 +183,13 @@ function FamiliesScreen({ onNext }: { onNext: () => void }) {
                 <p className="text-xs font-medium text-muted-foreground">{f.label}</p>
                 <p className="text-sm text-foreground mt-0.5">{f.desc}</p>
               </div>
-              <div className="font-arabic text-3xl text-foreground tracking-wider" dir="rtl">
-                {f.letters}
+              <div className="flex gap-2" dir="rtl">
+                {f.letters.split(" ").filter(Boolean).map((letter, li) => (
+                  <button key={li} onClick={() => speak(letter)}
+                    className="font-arabic text-3xl text-foreground hover:text-primary transition-colors cursor-pointer hover:scale-110 transform">
+                    {letter}
+                  </button>
+                ))}
               </div>
             </div>
           </motion.div>
@@ -201,9 +207,9 @@ function FamiliesScreen({ onNext }: { onNext: () => void }) {
 
 // ─── Screen 4: Non-linking Letters ───
 function NonLinkingScreen({ onComplete }: { onComplete: () => void }) {
+  const { speak } = useArabicSpeech();
   const [illuminated, setIlluminated] = useState(0);
 
-  // Animate letters one by one
   return (
     <motion.div
       initial={{ opacity: 0, x: 100 }}
@@ -214,14 +220,15 @@ function NonLinkingScreen({ onComplete }: { onComplete: () => void }) {
       <div className="text-center">
         <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">Les lettres qui ne s'attachent pas</h2>
         <p className="text-sm text-muted-foreground max-w-md mx-auto">
-          Ces 6 lettres ne se lient jamais à la lettre suivante. Elles ne s'attachent qu'à la lettre précédente.
+          Ces 6 lettres ne se lient jamais à la lettre suivante. Clique pour écouter.
         </p>
       </div>
 
       <div className="flex gap-4 justify-center" dir="rtl">
         {nonLinking.map((letter, i) => (
-          <motion.div
+          <motion.button
             key={letter}
+            onClick={() => speak(letter)}
             initial={{ opacity: 0.3, scale: 0.8 }}
             animate={{
               opacity: 1,
@@ -234,16 +241,16 @@ function NonLinkingScreen({ onComplete }: { onComplete: () => void }) {
             onAnimationComplete={() => {
               if (illuminated <= i) setIlluminated(i + 1);
             }}
-            className={`flex flex-col items-center justify-center h-20 w-20 rounded-2xl border-2 transition-colors ${
+            className={`flex flex-col items-center justify-center h-20 w-20 rounded-2xl border-2 transition-colors cursor-pointer hover:scale-110 ${
               illuminated > i
                 ? "border-primary bg-primary/10"
-                : "border-border bg-card"
+                : "border-border bg-card hover:border-primary/40"
             }`}
           >
             <span className={`font-arabic text-4xl ${illuminated > i ? "text-primary" : "text-foreground"}`}>
               {letter}
             </span>
-          </motion.div>
+          </motion.button>
         ))}
       </div>
 
