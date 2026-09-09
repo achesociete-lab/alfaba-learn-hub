@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import {
   BookOpen, CheckCircle, Volume2, Mic,
@@ -103,7 +103,7 @@ function ExamplesEditor({ examples, onChange }: { examples: LessonExample[]; onC
 }
 
 // ─── Dictation Editor ───
-function DictationEditor({ dictation, onChange, wordKey }: { dictation: DictationItem[]; onChange: (d: DictationItem[]) => void; wordKey: string }) {
+function DictationEditor({ dictation, onChange, wordKey, renderRecorder }: { dictation: DictationItem[]; onChange: (d: DictationItem[]) => void; wordKey: string; renderRecorder?: (key: string) => React.ReactNode }) {
   const updateD = (idx: number, field: string, val: any) => {
     const updated = [...dictation];
     (updated[idx] as any)[field] = val;
@@ -123,7 +123,15 @@ function DictationEditor({ dictation, onChange, wordKey }: { dictation: Dictatio
       {dictation.map((d, i) => (
         <div key={i} className="p-3 rounded-lg border border-border space-y-2">
           <div className="grid grid-cols-2 gap-2">
-            <EditField label="Mot/Phrase" value={(d as any)[wordKey]} onChange={(v) => updateD(i, wordKey, v)} dir="rtl" />
+            <div>
+              <EditField label="Mot/Phrase" value={(d as any)[wordKey]} onChange={(v) => updateD(i, wordKey, v)} dir="rtl" />
+              {renderRecorder && (d as any)[wordKey] && (
+                <div className="mt-1 flex items-center gap-1">
+                  <span className="text-xs text-muted-foreground">Audio :</span>
+                  {renderRecorder((d as any)[wordKey])}
+                </div>
+              )}
+            </div>
             <EditField label="Translittération" value={d.transliteration} onChange={(v) => updateD(i, "transliteration", v)} />
           </div>
           <div className="grid grid-cols-2 gap-2">
@@ -290,7 +298,7 @@ function N1LessonEditor({ lesson: initialLesson, onBack, onSaved }: { lesson: Le
       {/* Dictée */}
       <div className="p-4 rounded-xl border border-border bg-card">
         {editing ? (
-          <DictationEditor dictation={lesson.dictation} onChange={(d) => update("dictation", d)} wordKey="word" />
+          <DictationEditor dictation={lesson.dictation} onChange={(d) => update("dictation", d)} wordKey="word" renderRecorder={renderRecorder} />
         ) : (
           <>
             <h4 className="font-semibold text-foreground mb-3">✍️ Dictée ({lesson.dictation.length})</h4>
@@ -490,7 +498,7 @@ function N2LessonEditor({ lesson: initialLesson, onBack, onSaved }: { lesson: Ni
       {/* Dictée */}
       <div className="p-4 rounded-xl border border-border bg-card">
         {editing ? (
-          <DictationEditor dictation={lesson.dictation as any} onChange={(d) => update("dictation", d)} wordKey="word" />
+          <DictationEditor dictation={lesson.dictation as any} onChange={(d) => update("dictation", d)} wordKey="word" renderRecorder={renderRecorder} />
         ) : (
           <>
             <h4 className="font-semibold text-foreground mb-3">✍️ Dictée ({lesson.dictation.length})</h4>
