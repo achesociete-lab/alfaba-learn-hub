@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Mic, Square, Trash2, Check, Loader2 } from "lucide-react";
+import { Mic, Square, Trash2, Check, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAudioRecorder } from "@/hooks/use-audio-recorder";
 import { toast } from "sonner";
@@ -43,12 +43,15 @@ export default function AudioClipRecorder({ audioKey, existingUrl, onSave, onDel
   // Compact inline recorder
   return (
     <span className="inline-flex items-center gap-1 ml-1">
-      {existingUrl && !audioUrl && (
+      {existingUrl && !audioUrl && !isRecording && (
         <>
-          <Button size="icon" variant="ghost" className="h-6 w-6 text-primary" onClick={() => new Audio(existingUrl).play()}>
+          <Button size="icon" variant="ghost" className="h-6 w-6 text-primary" onClick={() => new Audio(existingUrl).play()} title="Écouter">
             <Mic className="h-3 w-3" />
           </Button>
-          <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={handleDelete} disabled={deleting}>
+          <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-primary" onClick={startRecording} title="Ré-enregistrer">
+            <RefreshCw className="h-3 w-3" />
+          </Button>
+          <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={handleDelete} disabled={deleting} title="Supprimer">
             <Trash2 className="h-3 w-3" />
           </Button>
         </>
