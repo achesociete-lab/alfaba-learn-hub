@@ -1,4 +1,4 @@
-import { BookOpen, Mail, MessageCircle } from "lucide-react";
+import { Mail, MessageCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Footer = () => (
@@ -27,11 +27,8 @@ const Footer = () => (
 
           {/* Brand */}
           <div className="md:col-span-2">
-            <div className="flex items-center gap-2 mb-4">
-              <BookOpen className="h-6 w-6 text-gold" />
-              <span className="font-display text-lg font-bold text-cream">
-                ALFASL <span className="font-arabic">الفصل</span>
-              </span>
+            <div className="flex items-center mb-4">
+              <img src="/logo.png" alt="Alfasl" className="h-12 w-auto brightness-0 invert" />
             </div>
             <p className="text-sm text-cream/60 leading-relaxed max-w-xs mb-5">
               Programme de hifd et d'apprentissage de l'arabe pour les francophones. Cours individuels avec professeur dédié, 2 séances/semaine.
