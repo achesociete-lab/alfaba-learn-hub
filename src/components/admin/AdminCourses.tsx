@@ -305,15 +305,14 @@ function N1LessonEditor({ lesson: initialLesson, onBack, onSaved }: { lesson: Le
             <div className="space-y-3">
               {lesson.dictation.map((d, i) => (
                 <div key={i} className="p-3 rounded-lg bg-muted">
-                  <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-start justify-between gap-2 mb-1">
                     <p className="text-sm font-medium text-foreground">
                       <span className="font-arabic text-lg">{d.word}</span> — {d.transliteration}
                       {renderRecorder(d.word)}
                     </p>
                     <Button
-                      size="icon" variant="ghost"
-                      className="h-6 w-6 text-destructive hover:bg-destructive/10 shrink-0"
-                      title="Supprimer cette question"
+                      size="sm" variant="destructive"
+                      className="shrink-0 text-xs h-7 px-2 gap-1"
                       onClick={async () => {
                         const updated = lesson.dictation.filter((_, j) => j !== i);
                         setLesson(prev => ({ ...prev, dictation: updated }));
@@ -321,7 +320,7 @@ function N1LessonEditor({ lesson: initialLesson, onBack, onSaved }: { lesson: Le
                         catch (e: any) { toast.error("Erreur : " + e.message); setLesson(prev => ({ ...prev, dictation: lesson.dictation })); }
                       }}
                     >
-                      <Trash2 className="h-3 w-3" />
+                      <Trash2 className="h-3 w-3" /> Supprimer la question
                     </Button>
                   </div>
                   <div className="grid grid-cols-2 gap-2 mt-2">
@@ -520,15 +519,14 @@ function N2LessonEditor({ lesson: initialLesson, onBack, onSaved }: { lesson: Ni
             <div className="space-y-3">
               {lesson.dictation.map((d, i) => (
                 <div key={i} className="p-3 rounded-lg bg-muted">
-                  <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-start justify-between gap-2 mb-1">
                     <p className="text-sm font-medium text-foreground">
                       <span className="font-arabic text-lg">{d.sentence || (d as any).word}</span>
                       {renderRecorder(d.sentence || (d as any).word)}
                     </p>
                     <Button
-                      size="icon" variant="ghost"
-                      className="h-6 w-6 text-destructive hover:bg-destructive/10 shrink-0"
-                      title="Supprimer cette question"
+                      size="sm" variant="destructive"
+                      className="shrink-0 text-xs h-7 px-2 gap-1"
                       onClick={async () => {
                         const updated = (lesson.dictation as any[]).filter((_, j) => j !== i);
                         setLesson(prev => ({ ...prev, dictation: updated as any }));
@@ -536,7 +534,7 @@ function N2LessonEditor({ lesson: initialLesson, onBack, onSaved }: { lesson: Ni
                         catch (e: any) { toast.error("Erreur : " + e.message); setLesson(prev => ({ ...prev, dictation: lesson.dictation })); }
                       }}
                     >
-                      <Trash2 className="h-3 w-3" />
+                      <Trash2 className="h-3 w-3" /> Supprimer la question
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground">{d.transliteration}</p>
