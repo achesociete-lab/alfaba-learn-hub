@@ -276,6 +276,174 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── Patch QCM L1 et L2 ──────────────────────────────────────────────────
+    const QCM_L1 = [
+      {
+        question: "Combien de lettres compte l'alphabet arabe ?",
+        options: ["22", "26", "28", "30"],
+        correctIndex: 2,
+        explanation: "L'alphabet arabe comporte exactement 28 lettres.",
+      },
+      {
+        question: "Dans quel sens s'écrit l'arabe ?",
+        options: ["De gauche à droite", "De droite à gauche", "De haut en bas", "Dans les deux sens"],
+        correctIndex: 1,
+        explanation: "L'arabe s'écrit et se lit de droite à gauche.",
+      },
+      {
+        question: "Combien de points a la lettre Thâ' ?",
+        options: ["0", "1", "2", "3"],
+        correctIndex: 3,
+        explanation: "La lettre Thâ' (ث) porte 3 points au-dessus.",
+      },
+      {
+        question: "Les points de la lettre Tâ' se trouvent :",
+        options: ["En dessous", "Au-dessus", "À l'intérieur", "Elle n'a pas de points"],
+        correctIndex: 1,
+        explanation: "Le Tâ' (ت) a deux points placés au-dessus.",
+      },
+      {
+        question: "Quelle lettre produit le son 'kh' (comme 'Bach' en allemand) ?",
+        options: ["Jîm", "Hâ'", "Khâ'", "'Ayn"],
+        correctIndex: 2,
+        explanation: "Le Khâ' (خ) produit un son de raclement de gorge, comme le 'ch' allemand.",
+      },
+      {
+        question: "Parmi ces noms de lettres, lequel ne s'attache PAS à la lettre suivante ?",
+        options: ["Bâ'", "Dâl", "Lâm", "Kâf"],
+        correctIndex: 1,
+        explanation: "Le Dâl (د) fait partie des 6 lettres non-liantes : ا د ذ ر ز و.",
+      },
+      {
+        question: "Les lettres ب / ت / ث partagent la même forme de base. Qu'est-ce qui les différencie ?",
+        options: ["La taille", "Le nombre et la position des points", "La prononciation uniquement", "La longueur"],
+        correctIndex: 1,
+        explanation: "Ces trois lettres ont la même base mais se distinguent par leurs points : 1 en dessous (ب), 2 au-dessus (ت), 3 au-dessus (ث).",
+      },
+      {
+        question: "Les lettres ص et ض se distinguent par :",
+        options: ["La taille", "Le nombre de points", "La couleur", "La position sur la ligne"],
+        correctIndex: 1,
+        explanation: "ض a un point au-dessus, ص n'en a pas. Même forme, points différents.",
+      },
+      {
+        question: "Quelle est la particularité du son produit par la lettre 'Ayn (ع) ?",
+        options: ["Un son 'f'", "Un son guttural unique, venu du fond de la gorge", "Un son 'k'", "Un souffle léger"],
+        correctIndex: 1,
+        explanation: "Le 'Ayn (ع) produit un son guttural unique, sans équivalent en français — il vient du fond de la gorge.",
+      },
+      {
+        question: "Combien de lettres ne s'attachent PAS à la lettre suivante ?",
+        options: ["4", "5", "6", "7"],
+        correctIndex: 2,
+        explanation: "Les 6 lettres non-liantes sont : ا د ذ ر ز و. Elles ne se connectent jamais à gauche.",
+      },
+      {
+        question: "Le Bâ' (ب) a combien de points, et où ?",
+        options: ["2 au-dessus", "1 en dessous", "3 au-dessus", "Aucun"],
+        correctIndex: 1,
+        explanation: "Le Bâ' (ب) a un seul point placé en dessous.",
+      },
+      {
+        question: "Quelle lettre se prononce comme le 'z' français ?",
+        options: ["Râ'", "Zây", "Wâw", "Yâ'"],
+        correctIndex: 1,
+        explanation: "Le Zây (ز) produit le son 'z', comme dans 'zèbre'.",
+      },
+    ];
+
+    const QCM_L2 = [
+      {
+        question: "Combien de formes différentes peut avoir une lettre liante en arabe ?",
+        options: ["1", "2", "3", "4"],
+        correctIndex: 3,
+        explanation: "Une lettre liante prend 4 formes : isolée, initiale, médiane et finale.",
+      },
+      {
+        question: "La forme 'initiale' d'une lettre est utilisée :",
+        options: ["Quand la lettre est seule", "Au début du mot", "Au milieu du mot", "À la fin du mot"],
+        correctIndex: 1,
+        explanation: "La forme initiale (ex : بـ) apparaît quand la lettre ouvre un mot et se lie à la suivante.",
+      },
+      {
+        question: "La forme 'médiane' d'une lettre est utilisée :",
+        options: ["Quand la lettre est seule", "Au début du mot", "Au milieu du mot", "À la fin du mot"],
+        correctIndex: 2,
+        explanation: "La forme médiane (ex : ـبـ) est utilisée quand la lettre est entourée de deux autres lettres liantes.",
+      },
+      {
+        question: "Quelle est la forme finale de la lettre Bâ' ?",
+        options: ["ب", "بـ", "ـبـ", "ـب"],
+        correctIndex: 3,
+        explanation: "ـب est la forme finale : la lettre est liée à la précédente mais pas à la suivante.",
+      },
+      {
+        question: "Quelle est la forme initiale de la lettre Bâ' ?",
+        options: ["ب", "بـ", "ـبـ", "ـب"],
+        correctIndex: 1,
+        explanation: "بـ est la forme initiale : la lettre est liée à la lettre suivante, pas à la précédente.",
+      },
+      {
+        question: "Pourquoi certaines lettres n'ont que 2 formes (et non 4) ?",
+        options: ["Parce qu'elles sont rares", "Parce qu'elles ne s'attachent pas à la lettre suivante", "Parce qu'elles sont courtes", "Parce qu'elles sont des voyelles"],
+        correctIndex: 1,
+        explanation: "Les lettres non-liantes (ا د ذ ر ز و) n'ont que 2 formes car elles ne se connectent jamais à gauche.",
+      },
+      {
+        question: "Qu'est-ce qui change d'une forme à l'autre d'une même lettre ?",
+        options: ["Les points", "Le corps complet de la lettre", "Les liaisons (les extrémités)", "La hauteur"],
+        correctIndex: 2,
+        explanation: "Le corps (squelette) de la lettre reste reconnaissable — seules les extrémités (liaisons) changent.",
+      },
+      {
+        question: "La forme 'isolée' d'une lettre est utilisée :",
+        options: ["Toujours", "Quand la lettre n'est connectée ni à gauche ni à droite", "Seulement en début de mot", "Seulement pour les voyelles"],
+        correctIndex: 1,
+        explanation: "La forme isolée apparaît quand la lettre n'est entourée d'aucune lettre liante.",
+      },
+      {
+        question: "En forme médiane, une lettre est liée :",
+        options: ["Ni à gauche ni à droite", "Seulement à droite", "Seulement à gauche", "Des deux côtés"],
+        correctIndex: 3,
+        explanation: "En position médiane, la lettre se connecte à la fois à la précédente et à la suivante.",
+      },
+      {
+        question: "La lettre Lâm (ل) est liante. Combien de formes distinctes a-t-elle ?",
+        options: ["1", "2", "3", "4"],
+        correctIndex: 3,
+        explanation: "Étant liante, le Lâm prend 4 formes : ل (isolée), لـ (initiale), ـلـ (médiane), ـل (finale).",
+      },
+      {
+        question: "Comment reconnaître une lettre en position médiane dans un mot ?",
+        options: ["Elle est reliée des deux côtés", "Elle est seule", "Elle est en début de mot", "Elle n'a pas de points"],
+        correctIndex: 0,
+        explanation: "En position médiane, la lettre est connectée à la lettre précédente ET à la lettre suivante.",
+      },
+      {
+        question: "Le 'squelette' d'une lettre (sa forme de base) :",
+        options: ["Change complètement d'une forme à l'autre", "Reste reconnaissable dans toutes les formes", "Disparaît en position médiane", "N'est visible qu'en forme isolée"],
+        correctIndex: 1,
+        explanation: "C'est la clé de lecture : le corps reste identifiable quelle que soit la position — seules les liaisons s'adaptent.",
+      },
+    ];
+
+    // Patch QCM uniquement sur L1 et L2
+    for (const [lesson_number, newQcm] of [[1, QCM_L1], [2, QCM_L2]] as const) {
+      const { data: existing } = await adminClient
+        .from("lessons")
+        .select("content")
+        .eq("level", "niveau_1")
+        .eq("lesson_number", lesson_number)
+        .single();
+      if (existing) {
+        await adminClient
+          .from("lessons")
+          .update({ content: { ...(existing.content as any), qcm: newQcm } })
+          .eq("level", "niveau_1")
+          .eq("lesson_number", lesson_number);
+      }
+    }
+
     // Upsert L10 et L12
     const { error: upsertErr } = await adminClient
       .from("lessons")
@@ -323,6 +491,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         seeded: ["niveau_1/10", "niveau_1/12"],
+        qcm_patched: ["niveau_1/1", "niveau_1/2"],
         deduped,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
