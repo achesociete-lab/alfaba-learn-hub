@@ -294,10 +294,36 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Dédupliquer les dictées de toutes les leçons
+    const { data: allLessons } = await adminClient
+      .from("lessons")
+      .select("level, lesson_number, content");
+
+    const deduped: string[] = [];
+    for (const row of allLessons ?? []) {
+      const content = row.content as any;
+      const dictation: any[] = content?.dictation ?? [];
+      const seen = new Set<string>();
+      const clean: any[] = [];
+      for (const d of dictation) {
+        const key = d.word ?? d.sentence ?? "";
+        if (!seen.has(key)) { seen.add(key); clean.push(d); }
+      }
+      if (clean.length < dictation.length) {
+        await adminClient
+          .from("lessons")
+          .update({ content: { ...content, dictation: clean } })
+          .eq("level", row.level)
+          .eq("lesson_number", row.lesson_number);
+        deduped.push(`${row.level}/${row.lesson_number}`);
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         seeded: ["niveau_1/10", "niveau_1/12"],
+        deduped,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
