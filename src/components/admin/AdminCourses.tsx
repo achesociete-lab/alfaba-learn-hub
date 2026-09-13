@@ -69,7 +69,7 @@ function QCMEditor({ qcm, onChange }: { qcm: LessonQCM[]; onChange: (q: LessonQC
         <Button size="sm" variant="outline" onClick={addQ} className="gap-1"><Plus className="h-3 w-3" /> Ajouter</Button>
       </div>
       {qcm.map((q, i) => {
-        const isMulti = !!(q.correctIndexes && q.correctIndexes.length > 1);
+        const isMulti = Array.isArray(q.correctIndexes);
         const correctSet = new Set(q.correctIndexes ?? [q.correctIndex]);
         return (
           <div key={i} className="p-3 rounded-lg border border-border space-y-2">
