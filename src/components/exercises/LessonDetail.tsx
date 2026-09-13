@@ -19,6 +19,8 @@ import LessonAudioPlayer from "./LessonAudioPlayer";
 import Lesson1Screens from "./Lesson1Screens";
 import LessonScreens from "./LessonScreens";
 import { dedupeNiveau1 } from "@/utils/lesson-dedupe";
+import AudioClipRecorder from "@/components/admin/AudioClipRecorder";
+import { useTeacherAudioClips } from "@/hooks/use-teacher-audio-clips";
 
 interface LessonDetailProps {
   lesson: Lesson;
@@ -234,6 +236,9 @@ function QCMTab({ lesson, onAllCorrect, onSwitchToDictation }: { lesson: Lesson;
 
 function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: () => void }) {
   const { user } = useAuth();
+  const { isAdmin } = useIsAdmin();
+  const { clips, uploadClip, deleteClip } = useTeacherAudioClips("niveau_1", lesson.id);
+  const clipMap = new Map(clips.map(c => [c.audio_key, c.audio_url]));
   const dictList = lesson.dictation || [];
   const baseKey = userScopedKey(user?.id, `n1:lesson:${lesson.id}:dict`);
   const shuffleKey = `${baseKey}:order`;
@@ -398,6 +403,18 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
         </motion.div>
       </AnimatePresence>
       {canAdvance && <div className="flex justify-end"><Button onClick={next} className="gap-2">{current + 1 >= shuffledList.length ? "Voir le résultat" : "Suivant"} <ArrowRight className="h-4 w-4" /></Button></div>}
+      {isAdmin && d?.word && (
+        <div className="p-3 rounded-lg border border-dashed border-primary/30 bg-primary/5 flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">🎙 Admin — audio :</span>
+          <span className="font-arabic text-base text-foreground">{d.word}</span>
+          <AudioClipRecorder
+            audioKey={d.word}
+            existingUrl={clipMap.get(d.word)}
+            onSave={async (key, blob) => { if (user) await uploadClip(key, blob, user.id); }}
+            onDelete={deleteClip}
+          />
+        </div>
+      )}
     </div>
   );
 }
