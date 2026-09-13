@@ -28,7 +28,7 @@ const HeroSection = () => (
         transition={{ duration: 0.5 }}
         className="inline-flex items-center gap-2 bg-white/5 border border-white/10 backdrop-blur-sm px-4 py-2 rounded-full mb-8"
       >
-        <span className="text-sm text-slate-300 font-medium">🌙 Méthode islamique · Conçue pour les francophones</span>
+        <span className="text-sm text-slate-300 font-medium">Méthode conçue pour les francophones</span>
       </motion.div>
 
       {/* Logo */}
