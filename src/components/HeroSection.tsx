@@ -25,7 +25,9 @@ const HeroSection = () => (
           transition={{ duration: 0.6, delay: 0.05 }}
           className="flex justify-center mb-6"
         >
-          <img src="/logo.png" alt="Alfasl" className="h-40 sm:h-52 w-auto drop-shadow-2xl" />
+          <div className="bg-white rounded-3xl p-4 shadow-2xl shadow-black/40">
+            <img src="/logo.png" alt="Alfasl" className="h-36 sm:h-48 w-auto" />
+          </div>
         </motion.div>
 
         {/* Headline */}
