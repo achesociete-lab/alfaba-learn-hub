@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowRight, BookOpen, ChevronDown, ShieldCheck } from "lucide-react";
+import { ArrowRight, ChevronDown, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
@@ -18,22 +18,21 @@ const HeroSection = () => (
     <div className="container mx-auto px-4 relative z-10 pt-28 pb-10 flex-1 flex flex-col justify-center">
       <div className="max-w-4xl mx-auto text-center">
 
-        {/* Badge */}
+        {/* Logo */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.05 }}
-          className="inline-flex items-center gap-2 bg-amber-400/20 border border-amber-400/30 px-4 py-1.5 rounded-full mb-8"
+          initial={{ opacity: 0, scale: 0.85 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.05 }}
+          className="flex justify-center mb-6"
         >
-          <BookOpen className="h-3.5 w-3.5 text-amber-400" />
-          <span className="text-sm font-semibold text-amber-300 tracking-wide uppercase">Méthode islamique · Pour francophones</span>
+          <img src="/logo.png" alt="Alfasl" className="h-40 sm:h-52 w-auto drop-shadow-2xl" />
         </motion.div>
 
         {/* Headline */}
         <motion.h1
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.1 }}
+          transition={{ duration: 0.7, delay: 0.15 }}
           className="text-4xl sm:text-6xl lg:text-7xl font-bold leading-tight mb-6 text-white"
         >
           Apprenez l'arabe
