@@ -67,13 +67,14 @@ const HomePricingSection = () => {
   };
 
   return (
-    <section className="py-20 bg-card">
+    <section className="py-20 bg-slate-950 border-t border-white/5">
       <div className="container mx-auto px-4">
         <div className="text-center mb-8">
-          <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-3">
-            Des formules pour <span className="text-gradient-gold">tous les profils</span>
+          <span className="inline-block text-xs font-bold uppercase tracking-widest text-amber-400 bg-amber-400/10 border border-amber-400/20 px-3 py-1 rounded-full mb-4">Tarifs</span>
+          <h2 className="text-3xl sm:text-5xl font-black text-white mb-3">
+            Des formules pour <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-yellow-200">tous les profils</span>
           </h2>
-          <p className="text-muted-foreground max-w-lg mx-auto">Commencez gratuitement, évoluez à votre rythme</p>
+          <p className="text-slate-400 max-w-lg mx-auto text-lg">Commencez gratuitement, évoluez à votre rythme</p>
         </div>
 
         {/* Billing toggle */}

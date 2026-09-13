@@ -1,71 +1,99 @@
 import { motion } from "framer-motion";
-import { BarChart3, GraduationCap, Layers } from "lucide-react";
+import { Check, X } from "lucide-react";
 
-const reasons = [
-  {
-    icon: Layers,
-    title: "Méthode progressive et structurée",
-    desc: "De l'alphabet aux textes du Coran : chaque leçon s'appuie sur la précédente. Exercices interactifs, QCM et dictées corrigés instantanément — pas juste des vidéos à regarder.",
-    highlight: "Deux niveaux",
-  },
-  {
-    icon: GraduationCap,
-    title: "Un vrai professeur, pas un algorithme",
-    desc: "Pour le programme Hifd, chaque séance se passe en visio avec votre professeur. Il entend votre récitation, corrige votre tajwid et adapte le rythme à votre niveau personnel.",
-    highlight: "2 séances / semaine",
-  },
-  {
-    icon: BarChart3,
-    title: "Suivi complet en temps réel",
-    desc: "Tableau de bord clair : leçons complétées, hizb mémorisés, évaluations, historique des séances. Vous savez exactement où vous en êtes — à chaque instant.",
-    highlight: "60 hizb tracés",
-  },
+const comparisons = [
+  { feature: "Progression structurée niveau par niveau", us: true, others: false },
+  { feature: "Exercices interactifs corrigés instantanément", us: true, others: false },
+  { feature: "Tuteur IA disponible 24h/24", us: true, others: false },
+  { feature: "Professeur dédié pour le Hifd", us: true, others: false },
+  { feature: "Suivi des hizb mémorisés en temps réel", us: true, others: false },
+  { feature: "Méthode islamique pour francophones", us: true, others: false },
+];
+
+const highlights = [
+  { emoji: "🎯", title: "Progression réelle", desc: "Chaque leçon s'appuie sur la précédente. Vous avancez — vous ne tournez pas en rond." },
+  { emoji: "🧠", title: "Tuteur IA Musa'id", desc: "Un assistant intelligent qui répond à vos questions à toute heure. Jamais seul." },
+  { emoji: "👨‍🏫", title: "Vrai professeur", desc: "Pour le Hifd, séances individuelles en visio. Il vous entend, corrige et s'adapte." },
+  { emoji: "📊", title: "Suivi complet", desc: "Tableau de bord clair : leçons, hizb, évaluations. Vous savez exactement où vous en êtes." },
+  { emoji: "🌙", title: "Méthode islamique", desc: "Conçue pour les francophones qui veulent comprendre et mémoriser le Coran." },
+  { emoji: "💸", title: "Commencez gratuit", desc: "3 leçons complètes offertes, sans carte bancaire. Voyez par vous-même." },
 ];
 
 const WhyAlfaslSection = () => (
-  <section className="py-24 bg-background">
+  <section className="py-24 bg-slate-900">
     <div className="container mx-auto px-4">
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        className="text-center mb-16"
+        className="text-center mb-14"
       >
-        <span className="text-xs font-bold uppercase tracking-widest text-emerald-600 mb-3 block">
+        <span className="inline-block text-xs font-bold uppercase tracking-widest text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-3 py-1 rounded-full mb-4">
           Pourquoi ALFASL
         </span>
-        <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-          Ce qui rend notre approche{" "}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-amber-600">
-            différente
-          </span>
+        <h2 className="text-3xl sm:text-5xl font-black text-white mb-4 leading-tight">
+          Ce qui nous rend{" "}
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-amber-400">différents</span>
         </h2>
-        <p className="text-muted-foreground max-w-xl mx-auto">
-          La plupart des plateformes proposent des vidéos en groupe. Nous offrons une progression réelle, un suivi individuel et un vrai professeur.
+        <p className="text-slate-400 max-w-xl mx-auto text-lg">
+          La plupart des plateformes proposent des vidéos en groupe. Nous offrons un suivi individuel, une progression réelle et un vrai professeur.
         </p>
       </motion.div>
 
-      <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-        {reasons.map(({ icon: Icon, title, desc, highlight }, i) => (
+      {/* Comparison table */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        className="max-w-2xl mx-auto mb-20 rounded-3xl overflow-hidden border border-white/8"
+      >
+        <div className="grid grid-cols-3 bg-slate-800 px-6 py-4">
+          <div className="col-span-1 text-sm text-slate-400 font-medium"></div>
+          <div className="text-center">
+            <span className="text-sm font-black text-white">ALFASL</span>
+          </div>
+          <div className="text-center">
+            <span className="text-sm font-medium text-slate-500">Autres</span>
+          </div>
+        </div>
+        {comparisons.map(({ feature, us, others }, i) => (
+          <div key={feature} className={`grid grid-cols-3 px-6 py-4 border-t border-white/5 ${i % 2 === 0 ? "bg-slate-900/50" : "bg-slate-900/20"}`}>
+            <div className="col-span-1 text-sm text-slate-300 pr-4">{feature}</div>
+            <div className="flex justify-center">
+              {us
+                ? <span className="h-6 w-6 rounded-full bg-emerald-500/20 flex items-center justify-center"><Check className="h-3.5 w-3.5 text-emerald-400" /></span>
+                : <span className="h-6 w-6 rounded-full bg-red-500/10 flex items-center justify-center"><X className="h-3.5 w-3.5 text-red-400" /></span>
+              }
+            </div>
+            <div className="flex justify-center">
+              {others
+                ? <span className="h-6 w-6 rounded-full bg-emerald-500/20 flex items-center justify-center"><Check className="h-3.5 w-3.5 text-emerald-400" /></span>
+                : <span className="h-6 w-6 rounded-full bg-red-500/10 flex items-center justify-center"><X className="h-3.5 w-3.5 text-red-400" /></span>
+              }
+            </div>
+          </div>
+        ))}
+      </motion.div>
+
+      {/* Benefits grid */}
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl mx-auto">
+        {highlights.map(({ emoji, title, desc }, i) => (
           <motion.div
             key={title}
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ delay: i * 0.12 }}
-            className="bg-card rounded-2xl p-7 border border-border hover:border-emerald-200 hover:shadow-lg transition-all duration-300 flex flex-col"
+            transition={{ delay: i * 0.07 }}
+            className="bg-slate-800/50 border border-white/5 rounded-2xl p-6 hover:border-emerald-500/20 hover:bg-slate-800 transition-all duration-300"
           >
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-800 flex items-center justify-center mb-5 shadow-md shrink-0">
-              <Icon className="h-6 w-6 text-white" />
-            </div>
-            <span className="inline-block text-[10px] font-bold uppercase tracking-widest text-emerald-600 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full mb-3 self-start">
-              {highlight}
-            </span>
-            <h3 className="font-bold text-foreground mb-3 text-lg">{title}</h3>
-            <p className="text-sm text-muted-foreground leading-relaxed flex-1">{desc}</p>
+            <div className="text-3xl mb-3">{emoji}</div>
+            <h3 className="font-bold text-white mb-2">{title}</h3>
+            <p className="text-sm text-slate-400 leading-relaxed">{desc}</p>
           </motion.div>
         ))}
       </div>
+
     </div>
   </section>
 );

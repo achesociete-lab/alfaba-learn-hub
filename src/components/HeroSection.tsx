@@ -1,146 +1,142 @@
 import { motion } from "framer-motion";
-import { ArrowRight, ChevronDown, ShieldCheck } from "lucide-react";
+import { ArrowRight, CheckCircle, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
 const HeroSection = () => (
-  <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-emerald-950 via-emerald-900 to-amber-950">
-    {/* Background Arabic letters */}
-    <div className="absolute inset-0 opacity-5 pointer-events-none select-none">
-      <div className="absolute top-20 left-10 text-[200px] font-arabic text-white leading-none">ق</div>
-      <div className="absolute bottom-20 right-10 text-[200px] font-arabic text-white leading-none">ر</div>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[300px] font-arabic text-white leading-none opacity-30">آن</div>
+  <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-slate-950">
+    {/* Radial glow top-center */}
+    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="absolute bottom-0 right-0 w-[600px] h-[400px] bg-amber-500/8 rounded-full blur-3xl pointer-events-none" />
+
+    {/* Gold top line */}
+    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-amber-400 to-transparent" />
+
+    {/* Floating Arabic letters */}
+    <div className="absolute inset-0 pointer-events-none select-none overflow-hidden">
+      <div className="absolute top-24 left-8 text-[140px] font-arabic text-white/3 leading-none">ق</div>
+      <div className="absolute bottom-24 right-8 text-[140px] font-arabic text-white/3 leading-none">ر</div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[320px] font-arabic text-white/[0.02] leading-none">آن</div>
     </div>
 
-    {/* Gold top bar */}
-    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400" />
+    <div className="container mx-auto px-4 relative z-10 pt-28 pb-16 flex flex-col items-center text-center">
 
-    <div className="container mx-auto px-4 relative z-10 pt-28 pb-10 flex-1 flex flex-col justify-center">
-      <div className="max-w-4xl mx-auto text-center">
-
-        {/* Logo */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.85 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6, delay: 0.05 }}
-          className="flex justify-center mb-6"
-        >
-          <div className="bg-white rounded-3xl p-4 shadow-2xl shadow-black/40">
-            <img src="/logo.png" alt="Alfasl" className="h-36 sm:h-48 w-auto" />
-          </div>
-        </motion.div>
-
-        {/* Headline */}
-        <motion.h1
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.15 }}
-          className="text-4xl sm:text-6xl lg:text-7xl font-bold leading-tight mb-6 text-white"
-        >
-          Apprenez l'arabe
-          <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-yellow-200">
-            du Coran
-          </span>
-        </motion.h1>
-
-        {/* Hadith */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.3 }}
-          className="font-arabic text-3xl sm:text-4xl text-amber-200/80 mb-3 leading-relaxed"
-        >
-          «&nbsp;خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ&nbsp;»
-        </motion.p>
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          className="text-sm text-amber-300/60 italic mb-10"
-        >
-          « Le meilleur d'entre vous est celui qui apprend le Coran et l'enseigne. » — Bukhari
-        </motion.p>
-
-        {/* Subtitle */}
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          className="text-lg sm:text-xl text-emerald-100/80 mb-10 max-w-2xl mx-auto leading-relaxed"
-        >
-          Des <strong className="text-white">leçons d'arabe progressives</strong> pour tout débutant,
-          et un <strong className="text-white">programme Hifd intensif</strong> avec professeur dédié
-          — deux parcours pour un seul objectif.
-        </motion.p>
-
-        {/* CTAs */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.5 }}
-          className="flex flex-col sm:flex-row gap-4 justify-center mb-6"
-        >
-          <Button asChild size="lg" className="bg-gradient-to-r from-amber-400 to-yellow-300 hover:from-amber-500 hover:to-yellow-400 text-emerald-950 font-bold text-base px-10 h-14 rounded-2xl shadow-2xl shadow-amber-500/30 border-0">
-            <Link to="/auth">
-              Commencer gratuitement <ArrowRight className="ml-2 h-5 w-5" />
-            </Link>
-          </Button>
-          <Button asChild size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10 text-base px-10 h-14 rounded-2xl bg-white/5 backdrop-blur-sm">
-            <Link to="/hifz">Programme Hifd →</Link>
-          </Button>
-        </motion.div>
-
-        {/* Trust micro-line */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.65 }}
-          className="flex items-center justify-center gap-2 mb-12 text-xs text-emerald-400/70"
-        >
-          <ShieldCheck className="h-3.5 w-3.5" />
-          <span>3 leçons gratuites · Sans carte bancaire · Sans engagement</span>
-        </motion.div>
-
-        {/* Stats */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
-          className="grid grid-cols-3 gap-6 max-w-lg mx-auto"
-        >
-          {[
-            { value: "3", label: "leçons gratuites" },
-            { value: "10", label: "leçons / niveau" },
-            { value: "60", label: "hizb suivis" },
-          ].map(({ value, label }) => (
-            <div key={label} className="text-center">
-              <p className="text-3xl font-bold text-amber-300">{value}</p>
-              <p className="text-xs text-emerald-300/70 mt-1 uppercase tracking-wide">{label}</p>
-            </div>
-          ))}
-        </motion.div>
-      </div>
-    </div>
-
-    {/* Scroll cue */}
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ delay: 1.2 }}
-      className="relative z-10 pb-8 flex flex-col items-center gap-1"
-    >
-      <span className="text-[10px] uppercase tracking-widest text-emerald-400/50">Découvrir</span>
+      {/* Stars + social proof pill */}
       <motion.div
-        animate={{ y: [0, 6, 0] }}
-        transition={{ repeat: Infinity, duration: 1.6, ease: "easeInOut" }}
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="inline-flex items-center gap-2 bg-white/5 border border-white/10 backdrop-blur-sm px-4 py-2 rounded-full mb-8"
       >
-        <ChevronDown className="h-5 w-5 text-emerald-400/50" />
+        <div className="flex">
+          {[...Array(5)].map((_, i) => <Star key={i} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />)}
+        </div>
+        <span className="text-sm text-slate-300 font-medium">4.9 · Rejoignez <span className="text-white font-bold">2 000+</span> francophones</span>
       </motion.div>
-    </motion.div>
+
+      {/* Logo */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.6, delay: 0.08 }}
+        className="mb-8"
+      >
+        <div className="bg-white rounded-3xl px-6 py-4 shadow-2xl shadow-black/50 inline-block">
+          <img src="/logo.png" alt="Alfasl" className="h-28 sm:h-36 w-auto" />
+        </div>
+      </motion.div>
+
+      {/* Main headline */}
+      <motion.h1
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, delay: 0.15 }}
+        className="text-5xl sm:text-6xl lg:text-7xl font-black text-white leading-[1.05] tracking-tight mb-5"
+      >
+        Maîtrisez l'arabe
+        <br />
+        <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-400">
+          du Coran
+        </span>
+      </motion.h1>
+
+      {/* Sub-headline */}
+      <motion.p
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.25 }}
+        className="text-lg sm:text-xl text-slate-400 max-w-2xl mb-4 leading-relaxed"
+      >
+        De l'alphabet aux textes coraniques — des leçons progressives, un tuteur IA disponible 24h/24 et un professeur dédié pour le Hifd.
+      </motion.p>
+
+      {/* Hadith */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.35 }}
+        className="mb-10"
+      >
+        <p className="font-arabic text-2xl sm:text-3xl text-amber-300/70 leading-relaxed">
+          «&nbsp;خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ&nbsp;»
+        </p>
+        <p className="text-xs text-slate-500 italic mt-1">« Le meilleur d'entre vous est celui qui apprend le Coran et l'enseigne. » — Bukhari</p>
+      </motion.div>
+
+      {/* CTAs */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.4 }}
+        className="flex flex-col sm:flex-row gap-4 justify-center mb-6"
+      >
+        <Button asChild size="lg" className="bg-gradient-to-r from-amber-400 to-yellow-300 hover:from-amber-500 hover:to-yellow-400 text-slate-950 font-black text-base px-10 h-14 rounded-2xl shadow-xl shadow-amber-500/25 border-0 transition-all hover:scale-105">
+          <Link to="/auth">
+            Commencer gratuitement <ArrowRight className="ml-2 h-5 w-5" />
+          </Link>
+        </Button>
+        <Button asChild size="lg" variant="outline" className="border-white/15 text-white hover:bg-white/8 text-base px-10 h-14 rounded-2xl bg-white/5 backdrop-blur-sm transition-all hover:scale-105">
+          <Link to="/hifz">Découvrir le programme Hifd →</Link>
+        </Button>
+      </motion.div>
+
+      {/* Trust micro-copy */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.55 }}
+        className="flex flex-wrap items-center justify-center gap-4 text-sm text-slate-500 mb-16"
+      >
+        {["3 leçons gratuites", "Sans carte bancaire", "Résultats dès la 1ère semaine"].map(item => (
+          <span key={item} className="flex items-center gap-1.5">
+            <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
+            {item}
+          </span>
+        ))}
+      </motion.div>
+
+      {/* Stats bar */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.65 }}
+        className="w-full max-w-2xl grid grid-cols-3 gap-px bg-white/5 rounded-2xl overflow-hidden border border-white/8"
+      >
+        {[
+          { value: "2 000+", label: "élèves actifs" },
+          { value: "28", label: "leçons progressives" },
+          { value: "60", label: "hizb suivis" },
+        ].map(({ value, label }) => (
+          <div key={label} className="bg-slate-900/60 backdrop-blur-sm py-5 text-center">
+            <p className="text-2xl sm:text-3xl font-black text-amber-400">{value}</p>
+            <p className="text-xs text-slate-500 mt-0.5 uppercase tracking-wide">{label}</p>
+          </div>
+        ))}
+      </motion.div>
+    </div>
 
     {/* Bottom fade */}
-    <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent" />
+    <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-slate-950 to-transparent pointer-events-none" />
   </section>
 );
 
