@@ -36,7 +36,7 @@ const HifzFinalCTA = () => (
         </h2>
 
         <p className="text-slate-400 text-lg mb-10 max-w-xl mx-auto">
-          Rejoignez 2 000+ francophones qui apprennent l'arabe et mémorisent le Coran avec ALFASL.
+          Choisissez votre parcours — apprendre l'arabe gratuitement ou rejoindre le programme Hifd avec un professeur dédié.
         </p>
 
         {/* Trust points */}

@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowRight, CheckCircle, Star } from "lucide-react";
+import { ArrowRight, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
@@ -21,17 +21,14 @@ const HeroSection = () => (
 
     <div className="container mx-auto px-4 relative z-10 pt-28 pb-16 flex flex-col items-center text-center">
 
-      {/* Stars + social proof pill */}
+      {/* Badge méthode */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="inline-flex items-center gap-2 bg-white/5 border border-white/10 backdrop-blur-sm px-4 py-2 rounded-full mb-8"
       >
-        <div className="flex">
-          {[...Array(5)].map((_, i) => <Star key={i} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />)}
-        </div>
-        <span className="text-sm text-slate-300 font-medium">4.9 · Rejoignez <span className="text-white font-bold">2 000+</span> francophones</span>
+        <span className="text-sm text-slate-300 font-medium">🌙 Méthode islamique · Conçue pour les francophones</span>
       </motion.div>
 
       {/* Logo */}
@@ -115,7 +112,7 @@ const HeroSection = () => (
         ))}
       </motion.div>
 
-      {/* Stats bar */}
+      {/* Stats bar — chiffres réels uniquement */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -123,9 +120,9 @@ const HeroSection = () => (
         className="w-full max-w-2xl grid grid-cols-3 gap-px bg-white/5 rounded-2xl overflow-hidden border border-white/8"
       >
         {[
-          { value: "2 000+", label: "élèves actifs" },
+          { value: "2", label: "niveaux d'arabe" },
           { value: "28", label: "leçons progressives" },
-          { value: "60", label: "hizb suivis" },
+          { value: "60", label: "hizb à mémoriser" },
         ].map(({ value, label }) => (
           <div key={label} className="bg-slate-900/60 backdrop-blur-sm py-5 text-center">
             <p className="text-2xl sm:text-3xl font-black text-amber-400">{value}</p>
