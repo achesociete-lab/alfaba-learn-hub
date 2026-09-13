@@ -45,6 +45,20 @@ function QCMEditor({ qcm, onChange }: { qcm: LessonQCM[]; onChange: (q: LessonQC
     updated[qIdx].options[oIdx] = val;
     onChange(updated);
   };
+  const toggleCorrect = (qIdx: number, oIdx: number, isMulti: boolean) => {
+    const updated = [...qcm];
+    const q = { ...updated[qIdx] };
+    if (isMulti) {
+      const current = q.correctIndexes ?? [q.correctIndex];
+      q.correctIndexes = current.includes(oIdx) ? current.filter(i => i !== oIdx) : [...current, oIdx];
+      q.correctIndex = q.correctIndexes[0] ?? 0;
+    } else {
+      q.correctIndex = oIdx;
+      q.correctIndexes = undefined;
+    }
+    updated[qIdx] = q;
+    onChange(updated);
+  };
   const removeQ = (idx: number) => onChange(qcm.filter((_, i) => i !== idx));
   const addQ = () => onChange([...qcm, { question: "", options: ["", "", "", ""], correctIndex: 0, explanation: "" }]);
 
@@ -54,23 +68,35 @@ function QCMEditor({ qcm, onChange }: { qcm: LessonQCM[]; onChange: (q: LessonQC
         <h4 className="font-semibold text-foreground">🧠 QCM ({qcm.length})</h4>
         <Button size="sm" variant="outline" onClick={addQ} className="gap-1"><Plus className="h-3 w-3" /> Ajouter</Button>
       </div>
-      {qcm.map((q, i) => (
-        <div key={i} className="p-3 rounded-lg border border-border space-y-2">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex-1"><EditField label={`Question ${i + 1}`} value={q.question} onChange={(v) => updateQ(i, "question", v)} /></div>
-            <Button size="icon" variant="ghost" onClick={() => removeQ(i)} className="mt-5 text-destructive"><Trash2 className="h-4 w-4" /></Button>
+      {qcm.map((q, i) => {
+        const isMulti = !!(q.correctIndexes && q.correctIndexes.length > 1);
+        const correctSet = new Set(q.correctIndexes ?? [q.correctIndex]);
+        return (
+          <div key={i} className="p-3 rounded-lg border border-border space-y-2">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1"><EditField label={`Question ${i + 1}`} value={q.question} onChange={(v) => updateQ(i, "question", v)} /></div>
+              <Button size="icon" variant="ghost" onClick={() => removeQ(i)} className="mt-5 text-destructive"><Trash2 className="h-4 w-4" /></Button>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>Réponse(s) correcte(s) :</span>
+              <button onClick={() => { const u = [...qcm]; u[i] = { ...u[i], correctIndexes: undefined }; onChange(u); }} className={`px-2 py-0.5 rounded border text-xs ${!isMulti ? "border-primary bg-primary/10 text-primary" : "border-border"}`}>Unique</button>
+              <button onClick={() => { const u = [...qcm]; u[i] = { ...u[i], correctIndexes: [u[i].correctIndex] }; onChange(u); }} className={`px-2 py-0.5 rounded border text-xs ${isMulti ? "border-primary bg-primary/10 text-primary" : "border-border"}`}>Multiple</button>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {q.options.map((opt, idx) => (
+                <div key={idx} className="flex items-center gap-1">
+                  {isMulti
+                    ? <input type="checkbox" checked={correctSet.has(idx)} onChange={() => toggleCorrect(i, idx, true)} className="shrink-0" />
+                    : <input type="radio" name={`qcm-${i}`} checked={q.correctIndex === idx} onChange={() => toggleCorrect(i, idx, false)} className="shrink-0" />
+                  }
+                  <Input value={opt} onChange={(e) => updateOption(i, idx, e.target.value)} className="text-xs h-8" />
+                </div>
+              ))}
+            </div>
+            <EditField label="Explication" value={q.explanation} onChange={(v) => updateQ(i, "explanation", v)} />
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            {q.options.map((opt, idx) => (
-              <div key={idx} className="flex items-center gap-1">
-                <input type="radio" name={`qcm-${i}`} checked={q.correctIndex === idx} onChange={() => updateQ(i, "correctIndex", idx)} className="shrink-0" />
-                <Input value={opt} onChange={(e) => updateOption(i, idx, e.target.value)} className="text-xs h-8" />
-              </div>
-            ))}
-          </div>
-          <EditField label="Explication" value={q.explanation} onChange={(v) => updateQ(i, "explanation", v)} />
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

@@ -37,6 +37,7 @@ export interface LessonQCM {
   question: string;
   options: string[];
   correctIndex: number;
+  correctIndexes?: number[];  // si présent et > 1 élément → réponses multiples
   explanation: string;
 }
 

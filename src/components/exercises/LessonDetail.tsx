@@ -141,31 +141,63 @@ function QCMTab({ lesson, onAllCorrect, onSwitchToDictation }: { lesson: Lesson;
   if (activeList.length === 0) return <p className="text-center text-muted-foreground p-4">Aucun exercice disponible.</p>;
   const q = activeList[Math.min(current, activeList.length - 1)];
 
+  // Support réponses multiples
+  const [multiSelected, setMultiSelected] = useState<number[]>([]);
+  const [submitted, setSubmitted] = useState(false);
+  const correctIndexes = q.correctIndexes && q.correctIndexes.length > 1 ? q.correctIndexes : null;
+  const isMulti = correctIndexes !== null;
+  const isAnswered = isMulti ? submitted : selected !== null;
+
   const handleSelect = (idx: number) => {
-    if (selected !== null) return;
-    setSelected(idx);
-    if (idx === q.correctIndex) { setScore(s => s + 1); playCorrectSound(); }
-    else {
-      playWrongSound();
-      const origIdx = retryIndices !== null ? retryIndices[current] : shuffledOrder[current];
-      setWrongAnswers(prev => [...prev, { question: q.question, userAnswer: q.options[idx], correctAnswer: q.options[q.correctIndex], originalIdx: origIdx }]);
+    if (isAnswered) return;
+    if (isMulti) {
+      setMultiSelected(prev => prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]);
+    } else {
+      setSelected(idx);
+      if (idx === q.correctIndex) { setScore(s => s + 1); playCorrectSound(); }
+      else {
+        playWrongSound();
+        const origIdx = retryIndices !== null ? retryIndices[current] : shuffledOrder[current];
+        setWrongAnswers(prev => [...prev, { question: q.question, userAnswer: q.options[idx], correctAnswer: q.options[q.correctIndex], originalIdx: origIdx }]);
+      }
     }
   };
 
-  const next = () => { if (current + 1 >= activeList.length) setFinished(true); else { setCurrent(c => c + 1); setSelected(null); } };
+  const handleSubmitMulti = () => {
+    if (!isMulti || submitted) return;
+    setSubmitted(true);
+    const correct = correctIndexes!;
+    const isCorrect = correct.length === multiSelected.length && correct.every(i => multiSelected.includes(i));
+    if (isCorrect) { setScore(s => s + 1); playCorrectSound(); }
+    else {
+      playWrongSound();
+      const origIdx = retryIndices !== null ? retryIndices[current] : shuffledOrder[current];
+      setWrongAnswers(prev => [...prev, {
+        question: q.question,
+        userAnswer: multiSelected.map(i => q.options[i]).join(', '),
+        correctAnswer: correct.map(i => q.options[i]).join(', '),
+        originalIdx: origIdx,
+      }]);
+    }
+  };
+
+  const next = () => {
+    if (current + 1 >= activeList.length) setFinished(true);
+    else { setCurrent(c => c + 1); setSelected(null); setMultiSelected([]); setSubmitted(false); }
+  };
 
   const reset = () => {
     clearShuffledOrder(shuffleKey);
     setResetKey(k => k + 1);
     setRetryIndices(null);
-    setCurrent(0); setSelected(null); setScore(0); setFinished(false); setWrongAnswers([]);
+    setCurrent(0); setSelected(null); setMultiSelected([]); setSubmitted(false); setScore(0); setFinished(false); setWrongAnswers([]);
   };
 
   const retryWrong = () => {
     const indices = wrongAnswers.map(wa => wa.originalIdx).filter((i): i is number => i !== undefined);
     if (indices.length === 0) { reset(); return; }
     setRetryIndices(indices);
-    setCurrent(0); setSelected(null); setScore(0); setFinished(false); setWrongAnswers([]);
+    setCurrent(0); setSelected(null); setMultiSelected([]); setSubmitted(false); setScore(0); setFinished(false); setWrongAnswers([]);
   };
 
   if (finished) {
@@ -212,24 +244,41 @@ function QCMTab({ lesson, onAllCorrect, onSwitchToDictation }: { lesson: Lesson;
       </div>
       <AnimatePresence mode="wait">
         <motion.div key={current} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="p-6 rounded-xl border border-border bg-card">
-          <p className="text-lg font-medium text-foreground mb-4">{q.question}</p>
+          <p className="text-lg font-medium text-foreground mb-1">{q.question}</p>
+          {isMulti && <p className="text-xs text-primary mb-3">Sélectionnez toutes les bonnes réponses</p>}
           <div className="grid grid-cols-2 gap-3">
             {q.options.map((opt, idx) => {
               let cls = "border border-border bg-background hover:bg-muted";
-              if (selected !== null) { if (idx === q.correctIndex) cls = "border-primary bg-primary/10 text-primary"; else if (idx === selected) cls = "border-destructive bg-destructive/10 text-destructive"; }
+              if (isMulti) {
+                const isCorrect = correctIndexes!.includes(idx);
+                const isChosen = multiSelected.includes(idx);
+                if (submitted) {
+                  if (isCorrect) cls = "border-primary bg-primary/10 text-primary";
+                  else if (isChosen) cls = "border-destructive bg-destructive/10 text-destructive";
+                } else if (isChosen) cls = "border-primary bg-primary/10 text-primary";
+              } else {
+                if (selected !== null) { if (idx === q.correctIndex) cls = "border-primary bg-primary/10 text-primary"; else if (idx === selected) cls = "border-destructive bg-destructive/10 text-destructive"; }
+              }
               return (
-                <button key={idx} onClick={() => handleSelect(idx)} disabled={selected !== null} className={`p-4 rounded-lg text-base font-medium transition-all ${cls}`}>
+                <button key={idx} onClick={() => handleSelect(idx)} disabled={isAnswered} className={`p-4 rounded-lg text-base font-medium transition-all ${cls}`}>
                   {opt}
-                  {selected !== null && idx === q.correctIndex && <CheckCircle className="h-4 w-4 inline ml-2" />}
-                  {selected !== null && idx === selected && idx !== q.correctIndex && <XCircle className="h-4 w-4 inline ml-2" />}
+                  {isMulti && submitted && correctIndexes!.includes(idx) && <CheckCircle className="h-4 w-4 inline ml-2" />}
+                  {isMulti && submitted && !correctIndexes!.includes(idx) && multiSelected.includes(idx) && <XCircle className="h-4 w-4 inline ml-2" />}
+                  {!isMulti && selected !== null && idx === q.correctIndex && <CheckCircle className="h-4 w-4 inline ml-2" />}
+                  {!isMulti && selected !== null && idx === selected && idx !== q.correctIndex && <XCircle className="h-4 w-4 inline ml-2" />}
                 </button>
               );
             })}
           </div>
-          {selected !== null && <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-4 p-3 rounded-lg bg-muted text-sm text-muted-foreground">{q.explanation}</motion.div>}
+          {isMulti && !submitted && (
+            <Button onClick={handleSubmitMulti} disabled={multiSelected.length === 0} className="w-full mt-3 gap-2">
+              <CheckCircle className="h-4 w-4" /> Valider mes réponses
+            </Button>
+          )}
+          {isAnswered && <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-4 p-3 rounded-lg bg-muted text-sm text-muted-foreground">{q.explanation}</motion.div>}
         </motion.div>
       </AnimatePresence>
-      {selected !== null && <div className="flex justify-end"><Button onClick={next} className="gap-2">{current + 1 >= activeList.length ? "Voir le résultat" : "Suivant"} <ArrowRight className="h-4 w-4" /></Button></div>}
+      {isAnswered && <div className="flex justify-end"><Button onClick={next} className="gap-2">{current + 1 >= activeList.length ? "Voir le résultat" : "Suivant"} <ArrowRight className="h-4 w-4" /></Button></div>}
     </div>
   );
 }
