@@ -111,7 +111,7 @@ const Niveau1 = () => {
 
                 const card = (
                   <div key={lesson.id}>
-                    {lesson.id === 13 && (
+                    {lesson.id > 12 && (i === 0 || lessons[i - 1].id <= 12) && (
                       <div className="flex items-center gap-3 my-8">
                         <div className="flex-1 h-px bg-border" />
                         <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 shrink-0">

@@ -36,7 +36,7 @@ const LessonSelector = ({ completedLessons, currentLesson, onSelectLesson, lesso
           const withinPlan = isAdmin || idx < maxLessons;
           const isUnlocked = isAdmin || (withinPlan && (idx === 0 || completedLessons.includes(lessons[idx - 1].id)));
           const isActive = currentLesson === lesson.id;
-          const isFirstLetterLesson = lesson.id === 13;
+          const isFirstLetterLesson = lesson.id > 12 && (idx === 0 || lessons[idx - 1].id <= 12);
 
           return (
             <div key={lesson.id}>
