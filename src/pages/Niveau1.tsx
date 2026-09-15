@@ -1,7 +1,7 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
-import { ArrowRight, Lock, CheckCircle } from "lucide-react";
+import { ArrowRight, Lock, CheckCircle, BookOpen } from "lucide-react";
 import { useIsAdmin } from "@/hooks/use-admin";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -111,6 +111,18 @@ const Niveau1 = () => {
 
                 const card = (
                   <div key={lesson.id}>
+                    {lesson.id === 13 && (
+                      <div className="flex items-center gap-3 my-8">
+                        <div className="flex-1 h-px bg-border" />
+                        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 shrink-0">
+                          <BookOpen className="h-4 w-4 text-primary" />
+                          <span className="text-xs font-semibold text-primary tracking-wide uppercase">
+                            Approfondissement — Les lettres
+                          </span>
+                        </div>
+                        <div className="flex-1 h-px bg-border" />
+                      </div>
+                    )}
                     {lesson.id === 4 && shouldLock && (
                       <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
                         className="mb-3 p-5 rounded-xl bg-primary/10 border border-primary/30 text-center">
