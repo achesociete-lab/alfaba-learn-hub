@@ -105,7 +105,14 @@ function TheoryScreen({ section, onNext, isLast }: { section: TheorySection; onN
               <motion.div key={i} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 + i * 0.08 }}
                 onClick={() => speak(ex.arabic)} className="flex items-center justify-between p-3 rounded-lg bg-card border border-border cursor-pointer hover:bg-primary/5 hover:border-primary/30 transition-colors">
                 <div className="flex items-center gap-2"><Volume2 className="h-4 w-4 text-muted-foreground shrink-0" /><span className="font-arabic text-2xl text-foreground">{ex.arabic}</span></div>
-                <div className="flex items-center gap-2"><span className="text-sm text-foreground font-medium">{ex.meaning}</span>{emoji && <span className="text-2xl">{emoji}</span>}</div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-foreground font-medium">{ex.meaning}</span>
+                  {emoji && (
+                    emoji.startsWith('/')
+                      ? <img src={emoji} alt={ex.meaning} className="h-8 w-8 object-contain rounded" />
+                      : <span className="text-2xl">{emoji}</span>
+                  )}
+                </div>
               </motion.div>
             );
           })}
