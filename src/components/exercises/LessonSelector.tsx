@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { CheckCircle, Lock, ArrowRight } from "lucide-react";
+import { CheckCircle, Lock, ArrowRight, BookOpen } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { Lesson } from "@/data/niveau1-lessons";
 import { useIsAdmin } from "@/hooks/use-admin";
@@ -36,10 +36,24 @@ const LessonSelector = ({ completedLessons, currentLesson, onSelectLesson, lesso
           const withinPlan = isAdmin || idx < maxLessons;
           const isUnlocked = isAdmin || (withinPlan && (idx === 0 || completedLessons.includes(lessons[idx - 1].id)));
           const isActive = currentLesson === lesson.id;
+          const isFirstLetterLesson = lesson.id === 13;
 
           return (
+            <div key={lesson.id}>
+              {isFirstLetterLesson && (
+                <div className="flex items-center gap-3 my-6">
+                  <div className="flex-1 h-px bg-border" />
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 shrink-0">
+                    <BookOpen className="h-4 w-4 text-primary" />
+                    <span className="text-xs font-semibold text-primary tracking-wide uppercase">
+                      Approfondissement — Les lettres
+                    </span>
+                  </div>
+                  <div className="flex-1 h-px bg-border" />
+                </div>
+              )}
             <motion.button
-              key={lesson.id}
+              key={`btn-${lesson.id}`}
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
@@ -81,6 +95,7 @@ const LessonSelector = ({ completedLessons, currentLesson, onSelectLesson, lesso
               </div>
               {isUnlocked && <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />}
             </motion.button>
+            </div>
           );
         })}
       </div>
