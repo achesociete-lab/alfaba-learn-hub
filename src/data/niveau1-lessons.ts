@@ -634,7 +634,7 @@ const lesson8: Lesson = {
       title: "La Shadda avec les voyelles",
       content: "La Shadda se combine avec les voyelles courtes. La voyelle s'écrit au-dessus ou en dessous de la Shadda :\n\n• Shadda + Fatha : ـَّ (prononcé : consonne doublée + a)\n• Shadda + Damma : ـُّ (prononcé : consonne doublée + ou)\n• Shadda + Kasra : ـِّ (prononcé : consonne doublée + i)",
       arabicExamples: [
-        { arabic: "أُمَّ", transliteration: "umma", meaning: "mère (cas direct)" },
+        { arabic: "أُمٌّ", transliteration: "ummun", meaning: "une mère" },
         { arabic: "حَقٌّ", transliteration: "ḥaqqun", meaning: "vérité / droit" },
         { arabic: "رَبٌّ", transliteration: "rabbun", meaning: "seigneur" },
         { arabic: "حُبٌّ", transliteration: "ḥubbun", meaning: "amour" },
