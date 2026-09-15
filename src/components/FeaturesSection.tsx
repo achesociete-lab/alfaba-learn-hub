@@ -38,33 +38,55 @@ const FeaturesSection = () => (
   <section className="py-20 bg-card">
     <div className="container mx-auto px-4">
       <div className="text-center mb-14">
-        <span className="text-xs font-bold uppercase tracking-widest text-emerald-600 mb-3 block">
+        <motion.span
+          initial={{ opacity: 0, y: 8 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-xs font-bold uppercase tracking-widest text-emerald-600 mb-3 block"
+        >
           La méthode
-        </span>
-        <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-3">
+        </motion.span>
+        <motion.h2
+          initial={{ opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.05 }}
+          className="text-3xl sm:text-4xl font-bold text-foreground mb-3"
+        >
           Tout pour apprendre{" "}
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-amber-600">
             vraiment l'arabe
           </span>
-        </h2>
-        <p className="text-muted-foreground max-w-lg mx-auto">
+        </motion.h2>
+        <motion.p
+          initial={{ opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.1 }}
+          className="text-muted-foreground max-w-lg mx-auto"
+        >
           Une méthode structurée, des exercices interactifs et un suivi réel — pas juste des vidéos à regarder passivement.
-        </p>
+        </motion.p>
       </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
         {features.map((f, i) => (
           <motion.div
             key={f.title}
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: i * 0.08 }}
-            className="p-6 rounded-2xl border border-border bg-background hover:border-primary/30 hover:shadow-md transition-all"
+            whileHover={{ y: -6, transition: { duration: 0.2 } }}
+            className="p-6 rounded-2xl border border-border bg-background hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 transition-colors group cursor-default"
           >
-            <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+            <motion.div
+              whileHover={{ scale: 1.15, rotate: 5 }}
+              transition={{ type: "spring", stiffness: 400, damping: 10 }}
+              className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors"
+            >
               <f.icon className="h-5 w-5 text-primary" />
-            </div>
+            </motion.div>
             <h3 className="font-semibold text-foreground mb-2">{f.title}</h3>
             <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
           </motion.div>

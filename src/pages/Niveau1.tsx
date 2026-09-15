@@ -142,9 +142,10 @@ const Niveau1 = () => {
                     )}
                     <Link to={linkTarget} onClick={(e) => isProgressLocked && e.preventDefault()}>
                       <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
-                        transition={{ delay: i * 0.05 }}
+                        transition={{ delay: i * 0.04 }}
+                        whileHover={!isLocked ? { x: 4, boxShadow: "0 4px 20px rgba(0,0,0,0.08)" } : {}}
                         className={`flex items-center gap-4 p-4 rounded-xl border transition-colors ${
-                          isCompleted ? "border-primary/30 bg-primary/5" : isLocked ? "border-border/50 bg-muted/30 opacity-50 cursor-not-allowed" : "border-border bg-card hover:border-primary/30"
+                          isCompleted ? "border-primary/30 bg-primary/5" : isLocked ? "border-border/50 bg-muted/30 opacity-50 cursor-not-allowed" : "border-border bg-card hover:border-primary/40 hover:bg-primary/[0.02]"
                         }`}>
                         <div className="h-10 w-10 rounded-lg gradient-emerald flex items-center justify-center shrink-0 text-lg">
                           {isCompleted ? <CheckCircle className="h-5 w-5 text-primary" /> : isLocked ? <Lock className="h-4 w-4 text-muted-foreground" /> : lesson.icon}

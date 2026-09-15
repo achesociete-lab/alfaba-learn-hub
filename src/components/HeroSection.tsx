@@ -5,18 +5,38 @@ import { Link } from "react-router-dom";
 
 const HeroSection = () => (
   <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-slate-950">
-    {/* Radial glow top-center */}
-    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-    <div className="absolute bottom-0 right-0 w-[600px] h-[400px] bg-amber-500/8 rounded-full blur-3xl pointer-events-none" />
+    {/* Animated radial glow top-center */}
+    <motion.div
+      animate={{ scale: [1, 1.15, 1], opacity: [0.1, 0.18, 0.1] }}
+      transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+      className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"
+    />
+    <motion.div
+      animate={{ scale: [1, 1.2, 1], opacity: [0.08, 0.14, 0.08] }}
+      transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+      className="absolute bottom-0 right-0 w-[600px] h-[400px] bg-amber-500/8 rounded-full blur-3xl pointer-events-none"
+    />
 
     {/* Gold top line */}
     <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-amber-400 to-transparent" />
 
     {/* Floating Arabic letters */}
     <div className="absolute inset-0 pointer-events-none select-none overflow-hidden">
-      <div className="absolute top-24 left-8 text-[140px] font-arabic text-white/3 leading-none">ق</div>
-      <div className="absolute bottom-24 right-8 text-[140px] font-arabic text-white/3 leading-none">ر</div>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[320px] font-arabic text-white/[0.02] leading-none">آن</div>
+      <motion.div
+        animate={{ y: [0, -18, 0] }}
+        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute top-24 left-8 text-[140px] font-arabic text-white/3 leading-none"
+      >ق</motion.div>
+      <motion.div
+        animate={{ y: [0, -14, 0] }}
+        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
+        className="absolute bottom-24 right-8 text-[140px] font-arabic text-white/3 leading-none"
+      >ر</motion.div>
+      <motion.div
+        animate={{ y: [0, -10, 0], rotate: [0, 1, 0] }}
+        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[320px] font-arabic text-white/[0.02] leading-none"
+      >آن</motion.div>
     </div>
 
     <div className="container mx-auto px-4 relative z-10 pt-28 pb-16 flex flex-col items-center text-center">
@@ -87,14 +107,18 @@ const HeroSection = () => (
         transition={{ duration: 0.6, delay: 0.4 }}
         className="flex flex-col sm:flex-row gap-4 justify-center mb-6"
       >
-        <Button asChild size="lg" className="bg-gradient-to-r from-amber-400 to-yellow-300 hover:from-amber-500 hover:to-yellow-400 text-slate-950 font-black text-base px-10 h-14 rounded-2xl shadow-xl shadow-amber-500/25 border-0 transition-all hover:scale-105">
-          <Link to="/auth">
-            Commencer gratuitement <ArrowRight className="ml-2 h-5 w-5" />
-          </Link>
-        </Button>
-        <Button asChild size="lg" variant="outline" className="border-white/15 text-white hover:bg-white/8 text-base px-10 h-14 rounded-2xl bg-white/5 backdrop-blur-sm transition-all hover:scale-105">
-          <Link to="/hifz">Découvrir le programme Hifd →</Link>
-        </Button>
+        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
+          <Button asChild size="lg" className="bg-gradient-to-r from-amber-400 to-yellow-300 hover:from-amber-500 hover:to-yellow-400 text-slate-950 font-black text-base px-10 h-14 rounded-2xl shadow-xl shadow-amber-500/25 border-0">
+            <Link to="/auth">
+              Commencer gratuitement <ArrowRight className="ml-2 h-5 w-5" />
+            </Link>
+          </Button>
+        </motion.div>
+        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
+          <Button asChild size="lg" variant="outline" className="border-white/15 text-white hover:bg-white/8 text-base px-10 h-14 rounded-2xl bg-white/5 backdrop-blur-sm">
+            <Link to="/hifz">Découvrir le programme Hifd →</Link>
+          </Button>
+        </motion.div>
       </motion.div>
 
       {/* Trust micro-copy */}
@@ -104,15 +128,21 @@ const HeroSection = () => (
         transition={{ delay: 0.55 }}
         className="flex flex-wrap items-center justify-center gap-4 text-sm text-slate-500 mb-16"
       >
-        {["3 leçons gratuites", "Sans carte bancaire", "Résultats dès la 1ère semaine"].map(item => (
-          <span key={item} className="flex items-center gap-1.5">
+        {["3 leçons gratuites", "Sans carte bancaire", "Résultats dès la 1ère semaine"].map((item, i) => (
+          <motion.span
+            key={item}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.6 + i * 0.1 }}
+            className="flex items-center gap-1.5"
+          >
             <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
             {item}
-          </span>
+          </motion.span>
         ))}
       </motion.div>
 
-      {/* Stats bar — chiffres réels uniquement */}
+      {/* Stats bar */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -123,11 +153,17 @@ const HeroSection = () => (
           { value: "2", label: "niveaux d'arabe" },
           { value: "28", label: "leçons progressives" },
           { value: "60", label: "hizb à mémoriser" },
-        ].map(({ value, label }) => (
-          <div key={label} className="bg-slate-900/60 backdrop-blur-sm py-5 text-center">
+        ].map(({ value, label }, i) => (
+          <motion.div
+            key={label}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7 + i * 0.1 }}
+            className="bg-slate-900/60 backdrop-blur-sm py-5 text-center"
+          >
             <p className="text-2xl sm:text-3xl font-black text-amber-400">{value}</p>
             <p className="text-xs text-slate-500 mt-0.5 uppercase tracking-wide">{label}</p>
-          </div>
+          </motion.div>
         ))}
       </motion.div>
     </div>
