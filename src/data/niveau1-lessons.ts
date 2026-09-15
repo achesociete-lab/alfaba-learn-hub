@@ -987,12 +987,12 @@ const lesson12: Lesson = {
   theory: [
     {
       title: "La Tâ Marbûta (ة)",
-      content: "La Tâ Marbûta (ة) est un « tâ' attaché ». Elle se trouve uniquement à la fin d'un mot et indique souvent le féminin.\n\n• Elle se prononce « t » quand on continue à lire (waṣl), et « h » quand on s'arrête sur le mot (waqf).\n• Elle ne s'écrit qu'à la fin du mot.\n\nExemples :\n• مَدْرَسَةٌ (madrasatoun / madrasah) = une école\n• فَاطِمَةُ = Fâṭima (prénom féminin)\n• جَنَّةٌ = un jardin / Paradis",
+      content: "La Tâ Marbûta (ة) est un « tâ' attaché ». Elle se trouve uniquement à la fin d'un mot et indique souvent le féminin.\n\n• Elle se prononce « t » quand on continue à lire (waṣl), et « h » quand on s'arrête sur le mot (waqf).\n• Elle ne s'écrit qu'à la fin du mot.\n\nExemples :\n• مَدْرَسَةٌ (madrasatun / en pause : madrasah) = une école\n• فَاطِمَةُ = Fâṭima (prénom féminin)\n• جَنَّةٌ = un jardin / Paradis",
       arabicExamples: [
-        { arabic: "مَدْرَسَةٌ", transliteration: "madrasah", meaning: "une école" },
+        { arabic: "مَدْرَسَةٌ", transliteration: "madrasatun", meaning: "une école" },
         { arabic: "فَاطِمَةُ", transliteration: "Fâṭima", meaning: "Fâṭima (prénom)" },
-        { arabic: "جَنَّةٌ", transliteration: "jannah", meaning: "un jardin / Paradis" },
-        { arabic: "صَلَاةٌ", transliteration: "ṣalâh", meaning: "prière" },
+        { arabic: "جَنَّةٌ", transliteration: "jannatun", meaning: "un jardin / Paradis" },
+        { arabic: "صَلَاةٌ", transliteration: "ṣalâtun", meaning: "prière" },
       ],
       tip: "Astuce : si en s'arrêtant sur le mot on entend un « h », c'est une Tâ Marbûta (ة).",
     },
@@ -1041,17 +1041,17 @@ const lesson12: Lesson = {
     { question: "Dans مَاءٌ, la Hamza est :", options: ["Sur Alif", "Sur Wâw", "Sur Yâ'", "Sans support, en fin de mot"], correctIndex: 3, explanation: "À la fin de مَاءٌ, la Hamza est seule, sans support : ء." },
   ],
   dictation: [
-    { word: "مَكْتَبَةٌ", transliteration: "maktabah (une bibliothèque)", options: ["مَكْتَبَتٌ", "مَكْتَبَةٌ", "مَكْتَبَهٌ", "مَكْتَبَاتٌ"], correctIndex: 1 },
+    { word: "مَكْتَبَةٌ", transliteration: "maktabatun (une bibliothèque)", options: ["مَكْتَبَتٌ", "مَكْتَبَةٌ", "مَكْتَبَهٌ", "مَكْتَبَاتٌ"], correctIndex: 1 },
     { word: "زَيْتٌ", transliteration: "zayt (huile)", options: ["زَيْةٌ", "زَيْتٌ", "زَيْتُونٌ", "زَيَّتَ"], correctIndex: 1 },
     { word: "فَاطِمَةُ", transliteration: "Fâṭima (prénom)", options: ["فَاطِمَتُ", "فَاطِمَةُ", "فَاطِمَهُ", "فَطِيمَةُ"], correctIndex: 1 },
     { word: "كَتَبَتْ", transliteration: "katabat (elle a écrit)", options: ["كَتَبَةٌ", "كَتَبَتْ", "كَتَبَ", "كَاتِبَةٌ"], correctIndex: 1 },
-    { word: "جَنَّةٌ", transliteration: "jannah (un jardin)", options: ["جَنَّتٌ", "جَنَّةٌ", "جِنَانٌ", "جَنَنٌ"], correctIndex: 1 },
+    { word: "جَنَّةٌ", transliteration: "jannatun (un jardin)", options: ["جَنَّتٌ", "جَنَّةٌ", "جِنَانٌ", "جَنَنٌ"], correctIndex: 1 },
     { word: "أُمٌّ", transliteration: "oumm (mère)", options: ["إُمٌّ", "أُمٌّ", "اُمٌّ", "آمٌّ"], correctIndex: 1 },
     { word: "إِيمَانٌ", transliteration: "îmân (foi)", options: ["أِيمَانٌ", "إِيمَانٌ", "ايمَانٌ", "إٍيمَانٌ"], correctIndex: 1 },
     { word: "سُؤَالٌ", transliteration: "sou'âl (question)", options: ["سُأَالٌ", "سُؤَالٌ", "سُئَالٌ", "سُوَالٌ"], correctIndex: 1 },
     { word: "قَائِمٌ", transliteration: "qâ'im (debout)", options: ["قَأِمٌ", "قَائِمٌ", "قَؤِمٌ", "قَايِمٌ"], correctIndex: 1 },
     { word: "مَاءٌ", transliteration: "mâ' (eau)", options: ["مَأٌ", "مَاءٌ", "مَائٌ", "مَؤٌ"], correctIndex: 1 },
-    { word: "صَلَاةٌ", transliteration: "ṣalâh (prière)", options: ["صَلَاتٌ", "صَلَاةٌ", "صَلَاهٌ", "صَلَوَاتٌ"], correctIndex: 1 },
+    { word: "صَلَاةٌ", transliteration: "ṣalâtun (prière)", options: ["صَلَاتٌ", "صَلَاةٌ", "صَلَاهٌ", "صَلَوَاتٌ"], correctIndex: 1 },
     { word: "أُخْتٌ", transliteration: "oukht (une sœur)", options: ["أُخْةٌ", "أُخْتٌ", "اُخْتٌ", "أَخْتٌ"], correctIndex: 1 },
   ],
 };
