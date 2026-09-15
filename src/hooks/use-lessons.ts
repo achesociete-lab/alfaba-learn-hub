@@ -19,12 +19,12 @@ export function useNiveau1Lessons() {
       .order("lesson_number");
 
     if (!error && data && data.length > 0) {
-      // Build from static as the primary source of truth (correct order + titles).
-      // Only merge qcm and dictation from DB (editable by admin).
       const byNumber = new Map<number, any>();
       data.forEach((row: any) => byNumber.set(row.lesson_number, row.content));
 
-      const merged: Lesson[] = staticN1.map((staticLesson) => {
+      // Leçons 1-12 : statique = source de vérité (ordre, titres, théorie).
+      // On ne prend du DB que qcm + dictation (éditables par l'admin).
+      const staticLessons: Lesson[] = staticN1.map((staticLesson) => {
         const c = byNumber.get(staticLesson.id);
         if (!c || !Array.isArray(c.qcm) || !Array.isArray(c.dictation)) {
           return staticLesson;
@@ -36,7 +36,19 @@ export function useNiveau1Lessons() {
         };
       });
 
-      setLessons(merged);
+      // Leçons 13+ : uniquement en DB (lettres individuelles).
+      const staticIds = new Set(staticN1.map((s) => s.id));
+      const extraLessons: Lesson[] = [];
+      data.forEach((row: any) => {
+        if (staticIds.has(row.lesson_number)) return;
+        const c = row.content as any;
+        if (!c || !Array.isArray(c.qcm) || !Array.isArray(c.dictation)) return;
+        if (!c.title) return;
+        extraLessons.push({ ...c, id: row.lesson_number });
+      });
+
+      extraLessons.sort((a, b) => a.id - b.id);
+      setLessons([...staticLessons, ...extraLessons]);
     }
     setLoading(false);
   }, []);
