@@ -336,7 +336,7 @@ export const niveau2Lessons: Niveau2Lesson[] = [
       { sentence: "بِنْتٌ جَمِيلَةٌ", transliteration: "bintun jamîlatun (une belle fille)", options: ["بِنْتٌ كَبِيرَةٌ", "بِنْتٌ جَمِيلَةٌ", "بِنْتٌ صَغِيرَةٌ", "وَلَدٌ جَمِيلٌ"], correctIndex: 1 },
       { sentence: "طَالِبَتَانِ", transliteration: "tâlibatâni (deux étudiantes)", options: ["طَالِبٌ", "طَالِبَةٌ", "طَالِبَاتٌ", "طَالِبَتَانِ"], correctIndex: 3 },
       { sentence: "أَوْلَادٌ كِبَارٌ", transliteration: "awlâdun kibârun (de grands garçons)", options: ["أَوْلَادٌ صِغَارٌ", "أَوْلَادٌ كِبَارٌ", "بَنَاتٌ كِبَارٌ", "أَوْلَادٌ جُدُدٌ"], correctIndex: 1 },
-      { sentence: "الْمُعَلِّمَةُ تَشْرَحُ", transliteration: "al-mu'allimatu tashrah (l'enseignante explique)", options: ["الْمُعَلِّمُ يَشْرَحُ", "الْمُعَلِّمَةُ تَكْتُبُ", "الْمُعَلِّمَةُ تَشْرَحُ", "الطَّالِبَةُ تَشْرَحُ"], correctIndex: 2 },
+      { sentence: "الْمُعَلِّمَةُ تَشْرَحُ", transliteration: "al-mu'allimatu tashrahu (l'enseignante explique)", options: ["الْمُعَلِّمُ يَشْرَحُ", "الْمُعَلِّمَةُ تَكْتُبُ", "الْمُعَلِّمَةُ تَشْرَحُ", "الطَّالِبَةُ تَشْرَحُ"], correctIndex: 2 },
     ],
   },
 
