@@ -10,11 +10,11 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-// Contenu enrichi de la Leçon 10 (Récapitulatif + Dictée finale)
-const LESSON_10 = {
-  id: 10,
-  title: "Récapitulatif & dictée finale",
-  subtitle: "Synthèse complète du Niveau 1 et évaluation",
+// Leçon 12 — Récapitulatif Leçons 1 à 9
+const LESSON_12_RECAP = {
+  id: 12,
+  title: "Récapitulatif — Leçons 1 à 9",
+  subtitle: "Synthèse des leçons 1 à 9 et évaluation",
   icon: "🏆",
   theory: [
     {
@@ -146,9 +146,9 @@ const LESSON_10 = {
   ],
 };
 
-// Nouvelle Leçon 12 (Tâ Marbûta / Mabsûta + Hamza)
-const LESSON_12 = {
-  id: 12,
+// Leçon 11 — Tâ Marbûta / Mabsûta + Hamza
+const LESSON_11_TA = {
+  id: 11,
   title: "Tâ Marbûta, Tâ Mabsûta et la Hamza",
   subtitle: "Notions fines avant le passage au Niveau 2",
   icon: "✒️",
@@ -444,13 +444,21 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Upsert L10 et L12
+    // Supprimer l'ancienne L10 (Récapitulatif) du DB :
+    // le fichier statique (lesson11, id:10 = "Les mots essentiels") prend le relais
+    await adminClient
+      .from("lessons")
+      .delete()
+      .eq("level", "niveau_1")
+      .eq("lesson_number", 10);
+
+    // Upsert L11 (Tâ Marbûta) et L12 (Récapitulatif)
     const { error: upsertErr } = await adminClient
       .from("lessons")
       .upsert(
         [
-          { level: "niveau_1", lesson_number: 10, content: LESSON_10 },
-          { level: "niveau_1", lesson_number: 12, content: LESSON_12 },
+          { level: "niveau_1", lesson_number: 11, content: LESSON_11_TA },
+          { level: "niveau_1", lesson_number: 12, content: LESSON_12_RECAP },
         ],
         { onConflict: "level,lesson_number" }
       );
@@ -490,7 +498,8 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        seeded: ["niveau_1/10", "niveau_1/12"],
+        seeded: ["niveau_1/11", "niveau_1/12"],
+        deleted: ["niveau_1/10"],
         qcm_patched: ["niveau_1/1", "niveau_1/2"],
         deduped,
       }),
