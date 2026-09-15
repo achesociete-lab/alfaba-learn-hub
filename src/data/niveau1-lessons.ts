@@ -756,9 +756,9 @@ const lesson9: Lesson = {
 
 // ─── Leçon 10 : Récapitulatif & dictée finale ───
 const lesson10: Lesson = {
-  id: 10,
-  title: "Récapitulatif & dictée finale",
-  subtitle: "Synthèse complète du Niveau 1 et évaluation",
+  id: 12,
+  title: "Récapitulatif — Leçons 1 à 9",
+  subtitle: "Synthèse des leçons 1 à 9 et évaluation",
   icon: "🏆",
   theory: [
     {
@@ -884,7 +884,7 @@ const lesson10: Lesson = {
 
 // ─── Leçon 11 : Les mots essentiels (vocabulaire de transition vers le Niveau 2) ───
 const lesson11: Lesson = {
-  id: 11,
+  id: 10,
   title: "Les mots essentiels",
   subtitle: "50 mots indispensables pour débuter",
   icon: "📚",
@@ -980,7 +980,7 @@ const lesson11: Lesson = {
 
 // ─── Leçon 12 : Tâ Marbûta, Tâ Mabsûta et les supports de la Hamza ───
 const lesson12: Lesson = {
-  id: 12,
+  id: 11,
   title: "Tâ Marbûta, Tâ Mabsûta et la Hamza",
   subtitle: "Notions fines avant le passage au Niveau 2",
   icon: "✒️",
@@ -1058,5 +1058,5 @@ const lesson12: Lesson = {
 
 export const niveau1Lessons: Lesson[] = [
   lesson1, lesson2, lesson3, lesson4, lesson5,
-  lesson6, lesson7, lesson8, lesson9, lesson10, lesson11, lesson12,
+  lesson6, lesson7, lesson8, lesson9, lesson11, lesson12, lesson10,
 ];
