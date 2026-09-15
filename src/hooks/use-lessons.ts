@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Lesson } from "@/data/niveau1-lessons";
 import type { Niveau2Lesson } from "@/data/niveau2-lessons";
 
-// Fallback to static data if DB is unavailable
 import { niveau1Lessons as staticN1 } from "@/data/niveau1-lessons";
 import { niveau2Lessons as staticN2 } from "@/data/niveau2-lessons";
 
@@ -20,44 +19,24 @@ export function useNiveau1Lessons() {
       .order("lesson_number");
 
     if (!error && data && data.length > 0) {
-      // Merge DB content with static fallback per-lesson.
-      // A DB lesson is only used if it has at least qcm + dictation arrays;
-      // missing fields (e.g. theory) fall back to the static lesson.
+      // Build from static as the primary source of truth (correct order + titles).
+      // Only merge qcm and dictation from DB (editable by admin).
       const byNumber = new Map<number, any>();
       data.forEach((row: any) => byNumber.set(row.lesson_number, row.content));
 
-      const merged: Lesson[] = [];
-      const seen = new Set<number>();
-
-      // First, all DB lessons that look usable.
-      // A lesson is only kept if it has a real title (either from DB or from static fallback)
-      // to avoid showing untitled "ghost" lessons.
-      data.forEach((row: any) => {
-        const c = row.content as any;
-        if (!c || !Array.isArray(c.qcm) || !Array.isArray(c.dictation)) return;
-        const staticMatch = staticN1.find((s) => s.id === row.lesson_number);
-        const title = c.title || staticMatch?.title;
-        if (!title) return; // skip lessons without any title
-        const lesson: Lesson = {
-          ...(staticMatch || ({} as Lesson)),
-          ...c,
-          id: row.lesson_number,
-          title,
-          subtitle: c.subtitle || staticMatch?.subtitle || "",
-          icon: c.icon || staticMatch?.icon || "📘",
-          theory: Array.isArray(c.theory) && c.theory.length > 0 ? c.theory : staticMatch?.theory || [],
+      const merged: Lesson[] = staticN1.map((staticLesson) => {
+        const c = byNumber.get(staticLesson.id);
+        if (!c || !Array.isArray(c.qcm) || !Array.isArray(c.dictation)) {
+          return staticLesson;
+        }
+        return {
+          ...staticLesson,
+          qcm: c.qcm,
+          dictation: c.dictation,
         };
-        merged.push(lesson);
-        seen.add(row.lesson_number);
       });
 
-      // Add any static lessons not in DB (safety net)
-      staticN1.forEach((s) => {
-        if (!seen.has(s.id)) merged.push(s);
-      });
-
-      merged.sort((a, b) => a.id - b.id);
-      if (merged.length > 0) setLessons(merged);
+      setLessons(merged);
     }
     setLoading(false);
   }, []);
