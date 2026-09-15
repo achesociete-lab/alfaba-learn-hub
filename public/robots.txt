@@ -1,8 +1,4 @@
 User-agent: *
-Allow: /
-Disallow: /admin
-Disallow: /dashboard
-Disallow: /abonnement
-Disallow: /api/
+Disallow:
 
 Sitemap: https://alfasl.fr/sitemap.xml
