@@ -411,7 +411,7 @@ const lesson5: Lesson = {
       arabicExamples: [
         { arabic: "بَابٌ", transliteration: "bâbun", meaning: "porte" },
         { arabic: "كِتَابٌ", transliteration: "kitâbun", meaning: "livre" },
-        { arabic: "نَام", transliteration: "nâm", meaning: "il a dormi" },
+        { arabic: "نَامَ", transliteration: "nâma", meaning: "il a dormi" },
         { arabic: "قَالَ", transliteration: "qâla", meaning: "il a dit" },
         { arabic: "جَاءَ", transliteration: "jâ'a", meaning: "il est venu" },
       ],
@@ -458,7 +458,7 @@ const lesson5: Lesson = {
     { word: "قَالَ", transliteration: "qâla (il a dit)", options: ["قَلَ", "قَالَ", "قُولَ", "قِيلَ"], correctIndex: 1 },
     { word: "نُجُومٌ", transliteration: "nujûmun (étoiles)", options: ["نَجَم", "نُجُومٌ", "نَجِيم", "نُجَم"], correctIndex: 1 },
     { word: "جَمِيلٌ", transliteration: "jamîlun (beau)", options: ["جَمَل", "جَمُول", "جَمِيلٌ", "جُمُل"], correctIndex: 2 },
-    { word: "نَام", transliteration: "nâm (il a dormi)", options: ["نَمْ", "نَام", "نُوم", "نِيم"], correctIndex: 1 },
+    { word: "نَامَ", transliteration: "nâma (il a dormi)", options: ["نَمْ", "نَامَ", "نُوم", "نِيم"], correctIndex: 1 },
     { word: "طَرِيقٌ", transliteration: "ṭarîqun (chemin)", options: ["طَرَق", "طَرُوق", "طَرِيقٌ", "طُرُق"], correctIndex: 2 },
     { word: "سَعِيدٌ", transliteration: "sa'îdun (heureux)", options: ["سَعَد", "سَعُود", "سَعِيدٌ", "سُعُد"], correctIndex: 2 },
     { word: "دُرُوسٌ", transliteration: "durûsun (leçons)", options: ["دَرَس", "دُرُوسٌ", "دَرِيس", "دِرَاس"], correctIndex: 1 },
