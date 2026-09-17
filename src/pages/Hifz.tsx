@@ -39,7 +39,7 @@ type Evaluation = { id: string; session_id: string | null; hizb_number: number; 
 const NIVEAU_LABEL: Record<string, string> = { mediocre: "Médiocre", moyen: "Moyen", bon: "Bon", excellent: "Excellent" };
 const NIVEAU_WEIGHT: Record<string, number> = { mediocre: 1, moyen: 2, bon: 3, excellent: 4 };
 // Spaced repetition intervals in days per niveau
-const REVISION_INTERVALS: Record<string, number> = { mediocre: 1, moyen: 3, bon: 7, excellent: 14 };
+const REVISION_INTERVALS: Record<string, number> = { mediocre: 1, moyen: 3, bon: 14, excellent: 30 };
 const NIVEAU_BG: Record<string, string> = { excellent: "bg-emerald-700", bon: "bg-emerald-500", moyen: "bg-amber-500", mediocre: "bg-red-500" };
 const STATUS_LABEL: Record<string, string> = { en_attente: "En attente", confirmee: "Confirmée", effectuee: "Effectuée", annulee: "Annulée" };
 const STATUS_CARD: Record<string, string> = {
@@ -718,40 +718,7 @@ export default function Hifz() {
               ) : (
                 /* ── Programme actif ── */
                 <div className="space-y-4">
-                  {/* Stats + progress */}
-                  <Card className="border-emerald-200 bg-gradient-to-br from-emerald-50 to-amber-50/60 shadow-sm">
-                    <CardContent className="pt-6 space-y-5">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <StatCard icon={BookOpen} label="Hizb mémorisés" value={`${totalMemorized}/${TOTAL_HIZB}`} color="emerald" />
-                        <StatCard icon={Target} label="Hizb restants" value={remainingHizb} color="amber" />
-                        <StatCard icon={TrendingUp} label="Pages restantes" value={remainingPages} color="amber" />
-                        <StatCard icon={CalendarCheck} label="Rythme" value={pacePerDay < 1 ? "< 1 p/j" : `${pacePerDay} p/j`} color="emerald" />
-                      </div>
-                      <div className="space-y-1.5">
-                        <div className="flex justify-between text-xs text-amber-800/70">
-                          <span>Progression globale</span>
-                          <span className="font-semibold">{progressPercent}% · {memorizedPages} pages mémorisées</span>
-                        </div>
-                        <Progress value={progressPercent} className="h-2.5 rounded-full" />
-                      </div>
-
-                      {/* Option A — cadence recommandée */}
-                      <div className={`flex items-center justify-between px-4 py-3 rounded-xl border ${recommendedPerWeek === 2 ? "bg-amber-50 border-amber-200" : "bg-emerald-50 border-emerald-200"}`}>
-                        <div className="flex items-center gap-2">
-                          <CalendarDays className={`h-4 w-4 ${recommendedPerWeek === 2 ? "text-amber-600" : "text-emerald-600"}`} />
-                          <span className="text-sm font-medium text-gray-800">Cadence recommandée</span>
-                          <span className={`text-xs ${recommendedPerWeek === 2 ? "text-amber-700" : "text-emerald-700"}`}>
-                            {evaluations.length === 0 ? "Basée sur vos premières évaluations" : recommendedPerWeek === 2 ? "Des hizb nécessitent plus de travail" : "Bonne progression générale"}
-                          </span>
-                        </div>
-                        <Badge className={`shrink-0 font-bold ${recommendedPerWeek === 2 ? "bg-amber-500 text-white" : "bg-emerald-600 text-white"}`}>
-                          {recommendedPerWeek}× / semaine
-                        </Badge>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* À faire aujourd'hui */}
+                  {/* À faire aujourd'hui — EN PREMIER pour action immédiate */}
                   <Card className="shadow-sm border-2 border-emerald-200 bg-gradient-to-br from-white to-emerald-50/40">
                     <CardHeader className="pb-3">
                       <CardTitle className="text-base flex items-center gap-2 text-emerald-800">
@@ -766,7 +733,7 @@ export default function Hifz() {
                           <span className="text-xl shrink-0">📗</span>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold text-emerald-800">Nouvel apprentissage</p>
-                            <p className="text-xs text-emerald-700/70">{pacePerDay < 1 ? "1 page minimum" : `${pacePerDay} page${pacePerDay > 1 ? "s" : ""}`} à mémoriser · Répéter 50 fois</p>
+                            <p className="text-xs text-emerald-700/70">{pacePerDay < 1 ? "1 page minimum" : `${pacePerDay} page${pacePerDay > 1 ? "s" : ""}`} · 10× verset par verset → 10× groupe de 3 → 10× page complète</p>
                           </div>
                         </div>
                       )}
@@ -837,36 +804,60 @@ export default function Hifz() {
                     </CardContent>
                   </Card>
 
-                  {/* Chart */}
-                  <Card className="border-emerald-200 shadow-sm">
+                  {/* Stats + progress — après l'action du jour */}
+                  <Card className="border-emerald-200 bg-gradient-to-br from-emerald-50 to-amber-50/60 shadow-sm">
+                    <CardContent className="pt-6 space-y-5">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <StatCard icon={BookOpen} label="Hizb mémorisés" value={`${totalMemorized}/${TOTAL_HIZB}`} color="emerald" />
+                        <StatCard icon={Target} label="Hizb restants" value={remainingHizb} color="amber" />
+                        <StatCard icon={TrendingUp} label="Pages restantes" value={remainingPages} color="amber" />
+                        <StatCard icon={CalendarCheck} label="Rythme" value={pacePerDay < 1 ? "< 1 p/j" : `${pacePerDay} p/j`} color="emerald" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between text-xs text-amber-800/70">
+                          <span>Progression globale</span>
+                          <span className="font-semibold">{progressPercent}% · {memorizedPages} pages mémorisées</span>
+                        </div>
+                        <Progress value={progressPercent} className="h-2.5 rounded-full" />
+                      </div>
+                      <div className={`flex items-center justify-between px-4 py-3 rounded-xl border ${recommendedPerWeek === 2 ? "bg-amber-50 border-amber-200" : "bg-emerald-50 border-emerald-200"}`}>
+                        <div className="flex items-center gap-2">
+                          <CalendarDays className={`h-4 w-4 ${recommendedPerWeek === 2 ? "text-amber-600" : "text-emerald-600"}`} />
+                          <span className="text-sm font-medium text-gray-800">Cadence recommandée</span>
+                          <span className={`text-xs ${recommendedPerWeek === 2 ? "text-amber-700" : "text-emerald-700"}`}>
+                            {evaluations.length === 0 ? "Basée sur vos premières évaluations" : recommendedPerWeek === 2 ? "Des hizb nécessitent plus de travail" : "Bonne progression générale"}
+                          </span>
+                        </div>
+                        <Badge className={`shrink-0 font-bold ${recommendedPerWeek === 2 ? "bg-amber-500 text-white" : "bg-emerald-600 text-white"}`}>
+                          {recommendedPerWeek}× / semaine
+                        </Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Chart — masqué si moins de 2 points de données */}
+                  {progressChartData.length > 1 && <Card className="border-emerald-200 shadow-sm">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-emerald-800 text-base flex items-center gap-2">
                         <TrendingUp className="h-4 w-4" /> Évolution de la mémorisation
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      {progressChartData.length <= 1 ? (
-                        <div className="flex flex-col items-center justify-center py-10 text-center gap-2">
-                          <TrendingUp className="h-10 w-10 text-emerald-200" />
-                          <p className="text-sm text-amber-800/60">Le graphique apparaîtra dès que vos premiers hizb seront validés.</p>
-                        </div>
-                      ) : (
-                        <div className="h-64 w-full">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={progressChartData} margin={{ top: 5, right: 10, bottom: 5, left: -10 }}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="#e7d9b8" />
-                              <XAxis dataKey="date" stroke="#92400e" fontSize={11} />
-                              <YAxis stroke="#92400e" fontSize={11} domain={[0, TOTAL_HIZB]} />
-                              <Tooltip contentStyle={{ background: "#fdf8ef", border: "1px solid #15803d", borderRadius: 10, fontSize: 12 }} />
-                              <Legend wrapperStyle={{ fontSize: 12 }} />
-                              <Line type="monotone" dataKey="memorisés" stroke="#15803d" strokeWidth={2.5} dot={{ r: 3, fill: "#15803d" }} />
-                              <Line type="monotone" dataKey="restants" stroke="#d97706" strokeWidth={2} dot={{ r: 3, fill: "#d97706" }} strokeDasharray="4 2" />
-                            </LineChart>
-                          </ResponsiveContainer>
-                        </div>
-                      )}
+                      <div className="h-64 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={progressChartData} margin={{ top: 5, right: 10, bottom: 5, left: -10 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e7d9b8" />
+                            <XAxis dataKey="date" stroke="#92400e" fontSize={11} />
+                            <YAxis stroke="#92400e" fontSize={11} domain={[0, TOTAL_HIZB]} />
+                            <Tooltip contentStyle={{ background: "#fdf8ef", border: "1px solid #15803d", borderRadius: 10, fontSize: 12 }} />
+                            <Legend wrapperStyle={{ fontSize: 12 }} />
+                            <Line type="monotone" dataKey="memorisés" stroke="#15803d" strokeWidth={2.5} dot={{ r: 3, fill: "#15803d" }} />
+                            <Line type="monotone" dataKey="restants" stroke="#d97706" strokeWidth={2} dot={{ r: 3, fill: "#d97706" }} strokeDasharray="4 2" />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
                     </CardContent>
-                  </Card>
+                  </Card>}
 
                   <Button variant="outline" onClick={handleReset} className="border-amber-300 text-amber-800 hover:bg-amber-50 text-sm">
                     <RotateCcw className="h-3.5 w-3.5 mr-2" /> Réinitialiser mon programme
@@ -1293,6 +1284,23 @@ export default function Hifz() {
                                       {(e as any).page_start ? ` (p.${(e as any).page_start}${(e as any).page_end && (e as any).page_end !== (e as any).page_start ? `–${(e as any).page_end}` : ""})` : ""}
                                     </p>
                                   )}
+                                  <div className="flex flex-wrap gap-1.5 mt-1.5">
+                                    {(e as any).fluidity && (
+                                      <span className="text-xs bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full font-medium">
+                                        Fluidité : {(e as any).fluidity}
+                                      </span>
+                                    )}
+                                    {(e as any).without_mushaf === true && (
+                                      <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">
+                                        Sans mushaf ✓
+                                      </span>
+                                    )}
+                                    {(e as any).ready_to_advance === false && (
+                                      <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
+                                        Pas encore prêt à avancer
+                                      </span>
+                                    )}
+                                  </div>
                                   {e.notes && (
                                     <p className="text-xs text-gray-500 mt-1.5 italic border-l-2 border-gray-200 pl-2">"{e.notes}"</p>
                                   )}
@@ -1734,7 +1742,7 @@ export default function Hifz() {
                     </div>
                     <div>
                       <p className={`font-bold text-base ${confirmedRepetition ? "text-emerald-800" : "text-red-700"}`}>
-                        J'ai répété mon wird 50 fois
+                        J'ai répété mon sabaq (10× verset / 10× groupe / 10× page)
                       </p>
                       <p className={`text-xs mt-0.5 ${confirmedRepetition ? "text-emerald-600" : "text-red-500"}`}>
                         Obligatoire avant de présenter au professeur

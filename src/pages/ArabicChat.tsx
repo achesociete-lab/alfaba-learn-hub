@@ -107,21 +107,51 @@ function hasDictee(text: string): boolean {
   return /\[DICTEE\]/i.test(text);
 }
 
-// ─── Suggestions ──────────────────────────────────────────────────────────────
-const SUGGESTIONS: Record<string, Array<{ ar: string; fr: string }>> = {
-  niveau_1: [
+// ─── Suggestions dynamiques selon progression ─────────────────────────────────
+function getDynamicSuggestions(level: string, completedLessons: number[]): Array<{ ar: string; fr: string }> {
+  const last = completedLessons.length > 0 ? Math.max(...completedLessons) : 0;
+
+  if (level === "niveau_2") {
+    if (last <= 2) return [
+      { ar: "أَخْبِرْنِي عَنِ الضَّمَائِرِ", fr: "Les pronoms" },
+      { ar: "مَا هِيَ الجُمْلَةُ الاِسْمِيَّةُ؟", fr: "Phrase nominale" },
+      { ar: "أُرِيدُ أَنْ أَتَدَرَّبَ", fr: "S'entraîner" },
+      { ar: "صَحِّحْ جُمْلَتِي", fr: "Corriger ma phrase" },
+    ];
+    return [
+      { ar: "عَلِّمْنِي الأَفْعَالَ الْمُضَارِعَةَ", fr: "Verbes au présent" },
+      { ar: "مَا هِيَ الإِضَافَةُ؟", fr: "L'إضافة" },
+      { ar: "أَمْلِ عَلَيَّ جُمْلَةً", fr: "Dictée de phrase" },
+      { ar: "صَحِّحْ هَذِهِ الجُمْلَةَ", fr: "Corriger une phrase" },
+    ];
+  }
+
+  // Niveau 1
+  if (last === 0) return [
     { ar: "مَرْحَباً", fr: "Bonjour" },
-    { ar: "كَيْفَ حَالُكَ؟", fr: "Comment vas-tu ?" },
-    { ar: "أُرِيدُ أَنْ أَتَعَلَّمَ", fr: "Je veux apprendre" },
+    { ar: "عَلِّمْنِي حَرْفًا", fr: "Apprends-moi une lettre" },
     { ar: "مَا هَذَا؟", fr: "Qu'est-ce que c'est ?" },
-  ],
-  niveau_2: [
-    { ar: "أَخْبِرْنِي عَنِ الضَّمَائِرِ", fr: "Les pronoms" },
-    { ar: "مَا هِيَ الجُمْلَةُ الاِسْمِيَّةُ؟", fr: "Phrase nominale" },
-    { ar: "عَلِّمْنِي الأَفْعَالَ", fr: "Les verbes" },
-    { ar: "كَيْفَ أَكْتُبُ هَذِهِ الكَلِمَةَ؟", fr: "Écriture" },
-  ],
-};
+    { ar: "أُرِيدُ أَنْ أَتَعَلَّمَ", fr: "Je veux apprendre" },
+  ];
+  if (last <= 3) return [
+    { ar: "أَمْلِ عَلَيَّ كَلِمَةً", fr: "Dictée d'un mot" },
+    { ar: "اِمْتَحِنِّي فِي الحُرُوفِ", fr: "Teste-moi sur les lettres" },
+    { ar: "مَا الفَرْقُ بَيْنَ ب وَ ت؟", fr: "Différence ب / ت" },
+    { ar: "كَيْفَ حَالُكَ؟", fr: "Conversation libre" },
+  ];
+  if (last <= 6) return [
+    { ar: "أَمْلِ عَلَيَّ كَلِمَةً", fr: "Dictée" },
+    { ar: "اِشْرَحْ لِي الحَرَكَاتِ", fr: "Les voyelles" },
+    { ar: "أُرِيدُ أَنْ أَتَدَرَّبَ", fr: "S'entraîner" },
+    { ar: "مَا مَعْنَى بَيْتٌ؟", fr: "Vocabulaire" },
+  ];
+  return [
+    { ar: "أَمْلِ عَلَيَّ جُمْلَةً", fr: "Dictée de phrase" },
+    { ar: "مَا هُوَ التَّنْوِينُ؟", fr: "Le tanwîn" },
+    { ar: "اِقْرَأْ مَعِي جُمْلَةً", fr: "Lire ensemble" },
+    { ar: "أُرِيدُ أَنْ أَكْتُبَ", fr: "Exercice d'écriture" },
+  ];
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const ArabicChat = () => {
@@ -153,6 +183,7 @@ const ArabicChat = () => {
   const userLevel = profile?.level || "niveau_1";
   const formality = isTu ? "tu" : "vous";
   const levelLabel = userLevel === "niveau_2" ? "Niveau 2" : "Niveau 1";
+  const suggestions = getDynamicSuggestions(userLevel, completedLessons);
 
   const { speak, stop: stopSpeech } = useArabicSpeech();
   const recorder = useAudioRecorder();
@@ -411,8 +442,8 @@ const ArabicChat = () => {
 
   if (loading) return null;
 
-  const suggestions = SUGGESTIONS[userLevel] || SUGGESTIONS.niveau_1;
   const hasMessages = messages.length > 0;
+  const isDicteeMode = hasMessages && hasDictee(messages[messages.length - 1]?.content || "");
 
   // ── SIDEBAR ─────────────────────────────────────────────────────────────────
   const Sidebar = (
@@ -771,8 +802,16 @@ const ArabicChat = () => {
           {/* ── Input bar ── */}
           <div className="shrink-0 border-t border-border bg-background/95 backdrop-blur-sm px-3 py-3">
 
+            {/* Indicateur mode dictée */}
+            {isDicteeMode && !isLoading && (
+              <div className="flex items-center gap-1.5 mb-2 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                <Volume2 className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                <span className="text-xs text-amber-700 font-medium">Mode dictée — Écrivez ce que vous entendez</span>
+              </div>
+            )}
+
             {/* Suggestion chips (during chat) */}
-            {hasMessages && !isLoading && (
+            {hasMessages && !isLoading && !isDicteeMode && (
               <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide mb-2">
                 {suggestions.map((s) => (
                   <button key={s.ar}
