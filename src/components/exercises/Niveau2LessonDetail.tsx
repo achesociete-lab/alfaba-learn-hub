@@ -26,18 +26,16 @@ interface Niveau2LessonDetailProps {
 function GrammarTab({ lesson }: { lesson: Niveau2Lesson }) {
   const { speak, stop } = useArabicSpeech();
   const { isAdmin } = useIsAdmin();
-  const [isReading, setIsReading] = useState(false);
+  const [isReadingComprehension, setIsReadingComprehension] = useState(false);
   const grammarExamples = lesson.grammar.flatMap((rule) => rule.examples);
 
-  const readLesson = async () => {
-    if (isReading) { stop(); setIsReading(false); return; }
-    setIsReading(true);
+  const readComprehension = async () => {
+    if (isReadingComprehension) { stop(); setIsReadingComprehension(false); return; }
+    if (!lesson.comprehension.arabic) return;
+    setIsReadingComprehension(true);
     try {
-      for (const example of grammarExamples) {
-        await speak(example.arabic, 0.75);
-        await new Promise(r => setTimeout(r, 500));
-      }
-    } finally { setIsReading(false); }
+      await speak(lesson.comprehension.arabic, 0.75);
+    } finally { setIsReadingComprehension(false); }
   };
 
   return (
@@ -62,8 +60,8 @@ function GrammarTab({ lesson }: { lesson: Niveau2Lesson }) {
         <div className="p-4 rounded-xl border border-border bg-card space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-foreground flex items-center gap-2"><FileText className="h-4 w-4" /> Texte de compréhension</h3>
-            <Button variant="outline" size="sm" onClick={readLesson} className="gap-2 text-xs">
-              <Volume2 className={`h-3.5 w-3.5 ${isReading ? "animate-pulse text-primary" : ""}`} />{isReading ? "Arrêter" : "Écouter"}
+            <Button variant="outline" size="sm" onClick={readComprehension} className="gap-2 text-xs">
+              <Volume2 className={`h-3.5 w-3.5 ${isReadingComprehension ? "animate-pulse text-primary" : ""}`} />{isReadingComprehension ? "Arrêter" : "Écouter"}
             </Button>
           </div>
           <div className="p-4 rounded-lg bg-muted/50" dir="rtl"><p className="font-arabic text-lg text-foreground leading-loose">{lesson.comprehension.arabic}</p></div>
