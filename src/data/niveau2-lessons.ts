@@ -244,16 +244,16 @@ export const niveau2Lessons: Niveau2Lesson[] = [
       ],
     },
     qcm: [
-      { question: "Que signifie بَيْتٌ ?", options: ["École", "Maison", "Jardin", "Rue"], correctIndex: 1, explanation: "بَيْتٌ = une maison." },
-      { question: "Que signifie أُمٌّ ?", options: ["Père", "Frère", "Mère", "Sœur"], correctIndex: 2, explanation: "أُمٌّ = une mère." },
-      { question: "Que signifie مَطْبَخٌ ?", options: ["Salon", "Cuisine", "Chambre", "Jardin"], correctIndex: 1, explanation: "مَطْبَخٌ = une cuisine." },
-      { question: "Que signifie غُرْفَةٌ ?", options: ["Cuisine", "Salle de bain", "Chambre", "Salon"], correctIndex: 2, explanation: "غُرْفَةٌ = une chambre." },
-      { question: "Que signifie أَبٌ ?", options: ["Mère", "Père", "Oncle", "Grand-père"], correctIndex: 1, explanation: "أَبٌ = un père." },
-      { question: "Que signifie أَخٌ ?", options: ["Sœur", "Ami", "Cousin", "Frère"], correctIndex: 3, explanation: "أَخٌ = un frère." },
-      { question: "Que signifie فَصْلٌ ?", options: ["Leçon", "Classe", "Bureau", "École"], correctIndex: 1, explanation: "فَصْلٌ = une classe." },
-      { question: "Que signifie سَبُّورَةٌ ?", options: ["Cahier", "Stylo", "Tableau", "Livre"], correctIndex: 2, explanation: "سَبُّورَةٌ = un tableau." },
-      { question: "Que signifie كُرْسِيٌّ ?", options: ["Table", "Chaise", "Bureau", "Armoire"], correctIndex: 1, explanation: "كُرْسِيٌّ = une chaise." },
-      { question: "تَسْكُنُ signifie :", options: ["Elle mange", "Elle dort", "Elle habite", "Elle étudie"], correctIndex: 2, explanation: "تَسْكُنُ = elle habite." },
+      { question: "Dans بَيْتٌ كَبِيرٌ, l'adjectif كَبِيرٌ est :", options: ["Défini", "Féminin", "Indéfini et masculin", "Pluriel"], correctIndex: 2, explanation: "بَيْتٌ est masculin indéfini, donc كَبِيرٌ s'accorde : masculin indéfini." },
+      { question: "Le féminin de غُرْفَةٌ كَبِيرَةٌ est signalé par :", options: ["La shadda", "Le alif", "Le Ta Marbuta (ة)", "Le tanwîn fatha"], correctIndex: 2, explanation: "Le Ta Marbuta (ة) marque le féminin dans غُرْفَةٌ et كَبِيرَةٌ." },
+      { question: "Dans الْبَيْتُ كَبِيرٌ (phrase nominale), le Moubtada est :", options: ["كَبِيرٌ", "الْبَيْتُ", "Les deux", "Aucun"], correctIndex: 1, explanation: "الْبَيْتُ est le sujet (Moubtada) défini par ال." },
+      { question: "أُمِّي est formé de :", options: ["أُمٌّ + ال", "أُمٌّ + suffixe ي", "أُمٌّ + pluriel", "أُمٌّ + duel"], correctIndex: 1, explanation: "Le suffixe ي = mon → أُمِّي = ma mère." },
+      { question: "Quel mot est féminin ?", options: ["أَبٌ", "أَخٌ", "مَطْبَخٌ", "غُرْفَةٌ"], correctIndex: 3, explanation: "غُرْفَةٌ porte le Ta Marbuta = féminin." },
+      { question: "Dans فِي الْمَطْبَخِ, la voyelle finale de الْمَطْبَخِ est :", options: ["La damma (ـُ)", "La fatha (ـَ)", "La kasra (ـِ)", "Le sukûn"], correctIndex: 2, explanation: "Après la préposition فِي, le nom est avec kasra (majrour)." },
+      { question: "Le pluriel de أَخٌ (frère) est :", options: ["أَخَانِ", "أَخَوَاتٌ", "إِخْوَةٌ", "أَخُونَ"], correctIndex: 2, explanation: "إِخْوَةٌ est le pluriel irrégulier de أَخٌ." },
+      { question: "Dans ثَلَاثُ غُرَفٍ, غُرَفٍ est le pluriel de :", options: ["غُرْفَاءُ", "غُرْفَةٌ", "غَارِفٌ", "غَرَفَ"], correctIndex: 1, explanation: "غُرَفٌ est le pluriel irrégulier de غُرْفَةٌ." },
+      { question: "تَطْبُخُ est un verbe au :", options: ["Passé masculin", "Présent féminin", "Passé féminin", "Futur"], correctIndex: 1, explanation: "تَطْبُخُ = elle cuisine (présent féminin, préfixe تَـ)." },
+      { question: "La phrase أَبُوهَا يَقْرَأُ est de type :", options: ["Nominale", "Verbale", "Interrogative", "Négative"], correctIndex: 1, explanation: "يَقْرَأُ est un verbe au présent → phrase verbale." },
     ],
     dictation: [
       { sentence: "بَيْتٌ كَبِيرٌ", transliteration: "baytun kabîrun (une grande maison)", options: ["بَيْتٌ كَبِيرٌ", "بَيْتٌ صَغِيرٌ", "بِنْتٌ كَبِيرَةٌ", "بَابٌ كَبِيرٌ"], correctIndex: 0 },
@@ -662,16 +662,16 @@ export const niveau2Lessons: Niveau2Lesson[] = [
       ],
     },
     qcm: [
-      { question: "ثُمَّ signifie :", options: ["Mais", "Et", "Ensuite", "Parce que"], correctIndex: 2, explanation: "ثُمَّ = ensuite, puis." },
-      { question: "لَكِنَّ signifie :", options: ["Et", "Donc", "Mais", "Ou"], correctIndex: 2, explanation: "لَكِنَّ = mais, cependant." },
-      { question: "صَبَاحًا signifie :", options: ["Le soir", "La nuit", "Le matin", "L'après-midi"], correctIndex: 2, explanation: "صَبَاحًا = le matin." },
-      { question: "مَسَاءً signifie :", options: ["Le matin", "Le soir", "La nuit", "Midi"], correctIndex: 1, explanation: "مَسَاءً = le soir." },
-      { question: "غَدًا signifie :", options: ["Hier", "Aujourd'hui", "Demain", "Maintenant"], correctIndex: 2, explanation: "غَدًا = demain." },
-      { question: "لِأَنَّ signifie :", options: ["Donc", "Parce que", "Ou", "Mais"], correctIndex: 1, explanation: "لِأَنَّ = parce que." },
-      { question: "أَوْ signifie :", options: ["Et", "Mais", "Ou", "Donc"], correctIndex: 2, explanation: "أَوْ = ou." },
-      { question: "فَ signifie :", options: ["Mais", "Ou", "Alors/donc", "Parce que"], correctIndex: 2, explanation: "فَ = alors, donc." },
-      { question: "سَافَرَ signifie :", options: ["Il a visité", "Il a voyagé", "Il a marché", "Il a volé"], correctIndex: 1, explanation: "سَافَرَ = il a voyagé." },
-      { question: "الْأَهْرَامَاتُ signifie :", options: ["Les mosquées", "Les musées", "Les pyramides", "Les montagnes"], correctIndex: 2, explanation: "الْأَهْرَامَاتُ = les pyramides." },
+      { question: "Dans زَارُوا الأَهْرَامَاتِ ثُمَّ ذَهَبُوا إِلَى الْمُتْحَفِ, ثُمَّ indique :", options: ["Une opposition", "Une cause", "Une succession temporelle", "Une alternative"], correctIndex: 2, explanation: "ثُمَّ = ensuite, puis — il relie deux actions dans l'ordre." },
+      { question: "كَانَ الطَّقْسُ حَارًّا لَكِنَّ الرِّحْلَةَ مُمْتِعَةٌ — لَكِنَّ exprime :", options: ["Une cause", "Une opposition", "Une conséquence", "Une addition"], correctIndex: 1, explanation: "لَكِنَّ = mais, cependant — relie deux idées contraires." },
+      { question: "La phrase كَانَ الطَّقْسُ حَارًّا contient :", options: ["Une phrase nominale simple", "كَانَ + nom + attribut", "Une phrase verbale ordinaire", "Une question"], correctIndex: 1, explanation: "كَانَ transforme la phrase nominale en passé : كَانَ + اسم + خبر منصوب." },
+      { question: "رَجَعُوا إِلَى بِلَادِهِمْ سَعِيدِينَ — سَعِيدِينَ est :", options: ["Le sujet", "Un complément de manière (حال)", "Un objet direct", "Un khabar"], correctIndex: 1, explanation: "سَعِيدِينَ = heureux — il décrit l'état du sujet pendant l'action (حال)." },
+      { question: "زَارُوا — quel est le sujet sous-entendu ?", options: ["Singulier masculin", "Singulier féminin", "Pluriel masculin", "Duel"], correctIndex: 2, explanation: "Le suffixe واو الجماعة (وا) = ils — pluriel masculin." },
+      { question: "Dans سَافَرَ عَلِيٌّ إِلَى مِصْرَ مَعَ عَائِلَتِهِ, مَعَ exprime :", options: ["La destination", "L'accompagnement", "L'origine", "Le temps"], correctIndex: 1, explanation: "مَعَ = avec — préposition d'accompagnement." },
+      { question: "إِلَى بِلَادِهِمْ — بِلَادِهِمْ est :", options: ["Sujet", "Complément de nom", "Complément de préposition (majrour)", "Attribut"], correctIndex: 2, explanation: "Après إِلَى, le nom est majrour (avec kasra). هِمْ = leur." },
+      { question: "Quel connecteur exprimerait une cause dans : ذَهَبَ ___ الطَّقْسَ كَانَ جَمِيلًا ?", options: ["ثُمَّ", "لَكِنَّ", "لِأَنَّ", "أَوْ"], correctIndex: 2, explanation: "لِأَنَّ = parce que — connecteur de cause." },
+      { question: "صَبَاحًا et مَسَاءً sont des :", options: ["Sujets", "Verbes", "Adverbes de temps (ظرف زمان)", "Prépositions"], correctIndex: 2, explanation: "صَبَاحًا et مَسَاءً indiquent le moment de l'action = adverbes de temps." },
+      { question: "الرِّحْلَةُ كَانَتْ مُمْتِعَةً — pourquoi كَانَتْ avec تْ ?", options: ["Le sujet est pluriel", "Le sujet الرِّحْلَةُ est féminin", "C'est le passé simple", "Le sujet est masculin"], correctIndex: 1, explanation: "الرِّحْلَةُ est féminin → كَانَ prend le تْ féminin → كَانَتْ." },
     ],
     dictation: [
       { sentence: "سَافَرَ إِلَى مِصْرَ", transliteration: "sâfara ilâ misra (il a voyagé en Égypte)", options: ["سَافَرَ إِلَى مِصْرَ", "ذَهَبَ إِلَى مِصْرَ", "سَافَرَ إِلَى تُونِسَ", "رَجَعَ مِنْ مِصْرَ"], correctIndex: 0 },
@@ -758,11 +758,11 @@ export const niveau2Lessons: Niveau2Lesson[] = [
     ],
   },
 
-  // ─── Leçon 11 : Rédaction guidée ───
+  // ─── Leçon 11 : Consolidation ───
   {
     id: 11,
-    title: "Rédaction guidée",
-    subtitle: "Écrire des phrases et paragraphes simples",
+    title: "Consolidation",
+    subtitle: "Révision de toutes les notions du niveau 2",
     description: "Mettre en pratique toutes les notions apprises pour construire des phrases complètes et cohérentes.",
     grammar: [
       {
@@ -830,12 +830,12 @@ export const niveau2Lessons: Niveau2Lesson[] = [
     ],
   },
 
-  // ─── Leçon 12 : Dictée finale ───
+  // ─── Leçon 12 : Évaluation finale ───
   {
     id: 12,
-    title: "Dictée finale",
+    title: "Évaluation finale",
     subtitle: "Évaluation complète du niveau 2",
-    description: "Évaluation finale couvrant toutes les notions du niveau 2 : grammaire, vocabulaire, compréhension et rédaction.",
+    description: "Évaluation finale couvrant toutes les notions du niveau 2 : grammaire, vocabulaire, compréhension et orthographe.",
     grammar: [
       {
         title: "Récapitulatif — Les types de phrases",
@@ -889,6 +889,290 @@ export const niveau2Lessons: Niveau2Lesson[] = [
       { sentence: "كَتَبْتُ رِسَالَةً", transliteration: "katabtu risâlatan (j'ai écrit une lettre)", options: ["كَتَبَ رِسَالَةً", "كَتَبْتُ كِتَابًا", "كَتَبْتُ رِسَالَةً", "قَرَأْتُ رِسَالَةً"], correctIndex: 2 },
       { sentence: "هَذَا كِتَابُهَا", transliteration: "hâdhâ kitâbuhâ (ceci est son livre à elle)", options: ["هَذَا كِتَابِي", "هَذَا كِتَابُهُ", "هَذَا كِتَابُهَا", "هَذَا كِتَابُكَ"], correctIndex: 2 },
       { sentence: "الْمُعَلِّمَاتُ فِي الْمَدْرَسَةِ", transliteration: "al-mu'allimâtu fî-l-madrasati (les enseignantes sont à l'école)", options: ["الْمُعَلِّمُونَ فِي الْمَدْرَسَةِ", "الْمُعَلِّمَاتُ فِي الْبَيْتِ", "الْمُعَلِّمَاتُ فِي الْمَدْرَسَةِ", "الطَّالِبَاتُ فِي الْمَدْرَسَةِ"], correctIndex: 2 },
+    ],
+  },
+
+  // ─── Leçon 14 : Le présent et le futur (المضارع) ───
+  {
+    id: 14,
+    title: "Le présent et le futur (المضارع)",
+    subtitle: "Conjugaison du présent et futur proche",
+    description: "Le verbe au présent-futur (المضارع) exprime une action habituelle, en cours ou à venir. Il se reconnaît à ses préfixes : أَ، تَ، يَ، نَ.",
+    grammar: [
+      {
+        title: "Formation du présent — les préfixes",
+        explanation: "Le présent s'obtient en ajoutant un préfixe à la racine verbale. أَـ (je) / تَـ (tu m., elle) / يَـ (il) / نَـ (nous).",
+        examples: [
+          { arabic: "أَنَا أَكْتُبُ", transliteration: "anâ aktubu", meaning: "J'écris" },
+          { arabic: "هُوَ يَكْتُبُ", transliteration: "huwa yaktubu", meaning: "Il écrit" },
+          { arabic: "هِيَ تَكْتُبُ", transliteration: "hiya taktubu", meaning: "Elle écrit" },
+        ],
+      },
+      {
+        title: "Tableau complet des personnes",
+        explanation: "Chaque pronom a son préfixe : أَنَا←أَـ، أَنْتَ/هِيَ←تَـ، هُوَ←يَـ، نَحْنُ←نَـ.",
+        examples: [
+          { arabic: "نَحْنُ نَذْهَبُ", transliteration: "nahnu nadhabu", meaning: "Nous allons" },
+          { arabic: "أَنْتَ تَقْرَأُ", transliteration: "anta taqra'u", meaning: "Tu lis" },
+          { arabic: "أَنْتِ تَقْرَئِينَ", transliteration: "anti taqra'îna", meaning: "Tu lis (f.)" },
+        ],
+      },
+      {
+        title: "Le futur proche — سَـ / سَوْفَ",
+        explanation: "Pour exprimer le futur, on ajoute سَـ (futur court) ou سَوْفَ (futur expressif) devant le présent.",
+        examples: [
+          { arabic: "سَيَذْهَبُ إِلَى الْمَدْرَسَةِ", transliteration: "sayadhhabu ilâ-l-madrasati", meaning: "Il ira à l'école" },
+          { arabic: "سَأَكْتُبُ رِسَالَةً", transliteration: "sa'aktubu risâlatan", meaning: "J'écrirai une lettre" },
+          { arabic: "سَوْفَ نَرْجِعُ غَدًا", transliteration: "sawfa narji'u ghadan", meaning: "Nous rentrerons demain" },
+        ],
+      },
+    ],
+    comprehension: {
+      title: "يَوْمٌ عَادِيٌّ — Une journée ordinaire",
+      arabic: "كُلَّ يَوْمٍ يَسْتَيْقِظُ سَامِي مُبَكِّرًا. يَغْسِلُ وَجْهَهُ وَيَأْكُلُ الْفُطُورَ. ثُمَّ يَذْهَبُ إِلَى الْمَدْرَسَةِ حَيْثُ يَدْرُسُ وَيَكْتُبُ. مَسَاءً يَلْعَبُ مَعَ أَصْدِقَائِهِ ثُمَّ يَنَامُ بَاكِرًا.",
+      translation: "Chaque jour Sami se réveille tôt. Il se lave le visage et mange le petit-déjeuner. Puis il va à l'école où il étudie et écrit. Le soir il joue avec ses amis puis il dort tôt.",
+      questions: [
+        { question: "Que fait Sami chaque matin ?", options: ["Il va au marché", "Il se réveille tôt", "Il regarde la télévision", "Il dort tard"], correctIndex: 1, explanation: "يَسْتَيْقِظُ مُبَكِّرًا = il se réveille tôt (présent habituel)." },
+        { question: "Que fait-il à l'école ?", options: ["Il joue", "Il mange", "Il étudie et écrit", "Il dort"], correctIndex: 2, explanation: "يَدْرُسُ وَيَكْتُبُ = il étudie et écrit (présent)." },
+        { question: "Avec qui joue-t-il le soir ?", options: ["Seul", "Avec ses parents", "Avec ses amis", "Avec son frère"], correctIndex: 2, explanation: "يَلْعَبُ مَعَ أَصْدِقَائِهِ = il joue avec ses amis." },
+      ],
+    },
+    qcm: [
+      { question: "يَذْهَبُ — le verbe est au :", options: ["Passé", "Présent/futur (مضارع)", "Impératif", "Passif"], correctIndex: 1, explanation: "يَذْهَبُ commence par يَـ = préfixe du mضارع (il)." },
+      { question: "Quel est le préfixe du présent pour 'je' ?", options: ["يَـ", "تَـ", "نَـ", "أَـ"], correctIndex: 3, explanation: "Le préfixe أَـ correspond à la 1ère personne du singulier." },
+      { question: "أَنَا أَكْتُبُ signifie :", options: ["J'ai écrit", "J'écrirai", "J'écris", "Écris !"], correctIndex: 2, explanation: "أَكْتُبُ est le présent (مضارع) : j'écris." },
+      { question: "Le futur proche se forme avec :", options: ["قَدْ + ماضٍ", "سَـ + مضارع", "لَمْ + مضارع", "لَنْ + مضارع"], correctIndex: 1, explanation: "سَـ ou سَوْفَ + المضارع = futur proche." },
+      { question: "Quel verbe est au présent féminin 3ème personne ?", options: ["يَكْتُبُ", "كَتَبَتْ", "تَكْتُبُ", "أَكْتُبُ"], correctIndex: 2, explanation: "تَكْتُبُ = elle écrit (préfixe تَـ pour هِيَ)." },
+      { question: "نَحْنُ نَذْهَبُ signifie :", options: ["Nous sommes allés", "Nous irons", "Nous allons", "Allez !"], correctIndex: 2, explanation: "نَذْهَبُ = nous allons (présent avec préfixe نَـ)." },
+      { question: "سَيَكْتُبُ signifie :", options: ["Il a écrit", "Il écrit", "Il écrira", "Écris !"], correctIndex: 2, explanation: "سَـ + يَكْتُبُ = il écrira (futur proche)." },
+      { question: "يَأْكُلُ signifie :", options: ["Il a mangé", "Il mange", "Il mangera", "Mange !"], correctIndex: 1, explanation: "يَأْكُلُ = il mange (présent)." },
+      { question: "Comment dit-on 'tu étudies' (masculin) ?", options: ["يَدْرُسُ", "أَدْرُسُ", "تَدْرُسُ", "نَدْرُسُ"], correctIndex: 2, explanation: "أَنْتَ تَدْرُسُ = tu étudies (préfixe تَـ pour أَنْتَ)." },
+      { question: "Quelle est la différence entre ماضٍ et مضارع ?", options: ["Le ماضٍ exprime l'avenir", "Le مضارع exprime le passé", "ماضٍ = passé, مضارع = présent/futur", "Il n'y a pas de différence"], correctIndex: 2, explanation: "ماضٍ = passé (ex: كَتَبَ) ; مضارع = présent/futur (ex: يَكْتُبُ)." },
+    ],
+    dictation: [
+      { sentence: "يَكْتُبُ الدَّرْسَ", transliteration: "yaktubu-d-darsa (il écrit la leçon)", options: ["كَتَبَ الدَّرْسَ", "يَكْتُبُ الدَّرْسَ", "تَكْتُبُ الدَّرْسَ", "يَكْتُبُ كِتَابًا"], correctIndex: 1 },
+      { sentence: "أَنَا أَذْهَبُ", transliteration: "anâ adhhabu (je vais)", options: ["أَنَا أَذْهَبُ", "هُوَ يَذْهَبُ", "أَنَا ذَهَبْتُ", "سَأَذْهَبُ"], correctIndex: 0 },
+      { sentence: "هِيَ تَقْرَأُ", transliteration: "hiya taqra'u (elle lit)", options: ["هُوَ يَقْرَأُ", "هِيَ قَرَأَتْ", "هِيَ تَقْرَأُ", "أَنَا أَقْرَأُ"], correctIndex: 2 },
+      { sentence: "نَحْنُ نَدْرُسُ", transliteration: "nahnu nadruse (nous étudions)", options: ["هُمْ يَدْرُسُونَ", "نَحْنُ نَدْرُسُ", "نَحْنُ دَرَسْنَا", "أَنَا أَدْرُسُ"], correctIndex: 1 },
+      { sentence: "سَيَذْهَبُ غَدًا", transliteration: "sayadhhabu ghadan (il ira demain)", options: ["ذَهَبَ أَمْسِ", "يَذْهَبُ الآنَ", "سَيَذْهَبُ غَدًا", "سَيَرْجِعُ غَدًا"], correctIndex: 2 },
+      { sentence: "يَأْكُلُ الْفُطُورَ", transliteration: "ya'kulu-l-futûra (il mange le petit-déjeuner)", options: ["أَكَلَ الْفُطُورَ", "يَأْكُلُ الْغَدَاءَ", "يَأْكُلُ الْفُطُورَ", "يَشْرَبُ الْفُطُورَ"], correctIndex: 2 },
+      { sentence: "تَلْعَبُ مَعَ أَصْدِقَائِهَا", transliteration: "tal'abu ma'a asdiqâ'ihâ (elle joue avec ses amies)", options: ["لَعِبَتْ مَعَ أَصْدِقَائِهَا", "يَلْعَبُ مَعَ أَصْدِقَائِهِ", "تَلْعَبُ مَعَ أَصْدِقَائِهَا", "تَلْعَبُ وَحْدَهَا"], correctIndex: 2 },
+      { sentence: "سَوْفَ نَرْجِعُ", transliteration: "sawfa narji'u (nous rentrerons)", options: ["رَجَعْنَا", "نَرْجِعُ الآنَ", "سَوْفَ نَذْهَبُ", "سَوْفَ نَرْجِعُ"], correctIndex: 3 },
+      { sentence: "يَغْسِلُ يَدَيْهِ", transliteration: "yaghsilu yadayhi (il se lave les mains)", options: ["غَسَلَ يَدَيْهِ", "يَغْسِلُ وَجْهَهُ", "يَغْسِلُ يَدَيْهِ", "تَغْسِلُ يَدَيْهَا"], correctIndex: 2 },
+      { sentence: "أَنْتَ تَنَامُ بَاكِرًا", transliteration: "anta tanâmu bâkiran (tu dors tôt)", options: ["أَنَا أَنَامُ بَاكِرًا", "أَنْتَ نِمْتَ بَاكِرًا", "أَنْتَ تَنَامُ مُتَأَخِّرًا", "أَنْتَ تَنَامُ بَاكِرًا"], correctIndex: 3 },
+    ],
+  },
+
+  // ─── Leçon 15 : L'annexion nominale (الإضافة) ───
+  {
+    id: 15,
+    title: "L'annexion nominale (الإضافة)",
+    subtitle: "Relier deux noms pour exprimer la possession",
+    description: "L'إضافة relie deux noms pour exprimer la possession ou l'appartenance. Le premier mot (مضاف) perd son tanwîn, le second (مضاف إليه) prend la kasra.",
+    grammar: [
+      {
+        title: "Structure et règles de l'إضافة",
+        explanation: "مضاف (perd son tanwîn et son ال) + مضاف إليه (avec kasra). La structure exprime 'le X de Y'.",
+        examples: [
+          { arabic: "كِتَابُ الطَّالِبِ", transliteration: "kitâbu-t-tâlibi", meaning: "le livre de l'étudiant" },
+          { arabic: "بَيْتُ الْمُعَلِّمِ", transliteration: "baytu-l-mu'allimi", meaning: "la maison de l'enseignant" },
+          { arabic: "لُغَةُ الْقُرْآنِ", transliteration: "lughatu-l-qur'âni", meaning: "la langue du Coran" },
+        ],
+      },
+      {
+        title: "Règle clé : perte du tanwîn",
+        explanation: "Le مضاف perd son tanwîn et son article ال. Il ne peut pas avoir ال si le مضاف إليه en a déjà un.",
+        examples: [
+          { arabic: "قَلَمُ أَحْمَدَ", transliteration: "qalamu ahmada", meaning: "le stylo d'Ahmad" },
+          { arabic: "غُرْفَةُ الْبِنْتِ", transliteration: "ghurfatu-l-binti", meaning: "la chambre de la fille" },
+          { arabic: "بَابُ الْفَصْلِ", transliteration: "bâbu-l-fasli", meaning: "la porte de la classe" },
+        ],
+      },
+      {
+        title: "إضافة avec pronoms suffixes",
+        explanation: "Quand le second terme est un pronom suffixe, la règle reste la même : le مضاف perd son tanwîn.",
+        examples: [
+          { arabic: "كِتَابُهُ", transliteration: "kitâbuhu", meaning: "son livre (à lui)" },
+          { arabic: "بَيْتُهَا", transliteration: "baytuhâ", meaning: "sa maison (à elle)" },
+          { arabic: "مَدْرَسَتُنَا", transliteration: "madrasatunâ", meaning: "notre école" },
+        ],
+      },
+    ],
+    comprehension: {
+      title: "بَيْتُ الْعَائِلَةِ",
+      arabic: "هَذَا بَيْتُ عَائِلَةِ يُوسُفَ. غُرْفَةُ يُوسُفَ كَبِيرَةٌ. كُتُبُ الدِّرَاسَةِ عَلَى مَكْتَبِهِ. بَابُ الْبَيْتِ أَخْضَرُ. نَافِذَةُ الْمَطْبَخِ مَفْتُوحَةٌ وَرِيحُ الْحَدِيقَةِ عَطِرَةٌ.",
+      translation: "C'est la maison de la famille de Youssef. La chambre de Youssef est grande. Les livres scolaires sont sur son bureau. La porte de la maison est verte. La fenêtre de la cuisine est ouverte et le vent du jardin est parfumé.",
+      questions: [
+        { question: "Comment est la chambre de Youssef ?", options: ["Petite", "Grande", "Sombre", "Ancienne"], correctIndex: 1, explanation: "غُرْفَةُ يُوسُفَ كَبِيرَةٌ = la chambre de Youssef est grande." },
+        { question: "Où sont les livres scolaires ?", options: ["Sur l'étagère", "Sur le lit", "Sur son bureau", "Dans le sac"], correctIndex: 2, explanation: "عَلَى مَكْتَبِهِ = sur son bureau (مَكْتَبِهِ = إضافة avec pronom)." },
+        { question: "De quelle couleur est la porte de la maison ?", options: ["Rouge", "Bleue", "Blanche", "Verte"], correctIndex: 3, explanation: "بَابُ الْبَيْتِ أَخْضَرُ = la porte de la maison est verte." },
+      ],
+    },
+    qcm: [
+      { question: "Dans كِتَابُ الطَّالِبِ, quel mot est le مضاف ?", options: ["الطَّالِبِ", "كِتَابُ", "Les deux", "Aucun"], correctIndex: 1, explanation: "كِتَابُ est le مضاف (premier terme qui perd son tanwîn)." },
+      { question: "Dans l'إضافة, le مضاف إليه prend :", options: ["La damma (ـُ)", "La fatha (ـَ)", "La kasra (ـِ)", "Le sukûn"], correctIndex: 2, explanation: "Le مضاف إليه est majrour, donc avec kasra." },
+      { question: "Quel groupe est une إضافة correcte ?", options: ["الْكِتَابُ الطَّالِبُ", "كِتَابٌ الطَّالِبِ", "كِتَابُ الطَّالِبِ", "كِتَابُ الطَّالِبُ"], correctIndex: 2, explanation: "كِتَابُ (sans tanwîn) + الطَّالِبِ (avec kasra) = إضافة correcte." },
+      { question: "بَيْتُنَا est une إضافة avec :", options: ["Un nom propre", "Un article", "Un pronom suffixe", "Un adjectif"], correctIndex: 2, explanation: "نَا est un pronom suffixe signifiant 'notre'." },
+      { question: "Que se passe-t-il au tanwîn du مضاف ?", options: ["Il reste", "Il disparaît", "Il devient shadda", "Il devient damma"], correctIndex: 1, explanation: "Le مضاف perd toujours son tanwîn dans l'إضافة." },
+      { question: "لُغَةُ الْقُرْآنِ signifie :", options: ["La langue et le Coran", "La langue du Coran", "La belle langue", "Une langue du Coran"], correctIndex: 1, explanation: "إضافة : لُغَةُ + الْقُرْآنِ = la langue du Coran." },
+      { question: "Peut-on mettre ال sur le مضاف quand le مضاف إليه a déjà ال ?", options: ["Oui toujours", "Non, jamais dans ce cas", "Oui si le sens le demande", "Oui au pluriel"], correctIndex: 1, explanation: "On ne met pas ال sur le مضاف si le مضاف إليه porte déjà ال." },
+      { question: "Dans غُرْفَةُ الْبِنْتِ, غُرْفَةُ est considéré :", options: ["Indéfini", "Défini par ال", "Défini par l'إضافة", "Pluriel"], correctIndex: 2, explanation: "Un مضاف suivi d'un مضاف إليه défini est lui-même défini par l'إضافة." },
+      { question: "قَلَمُ أَحْمَدَ signifie :", options: ["Un stylo et Ahmad", "Le stylo d'Ahmad", "Le stylo est Ahmad", "Ahmad et le stylo"], correctIndex: 1, explanation: "إضافة : قَلَمُ + أَحْمَدَ = le stylo d'Ahmad." },
+      { question: "La structure de l'إضافة est :", options: ["Adjectif + Nom", "Nom + Adjectif", "Nom (sans tanwîn) + Nom (kasra)", "Verbe + Nom"], correctIndex: 2, explanation: "إضافة = مضاف (sans tanwîn) + مضاف إليه (avec kasra)." },
+    ],
+    dictation: [
+      { sentence: "كِتَابُ الطَّالِبِ", transliteration: "kitâbu-t-tâlibi (le livre de l'étudiant)", options: ["كِتَابٌ الطَّالِبُ", "كِتَابُ الطَّالِبِ", "الْكِتَابُ الطَّالِبِ", "كِتَابُ طَالِبٍ"], correctIndex: 1 },
+      { sentence: "بَيْتُ الْمُعَلِّمِ", transliteration: "baytu-l-mu'allimi (la maison de l'enseignant)", options: ["بَيْتُ الْمُعَلِّمِ", "بَيْتٌ الْمُعَلِّمِ", "بَيْتُ مُعَلِّمٍ", "الْبَيْتُ الْمُعَلِّمِ"], correctIndex: 0 },
+      { sentence: "لُغَةُ الْقُرْآنِ", transliteration: "lughatu-l-qur'âni (la langue du Coran)", options: ["لُغَةٌ الْقُرْآنِ", "لُغَةُ الْقُرْآنِ", "اللُّغَةُ الْقُرْآنِ", "لُغَةُ قُرْآنٍ"], correctIndex: 1 },
+      { sentence: "بَابُ الْفَصْلِ", transliteration: "bâbu-l-fasli (la porte de la classe)", options: ["بَابُ الْفَصْلِ", "بَابٌ الْفَصْلِ", "الْبَابُ الْفَصْلِ", "بَابُ فَصْلٍ"], correctIndex: 0 },
+      { sentence: "قَلَمُ أَحْمَدَ", transliteration: "qalamu ahmada (le stylo d'Ahmad)", options: ["قَلَمٌ أَحْمَدُ", "قَلَمُ أَحْمَدَ", "الْقَلَمُ أَحْمَدُ", "قَلَمٌ لِأَحْمَدَ"], correctIndex: 1 },
+      { sentence: "غُرْفَةُ الْبِنْتِ", transliteration: "ghurfatu-l-binti (la chambre de la fille)", options: ["غُرْفَةُ الْبِنْتِ", "غُرْفَةٌ الْبِنْتِ", "غُرْفَةُ بِنْتٍ", "الْغُرْفَةُ الْبِنْتِ"], correctIndex: 0 },
+      { sentence: "كُتُبُ الدِّرَاسَةِ", transliteration: "kutubu-d-dirâsati (les livres scolaires)", options: ["كُتُبُ الدِّرَاسَةِ", "كُتُبٌ الدِّرَاسَةِ", "الْكُتُبُ الدِّرَاسَةُ", "كُتُبُ دِرَاسَةٍ"], correctIndex: 0 },
+      { sentence: "نَافِذَةُ الْمَطْبَخِ", transliteration: "nâfidhatu-l-matbakhi (la fenêtre de la cuisine)", options: ["نَافِذَةٌ الْمَطْبَخِ", "نَافِذَةُ مَطْبَخٍ", "نَافِذَةُ الْمَطْبَخِ", "الْنَّافِذَةُ الْمَطْبَخِ"], correctIndex: 2 },
+      { sentence: "بَيْتُهَا جَمِيلٌ", transliteration: "baytuhâ jamîlun (sa maison est belle)", options: ["بَيْتُهُ جَمِيلٌ", "بَيْتُهَا جَمِيلٌ", "بَيْتُنَا جَمِيلٌ", "بَيْتُهَا كَبِيرٌ"], correctIndex: 1 },
+      { sentence: "مَدْرَسَتُنَا كَبِيرَةٌ", transliteration: "madrasatunâ kabîratun (notre école est grande)", options: ["مَدْرَسَتُهُمْ كَبِيرَةٌ", "مَدْرَسَتُنَا صَغِيرَةٌ", "مَدْرَسَتُنَا كَبِيرَةٌ", "مَدْرَسَتُكَ كَبِيرَةٌ"], correctIndex: 2 },
+    ],
+  },
+
+  // ─── Leçon 16 : Les nombres, jours et mois ───
+  {
+    id: 16,
+    title: "Les nombres, jours et mois",
+    subtitle: "Compter en arabe et nommer les jours",
+    description: "Les nombres arabes de 1 à 10, les jours de la semaine et les mois. Les nombres 3-10 s'accordent en genre de manière inversée avec le nom compté.",
+    grammar: [
+      {
+        title: "Les nombres de 1 à 10",
+        explanation: "وَاحِدٌ (1)، اِثْنَانِ (2)، ثَلَاثَةٌ (3)، أَرْبَعَةٌ (4)، خَمْسَةٌ (5)، سِتَّةٌ (6)، سَبْعَةٌ (7)، ثَمَانِيَةٌ (8)، تِسْعَةٌ (9)، عَشَرَةٌ (10).",
+        examples: [
+          { arabic: "وَاحِدٌ / اِثْنَانِ / ثَلَاثَةٌ", transliteration: "wâhidun / ithnâni / thalâthatun", meaning: "un / deux / trois" },
+          { arabic: "أَرْبَعَةٌ / خَمْسَةٌ / سِتَّةٌ", transliteration: "arba'atun / khamsatun / sittatun", meaning: "quatre / cinq / six" },
+          { arabic: "سَبْعَةٌ / ثَمَانِيَةٌ / تِسْعَةٌ / عَشَرَةٌ", transliteration: "sab'atun / thamâniyatun / tis'atun / 'asharatun", meaning: "sept / huit / neuf / dix" },
+        ],
+      },
+      {
+        title: "Nombres avec noms — accord",
+        explanation: "Avec les noms masculins, les nombres 3-10 prennent la forme avec ـة. Avec les noms féminins, sans ـة.",
+        examples: [
+          { arabic: "ثَلَاثَةُ كُتُبٍ", transliteration: "thalâthatu kutubin", meaning: "trois livres (kutub = m.)" },
+          { arabic: "خَمْسُ طَالِبَاتٍ", transliteration: "khamsu tâlibâtin", meaning: "cinq étudiantes (f.)" },
+          { arabic: "عَشَرَةُ أَوْلَادٍ", transliteration: "'asharata awlâdin", meaning: "dix garçons" },
+        ],
+      },
+      {
+        title: "Les jours de la semaine",
+        explanation: "Les sept jours : الأَحَدُ (dim.) — الاِثْنَيْنِ (lun.) — الثُّلَاثَاءُ (mar.) — الأَرْبِعَاءُ (mer.) — الخَمِيسُ (jeu.) — الجُمُعَةُ (ven.) — السَّبْتُ (sam.).",
+        examples: [
+          { arabic: "يَوْمُ الجُمُعَةِ مُبَارَكٌ", transliteration: "yawmu-l-jumu'ati mubârakun", meaning: "Le vendredi est béni" },
+          { arabic: "يَوْمُ السَّبْتِ عُطْلَةٌ", transliteration: "yawmu-s-sabti 'utlatun", meaning: "Le samedi est un jour de congé" },
+          { arabic: "نَذْهَبُ يَوْمَ الاِثْنَيْنِ", transliteration: "nadhabu yawma-l-ithnayn", meaning: "Nous allons le lundi" },
+        ],
+      },
+    ],
+    comprehension: {
+      title: "أَيَّامُ الأُسْبُوعِ — Les jours de la semaine",
+      arabic: "فِي الأُسْبُوعِ سَبْعَةُ أَيَّامٍ. مِنَ الاِثْنَيْنِ إِلَى الجُمُعَةِ نَذْهَبُ إِلَى الْمَدْرَسَةِ. يَوْمُ الجُمُعَةِ يَوْمٌ مُبَارَكٌ. فِي الصَّفِّ خَمْسَةَ عَشَرَ طَالِبًا وَعَشْرُ طَالِبَاتٍ. عِنْدِي ثَلَاثَةُ كُتُبٍ وَقَلَمَانِ.",
+      translation: "Dans la semaine il y a sept jours. Du lundi au vendredi nous allons à l'école. Le vendredi est un jour béni. Dans la classe il y a quinze garçons et dix filles. J'ai trois livres et deux stylos.",
+      questions: [
+        { question: "Combien de jours y a-t-il dans la semaine ?", options: ["Cinq", "Six", "Sept", "Huit"], correctIndex: 2, explanation: "سَبْعَةُ أَيَّامٍ = sept jours." },
+        { question: "Quel jour est béni ?", options: ["Lundi", "Mercredi", "Samedi", "Vendredi"], correctIndex: 3, explanation: "يَوْمُ الجُمُعَةِ يَوْمٌ مُبَارَكٌ." },
+        { question: "Combien de stylos a-t-il ?", options: ["Un", "Deux", "Trois", "Quatre"], correctIndex: 1, explanation: "قَلَمَانِ = deux stylos (duel)." },
+      ],
+    },
+    qcm: [
+      { question: "Comment dit-on 'sept' en arabe ?", options: ["خَمْسَةٌ", "سِتَّةٌ", "سَبْعَةٌ", "ثَمَانِيَةٌ"], correctIndex: 2, explanation: "سَبْعَةٌ = sept." },
+      { question: "أَرْبَعَةُ كُتُبٍ contient le nombre :", options: ["Trois", "Quatre", "Cinq", "Six"], correctIndex: 1, explanation: "أَرْبَعَةٌ = quatre." },
+      { question: "يَوْمُ الجُمُعَةِ correspond à :", options: ["Jeudi", "Samedi", "Dimanche", "Vendredi"], correctIndex: 3, explanation: "الجُمُعَةُ = vendredi." },
+      { question: "Comment dit-on 'dix' ?", options: ["تِسْعَةٌ", "عَشَرَةٌ", "أَحَدَ عَشَرَ", "ثَمَانِيَةٌ"], correctIndex: 1, explanation: "عَشَرَةٌ = dix." },
+      { question: "اِثْنَانِ signifie :", options: ["Un", "Deux", "Trois", "Quatre"], correctIndex: 1, explanation: "اِثْنَانِ = deux (masculin nominatif)." },
+      { question: "Quel jour vient après الأَحَدُ ?", options: ["الثُّلَاثَاءُ", "الاِثْنَيْنِ", "الجُمُعَةُ", "السَّبْتُ"], correctIndex: 1, explanation: "الأَحَدُ (dimanche) → الاِثْنَيْنِ (lundi)." },
+      { question: "ثَلَاثَةُ أَوْلَادٍ = combien d'enfants ?", options: ["Deux", "Trois", "Quatre", "Cinq"], correctIndex: 1, explanation: "ثَلَاثَةٌ = trois." },
+      { question: "Comment dit-on 'cinq' ?", options: ["أَرْبَعَةٌ", "سِتَّةٌ", "خَمْسَةٌ", "سَبْعَةٌ"], correctIndex: 2, explanation: "خَمْسَةٌ = cinq." },
+      { question: "الخَمِيسُ correspond à :", options: ["Mercredi", "Vendredi", "Jeudi", "Samedi"], correctIndex: 2, explanation: "الخَمِيسُ = jeudi." },
+      { question: "وَاحِدٌ signifie :", options: ["Zéro", "Un", "Deux", "Dix"], correctIndex: 1, explanation: "وَاحِدٌ = un (masculin)." },
+    ],
+    dictation: [
+      { sentence: "سَبْعَةُ أَيَّامٍ", transliteration: "sab'atu ayyâmin (sept jours)", options: ["خَمْسَةُ أَيَّامٍ", "سِتَّةُ أَيَّامٍ", "سَبْعَةُ أَيَّامٍ", "ثَمَانِيَةُ أَيَّامٍ"], correctIndex: 2 },
+      { sentence: "ثَلَاثَةُ كُتُبٍ", transliteration: "thalâthatu kutubin (trois livres)", options: ["ثَلَاثَةُ كُتُبٍ", "أَرْبَعَةُ كُتُبٍ", "ثَلَاثُ كُتُبٍ", "ثَلَاثَةُ كِتَابٍ"], correctIndex: 0 },
+      { sentence: "يَوْمُ الجُمُعَةِ", transliteration: "yawmu-l-jumu'ati (le vendredi)", options: ["يَوْمُ الخَمِيسِ", "يَوْمُ الجُمُعَةِ", "يَوْمُ السَّبْتِ", "يَوْمُ الأَحَدِ"], correctIndex: 1 },
+      { sentence: "عَشَرَةُ أَوْلَادٍ", transliteration: "'asharata awlâdin (dix garçons)", options: ["تِسْعَةُ أَوْلَادٍ", "عَشَرَةُ بَنَاتٍ", "عَشَرَةُ أَوْلَادٍ", "خَمْسَةُ أَوْلَادٍ"], correctIndex: 2 },
+      { sentence: "الاِثْنَيْنِ وَالثُّلَاثَاءُ", transliteration: "al-ithnayn wa-th-thulâthâ' (lundi et mardi)", options: ["الأَحَدُ وَالاِثْنَيْنِ", "الاِثْنَيْنِ وَالثُّلَاثَاءُ", "الثُّلَاثَاءُ وَالأَرْبِعَاءُ", "الخَمِيسُ وَالجُمُعَةُ"], correctIndex: 1 },
+      { sentence: "خَمْسَةُ طُلَّابٍ", transliteration: "khamtatu tullâbin (cinq étudiants)", options: ["أَرْبَعَةُ طُلَّابٍ", "خَمْسَةُ طُلَّابٍ", "سِتَّةُ طُلَّابٍ", "خَمْسُ طَالِبَاتٍ"], correctIndex: 1 },
+      { sentence: "السَّبْتُ يَوْمُ عُطْلَةٍ", transliteration: "as-sabtu yawmu 'utlatin (samedi est un jour de congé)", options: ["الجُمُعَةُ يَوْمُ عُطْلَةٍ", "السَّبْتُ يَوْمُ دِرَاسَةٍ", "السَّبْتُ يَوْمُ عُطْلَةٍ", "الأَحَدُ يَوْمُ عُطْلَةٍ"], correctIndex: 2 },
+      { sentence: "أَرْبَعَةُ أَيَّامٍ", transliteration: "arba'atu ayyâmin (quatre jours)", options: ["ثَلَاثَةُ أَيَّامٍ", "أَرْبَعَةُ أَيَّامٍ", "خَمْسَةُ أَيَّامٍ", "أَرْبَعَةُ أَسَابِيعَ"], correctIndex: 1 },
+      { sentence: "وَاحِدٌ وَعِشْرُونَ", transliteration: "wâhidun wa-'ishrûna (vingt et un)", options: ["اِثْنَانِ وَعِشْرُونَ", "وَاحِدٌ وَعِشْرُونَ", "وَاحِدٌ وَثَلَاثُونَ", "عِشْرُونَ وَاحِدٌ"], correctIndex: 1 },
+      { sentence: "يَوْمُ الأَرْبِعَاءِ", transliteration: "yawmu-l-arbi'â' (mercredi)", options: ["يَوْمُ الثُّلَاثَاءِ", "يَوْمُ الأَرْبِعَاءِ", "يَوْمُ الخَمِيسِ", "يَوْمُ الاِثْنَيْنِ"], correctIndex: 1 },
+    ],
+  },
+
+  // ─── Leçon 17 : كان وأخواتها ───
+  {
+    id: 17,
+    title: "كان et la négation (لَيْس)",
+    subtitle: "Le verbe être au passé et la négation au présent",
+    description: "كَانَ (il était) transforme une phrase nominale au passé. Le sujet reste au nominatif (damma), le prédicat passe à l'accusatif (fatha). لَيْسَ nie une phrase nominale au présent selon la même règle.",
+    grammar: [
+      {
+        title: "كَانَ — le verbe être au passé",
+        explanation: "كَانَ + اسم كان (damma) + خبر كان (fatha). Le sujet garde sa damma, le prédicat prend la fatha.",
+        examples: [
+          { arabic: "كَانَ الطَّقْسُ حَارًّا", transliteration: "kâna-t-taqsu hârran", meaning: "Le temps était chaud" },
+          { arabic: "كَانَتِ الْمَدِينَةُ جَمِيلَةً", transliteration: "kânati-l-madînatu jamîlatan", meaning: "La ville était belle" },
+          { arabic: "كُنْتُ طَالِبًا", transliteration: "kuntu tâliban", meaning: "J'étais étudiant" },
+        ],
+      },
+      {
+        title: "Conjugaison de كَانَ au passé",
+        explanation: "كَانَ se conjugue pour tous les pronoms. Féminin : كَانَتْ. Pluriel : كَانُوا. 1ère pers. : كُنْتُ. Nous : كُنَّا.",
+        examples: [
+          { arabic: "كَانَتِ الشَّمْسُ سَاطِعَةً", transliteration: "kânati-sh-shamsu sâti'atan", meaning: "Le soleil était brillant" },
+          { arabic: "كَانُوا سَعِيدِينَ", transliteration: "kânû sa'îdîna", meaning: "Ils étaient heureux" },
+          { arabic: "كُنَّا فِي الْمَدْرَسَةِ", transliteration: "kunnâ fî-l-madrasati", meaning: "Nous étions à l'école" },
+        ],
+      },
+      {
+        title: "لَيْسَ — la négation au présent",
+        explanation: "لَيْسَ nie une phrase nominale au présent. Même règle : اسم لَيْسَ avec damma, خبر لَيْسَ avec fatha.",
+        examples: [
+          { arabic: "لَيْسَ الْجَوُّ حَارًّا", transliteration: "laysa-l-jawwu hârran", meaning: "Le temps n'est pas chaud" },
+          { arabic: "لَسْتُ مَرِيضًا", transliteration: "lastu marîdan", meaning: "Je ne suis pas malade" },
+          { arabic: "لَيْسَتِ الْمَسْأَلَةُ سَهْلَةً", transliteration: "laysati-l-mas'alatu sahilatan", meaning: "La question n'est pas facile" },
+        ],
+      },
+    ],
+    comprehension: {
+      title: "كَيْفَ كَانَ الْمَاضِي",
+      arabic: "كَانَتِ الْقَرْيَةُ صَغِيرَةً وَهَادِئَةً. كَانَ النَّاسُ بُسَطَاءَ وَطَيِّبِينَ. كَانَ الْهَوَاءُ نَقِيًّا وَالْمَاءُ عَذْبًا. الآنَ الْقَرْيَةُ كَبِيرَةٌ لَكِنَّهَا لَيْسَتْ هَادِئَةً كَمَا كَانَتْ.",
+      translation: "Le village était petit et calme. Les gens étaient simples et gentils. L'air était pur et l'eau douce. Maintenant le village est grand mais il n'est plus calme comme avant.",
+      questions: [
+        { question: "Comment était le village dans le passé ?", options: ["Grand et animé", "Petit et calme", "Moderne et riche", "Loin et isolé"], correctIndex: 1, explanation: "كَانَتِ الْقَرْيَةُ صَغِيرَةً وَهَادِئَةً = le village était petit et calme." },
+        { question: "Comment est le village maintenant ?", options: ["Petit et calme", "Grand mais pas calme", "Abandonné", "Calme et grand"], correctIndex: 1, explanation: "الآنَ الْقَرْيَةُ كَبِيرَةٌ لَكِنَّهَا لَيْسَتْ هَادِئَةً." },
+        { question: "Quel mot indique que le village n'est plus calme ?", options: ["كَانَتْ", "لَيْسَتْ", "كَبِيرَةٌ", "الآنَ"], correctIndex: 1, explanation: "لَيْسَتْ = elle n'est pas (négation du présent, féminin)." },
+      ],
+    },
+    qcm: [
+      { question: "Dans كَانَ الطَّقْسُ حَارًّا, quel est le rôle de كَانَ ?", options: ["Verbe d'action", "Il met la phrase nominale au passé", "Préposition", "Adverbe"], correctIndex: 1, explanation: "كَانَ transforme la phrase nominale الطَّقْسُ حَارٌّ en passé." },
+      { question: "Dans كَانَ الطَّقْسُ حَارًّا, الطَّقْسُ prend :", options: ["La kasra (ـِ)", "La fatha (ـَ)", "La damma (ـُ)", "Le sukûn"], correctIndex: 2, explanation: "L'اسم كان (sujet) reste au nominatif avec damma." },
+      { question: "Dans كَانَ الطَّقْسُ حَارًّا, حَارًّا prend :", options: ["La damma", "La fatha + tanwîn", "La kasra", "Rien"], correctIndex: 1, explanation: "Le خبر كان (prédicat) est avec fatha + tanwîn (mansûb)." },
+      { question: "Le féminin de كَانَ est :", options: ["كُنَّ", "كَانُوا", "كَانَتْ", "كُنْتِ"], correctIndex: 2, explanation: "كَانَتْ = elle était (3ème personne féminin singulier)." },
+      { question: "لَيْسَ exprime :", options: ["Le passé", "La négation au présent", "Le futur", "Le doute"], correctIndex: 1, explanation: "لَيْسَ nie une phrase nominale au présent." },
+      { question: "كُنْتُ طَالِبًا signifie :", options: ["Je suis étudiant", "J'étais étudiant", "Je serai étudiant", "Sois étudiant"], correctIndex: 1, explanation: "كُنْتُ = j'étais (passé de كَانَ, 1ère personne singulier)." },
+      { question: "لَسْتُ مَرِيضًا signifie :", options: ["Je suis malade", "J'étais malade", "Je ne suis pas malade", "Je ne serai pas malade"], correctIndex: 2, explanation: "لَسْتُ = je ne suis pas (لَيْسَ, 1ère personne singulier)." },
+      { question: "Complétez : ___ السَّمَاءُ زَرْقَاءَ (le ciel était bleu)", options: ["يَكُونُ", "كَانَ", "كَانَتِ", "لَيْسَ"], correctIndex: 2, explanation: "السَّمَاءُ est féminin → كَانَ prend le تْ féminin → كَانَتِ السَّمَاءُ زَرْقَاءَ." },
+      { question: "لَيْسَ الْبَيْتُ كَبِيرًا signifie :", options: ["La maison était grande", "La maison n'est pas grande", "Est-ce que la maison est grande ?", "La maison est grande"], correctIndex: 1, explanation: "لَيْسَ = négation présent ; الْبَيْتُ = sujet (damma) ; كَبِيرًا = prédicat (fatha)." },
+      { question: "كُنَّا فِي الْمَدْرَسَةِ signifie :", options: ["Nous sommes à l'école", "Nous étions à l'école", "Nous irons à l'école", "Nous ne sommes pas à l'école"], correctIndex: 1, explanation: "كُنَّا = nous étions (pluriel passé de كَانَ)." },
+    ],
+    dictation: [
+      { sentence: "كَانَ الطَّقْسُ حَارًّا", transliteration: "kâna-t-taqsu hârran (le temps était chaud)", options: ["كَانَ الطَّقْسُ بَارِدًا", "كَانَ الطَّقْسُ حَارًّا", "يَكُونُ الطَّقْسُ حَارًّا", "كَانَتِ الشَّمْسُ حَارَّةً"], correctIndex: 1 },
+      { sentence: "كَانَتِ الْمَدِينَةُ جَمِيلَةً", transliteration: "kânati-l-madînatu jamîlatan (la ville était belle)", options: ["كَانَتِ الْمَدِينَةُ كَبِيرَةً", "الْمَدِينَةُ جَمِيلَةٌ", "كَانَتِ الْمَدِينَةُ جَمِيلَةً", "كَانَ الْبَيْتُ جَمِيلًا"], correctIndex: 2 },
+      { sentence: "كُنْتُ طَالِبًا", transliteration: "kuntu tâliban (j'étais étudiant)", options: ["أَنَا طَالِبٌ", "كُنْتَ طَالِبًا", "كُنْتُ طَالِبًا", "كُنْتُ مُعَلِّمًا"], correctIndex: 2 },
+      { sentence: "لَيْسَ الْجَوُّ حَارًّا", transliteration: "laysa-l-jawwu hârran (le temps n'est pas chaud)", options: ["الْجَوُّ حَارٌّ", "لَيْسَ الْجَوُّ حَارًّا", "كَانَ الْجَوُّ حَارًّا", "لَيْسَ الْجَوُّ بَارِدًا"], correctIndex: 1 },
+      { sentence: "كُنَّا سَعِيدِينَ", transliteration: "kunnâ sa'îdîna (nous étions heureux)", options: ["نَحْنُ سَعِيدُونَ", "كُنَّا حَزِينِينَ", "كُنَّا سَعِيدِينَ", "كُنَّا مَشْغُولِينَ"], correctIndex: 2 },
+      { sentence: "كَانَتِ الْقَرْيَةُ هَادِئَةً", transliteration: "kânati-l-qaryatu hâdi'atan (le village était calme)", options: ["كَانَتِ الْقَرْيَةُ كَبِيرَةً", "كَانَتِ الْمَدِينَةُ هَادِئَةً", "كَانَتِ الْقَرْيَةُ هَادِئَةً", "الْقَرْيَةُ هَادِئَةٌ"], correctIndex: 2 },
+      { sentence: "لَسْتُ مَرِيضًا", transliteration: "lastu marîdan (je ne suis pas malade)", options: ["أَنَا مَرِيضٌ", "لَسْتُ مَرِيضًا", "كُنْتُ مَرِيضًا", "لَيْسَ مَرِيضًا"], correctIndex: 1 },
+      { sentence: "كَانَ النَّاسُ طَيِّبِينَ", transliteration: "kâna-n-nâsu tayyibîna (les gens étaient gentils)", options: ["كَانَ النَّاسُ طَيِّبُونَ", "النَّاسُ طَيِّبُونَ", "كَانَ النَّاسُ طَيِّبِينَ", "كَانُوا النَّاسُ طَيِّبِينَ"], correctIndex: 2 },
+      { sentence: "كَانَتِ الشَّمْسُ سَاطِعَةً", transliteration: "kânati-sh-shamsu sâti'atan (le soleil était brillant)", options: ["كَانَتِ الشَّمْسُ سَاطِعَةً", "كَانَ الشَّمْسُ سَاطِعًا", "الشَّمْسُ سَاطِعَةٌ", "كَانَتِ النُّجُومُ سَاطِعَةً"], correctIndex: 0 },
+      { sentence: "لَيْسَ الأَمْرُ سَهْلًا", transliteration: "laysa-l-amru sahlan (la chose n'est pas facile)", options: ["الأَمْرُ سَهْلٌ", "لَيْسَ الأَمْرُ صَعْبًا", "كَانَ الأَمْرُ سَهْلًا", "لَيْسَ الأَمْرُ سَهْلًا"], correctIndex: 3 },
     ],
   },
 
