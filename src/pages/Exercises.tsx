@@ -95,7 +95,7 @@ function Niveau1Lessons({ maxLessons, onLessonChange }: { maxLessons: number; on
 }
 
 // ─── Niveau 2 Progressive Lessons ───
-function Niveau2Lessons() {
+function Niveau2Lessons({ onLessonChange }: { onLessonChange: (lesson: Niveau2Lesson | null) => void }) {
   const { user } = useAuth();
   const [selectedLessonId, setSelectedLessonId] = usePersistentState<number | null>(
     userScopedKey(user?.id, "n2:selectedLessonId"),
@@ -105,11 +105,14 @@ function Niveau2Lessons() {
   const { lessons } = useNiveau2Lessons();
   const selectedLesson = selectedLessonId != null ? lessons.find(l => l.id === selectedLessonId) ?? null : null;
 
+  const handleSelect = (l: Niveau2Lesson) => { setSelectedLessonId(l.id); onLessonChange(l); };
+  const handleBack = () => { setSelectedLessonId(null); onLessonChange(null); };
+
   if (selectedLesson) {
     return (
       <Niveau2LessonDetail
         lesson={selectedLesson}
-        onBack={() => setSelectedLessonId(null)}
+        onBack={handleBack}
         onComplete={completeN2Lesson}
       />
     );
@@ -119,7 +122,7 @@ function Niveau2Lessons() {
     <Niveau2LessonSelector
       lessons={lessons}
       completedLessons={completedN2Lessons}
-      onSelectLesson={(l) => setSelectedLessonId(l.id)}
+      onSelectLesson={handleSelect}
     />
   );
 }
@@ -132,6 +135,9 @@ const Exercises = () => {
   const { maxLessons, isFreePlan, hasLessonAccess, loading: subLoading } = useSubscription();
   const { activeProfile } = useFamilyProfile();
   const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
+  const [currentN2Lesson, setCurrentN2Lesson] = useState<Niveau2Lesson | null>(null);
+
+  const isLessonOpen = !!currentLesson || !!currentN2Lesson;
 
   useEffect(() => {
     // Child profile: use profile's level directly
@@ -153,37 +159,40 @@ const Exercises = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
-      <main className="pt-24 pb-16">
-        <div className="container mx-auto px-4 max-w-3xl">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8 text-center">
-            <h1 className="text-3xl font-bold text-foreground mb-2">{pageTitle}</h1>
-            <p className="text-muted-foreground">
-              {level === "niveau_1"
-                ? "L'alphabet arabe lettre par lettre"
-                : "Grammaire, compréhension & dictée avancée"}
-            </p>
-
-            {isFreePlan && !user && (
-              <p className="text-sm text-muted-foreground mt-2">
-                🔒 Inscris-toi gratuitement pour continuer ton apprentissage →{" "}
-                <Link to="/auth" className="underline font-medium text-primary">S'inscrire</Link>
+      {!isLessonOpen && <Navbar />}
+      <main className={isLessonOpen ? "" : "pt-24 pb-16"}>
+        {!isLessonOpen && (
+          <div className="container mx-auto px-4 max-w-3xl">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8 text-center">
+              <h1 className="text-3xl font-bold text-foreground mb-2">{pageTitle}</h1>
+              <p className="text-muted-foreground">
+                {level === "niveau_1"
+                  ? "L'alphabet arabe lettre par lettre"
+                  : "Grammaire, compréhension & dictée avancée"}
               </p>
-            )}
-            {isFreePlan && user && (
-              <p className="text-sm text-destructive mt-2">
-                🔒 Plan Découverte — Accès aux {maxLessons} premières leçons.{" "}
-                <Link to="/tarifs" className="underline font-medium">Passer au plan Essentiel</Link>
-              </p>
-            )}
-          </motion.div>
+              {isFreePlan && !user && (
+                <p className="text-sm text-muted-foreground mt-2">
+                  🔒 Inscris-toi gratuitement pour continuer ton apprentissage →{" "}
+                  <Link to="/auth" className="underline font-medium text-primary">S'inscrire</Link>
+                </p>
+              )}
+              {isFreePlan && user && (
+                <p className="text-sm text-destructive mt-2">
+                  🔒 Plan Découverte — Accès aux {maxLessons} premières leçons.{" "}
+                  <Link to="/tarifs" className="underline font-medium">Passer au plan Essentiel</Link>
+                </p>
+              )}
+            </motion.div>
+          </div>
+        )}
 
+        <div className={isLessonOpen ? "container mx-auto px-4 max-w-3xl py-6" : "container mx-auto px-4 max-w-3xl"}>
           {level === "niveau_1"
             ? <Niveau1Lessons maxLessons={maxLessons} onLessonChange={setCurrentLesson} />
             : hasLessonAccess
-              ? <Niveau2Lessons />
+              ? <Niveau2Lessons onLessonChange={setCurrentN2Lesson} />
               : (
-                <div className="text-center py-16 space-y-4">
+                <div className="container mx-auto px-4 max-w-3xl text-center py-16 space-y-4">
                   <p className="text-lg font-semibold text-foreground">🔒 Niveau 2 — Plan Essentiel requis</p>
                   <p className="text-sm text-muted-foreground">Le Niveau 2 est accessible avec les plans Essentiel, Premium et Famille.</p>
                   <Link to="/tarifs" className="inline-block mt-2 px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition">
@@ -194,7 +203,7 @@ const Exercises = () => {
           }
         </div>
       </main>
-      <Footer />
+      {!isLessonOpen && <Footer />}
     </div>
   );
 };
