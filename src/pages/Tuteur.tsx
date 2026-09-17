@@ -61,23 +61,23 @@ const DEMO_QUESTIONS = [
 
 const FEATURES = [
   { icon: Brain,     colorBg:"bg-purple-500/10", colorIcon:"text-purple-500",
-    title:"IA qui apprend vos erreurs",
-    desc:"L'algorithme analyse chaque réponse et cible en temps réel vos lacunes spécifiques." },
+    title:"Elle cible exactement vos lacunes",
+    desc:"L'IA identifie les lettres où vous bloquez et concentre chaque session dessus — plus de temps perdu sur ce que vous savez déjà." },
   { icon: Target,    colorBg:"bg-blue-500/10",   colorIcon:"text-blue-500",
-    title:"Questions illimitées ciblées",
-    desc:"Des centaines de QCM générés spécialement pour vous, toujours adaptés à votre niveau." },
+    title:"Jamais à court d'exercices",
+    desc:"Des questions générées à la demande, adaptées à votre niveau du moment — entraînez-vous 2 min ou 20 min selon votre envie." },
   { icon: Calendar,  colorBg:"bg-green-500/10",  colorIcon:"text-green-600",
-    title:"Plan hebdomadaire sur mesure",
-    desc:"Un programme structuré sur 7 jours, généré chaque semaine selon vos résultats." },
+    title:"Un plan sur mesure chaque semaine",
+    desc:"Chaque lundi, un programme 7 jours basé sur vos résultats récents — vous savez toujours quoi faire." },
   { icon: BookOpen,  colorBg:"bg-orange-500/10", colorIcon:"text-orange-500",
-    title:"Devoirs corrigés par l'IA",
-    desc:"Exercices personnalisés avec correction automatique et feedback détaillé en français." },
+    title:"Des devoirs qui vous font vraiment progresser",
+    desc:"Exercices ciblés sur vos erreurs, corrigés automatiquement avec explications en français — du vrai entraînement." },
   { icon: TrendingUp,colorBg:"bg-primary/10",    colorIcon:"text-primary",
-    title:"Suivi de progression complet",
-    desc:"Streak quotidien, score moyen, alphabet mastery, historique de toutes vos sessions." },
+    title:"Vous voyez vos progrès en temps réel",
+    desc:"Lettres maîtrisées, streak quotidien, score moyen, historique complet — chaque séance compte." },
   { icon: Zap,       colorBg:"bg-yellow-500/10", colorIcon:"text-yellow-600",
-    title:"Rapport hebdomadaire email",
-    desc:"Récapitulatif de vos progrès de la semaine envoyé automatiquement chaque dimanche." },
+    title:"Un bilan chaque dimanche dans votre boîte mail",
+    desc:"Résumé de votre semaine, lettres renforcées, objectifs de la semaine suivante — sans rien faire de votre côté." },
 ];
 
 const TESTIMONIALS = [
@@ -114,6 +114,7 @@ const Tuteur = () => {
 
   const [sending, setSending] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [questionCount, setQuestionCount] = useState(0);
   const [activeHw, setActiveHw] = useState<Homework | null>(null);
   const [submission, setSubmission] = useState<Record<number, string>>({});
 
@@ -121,23 +122,29 @@ const Tuteur = () => {
   const prefetchInFlightRef = useRef<boolean>(false);
   const seenDisplaysRef = useRef<Set<string>>(new Set());
 
-  // Demo teaser state
+  // Demo teaser state — flow linéaire contrôlé par l'utilisateur
   const [demoIdx, setDemoIdx] = useState(0);
   const [demoRevealed, setDemoRevealed] = useState(false);
   const [demoSelected, setDemoSelected] = useState<number | null>(null);
+  const [demoScore, setDemoScore] = useState(0);
+  const [demoFinished, setDemoFinished] = useState(false);
 
   const isPremium = plan === "premium" || plan === "famille";
 
-  // Auto-rotate demo questions
-  useEffect(() => {
-    if (isPremium) return;
-    const t = setInterval(() => {
-      setDemoIdx((i) => (i + 1) % DEMO_QUESTIONS.length);
-      setDemoRevealed(false);
-      setDemoSelected(null);
-    }, 5000);
-    return () => clearInterval(t);
-  }, [isPremium]);
+  const handleDemoSelect = (i: number) => {
+    if (demoRevealed) return;
+    const dq = DEMO_QUESTIONS[demoIdx];
+    setDemoSelected(i);
+    setDemoRevealed(true);
+    if (i === dq.correct) setDemoScore(s => s + 1);
+  };
+
+  const handleDemoNext = () => {
+    if (demoIdx + 1 >= DEMO_QUESTIONS.length) { setDemoFinished(true); return; }
+    setDemoIdx(i => i + 1);
+    setDemoRevealed(false);
+    setDemoSelected(null);
+  };
 
   // ── Data ────────────────────────────────────────────────────────────────────
   const loadAll = async () => {
@@ -193,6 +200,7 @@ const Tuteur = () => {
     resetQuestionState();
     seenDisplaysRef.current = new Set();
     prefetchedRef.current = null;
+    setQuestionCount(0);
     try {
       const data = await callTutorWithTimeout("start_session", {}, SESSION_START_TIMEOUT_MS);
       if (data && data.session_id && data.payload?.question) {
@@ -224,6 +232,7 @@ const Tuteur = () => {
       prefetchedRef.current = null;
       setCurrentPayload(next);
       if (next.question?.display) seenDisplaysRef.current.add(next.question.display);
+      setQuestionCount(c => c + 1);
       resetQuestionState();
       setSending(false);
       prefetchNext(activeSessionId, "Question suivante.");
@@ -408,10 +417,10 @@ const Tuteur = () => {
           {/* Demo + Pricing */}
           <div className="grid md:grid-cols-2 gap-8 mb-16">
 
-            {/* Interactive demo */}
+            {/* Interactive demo — flow linéaire */}
             <motion.div initial={{ opacity:0, x:-24 }} animate={{ opacity:1, x:0 }} transition={{ delay:0.15 }}>
               <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-primary" /> Essayez une vraie question مساري
+                <Sparkles className="h-5 w-5 text-primary" /> Essayez مساري — {demoIdx + 1}/{DEMO_QUESTIONS.length} questions
               </h2>
               <Card className="border-2 border-primary/25 shadow-lg overflow-hidden">
                 <div className="bg-primary/8 px-4 py-2.5 border-b border-primary/15 flex items-center justify-between">
@@ -423,66 +432,73 @@ const Tuteur = () => {
                 </div>
                 <CardContent className="p-6">
                   <AnimatePresence mode="wait">
-                    <motion.div key={demoIdx}
-                      initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-10 }}
-                      transition={{ duration:0.3 }}>
-                      <p className="text-sm text-muted-foreground text-center mb-4 font-medium">{dq.prompt}</p>
+                    {demoFinished ? (
+                      <motion.div key="result" initial={{ opacity:0, scale:0.95 }} animate={{ opacity:1, scale:1 }}
+                        className="text-center py-6 space-y-4">
+                        <p className="text-4xl font-bold text-primary">{demoScore}/{DEMO_QUESTIONS.length}</p>
+                        <p className="text-base font-semibold text-foreground">
+                          {demoScore === DEMO_QUESTIONS.length ? "🎉 Parfait ! مساري adapte maintenant votre programme." : `✅ ${demoScore} bonne${demoScore > 1 ? "s" : ""} réponse${demoScore > 1 ? "s" : ""} — مساري cible vos lacunes !`}
+                        </p>
+                        <p className="text-sm text-muted-foreground">Avec مساري, chaque session est personnalisée selon vos erreurs.</p>
+                        <Button className="gradient-emerald border-0 w-full font-bold" onClick={() => navigate("/tarifs")}>
+                          <Crown className="mr-2 h-4 w-4 text-yellow-300" /> Démarrer mon parcours مساري
+                        </Button>
+                      </motion.div>
+                    ) : (
+                      <motion.div key={demoIdx}
+                        initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-10 }}
+                        transition={{ duration:0.3 }}>
+                        <p className="text-sm text-muted-foreground text-center mb-4 font-medium">{dq.prompt}</p>
 
-                      <div className="text-center py-5 bg-primary/4 rounded-2xl mb-4">
-                        <span className="text-7xl font-bold text-primary" dir="rtl" style={{ fontFamily:"Amiri, serif", lineHeight:1.3 }}>
-                          {dq.display}
-                        </span>
+                        <div className="text-center py-5 bg-primary/4 rounded-2xl mb-4">
+                          <span className="text-7xl font-bold text-primary" dir="rtl" style={{ fontFamily:"Amiri, serif", lineHeight:1.3 }}>
+                            {dq.display}
+                          </span>
+                          {demoRevealed && (
+                            <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} className="mt-2 space-y-0.5">
+                              <p className="text-sm text-muted-foreground italic">{dq.translit}</p>
+                              <p className="text-sm font-medium text-foreground/70">"{dq.meaning}"</p>
+                            </motion.div>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 mb-4">
+                          {dq.choices.map((c, i) => {
+                            let cls = "rounded-xl p-3.5 text-2xl font-bold transition-all flex items-center justify-center border-2 ";
+                            if (demoRevealed) {
+                              if (i === dq.correct) cls += "border-green-500 bg-green-500/10 text-green-700";
+                              else if (i === demoSelected) cls += "border-red-500 bg-red-500/10 text-red-700";
+                              else cls += "border-border opacity-35";
+                            } else {
+                              cls += "border-border hover:border-primary/60 hover:bg-primary/5 cursor-pointer active:scale-95";
+                            }
+                            return (
+                              <button key={i} className={cls} dir="rtl" style={{ fontFamily:"Amiri, serif" }}
+                                onClick={() => handleDemoSelect(i)}>
+                                {c}
+                              </button>
+                            );
+                          })}
+                        </div>
+
                         {demoRevealed && (
-                          <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} className="mt-2 space-y-0.5">
-                            <p className="text-sm text-muted-foreground italic">{dq.translit}</p>
-                            <p className="text-sm font-medium text-foreground/70">"{dq.meaning}"</p>
-                          </motion.div>
+                          <>
+                            <motion.div initial={{ opacity:0, scale:0.95 }} animate={{ opacity:1, scale:1 }}
+                              className={`rounded-xl p-3 text-center text-sm font-semibold mb-3 ${demoSelected === dq.correct ? "bg-green-500/12 text-green-700" : "bg-red-500/12 text-red-700"}`}>
+                              {demoSelected === dq.correct
+                                ? "✅ Bravo ! L'IA note votre réussite."
+                                : `❌ Réponse : ${dq.choices[dq.correct]} — مساري renforce cette lettre.`}
+                            </motion.div>
+                            <Button className="w-full gradient-emerald border-0" onClick={handleDemoNext}>
+                              {demoIdx + 1 >= DEMO_QUESTIONS.length ? "Voir mon score" : "Question suivante"} <ChevronRight className="ml-2 h-4 w-4" />
+                            </Button>
+                          </>
                         )}
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3 mb-4">
-                        {dq.choices.map((c, i) => {
-                          let cls = "rounded-xl p-3.5 text-2xl font-bold transition-all flex items-center justify-center border-2 ";
-                          if (demoRevealed) {
-                            if (i === dq.correct) cls += "border-green-500 bg-green-500/10 text-green-700";
-                            else if (i === demoSelected) cls += "border-red-500 bg-red-500/10 text-red-700";
-                            else cls += "border-border opacity-35";
-                          } else {
-                            cls += "border-border hover:border-primary/60 hover:bg-primary/5 cursor-pointer active:scale-95";
-                          }
-                          return (
-                            <button key={i} className={cls} dir="rtl" style={{ fontFamily:"Amiri, serif" }}
-                              onClick={() => { if (demoRevealed) return; setDemoSelected(i); setDemoRevealed(true); }}>
-                              {c}
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      {demoRevealed && (
-                        <motion.div initial={{ opacity:0, scale:0.95 }} animate={{ opacity:1, scale:1 }}
-                          className={`rounded-xl p-3 text-center text-sm font-semibold mb-4 ${demoSelected === dq.correct ? "bg-green-500/12 text-green-700" : "bg-red-500/12 text-red-700"}`}>
-                          {demoSelected === dq.correct
-                            ? "✅ Bravo ! L'IA cible déjà votre prochaine question…"
-                            : `❌ Réponse : ${dq.choices[dq.correct]} — مساري renforce cette lettre pour vous !`}
-                        </motion.div>
-                      )}
-
-                      {/* Locked CTA */}
-                      <div className="relative">
-                        <div className="blur-[2px] pointer-events-none">
-                          <Button className="w-full gradient-emerald border-0 opacity-50">
-                            Question suivante <ChevronRight className="ml-2 h-4 w-4" />
-                          </Button>
-                        </div>
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <button onClick={() => navigate("/tarifs")}
-                            className="bg-background/95 backdrop-blur-sm rounded-full px-5 py-2 flex items-center gap-2 text-sm font-semibold border border-primary/40 shadow-md text-primary hover:bg-primary/5 transition">
-                            <Lock className="h-3.5 w-3.5" /> Débloquer avec Premium
-                          </button>
-                        </div>
-                      </div>
-                    </motion.div>
+                        {!demoRevealed && (
+                          <p className="text-center text-xs text-muted-foreground mt-2">Choisissez la bonne lettre</p>
+                        )}
+                      </motion.div>
+                    )}
                   </AnimatePresence>
                 </CardContent>
               </Card>
@@ -527,10 +543,11 @@ const Tuteur = () => {
                 <div className="gradient-emerald px-6 py-5 text-center">
                   <p className="text-primary-foreground/80 text-sm font-medium mb-1">Accès complet · Sans engagement</p>
                   <div className="flex items-baseline justify-center gap-1">
-                    <span className="text-5xl font-bold text-primary-foreground">15€</span>
+                    <span className="text-5xl font-bold text-primary-foreground">12€</span>
                     <span className="text-primary-foreground/70 text-lg">/mois</span>
                   </div>
-                  <p className="text-primary-foreground/60 text-xs mt-1">Résiliable à tout moment · Accès immédiat</p>
+                  <p className="text-primary-foreground/80 text-xs mt-1 font-medium">≈ 3€/semaine · Moins qu'un café</p>
+                  <p className="text-primary-foreground/60 text-xs mt-0.5">Résiliable à tout moment · Accès immédiat</p>
                 </div>
                 <CardContent className="p-6 space-y-4">
                   <div className="space-y-2.5">
@@ -664,7 +681,7 @@ const Tuteur = () => {
                 <Button size="lg"
                   className="bg-white text-primary hover:bg-white/90 border-0 px-10 text-base font-bold shadow-xl"
                   onClick={() => navigate("/tarifs")}>
-                  <Crown className="mr-2 h-5 w-5 text-yellow-500" /> Passer Premium — 15€/mois
+                  <Crown className="mr-2 h-5 w-5 text-yellow-500" /> Passer Premium — 12€/mois
                 </Button>
                 <p className="text-primary-foreground/50 text-xs mt-4">
                   🔒 Paiement sécurisé Stripe · Accès immédiat · Annulation en 1 clic
@@ -692,10 +709,15 @@ const Tuteur = () => {
         <Navbar />
         <div className="container mx-auto pt-20 px-4 max-w-xl flex-1 flex flex-col pb-4">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              <span dir="rtl" style={{ fontFamily:"Amiri, serif" }}>مساري</span>
-            </h2>
+            <div>
+              <h2 className="text-lg font-bold flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary" />
+                <span dir="rtl" style={{ fontFamily:"Amiri, serif" }}>مساري</span>
+              </h2>
+              {questionCount > 0 && (
+                <p className="text-xs text-muted-foreground mt-0.5">Question {questionCount} de la session</p>
+              )}
+            </div>
             <Button size="sm" variant="outline" onClick={endSession} disabled={busy}>
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Terminer"}
             </Button>
