@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, ArrowRight, BookOpen, Brain, PenTool, FileText,
-  CheckCircle, XCircle, Trophy, RotateCcw, Volume2, MessageSquare,
+  CheckCircle, XCircle, Trophy, RotateCcw, Volume2, MessageSquare, BookMarked,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -84,6 +84,90 @@ function GrammarTab({ lesson }: { lesson: Niveau2Lesson }) {
           })}
         </div>
       </div>
+    </motion.div>
+  );
+}
+
+function GlossaryTab({ lesson }: { lesson: Niveau2Lesson }) {
+  const { speak } = useArabicSpeech();
+  const [search, setSearch] = useState("");
+
+  const vocab = useMemo(() => {
+    const seen = new Set<string>();
+    const items: { arabic: string; transliteration: string; meaning: string }[] = [];
+    for (const rule of lesson.grammar) {
+      for (const ex of rule.examples) {
+        if (!ex.arabic || seen.has(ex.arabic)) continue;
+        seen.add(ex.arabic);
+        items.push({ arabic: ex.arabic, transliteration: ex.transliteration, meaning: ex.meaning });
+      }
+    }
+    return items;
+  }, [lesson]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return vocab;
+    return vocab.filter(
+      (v) =>
+        v.arabic.includes(q) ||
+        v.transliteration.toLowerCase().includes(q) ||
+        v.meaning.toLowerCase().includes(q)
+    );
+  }, [vocab, search]);
+
+  if (vocab.length === 0) {
+    return (
+      <div className="py-10 text-center text-muted-foreground text-sm">
+        Aucun vocabulaire disponible pour cette leçon.
+      </div>
+    );
+  }
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">{vocab.length} mot{vocab.length > 1 ? "s" : ""} · cliquez pour écouter</p>
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Rechercher…"
+          className="h-8 rounded-lg border border-border bg-background px-3 text-xs focus:outline-none focus:ring-1 focus:ring-primary w-36"
+        />
+      </div>
+
+      {filtered.length === 0 ? (
+        <p className="text-center text-sm text-muted-foreground py-6">Aucun résultat pour « {search} »</p>
+      ) : (
+        <div className="space-y-2">
+          {filtered.map((v, i) => (
+            <motion.button
+              key={v.arabic}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.03 }}
+              onClick={() => speak(v.arabic)}
+              className="w-full flex items-center gap-4 p-3 rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-primary/5 transition-colors text-left group"
+            >
+              <div className="shrink-0 w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Volume2 className="h-3.5 w-3.5 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+              <p
+                className="text-2xl font-bold text-foreground shrink-0 w-24 text-right"
+                dir="rtl"
+                style={{ fontFamily: "Amiri, serif", lineHeight: 1.4 }}
+              >
+                {v.arabic}
+              </p>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-primary font-mono truncate">{v.transliteration}</p>
+                <p className="text-sm text-foreground truncate">{v.meaning}</p>
+              </div>
+            </motion.button>
+          ))}
+        </div>
+      )}
     </motion.div>
   );
 }
@@ -357,12 +441,14 @@ const Niveau2LessonDetail = ({ lesson: rawLesson, onBack, onComplete }: Niveau2L
         </div>
       </div>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="bg-muted w-full grid grid-cols-3">
-          <TabsTrigger value="grammar" className="gap-1.5 text-xs sm:text-sm"><BookOpen className="h-4 w-4" /> Leçon</TabsTrigger>
-          <TabsTrigger value="exercises" className="gap-1.5 text-xs sm:text-sm"><Brain className="h-4 w-4" /> Exercices {exercisesCompleted && <CheckCircle className="h-3 w-3 text-primary" />}</TabsTrigger>
-          <TabsTrigger value="dictation" className="gap-1.5 text-xs sm:text-sm"><PenTool className="h-4 w-4" /> Dictée {dictationCompleted && <CheckCircle className="h-3 w-3 text-primary" />}</TabsTrigger>
+        <TabsList className="bg-muted w-full grid grid-cols-4">
+          <TabsTrigger value="grammar" className="gap-1 text-xs"><BookOpen className="h-3.5 w-3.5" /> Leçon</TabsTrigger>
+          <TabsTrigger value="glossary" className="gap-1 text-xs"><BookMarked className="h-3.5 w-3.5" /> Vocab</TabsTrigger>
+          <TabsTrigger value="exercises" className="gap-1 text-xs"><Brain className="h-3.5 w-3.5" /> Exercices {exercisesCompleted && <CheckCircle className="h-3 w-3 text-primary" />}</TabsTrigger>
+          <TabsTrigger value="dictation" className="gap-1 text-xs"><PenTool className="h-3.5 w-3.5" /> Dictée {dictationCompleted && <CheckCircle className="h-3 w-3 text-primary" />}</TabsTrigger>
         </TabsList>
         <TabsContent value="grammar"><GrammarTab lesson={lesson} /></TabsContent>
+        <TabsContent value="glossary"><GlossaryTab lesson={lesson} /></TabsContent>
         <TabsContent value="exercises"><ExercisesTab lesson={lesson} onAllCorrect={() => setExercisesCompleted(true)} /></TabsContent>
         <TabsContent value="dictation"><DictationTab lesson={lesson} onAllCorrect={() => setDictationCompleted(true)} /></TabsContent>
       </Tabs>
