@@ -23,6 +23,7 @@ import type { TutorQuestion, TutorPayload } from "@/types/tutor";
 import { getRandomFallbackQuestion } from "@/utils/tutor-fallback-questions";
 import { usePersistentState, userScopedKey } from "@/hooks/use-persistent-state";
 import FlashcardSession from "@/components/FlashcardSession";
+import TuteurAnalytics from "@/components/TuteurAnalytics";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Session {
@@ -1094,7 +1095,7 @@ const Tuteur = () => {
               )}
             </TabsTrigger>
             <TabsTrigger value="history" className="flex items-center gap-1.5 text-xs">
-              <BarChart2 className="h-3.5 w-3.5" /> Historique
+              <BarChart2 className="h-3.5 w-3.5" /> Analytics
             </TabsTrigger>
           </TabsList>
 
@@ -1189,39 +1190,13 @@ const Tuteur = () => {
             )}
           </TabsContent>
 
-          {/* Historique */}
-          <TabsContent value="history" className="space-y-3 mt-4">
-            <h3 className="font-semibold flex items-center gap-2"><BarChart2 className="h-4 w-4" /> Sessions passées</h3>
-            {sessions.filter((s) => s.ended_at).length === 0 ? (
-              <Card className="border-dashed border-primary/30">
-                <CardContent className="p-8 text-center">
-                  <Trophy className="h-10 w-10 text-primary/40 mx-auto mb-3" />
-                  <p className="font-medium text-foreground/70 mb-1">Pas encore de session terminée</p>
-                  <p className="text-sm text-muted-foreground">Démarrez votre première session pour voir vos résultats ici</p>
-                </CardContent>
-              </Card>
-            ) : (
-              sessions.filter((s) => s.ended_at).map((s) => (
-                <Card key={s.id} className="hover:border-primary/20 transition-colors">
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-start gap-2">
-                      <div className="flex-1">
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(s.started_at).toLocaleDateString("fr-FR", { dateStyle:"long" })}
-                        </p>
-                        {s.summary && <p className="text-sm mt-1 text-foreground/80">{s.summary}</p>}
-                      </div>
-                      {s.score !== null && (
-                        <Badge variant="secondary"
-                          className={`shrink-0 font-bold ${Number(s.score) >= 80 ? "bg-green-500/15 text-green-700" : Number(s.score) >= 60 ? "bg-yellow-500/15 text-yellow-700" : "bg-red-500/15 text-red-700"}`}>
-                          {Math.round(Number(s.score))}/100
-                        </Badge>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            )}
+          {/* Analytics */}
+          <TabsContent value="history" className="mt-4">
+            <TuteurAnalytics
+              sessions={sessions}
+              weakLetters={(progress?.weak_letters || []).map(String)}
+              strongLetters={(progress?.strong_letters || []).map(String)}
+            />
           </TabsContent>
         </Tabs>
       </div>
