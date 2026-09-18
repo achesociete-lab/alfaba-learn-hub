@@ -40,6 +40,7 @@ interface TutorProgress {
 // ─── Static data ──────────────────────────────────────────────────────────────
 const SESSION_START_TIMEOUT_MS = 5000;
 const NEXT_QUESTION_TIMEOUT_MS = 5000;
+const MAX_QUESTIONS_PER_SESSION = 10;
 
 const ARABIC_ALPHABET = [
   "ا","ب","ت","ث","ج","ح","خ","د","ذ","ر","ز","س","ش","ص",
@@ -122,6 +123,7 @@ const Tuteur = () => {
   const prefetchedRef = useRef<TutorPayload | null>(null);
   const prefetchInFlightRef = useRef<boolean>(false);
   const seenDisplaysRef = useRef<Set<string>>(new Set());
+  const questionCountRef = useRef(0);
 
   // Demo teaser state — flow linéaire contrôlé par l'utilisateur
   const [demoIdx, setDemoIdx] = useState(0);
@@ -201,6 +203,7 @@ const Tuteur = () => {
     resetQuestionState();
     seenDisplaysRef.current = new Set();
     prefetchedRef.current = null;
+    questionCountRef.current = 0;
     setQuestionCount(0);
     const payload = targetLetters?.length ? { target_letters: targetLetters } : {};
     try {
@@ -229,12 +232,22 @@ const Tuteur = () => {
   const submitAnswer = async (userAnswer: string) => {
     if (!activeSessionId) return;
     setSending(true);
+
+    const newCount = questionCountRef.current + 1;
+    questionCountRef.current = newCount;
+    setQuestionCount(newCount);
+
+    if (newCount >= MAX_QUESTIONS_PER_SESSION) {
+      setSending(false);
+      endSession();
+      return;
+    }
+
     if (prefetchedRef.current && activeSessionId !== "__loading__") {
       const next = prefetchedRef.current;
       prefetchedRef.current = null;
       setCurrentPayload(next);
       if (next.question?.display) seenDisplaysRef.current.add(next.question.display);
-      setQuestionCount(c => c + 1);
       resetQuestionState();
       setSending(false);
       prefetchNext(activeSessionId, "Question suivante.");
@@ -728,7 +741,7 @@ const Tuteur = () => {
                 )}
               </h2>
               {questionCount > 0 && (
-                <p className="text-xs text-muted-foreground mt-0.5">Question {questionCount} de la session</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Question {questionCount} / {MAX_QUESTIONS_PER_SESSION}</p>
               )}
             </div>
             <Button size="sm" variant="outline" onClick={endSession} disabled={busy}>
