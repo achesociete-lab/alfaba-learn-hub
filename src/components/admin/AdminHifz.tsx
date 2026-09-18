@@ -94,9 +94,13 @@ const NIVEAUX = [
 const FLUIDITY = ["Haché", "Correct", "Fluide", "Majestueux"];
 
 // ─── Candidatures Hifd ───
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 function CandidaturesTab() {
+  const { toast } = useToast();
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [accepting, setAccepting] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -110,8 +114,34 @@ function CandidaturesTab() {
 
   useEffect(() => { load(); }, []);
 
-  const updateStatus = async (id: string, status: string) => {
-    await supabase.from("hifz_applications").update({ status }).eq("id", id);
+  const accept = async (a: any) => {
+    setAccepting(a.id);
+    await supabase.from("hifz_applications").update({ status: "acceptee" }).eq("id", a.id);
+
+    const contactIsEmail = EMAIL_RE.test(a.contact?.trim() ?? "");
+    if (contactIsEmail) {
+      try {
+        await supabase.functions.invoke("send-transactional-email", {
+          body: {
+            templateName: "hifz-accepted",
+            recipientEmail: a.contact.trim(),
+            templateData: { prenom: a.prenom },
+          },
+        });
+        toast({ title: `Candidature acceptée — email envoyé à ${a.contact}` });
+      } catch {
+        toast({ title: "Candidature acceptée", description: `Contactez manuellement : ${a.contact}`, variant: "default" });
+      }
+    } else {
+      toast({ title: "Candidature acceptée", description: `Contactez l'élève : ${a.contact}` });
+    }
+
+    setAccepting(null);
+    load();
+  };
+
+  const refuse = async (id: string) => {
+    await supabase.from("hifz_applications").update({ status: "refusee" }).eq("id", id);
     load();
   };
 
@@ -128,22 +158,40 @@ function CandidaturesTab() {
                 <p className="font-semibold text-emerald-900">{a.prenom}</p>
                 <p className="text-xs text-muted-foreground">{new Date(a.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
               </div>
-              <Badge variant={a.status === "en_attente" ? "outline" : "default"} className={a.status === "en_attente" ? "border-amber-500 text-amber-700" : "bg-emerald-600"}>
+              <Badge variant={a.status === "en_attente" ? "outline" : "default"} className={a.status === "en_attente" ? "border-amber-500 text-amber-700" : a.status === "acceptee" ? "bg-emerald-600" : "bg-red-600"}>
                 {a.status === "en_attente" ? "⏳ En attente" : a.status === "acceptee" ? "✅ Acceptée" : "❌ Refusée"}
               </Badge>
             </div>
             <div className="text-sm space-y-1">
               <p><span className="font-medium">Niveau :</span> {a.niveau_arabe}</p>
               <p><span className="font-medium">Disponibilités :</span> {a.disponibilites}</p>
-              <p><span className="font-medium">Contact :</span> {a.contact}</p>
+              <p className="flex items-center gap-1.5">
+                <span className="font-medium">Contact :</span>
+                {EMAIL_RE.test(a.contact?.trim() ?? "") ? (
+                  <a href={`mailto:${a.contact.trim()}`} className="text-emerald-700 underline">{a.contact}</a>
+                ) : (
+                  <span>{a.contact}</span>
+                )}
+                {a.status === "acceptee" && !EMAIL_RE.test(a.contact?.trim() ?? "") && (
+                  <span className="text-xs text-amber-700">(à contacter manuellement)</span>
+                )}
+              </p>
               {a.message && <p><span className="font-medium">Message :</span> {a.message}</p>}
             </div>
             {a.status === "en_attente" && (
               <div className="flex gap-2 pt-1">
-                <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1" onClick={() => updateStatus(a.id, "acceptee")}>
-                  <CheckCircle2 className="h-3.5 w-3.5" /> Accepter
+                <Button
+                  size="sm"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1"
+                  disabled={accepting === a.id}
+                  onClick={() => accept(a)}
+                >
+                  {accepting === a.id
+                    ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    : <CheckCircle2 className="h-3.5 w-3.5" />}
+                  Accepter
                 </Button>
-                <Button size="sm" variant="outline" className="text-destructive border-destructive/30" onClick={() => updateStatus(a.id, "refusee")}>
+                <Button size="sm" variant="outline" className="text-destructive border-destructive/30" onClick={() => refuse(a.id)}>
                   <XCircle className="h-3.5 w-3.5 mr-1" /> Refuser
                 </Button>
               </div>

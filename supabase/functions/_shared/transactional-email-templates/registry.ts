@@ -26,6 +26,7 @@ import { template as hifzRescheduleRequest } from './hifz-reschedule-request.tsx
 import { template as hifzRescheduleProposal } from './hifz-reschedule-proposal.tsx'
 import { template as presentielCorrection } from './presentiel-correction.tsx'
 import { template as hifzApplicationAdmin } from './hifz-application-admin.tsx'
+import { template as hifzAccepted } from './hifz-accepted.tsx'
 import { template as familyInvite } from './family-invite.tsx'
 import { template as adminNewStudentSignup } from './admin-new-student-signup.tsx'
 import { template as followupLevel1Online } from './followup-level1-online.tsx'
@@ -60,5 +61,6 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'hifz-reschedule-proposal': hifzRescheduleProposal,
   'presentiel-correction': presentielCorrection,
   'hifz-application-admin': hifzApplicationAdmin,
+  'hifz-accepted': hifzAccepted,
   'family-invite': familyInvite,
 }
