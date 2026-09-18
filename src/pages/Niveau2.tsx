@@ -1,3 +1,4 @@
+import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
@@ -10,6 +11,7 @@ import { useIsAdmin } from "@/hooks/use-admin";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/hooks/use-subscription";
 import LessonProgressBar from "@/components/LessonProgressBar";
+import PlacementTestN2, { getPlacementResult } from "@/components/PlacementTestN2";
 
 const lessons = [
   { num: 1,  title: "Révision de l'alphabet et lecture fluide", desc: "Consolidation des acquis du niveau 1", icon: BookOpen },
@@ -52,6 +54,11 @@ const Niveau2 = () => {
 
   const shouldLock = !isAdmin && (!user || !hasLessonAccess);
 
+  const existingResult = getPlacementResult(user?.id);
+  const [showPlacement, setShowPlacement] = useState(
+    !shouldLock && !isAdmin && !existingResult
+  );
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -87,6 +94,29 @@ const Niveau2 = () => {
           {/* Leçons avec verrouillage séquentiel */}
           <section>
             <h2 className="text-2xl font-bold text-foreground mb-6 text-center">Programme des leçons</h2>
+
+            <div className="max-w-2xl mx-auto">
+              {showPlacement && (
+                <PlacementTestN2
+                  userId={user?.id}
+                  onDismiss={() => setShowPlacement(false)}
+                />
+              )}
+              {!showPlacement && existingResult && (
+                <div className="mb-4 flex items-center justify-between px-4 py-2.5 rounded-xl border bg-card text-sm">
+                  <span className="text-muted-foreground">
+                    Test de placement passé — {existingResult.score}/{existingResult.total} ({Math.round((existingResult.score / existingResult.total) * 100)}%)
+                    {existingResult.passed ? " ✅" : " — bases à consolider"}
+                  </span>
+                  <button
+                    onClick={() => setShowPlacement(true)}
+                    className="text-xs text-primary underline hover:no-underline ml-3 shrink-0"
+                  >
+                    Repasser
+                  </button>
+                </div>
+              )}
+            </div>
 
             <div className="max-w-2xl mx-auto mb-6 p-4 rounded-xl border border-border bg-card">
               <LessonProgressBar completedLessons={completedN2Lessons} totalLessons={lessons.length} label="Mes leçons" />
