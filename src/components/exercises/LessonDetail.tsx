@@ -1,8 +1,9 @@
 import { useState, useRef, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, ArrowRight, BookOpen, Brain, PenTool,
-  CheckCircle, XCircle, Trophy, RotateCcw, Volume2,
+  CheckCircle, XCircle, Trophy, RotateCcw, Volume2, MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -469,6 +470,7 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
 }
 
 const LessonDetail = ({ lesson: rawLesson, onBack, onComplete, nextLessonId, onNextLesson, maxLessons = Infinity }: LessonDetailProps) => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   // Dédup inter-modules : une même question / mot ne doit apparaître qu'une seule fois
   const lesson = useMemo(() => {
@@ -550,14 +552,18 @@ const LessonDetail = ({ lesson: rawLesson, onBack, onComplete, nextLessonId, onN
       </Tabs>
 
       {allDone && (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="p-4 rounded-xl border border-primary bg-primary/10 text-center space-y-3">
-          <p className="text-foreground font-semibold">🎉 Leçon complète !</p>
-          <div className="flex flex-wrap justify-center gap-3">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="p-4 rounded-xl border border-primary bg-primary/10 space-y-3">
+          <p className="text-foreground font-semibold text-center">🎉 Leçon complète !</p>
+          <div className="flex flex-wrap justify-center gap-2">
             {nextLessonId && onNextLesson
               ? nextLessonId <= maxLessons
                 ? <Button onClick={() => { handleComplete(); onNextLesson(nextLessonId); }} className="gap-2">Leçon suivante <ArrowRight className="h-4 w-4" /></Button>
                 : <a href="/tarifs"><Button variant="secondary" className="gap-2">🔒 Passez au plan Essentiel pour continuer <ArrowRight className="h-4 w-4" /></Button></a>
               : <Button onClick={handleComplete} className="gap-2"><CheckCircle className="h-4 w-4" /> Terminer</Button>}
+            <Button variant="outline" className="gap-2 border-primary/40 text-primary hover:bg-primary/5"
+              onClick={() => navigate(`/conversation?ref=n1-${lesson.id}`)}>
+              <MessageSquare className="h-4 w-4" /> Pratiquer avec l'assistant
+            </Button>
           </div>
         </motion.div>
       )}

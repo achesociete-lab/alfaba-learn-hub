@@ -2,6 +2,7 @@ export type HifzSessionType =
   | "sabaq"
   | "sabaq_para"
   | "dhor"
+  | "tashih"
   | "rattrapage"
   | "test_surprise"
   | "khatm_partiel";
@@ -58,6 +59,19 @@ export const HIFZ_SESSION_TYPES: Array<{
     border: "border-violet-500",
     bgSoft: "bg-violet-50",
     hexBar: "#7c3aed",
+  },
+  {
+    value: "tashih",
+    label: "Correction tajwid",
+    icon: "🔬",
+    short: "Tashih",
+    description: "Session dédiée à la correction des règles de tajwid sur un hizb déjà mémorisé",
+    long: "Le professeur corrige uniquement le tajwid sans évaluer la mémorisation globale.",
+    badgeBg: "bg-indigo-100",
+    badgeText: "text-indigo-800",
+    border: "border-indigo-500",
+    bgSoft: "bg-indigo-50",
+    hexBar: "#4338ca",
   },
   {
     value: "rattrapage",

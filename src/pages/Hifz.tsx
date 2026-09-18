@@ -124,6 +124,7 @@ export default function Hifz() {
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
   const [bookingMessage, setBookingMessage] = useState("");
+  const [bookingQuestion, setBookingQuestion] = useState("");
   const [bookingType, setBookingType] = useState<HifzSessionType>("sabaq");
   const [bookingJuz, setBookingJuz] = useState<number>(1);
   const [pagesFrom, setPagesFrom] = useState<number | "">("");
@@ -419,7 +420,8 @@ export default function Hifz() {
     if (!user || !selectedSlot) return;
     setBooking(true);
     const pageRange = pagesFrom !== "" && pagesTo !== "" ? `[Pages ${pagesFrom}–${pagesTo}]` : null;
-    const notesEleve = [pageRange, bookingMessage.trim() || null].filter(Boolean).join(" ") || null;
+    const questionPart = bookingQuestion.trim() ? `[❓ ${bookingQuestion.trim()}]` : null;
+    const notesEleve = [pageRange, bookingMessage.trim() || null, questionPart].filter(Boolean).join(" ") || null;
     const insertData: any = {
       student_id: user.id,
       session_date: selectedSlot.slot_date,
@@ -458,7 +460,7 @@ export default function Hifz() {
     ].filter(Boolean)).catch(() => {});
 
     setBooking(false); setSelectedSlot(null); setSelectedDay(null);
-    setBookingMessage(""); setBookingType("sabaq"); setBookingJuz(1);
+    setBookingMessage(""); setBookingQuestion(""); setBookingType("sabaq"); setBookingJuz(1);
     setPagesFrom(""); setPagesTo("");
     toast({ title: "Réservation enregistrée ✓", description: "Vous recevrez un email de confirmation." });
     fetchAll();
@@ -1776,7 +1778,19 @@ export default function Hifz() {
                   onChange={(e) => setBookingMessage(e.target.value)}
                   placeholder="Hizb travaillés cette semaine, difficultés particulières…"
                   className="mt-1.5 resize-none text-sm"
-                  rows={3}
+                  rows={2}
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-700">
+                  Question pour la prochaine séance <span className="text-gray-400 font-normal">(optionnel)</span>
+                </Label>
+                <Textarea
+                  value={bookingQuestion}
+                  onChange={(e) => setBookingQuestion(e.target.value)}
+                  placeholder="Ex : Comment prononcer correctement le ص emphatique dans cette sourate ?"
+                  className="mt-1.5 resize-none text-sm"
+                  rows={2}
                 />
               </div>
 

@@ -19,7 +19,7 @@ import { toast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import ArabicKeyboard from "@/components/ArabicKeyboard";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { playCorrectSound, playWrongSound } from "@/utils/sound-feedback";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -171,6 +171,7 @@ const ArabicChat = () => {
   const [showSidebar, setShowSidebar] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [showKeyboard, setShowKeyboard] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -398,6 +399,37 @@ const ArabicChat = () => {
   }, [input, isLoading, messages, history, userLevel, formality, completedLessons, completedN2Lessons, speakNewSentencesFrom, persona.age, persona.gender, persona.firstName]);
 
   useEffect(() => { sendMessageRef.current = sendMessage; }, [sendMessage]);
+
+  // Auto-démarrage depuis une leçon complétée (?ref=n1-X ou ?ref=n2-X)
+  useEffect(() => {
+    const ref = searchParams.get("ref");
+    if (!ref || messages.length > 0) return;
+    const match = ref.match(/^(n1|n2)-(\d+)$/);
+    if (!match) return;
+    const level = match[1] === "n2" ? "Niveau 2" : "Niveau 1";
+    const lessonNum = match[2];
+    const prompt = `أَنْهَيْتُ الدَّرْسَ ${lessonNum} مِنَ ${level}. أُرِيدُ أَنْ أَتَدَرَّبَ عَلَى مَا تَعَلَّمْتُهُ.`;
+    searchParams.delete("ref");
+    setSearchParams(searchParams, { replace: true });
+    setTimeout(() => sendMessageRef.current(prompt), 300);
+  }, [searchParams]);
+
+  // Espace = PTT (push-to-talk) quand le champ texte est vide et non focalisé
+  useEffect(() => {
+    const onDown = (e: KeyboardEvent) => {
+      if (e.code !== "Space" || e.target !== document.body) return;
+      if (isLoading || recorder.isRecording || input) return;
+      e.preventDefault();
+      startVoiceRecording();
+    };
+    const onUp = (e: KeyboardEvent) => {
+      if (e.code !== "Space" || !recorder.isRecording) return;
+      stopVoice();
+    };
+    window.addEventListener("keydown", onDown);
+    window.addEventListener("keyup", onUp);
+    return () => { window.removeEventListener("keydown", onDown); window.removeEventListener("keyup", onUp); };
+  }, [isLoading, recorder.isRecording, input, startVoiceRecording, stopVoice]);
 
   // ── Conversation management ─────────────────────────────────────────────────
   const handleNewConversation = () => {
@@ -691,23 +723,28 @@ const ArabicChat = () => {
                   )}
                 </AnimatePresence>
 
-                {/* Suggestion chips */}
+                {/* Thèmes de conversation */}
                 <motion.div
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.5 }}
-                  className="flex flex-wrap justify-center gap-2 max-w-sm"
+                  className="w-full max-w-sm space-y-2"
                 >
-                  {suggestions.map((s) => (
-                    <button key={s.ar}
-                      className="group flex items-center gap-1.5 px-3 py-2 rounded-full border border-primary/25 bg-primary/5 hover:bg-primary/10 hover:border-primary/50 transition-all"
-                      onClick={() => sendMessage(s.ar)}
+                  <p className="text-xs text-center text-muted-foreground mb-3">Choisissez un thème ou tapez librement</p>
+                  {[
+                    { icon: "✍️", label: "Dictée guidée", prompt: "أَمْلِ عَلَيَّ كَلِمَاتٍ مِنْ دُرُوسِي" },
+                    { icon: "🛒", label: "Au marché", prompt: "أُرِيدُ أَنْ أَتَدَرَّبَ عَلَى الحِوَارِ فِي السُّوقِ. أَنْتَ الْبَائِعُ." },
+                    { icon: "💬", label: "Conversation libre", prompt: "تَحَدَّثْ مَعِي بِالْعَرَبِيَّةِ وَصَحِّحْ أَخْطَائِي بِلُطْفٍ." },
+                    { icon: "📖", label: "Corriger mes phrases", prompt: "سَأَكْتُبُ جُمَلاً عَرَبِيَّةً وَأُرِيدُكَ أَنْ تُصَحِّحَهَا." },
+                  ].map((t) => (
+                    <button key={t.label}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 hover:border-primary/40 transition-all text-left"
+                      onClick={() => sendMessage(t.prompt)}
                       disabled={isLoading}
                     >
-                      <span className="text-base font-arabic text-primary" dir="rtl"
-                        style={{ fontFamily: "Amiri, serif" }}>{s.ar}</span>
-                      <span className="text-xs text-muted-foreground hidden sm:inline">— {s.fr}</span>
-                      <ChevronRight className="h-3 w-3 text-primary/60 group-hover:translate-x-0.5 transition-transform" />
+                      <span className="text-xl shrink-0">{t.icon}</span>
+                      <span className="text-sm font-medium text-foreground">{t.label}</span>
+                      <ChevronRight className="h-4 w-4 text-primary/50 ml-auto shrink-0" />
                     </button>
                   ))}
                 </motion.div>

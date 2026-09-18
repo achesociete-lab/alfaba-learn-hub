@@ -115,6 +115,7 @@ const Tuteur = () => {
   const [sending, setSending] = useState(false);
   const [busy, setBusy] = useState(false);
   const [questionCount, setQuestionCount] = useState(0);
+  const [streakCount, setStreakCount] = useState(0);
   const [activeHw, setActiveHw] = useState<Homework | null>(null);
   const [submission, setSubmission] = useState<Record<number, string>>({});
 
@@ -268,7 +269,13 @@ const Tuteur = () => {
     const q = currentPayload?.question;
     if (!q?.choices) return;
     const isCorrect = idx === q.correct_index;
-    if (isCorrect) playCorrectSound(); else playWrongSound();
+    if (isCorrect) {
+      playCorrectSound();
+      setStreakCount(s => s + 1);
+    } else {
+      playWrongSound();
+      setStreakCount(0);
+    }
     const answer = `${isCorrect ? "Bonne réponse" : "Mauvaise réponse"}: j'ai choisi "${q.choices[idx]}" (correcte: "${q.choices[q.correct_index ?? 0]}"). Question suivante.`;
     setTimeout(() => submitAnswer(answer), isCorrect ? 350 : 700);
   };
@@ -713,6 +720,12 @@ const Tuteur = () => {
               <h2 className="text-lg font-bold flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-primary" />
                 <span dir="rtl" style={{ fontFamily:"Amiri, serif" }}>مساري</span>
+                {streakCount >= 3 && (
+                  <motion.span key={streakCount} initial={{ scale:1.4 }} animate={{ scale:1 }}
+                    className="text-sm font-bold text-orange-500 flex items-center gap-0.5">
+                    🔥 {streakCount}
+                  </motion.span>
+                )}
               </h2>
               {questionCount > 0 && (
                 <p className="text-xs text-muted-foreground mt-0.5">Question {questionCount} de la session</p>

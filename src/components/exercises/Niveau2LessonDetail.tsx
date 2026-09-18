@@ -1,8 +1,9 @@
 import { useState, useRef, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, ArrowRight, BookOpen, Brain, PenTool, FileText,
-  CheckCircle, XCircle, Trophy, RotateCcw, Volume2,
+  CheckCircle, XCircle, Trophy, RotateCcw, Volume2, MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -322,6 +323,7 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Niveau2Lesson; onAllCo
 }
 
 const Niveau2LessonDetail = ({ lesson: rawLesson, onBack, onComplete }: Niveau2LessonDetailProps) => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   // Dédup inter-modules : compréhension → QCM → dictée
   const lesson = useMemo(() => {
@@ -365,9 +367,17 @@ const Niveau2LessonDetail = ({ lesson: rawLesson, onBack, onComplete }: Niveau2L
         <TabsContent value="dictation"><DictationTab lesson={lesson} onAllCorrect={() => setDictationCompleted(true)} /></TabsContent>
       </Tabs>
       {allDone && (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="p-4 rounded-xl border border-primary bg-primary/10 text-center">
-          <p className="text-foreground font-semibold mb-2">🎉 Leçon complète !</p>
-          <Button onClick={handleComplete} className="gap-2">Valider et passer à la suite <ArrowRight className="h-4 w-4" /></Button>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="p-4 rounded-xl border border-primary bg-primary/10 space-y-3">
+          <p className="text-foreground font-semibold text-center">🎉 Leçon complète !</p>
+          <div className="flex gap-2 flex-wrap justify-center">
+            <Button onClick={handleComplete} className="gap-2">
+              Valider et passer à la suite <ArrowRight className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" className="gap-2 border-primary/40 text-primary hover:bg-primary/5"
+              onClick={() => navigate(`/conversation?ref=n2-${lesson.id}`)}>
+              <MessageSquare className="h-4 w-4" /> Pratiquer avec l'assistant
+            </Button>
+          </div>
         </motion.div>
       )}
     </div>

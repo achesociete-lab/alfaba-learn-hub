@@ -51,11 +51,10 @@ export function useChatHistory() {
   }, [user, loadConversations]);
 
   const saveMessages = useCallback(async (conversationId: string, messages: Msg[]) => {
-    // Generate title from first user message content (not "Nouvelle conversation")
     const firstUser = messages.find(m => m.role === "user");
-    const title = firstUser
-      ? firstUser.content.slice(0, 40) + (firstUser.content.length > 40 ? "…" : "")
-      : "محادثة جديدة";
+    const dateStr = new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
+    const content = firstUser?.content.slice(0, 30) || "محادثة";
+    const title = firstUser ? `${dateStr} — ${content}${firstUser.content.length > 30 ? "…" : ""}` : "محادثة جديدة";
 
     await supabase
       .from("chat_conversations")
