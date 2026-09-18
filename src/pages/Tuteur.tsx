@@ -22,6 +22,7 @@ import { playCorrectSound, playWrongSound, playVictorySound, playArrivalSound } 
 import type { TutorQuestion, TutorPayload } from "@/types/tutor";
 import { getRandomFallbackQuestion } from "@/utils/tutor-fallback-questions";
 import { usePersistentState, userScopedKey } from "@/hooks/use-persistent-state";
+import FlashcardSession from "@/components/FlashcardSession";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Session {
@@ -1077,11 +1078,14 @@ const Tuteur = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="plan" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="plan" className="flex items-center gap-1.5">
-              <Calendar className="h-3.5 w-3.5" /> Plan semaine
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="plan" className="flex items-center gap-1.5 text-xs">
+              <Calendar className="h-3.5 w-3.5" /> Plan
             </TabsTrigger>
-            <TabsTrigger value="homework" className="flex items-center gap-1.5">
+            <TabsTrigger value="flashcards" className="flex items-center gap-1.5 text-xs">
+              <Zap className="h-3.5 w-3.5" /> Flashcards
+            </TabsTrigger>
+            <TabsTrigger value="homework" className="flex items-center gap-1.5 text-xs">
               <BookOpen className="h-3.5 w-3.5" /> Devoirs
               {pendingHw > 0 && (
                 <Badge className="ml-1 text-xs h-4 min-w-[1rem] px-1 gradient-emerald border-0 text-primary-foreground">
@@ -1089,10 +1093,15 @@ const Tuteur = () => {
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="history" className="flex items-center gap-1.5">
+            <TabsTrigger value="history" className="flex items-center gap-1.5 text-xs">
               <BarChart2 className="h-3.5 w-3.5" /> Historique
             </TabsTrigger>
           </TabsList>
+
+          {/* Flashcards */}
+          <TabsContent value="flashcards" className="mt-4">
+            <FlashcardSession weakLetters={(progress?.weak_letters || []).map(String)} />
+          </TabsContent>
 
           {/* Plan semaine */}
           <TabsContent value="plan" className="space-y-3 mt-4">
