@@ -17,6 +17,7 @@ import { useFormality } from "@/hooks/use-formality";
 import { useUserPersona } from "@/hooks/use-user-persona";
 import { toast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
+import ArabicKeyboard from "@/components/ArabicKeyboard";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { playCorrectSound, playWrongSound } from "@/utils/sound-feedback";
@@ -169,6 +170,7 @@ const ArabicChat = () => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [showKeyboard, setShowKeyboard] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -855,6 +857,17 @@ const ArabicChat = () => {
               )}
             </AnimatePresence>
 
+            {/* Clavier arabe virtuel */}
+            {showKeyboard && (
+              <div className="mb-2">
+                <ArabicKeyboard
+                  onChar={(c) => setInput(prev => prev + c)}
+                  onBackspace={() => setInput(prev => prev.slice(0, -1))}
+                  onClose={() => setShowKeyboard(false)}
+                />
+              </div>
+            )}
+
             {/* Input row */}
             <div className="flex gap-2 items-center">
 
@@ -897,6 +910,15 @@ const ArabicChat = () => {
                 dir="auto"
                 disabled={isLoading || recorder.isRecording}
               />
+
+              {/* Keyboard toggle */}
+              <Button size="icon" variant="outline"
+                className={`h-10 w-10 rounded-full shrink-0 border-primary/30 ${showKeyboard ? "bg-primary/10 border-primary/50" : ""}`}
+                onClick={() => setShowKeyboard(v => !v)}
+                title="Clavier arabe"
+              >
+                <span className="text-sm font-bold text-primary" style={{ fontFamily: "Amiri, serif" }}>ع</span>
+              </Button>
 
               {/* Send button */}
               <Button

@@ -206,6 +206,19 @@ export default function Hifz() {
   }, [evaluations, initialMemo, config]);
 
 
+  const latestNiveauByHizb = useMemo(() => {
+    const map: Record<number, string> = {};
+    for (const e of evaluations) {
+      const cur = map[e.hizb_number];
+      if (!cur && e.niveau) { map[e.hizb_number] = e.niveau; continue; }
+      const curEval = evaluations.find(ev => ev.hizb_number === e.hizb_number && ev.niveau === cur);
+      if (e.niveau && curEval && new Date(e.evaluated_at) > new Date(curEval.evaluated_at)) {
+        map[e.hizb_number] = e.niveau;
+      }
+    }
+    return map;
+  }, [evaluations]);
+
   const evalByHizbByType = useMemo(() => {
     const map: Record<number, Record<string, Evaluation>> = {};
     for (const e of evaluations) {
@@ -637,6 +650,16 @@ export default function Hifz() {
                         <span>0 hizb</span>
                         <span>Coran complet (60 hizb)</span>
                       </div>
+                      {memoCount > 0 && (
+                        <div className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
+                          {memoCount <= 8 ? `≈ Juz 'Amma (An-Nâs → An-Naba') — hizb 1–${memoCount}`
+                            : memoCount <= 16 ? `≈ Juz 29–28 — hizb 1–${memoCount}`
+                            : memoCount <= 30 ? `≈ Juz 30 à ${31 - Math.ceil(memoCount / 2)} — hizb 1–${memoCount}`
+                            : memoCount <= 50 ? `≈ ${Math.round(memoCount / 2)} juz mémorisés — hizb 1–${memoCount}`
+                            : memoCount === 60 ? "Coran complet (60 hizb = 30 juz) ما شاء الله"
+                            : `≈ ${Math.round(memoCount / 2)} juz — hizb 1–${memoCount}`}
+                        </div>
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -858,6 +881,47 @@ export default function Hifz() {
                       </div>
                     </CardContent>
                   </Card>}
+
+                  {/* Grille des 60 hizb */}
+                  {evaluations.length > 0 && (
+                    <Card className="border-emerald-200 shadow-sm">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-emerald-800 text-base flex items-center gap-2">
+                          <BookOpen className="h-4 w-4" /> Vue d'ensemble — 60 hizb
+                        </CardTitle>
+                        <p className="text-xs text-amber-800/60">Couleur = dernier niveau évalué · Vert = maîtrisé · Orange = moyen · Rouge = à retravailler</p>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-10 gap-1.5">
+                          {Array.from({ length: TOTAL_HIZB }, (_, i) => {
+                            const hizb = i + 1;
+                            const niveau = latestNiveauByHizb[hizb];
+                            const isValidated = validatedHizbNumbers.has(hizb) || hizb <= initialMemo;
+                            const colorCls = isValidated && niveau === "excellent" ? "bg-emerald-600 text-white"
+                              : isValidated && niveau === "bon" ? "bg-emerald-400 text-white"
+                              : niveau === "moyen" ? "bg-amber-400 text-white"
+                              : niveau === "mediocre" ? "bg-red-400 text-white"
+                              : isValidated ? "bg-emerald-200 text-emerald-800"
+                              : "bg-gray-100 text-gray-400";
+                            return (
+                              <div key={hizb}
+                                title={`Hizb ${hizb}${niveau ? ` · ${NIVEAU_LABEL[niveau] || niveau}` : " · Non évalué"}`}
+                                className={`aspect-square rounded-md flex items-center justify-center text-[10px] font-bold transition-all ${colorCls}`}>
+                                {hizb}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div className="flex flex-wrap gap-3 mt-3 text-xs text-amber-800/60">
+                          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-emerald-600 inline-block" /> Excellent</span>
+                          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-emerald-400 inline-block" /> Bon</span>
+                          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-amber-400 inline-block" /> Moyen</span>
+                          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-red-400 inline-block" /> Médiocre</span>
+                          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-gray-100 border border-gray-200 inline-block" /> Non évalué</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
 
                   <Button variant="outline" onClick={handleReset} className="border-amber-300 text-amber-800 hover:bg-amber-50 text-sm">
                     <RotateCcw className="h-3.5 w-3.5 mr-2" /> Réinitialiser mon programme

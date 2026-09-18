@@ -156,15 +156,22 @@ serve(async (req) => {
         .single();
       if (error) throw error;
 
+      const targetLetters: string[] | undefined = body.target_letters;
+      const weakLetters = targetLetters?.length ? targetLetters : ctx.progress?.weak_letters;
+
       const ctxStr = JSON.stringify({
         first_name: ctx.profile?.first_name,
         level: ctx.profile?.level,
-        weak_letters: ctx.progress?.weak_letters,
+        weak_letters: weakLetters,
       });
+
+      const targetHint = targetLetters?.length
+        ? ` IMPORTANT: cette session est ciblée sur les lettres suivantes uniquement : ${targetLetters.join("، ")}. Commence IMMÉDIATEMENT par une question sur l'une de ces lettres.`
+        : "";
 
       const raw = await callAI([
         { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: `Démarre une nouvelle session. Salue brièvement l'élève (1 phrase) et propose IMMÉDIATEMENT un premier exercice MCQ adapté à son niveau et ses points faibles.\n\nÉlève: ${ctxStr}` },
+        { role: "user", content: `Démarre une nouvelle session. Salue brièvement l'élève (1 phrase) et propose IMMÉDIATEMENT un premier exercice MCQ adapté à son niveau et ses points faibles.${targetHint}\n\nÉlève: ${ctxStr}` },
       ], true);
 
       const parsed = JSON.parse(raw);

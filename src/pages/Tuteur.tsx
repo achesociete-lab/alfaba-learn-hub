@@ -194,15 +194,16 @@ const Tuteur = () => {
     } catch { } finally { prefetchInFlightRef.current = false; }
   };
 
-  const startSession = async () => {
+  const startSession = async (targetLetters?: string[]) => {
     setActiveSessionId("__loading__");
     setCurrentPayload(null);
     resetQuestionState();
     seenDisplaysRef.current = new Set();
     prefetchedRef.current = null;
     setQuestionCount(0);
+    const payload = targetLetters?.length ? { target_letters: targetLetters } : {};
     try {
-      const data = await callTutorWithTimeout("start_session", {}, SESSION_START_TIMEOUT_MS);
+      const data = await callTutorWithTimeout("start_session", payload, SESSION_START_TIMEOUT_MS);
       if (data && data.session_id && data.payload?.question) {
         setActiveSessionId(data.session_id);
         setCurrentPayload(data.payload);
@@ -706,8 +707,7 @@ const Tuteur = () => {
 
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        <Navbar />
-        <div className="container mx-auto pt-20 px-4 max-w-xl flex-1 flex flex-col pb-4">
+        <div className="container mx-auto pt-8 px-4 max-w-xl flex-1 flex flex-col pb-4">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-lg font-bold flex items-center gap-2">
@@ -807,8 +807,14 @@ const Tuteur = () => {
 
                   {showFeedbackBanner && (
                     <motion.div initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }}
-                      className={`rounded-xl p-3 text-center font-semibold ${isCorrect ? "bg-green-500/15 text-green-700 dark:text-green-400" : "bg-red-500/15 text-red-700 dark:text-red-400"}`}>
-                      {isCorrect ? "✅ Bravo !" : "❌ Réessaie !"}
+                      className={`rounded-xl p-3 text-center ${isCorrect ? "bg-green-500/15 text-green-700 dark:text-green-400" : "bg-red-500/15 text-red-700 dark:text-red-400"}`}>
+                      <p className="font-semibold">{isCorrect ? "✅ Bravo !" : `❌ La bonne réponse était : ${q?.choices?.[q?.correct_index ?? 0] ?? ""}`}</p>
+                      {!isCorrect && q?.meaning_fr && (
+                        <p className="text-xs mt-1 opacity-80">
+                          {q.display} = <span className="italic">{q.meaning_fr}</span>
+                          {q.translit ? ` · ${q.translit}` : ""}
+                        </p>
+                      )}
                     </motion.div>
                   )}
                 </>
@@ -893,6 +899,30 @@ const Tuteur = () => {
           </Button>
         </div>
 
+        {/* Action du jour */}
+        {weakSet.size > 0 && (
+          <Card className="mb-6 border-2 border-primary/30 bg-primary/5">
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="shrink-0">
+                <Target className="h-8 w-8 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm text-foreground">Aujourd'hui — {weakSet.size} lettre{weakSet.size > 1 ? "s" : ""} à renforcer</p>
+                <div className="flex gap-1.5 mt-1 flex-wrap">
+                  {Array.from(weakSet).slice(0, 6).map((l) => (
+                    <span key={l} className="text-lg font-bold text-red-600" style={{ fontFamily: "Amiri, serif" }}>{l}</span>
+                  ))}
+                  {weakSet.size > 6 && <span className="text-xs text-muted-foreground self-center">+{weakSet.size - 6}</span>}
+                </div>
+              </div>
+              <Button size="sm" className="gradient-emerald border-0 shrink-0"
+                onClick={() => startSession(Array.from(weakSet))} disabled={busy || loading}>
+                <Sparkles className="h-3.5 w-3.5 mr-1.5" /> Commencer
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Stats cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           {[
@@ -963,20 +993,22 @@ const Tuteur = () => {
                   const isStrong = strongSet.has(l);
                   const isWeak   = weakSet.has(l);
                   return (
-                    <div key={l}
-                      title={`${ARABIC_NAMES[l] || l}${isStrong ? " · Maîtrisé ✅" : isWeak ? " · À renforcer ⚠️" : " · Non évalué"}`}
-                      className={`aspect-square rounded-lg flex items-center justify-center text-lg font-bold cursor-default select-none transition-all ${
-                        isStrong ? "bg-green-500/15 text-green-700 dark:text-green-400 ring-1 ring-green-500/30"
-                        : isWeak ? "bg-red-500/15 text-red-700 dark:text-red-400 ring-1 ring-red-500/30"
-                        : "bg-muted text-muted-foreground/50"
+                    <button key={l}
+                      title={`${ARABIC_NAMES[l] || l}${isStrong ? " · Maîtrisé ✅" : isWeak ? " · À renforcer — cliquer pour s'entraîner" : " · Non évalué"}`}
+                      onClick={() => isWeak && startSession([l])}
+                      className={`aspect-square rounded-lg flex items-center justify-center text-lg font-bold select-none transition-all ${
+                        isStrong ? "bg-green-500/15 text-green-700 dark:text-green-400 ring-1 ring-green-500/30 cursor-default"
+                        : isWeak ? "bg-red-500/15 text-red-700 dark:text-red-400 ring-1 ring-red-500/30 cursor-pointer hover:bg-red-500/30 hover:scale-110"
+                        : "bg-muted text-muted-foreground/50 cursor-default"
                       }`}
                       style={{ fontFamily:"Amiri, serif" }}>
                       {l}
-                    </div>
+                    </button>
                   );
                 })}
               </div>
-              <div className="flex flex-wrap gap-3 mt-3 text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground mt-2">💡 Cliquez sur une lettre rouge pour lancer une session ciblée</p>
+              <div className="flex flex-wrap gap-3 mt-2 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-green-500/20 ring-1 ring-green-500/40 inline-block" /> Maîtrisé</span>
                 <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-red-500/20 ring-1 ring-red-500/40 inline-block" /> À renforcer</span>
                 <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-muted inline-block" /> Non évalué</span>
