@@ -121,11 +121,20 @@ const Tuteur = () => {
   const [streakCount, setStreakCount] = useState(0);
   const [activeHw, setActiveHw] = useState<Homework | null>(null);
   const [submission, setSubmission] = useState<Record<number, string>>({});
+  const [sessionSummary, setSessionSummary] = useState<{
+    score: number;
+    summary: string;
+    weakPoints: string[];
+    strongPoints: string[];
+    questionsAnswered: number;
+    peakStreak: number;
+  } | null>(null);
 
   const prefetchedRef = useRef<TutorPayload | null>(null);
   const prefetchInFlightRef = useRef<boolean>(false);
   const seenDisplaysRef = useRef<Set<string>>(new Set());
   const questionCountRef = useRef(0);
+  const peakStreakRef = useRef(0);
 
   // Demo teaser state — flow linéaire contrôlé par l'utilisateur
   const [demoIdx, setDemoIdx] = useState(0);
@@ -206,7 +215,10 @@ const Tuteur = () => {
     seenDisplaysRef.current = new Set();
     prefetchedRef.current = null;
     questionCountRef.current = 0;
+    peakStreakRef.current = 0;
     setQuestionCount(0);
+    setStreakCount(0);
+    setSessionSummary(null);
     const payload = targetLetters?.length ? { target_letters: targetLetters } : {};
     try {
       const data = await callTutorWithTimeout("start_session", payload, SESSION_START_TIMEOUT_MS);
@@ -286,7 +298,11 @@ const Tuteur = () => {
     const isCorrect = idx === q.correct_index;
     if (isCorrect) {
       playCorrectSound();
-      setStreakCount(s => s + 1);
+      setStreakCount(s => {
+        const next = s + 1;
+        if (next > peakStreakRef.current) peakStreakRef.current = next;
+        return next;
+      });
     } else {
       playWrongSound();
       setStreakCount(0);
@@ -316,16 +332,21 @@ const Tuteur = () => {
     if (!activeSessionId) return;
     setBusy(true);
     playArrivalSound();
+    const answered = questionCountRef.current;
+    const peak = peakStreakRef.current;
     try {
       const data = await callTutor("end_session", { session_id: activeSessionId });
-      const score = data.summary?.score ?? 0;
-      if (score >= 80) {
-        playVictorySound();
-        fireFireworks();
-        toast({ title: `🎉 Excellent ! ${score}/100`, description: data.summary?.summary || "Bravo !" });
-      } else {
-        toast({ title: "Session terminée ✅", description: data.summary?.summary || "Bilan enregistré" });
-      }
+      const sum = data.summary ?? {};
+      const score: number = sum.score ?? 0;
+      if (score >= 80) { playVictorySound(); fireFireworks(); }
+      setSessionSummary({
+        score,
+        summary: sum.summary ?? "",
+        weakPoints: sum.weak_points ?? [],
+        strongPoints: sum.strong_points ?? [],
+        questionsAnswered: answered,
+        peakStreak: peak,
+      });
       setActiveSessionId(null);
       setCurrentPayload(null);
       resetQuestionState();
@@ -720,6 +741,124 @@ const Tuteur = () => {
   // ══════════════════════════════════════════════════════════════════════════════
   // ACTIVE SESSION VIEW
   // ══════════════════════════════════════════════════════════════════════════════
+  if (sessionSummary) {
+    const { score, summary, weakPoints, strongPoints, questionsAnswered, peakStreak } = sessionSummary;
+    const scoreColor = score >= 80 ? "text-green-600" : score >= 60 ? "text-blue-600" : score >= 40 ? "text-amber-600" : "text-red-600";
+    const scoreBg   = score >= 80 ? "bg-green-500/10 border-green-500/30" : score >= 60 ? "bg-blue-500/10 border-blue-500/30" : score >= 40 ? "bg-amber-500/10 border-amber-500/30" : "bg-red-500/10 border-red-500/30";
+    const encouragement =
+      score >= 90 ? "Performance remarquable — continuez à ce rythme !" :
+      score >= 80 ? "Excellente session, vous progressez nettement." :
+      score >= 60 ? "Bonne session. Quelques points à consolider ci-dessous." :
+      score >= 40 ? "Les bases sont là. Ciblez vos lettres faibles pour progresser." :
+      "Ne vous découragez pas — chaque session est un pas de plus. Recommencez !";
+
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <div className="container mx-auto pt-8 px-4 max-w-xl flex-1 flex flex-col pb-8">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
+
+            {/* En-tête */}
+            <div className="text-center">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Bilan de session</p>
+              <div className={`inline-flex flex-col items-center justify-center w-28 h-28 rounded-full border-4 ${scoreBg} mb-3`}>
+                <span className={`text-4xl font-bold ${scoreColor}`}>{score}</span>
+                <span className="text-xs text-muted-foreground">/100</span>
+              </div>
+              <p className="text-sm text-muted-foreground max-w-xs mx-auto">{encouragement}</p>
+            </div>
+
+            {/* Stats rapides */}
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { label: "Questions", value: questionsAnswered },
+                { label: "Streak max", value: peakStreak > 0 ? `🔥 ${peakStreak}` : "—" },
+                { label: "Score", value: score >= 80 ? "✅" : score >= 60 ? "👍" : score >= 40 ? "📈" : "💪" },
+              ].map((s) => (
+                <Card key={s.label}>
+                  <CardContent className="p-3 text-center">
+                    <p className="text-xl font-bold text-foreground">{s.value}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Résumé IA */}
+            {summary?.trim() && (
+              <Card className="border-primary/20 bg-primary/5">
+                <CardContent className="p-4">
+                  <p className="text-xs font-semibold text-primary mb-1 flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5" /> Analyse de la session
+                  </p>
+                  <p className="text-sm text-foreground/80 leading-relaxed">{summary}</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Points faibles */}
+            {weakPoints.length > 0 && (
+              <Card className="border-red-200 bg-red-50/40 dark:bg-red-950/20">
+                <CardContent className="p-4">
+                  <p className="text-xs font-semibold text-red-700 mb-2 flex items-center gap-1.5">
+                    <Target className="h-3.5 w-3.5" /> À travailler
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {weakPoints.map((l) => (
+                      <span key={l} className="text-2xl font-bold text-red-600" dir="rtl" style={{ fontFamily: "Amiri, serif" }}>{l}</span>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Points forts */}
+            {strongPoints.length > 0 && (
+              <Card className="border-green-200 bg-green-50/40 dark:bg-green-950/20">
+                <CardContent className="p-4">
+                  <p className="text-xs font-semibold text-green-700 mb-2 flex items-center gap-1.5">
+                    <Star className="h-3.5 w-3.5" /> Maîtrisées cette session
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {strongPoints.map((l) => (
+                      <span key={l} className="text-2xl font-bold text-green-600" dir="rtl" style={{ fontFamily: "Amiri, serif" }}>{l}</span>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Actions */}
+            <div className="space-y-2 pt-1">
+              {weakPoints.length > 0 && (
+                <Button
+                  className="w-full gradient-emerald border-0 text-primary-foreground gap-2"
+                  onClick={() => { setSessionSummary(null); startSession(weakPoints); }}
+                >
+                  <Target className="h-4 w-4" /> Cibler mes lettres faibles
+                </Button>
+              )}
+              <Button
+                variant={weakPoints.length > 0 ? "outline" : "default"}
+                className={`w-full gap-2 ${weakPoints.length === 0 ? "gradient-emerald border-0 text-primary-foreground" : ""}`}
+                onClick={() => { setSessionSummary(null); startSession(); }}
+              >
+                <Sparkles className="h-4 w-4" /> Nouvelle session
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full text-muted-foreground gap-2"
+                onClick={() => setSessionSummary(null)}
+              >
+                <BarChart2 className="h-4 w-4" /> Retour au tableau de bord
+              </Button>
+            </div>
+
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
+
   if (activeSessionId) {
     const q = currentPayload?.question;
     const fb = currentPayload?.feedback_fr;
