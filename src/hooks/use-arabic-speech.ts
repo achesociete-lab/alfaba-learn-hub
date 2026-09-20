@@ -148,10 +148,37 @@ export function useArabicSpeech() {
         }
       }
 
-      console.error("ElevenLabs TTS failed after 3 retries:", lastError);
+      // ElevenLabs indisponible — fallback sur Web Speech API (voix arabe navigateur)
+      console.warn("ElevenLabs TTS indisponible, fallback Web Speech API:", lastError);
+      if (controller.signal.aborted) return;
+      try {
+        await speakWithBrowser(text, rate, controller.signal);
+      } catch (e) {
+        console.error("Web Speech API fallback failed:", e);
+      }
     },
     []
   );
+
+  // Fallback : Web Speech API avec voix arabe
+  function speakWithBrowser(text: string, rate: number, signal: AbortSignal): Promise<void> {
+    return new Promise((resolve) => {
+      if (!window.speechSynthesis) { resolve(); return; }
+      window.speechSynthesis.cancel();
+      const utt = new SpeechSynthesisUtterance(text);
+      utt.lang = "ar-SA";
+      utt.rate = Math.min(rate * 1.1, 1.0);
+      // Préférer une voix arabe si disponible
+      const voices = window.speechSynthesis.getVoices();
+      const arVoice = voices.find(v => v.lang.startsWith("ar")) ?? null;
+      if (arVoice) utt.voice = arVoice;
+      utt.onend = () => resolve();
+      utt.onerror = () => resolve();
+      const onAbort = () => { window.speechSynthesis.cancel(); resolve(); };
+      signal.addEventListener("abort", onAbort, { once: true });
+      window.speechSynthesis.speak(utt);
+    });
+  }
 
   const speak = useCallback(
     async (rawText: string, rate = 0.8, voiceId?: string) => {
