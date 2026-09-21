@@ -58,6 +58,7 @@ const AdminStudents = () => {
   const [studentEmails, setStudentEmails] = useState<Record<string, string>>({});
   const [togglingTest, setTogglingTest] = useState<string | null>(null);
   const [sendingRelance, setSendingRelance] = useState(false);
+  const [changingPlan, setChangingPlan] = useState<string | null>(null);
 
   const handleToggleLevel = async (s: StudentProfile) => {
     setTogglingLevel(s.user_id);
@@ -450,18 +451,34 @@ const AdminStudents = () => {
             )}
 
             {/* Plan actuel + sélecteur d'accès manuel */}
-            {studentPlans[s.user_id] ? (
-              <Badge className={`border text-xs shrink-0 ${PLAN_COLORS[studentPlans[s.user_id]]}`}>
-                {studentPlans[s.user_id] === "hifz" && <BookOpen className="h-3 w-3 mr-1" />}
-                {PLAN_LABELS[studentPlans[s.user_id]]}
-              </Badge>
+            {studentPlans[s.user_id] && changingPlan !== s.user_id ? (
+              <div className="flex items-center gap-1 shrink-0">
+                <Badge className={`border text-xs ${PLAN_COLORS[studentPlans[s.user_id]]}`}>
+                  {studentPlans[s.user_id] === "hifz" && <BookOpen className="h-3 w-3 mr-1" />}
+                  {PLAN_LABELS[studentPlans[s.user_id]]}
+                </Badge>
+                <button
+                  onClick={() => setChangingPlan(s.user_id)}
+                  className="text-[10px] text-muted-foreground hover:text-primary underline"
+                >
+                  changer
+                </button>
+              </div>
             ) : (
-              <div className="flex gap-1 shrink-0 flex-wrap">
+              <div className="flex gap-1 shrink-0 flex-wrap items-center">
+                {changingPlan === s.user_id && (
+                  <button
+                    onClick={() => setChangingPlan(null)}
+                    className="text-[10px] text-muted-foreground hover:text-foreground mr-1"
+                  >
+                    ✕
+                  </button>
+                )}
                 {(["essentiel", "premium", "famille", "hifz"] as ManualPlan[]).map((p) => (
                   <button
                     key={p}
                     disabled={activatingPlan === s.user_id}
-                    onClick={() => handleGrantPlan(s, p)}
+                    onClick={() => { handleGrantPlan(s, p); setChangingPlan(null); }}
                     title={`Accorder accès ${PLAN_LABELS[p]}`}
                     className={`px-2 py-1 rounded-lg text-[10px] font-semibold border transition-colors hover:opacity-80 ${PLAN_COLORS[p]}`}
                   >
