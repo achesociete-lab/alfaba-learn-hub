@@ -66,7 +66,7 @@ export default function DessinAnimes() {
   const loadSeries = async () => {
     setLoading(true);
     const { data: seriesData } = await supabase
-      .from("cartoon_series" as any)
+      .from("cartoon_series")
       .select("*")
       .eq("is_active", true)
       .order("sort_order");
@@ -74,13 +74,13 @@ export default function DessinAnimes() {
     if (!seriesData) { setLoading(false); return; }
 
     const withEpisodes = await Promise.all(
-      (seriesData as Series[]).map(async (s) => {
+      (seriesData as unknown as Series[]).map(async (s) => {
         const { data: eps } = await supabase
-          .from("cartoon_episodes" as any)
+          .from("cartoon_episodes")
           .select("*")
           .eq("series_id", s.id)
           .order("episode_number");
-        return { ...s, episodes: (eps as Episode[]) || [] };
+        return { ...s, episodes: (eps || []) as unknown as Episode[] };
       })
     );
     setSeries(withEpisodes);

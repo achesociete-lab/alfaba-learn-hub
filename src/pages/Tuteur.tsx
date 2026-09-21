@@ -1082,7 +1082,7 @@ const Tuteur = () => {
             <p className="text-muted-foreground text-sm mt-0.5">Mon Parcours Personnalisé · Premium</p>
           </div>
           <Button size="lg" className="gradient-emerald border-0 shadow-md shadow-primary/20"
-            onClick={startSession} disabled={busy || loading}>
+            onClick={() => startSession()} disabled={busy || loading}>
             {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
             Démarrer une session
           </Button>

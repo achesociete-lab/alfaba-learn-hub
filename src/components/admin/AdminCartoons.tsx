@@ -31,14 +31,14 @@ export default function AdminCartoons() {
 
   const loadSeries = async () => {
     setLoading(true);
-    const { data } = await supabase.from("cartoon_series" as any).select("*").order("sort_order");
-    setSeries((data as Series[]) || []);
+    const { data } = await supabase.from("cartoon_series").select("*").order("sort_order");
+    setSeries((data || []) as unknown as Series[]);
     setLoading(false);
   };
 
   const loadEpisodes = async (seriesId: string) => {
-    const { data } = await supabase.from("cartoon_episodes" as any).select("*").eq("series_id", seriesId).order("episode_number");
-    setEpisodes((data as Episode[]) || []);
+    const { data } = await supabase.from("cartoon_episodes").select("*").eq("series_id", seriesId).order("episode_number");
+    setEpisodes((data || []) as unknown as Episode[]);
   };
 
   const handleSelectSeries = (s: Series) => {
