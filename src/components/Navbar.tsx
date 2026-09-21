@@ -41,7 +41,7 @@ const getAuthNavLinks = (level: string | null, typeEleve: string | null, hasHifz
   links.push({ to: "/hifz", label: "📖 Hifd" });
   links.push({ to: "/conversation", label: "🎙️ مساعد المعلم" });
   links.push({ to: "/tuteur", label: "🎓 مساري" });
-  links.push({ to: "/dessins-animes", label: "📺 Cartoons" });
+  links.push({ to: "/dessins-animes", label: "📺 رسوم متحركة" });
   if (hasFamilleAccess) links.push({ to: "/famille", label: "👨‍👩‍👧‍👦 Ma famille" });
   links.push({ to: "/dashboard", label: "Espace Élève" });
 

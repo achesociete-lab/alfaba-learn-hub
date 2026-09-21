@@ -101,10 +101,9 @@ export default function DessinAnimes() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
             <div className="flex items-center gap-3 mb-2">
               <Tv className="h-7 w-7 text-primary" />
-              <h1 className="text-3xl font-bold text-foreground">Dessins Animés</h1>
-              <span className="font-arabic text-2xl text-primary font-bold" dir="rtl">أفلام الكرتون</span>
+              <h1 className="text-3xl font-bold text-foreground font-arabic" dir="rtl">رُسُومٌ مُتَحَرِّكَة</h1>
             </div>
-            <p className="text-muted-foreground">Apprenez l'arabe en regardant des séries adaptées à votre niveau.</p>
+            <p className="text-muted-foreground font-arabic text-lg" dir="rtl">تَعَلَّمِ الْعَرَبِيَّةَ بِمُشَاهَدَةِ الرُّسُومِ الْمُتَحَرِّكَةِ</p>
           </motion.div>
 
           {/* Filters */}
