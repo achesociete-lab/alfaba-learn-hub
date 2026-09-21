@@ -74,6 +74,89 @@ export type Database = {
         }
         Relationships: []
       }
+      cartoon_episodes: {
+        Row: {
+          created_at: string | null
+          duration_minutes: number | null
+          episode_number: number
+          id: string
+          is_free: boolean | null
+          series_id: string
+          sort_order: number | null
+          title_ar: string | null
+          title_fr: string | null
+          youtube_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          duration_minutes?: number | null
+          episode_number: number
+          id?: string
+          is_free?: boolean | null
+          series_id: string
+          sort_order?: number | null
+          title_ar?: string | null
+          title_fr?: string | null
+          youtube_id: string
+        }
+        Update: {
+          created_at?: string | null
+          duration_minutes?: number | null
+          episode_number?: number
+          id?: string
+          is_free?: boolean | null
+          series_id?: string
+          sort_order?: number | null
+          title_ar?: string | null
+          title_fr?: string | null
+          youtube_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cartoon_episodes_series_id_fkey"
+            columns: ["series_id"]
+            isOneToOne: false
+            referencedRelation: "cartoon_series"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cartoon_series: {
+        Row: {
+          age_range: string | null
+          created_at: string | null
+          description_fr: string | null
+          id: string
+          is_active: boolean | null
+          level: string | null
+          sort_order: number | null
+          title_ar: string
+          title_fr: string
+        }
+        Insert: {
+          age_range?: string | null
+          created_at?: string | null
+          description_fr?: string | null
+          id?: string
+          is_active?: boolean | null
+          level?: string | null
+          sort_order?: number | null
+          title_ar: string
+          title_fr: string
+        }
+        Update: {
+          age_range?: string | null
+          created_at?: string | null
+          description_fr?: string | null
+          id?: string
+          is_active?: boolean | null
+          level?: string | null
+          sort_order?: number | null
+          title_ar?: string
+          title_fr?: string
+        }
+        Relationships: []
+      }
       chat_conversations: {
         Row: {
           created_at: string
