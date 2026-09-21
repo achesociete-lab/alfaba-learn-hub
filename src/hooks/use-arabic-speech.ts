@@ -1,7 +1,5 @@
 import { useCallback, useRef, useEffect } from "react";
 import { getTeacherClipUrl, preloadTeacherClips } from "./use-teacher-audio-clips";
-// Simple in-memory cache for audio blobs to avoid re-fetching
-const audioCache = new Map<string, string>();
 
 /**
  * Clean text before sending to TTS for smoother voice output.
@@ -57,7 +55,7 @@ export function useArabicSpeech() {
 
   // Joue UN segment déjà nettoyé. Respecte l'AbortController fourni.
   const speakOne = useCallback(
-    async (text: string, rate: number, voiceId: string | undefined, controller: AbortController) => {
+    async (text: string, rate: number, _voiceId: string | undefined, controller: AbortController) => {
       if (controller.signal.aborted) return;
       if (!text?.trim()) return;
 
@@ -80,81 +78,11 @@ export function useArabicSpeech() {
         return;
       }
 
-      const cacheKey = `${text}_${rate}_${voiceId || "default"}`;
-
-      // Check cache
-      if (audioCache.has(cacheKey)) {
-        const audio = new Audio(audioCache.get(cacheKey)!);
-        audioRef.current = audio;
-        const onAbort = () => { audio.pause(); };
-        controller.signal.addEventListener("abort", onAbort, { once: true });
-        try {
-          await audio.play();
-          await new Promise<void>((resolve) => {
-            audio.addEventListener("ended", () => resolve(), { once: true });
-            audio.addEventListener("error", () => resolve(), { once: true });
-          });
-        } catch (e) {
-          console.warn("Audio playback failed:", e);
-        }
-        return;
-      }
-
-      // Fetch from ElevenLabs edge function with retry (3 attempts, exp backoff)
-      let lastError: unknown = null;
-      for (let attempt = 0; attempt < 3; attempt++) {
-        if (controller.signal.aborted) return;
-        try {
-          const response = await fetch(
-            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-                Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-              },
-              body: JSON.stringify({ text, rate, voiceId }),
-              signal: controller.signal,
-            }
-          );
-
-          if (!response.ok) {
-            lastError = new Error(`TTS HTTP ${response.status}`);
-            if (response.status >= 400 && response.status < 500 && response.status !== 429) break;
-            await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
-            continue;
-          }
-
-          const audioBlob = await response.blob();
-          const audioUrl = URL.createObjectURL(audioBlob);
-          audioCache.set(cacheKey, audioUrl);
-
-          if (controller.signal.aborted) return;
-          const audio = new Audio(audioUrl);
-          audioRef.current = audio;
-          const onAbort = () => { audio.pause(); };
-          controller.signal.addEventListener("abort", onAbort, { once: true });
-          await audio.play();
-          await new Promise<void>((resolve) => {
-            audio.addEventListener("ended", () => resolve(), { once: true });
-            audio.addEventListener("error", () => resolve(), { once: true });
-          });
-          return;
-        } catch (e: unknown) {
-          if (e instanceof DOMException && e.name === "AbortError") return;
-          lastError = e;
-          await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
-        }
-      }
-
-      // ElevenLabs indisponible — fallback sur Web Speech API (voix arabe navigateur)
-      console.warn("ElevenLabs TTS indisponible, fallback Web Speech API:", lastError);
-      if (controller.signal.aborted) return;
+      // Web Speech API directement (gratuit, voix arabe système)
       try {
         await speakWithBrowser(text, rate, controller.signal);
       } catch (e) {
-        console.error("Web Speech API fallback failed:", e);
+        console.error("Web Speech API failed:", e);
       }
     },
     []
