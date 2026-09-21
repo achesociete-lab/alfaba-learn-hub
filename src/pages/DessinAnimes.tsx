@@ -8,7 +8,8 @@ import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import { useSubscription } from "@/hooks/use-subscription";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import { useIsAdmin } from "@/hooks/use-admin";
 
 interface Episode {
   id: string;
@@ -51,6 +52,7 @@ export default function DessinAnimes() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { hasLessonAccess } = useSubscription();
+  const { isAdmin } = useIsAdmin();
 
   const [series, setSeries] = useState<Series[]>([]);
   const [loading, setLoading] = useState(true);
@@ -105,6 +107,14 @@ export default function DessinAnimes() {
             </div>
             <p className="text-muted-foreground font-arabic text-lg" dir="rtl">تَعَلَّمِ الْعَرَبِيَّةَ بِمُشَاهَدَةِ الرُّسُومِ الْمُتَحَرِّكَةِ</p>
           </motion.div>
+
+          {/* Admin shortcut */}
+          {isAdmin && (
+            <Link to="/admin" state={{ tab: "cartoons" }}
+              className="inline-flex items-center gap-2 mb-4 text-xs text-primary hover:underline">
+              <Tv className="h-3.5 w-3.5" /> Gérer les séries (admin)
+            </Link>
+          )}
 
           {/* Filters */}
           <div className="flex gap-2 mb-8 flex-wrap">
