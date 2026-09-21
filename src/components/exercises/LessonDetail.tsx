@@ -1,4 +1,5 @@
 import { useState, useRef, useMemo, useEffect } from "react";
+import confetti from "canvas-confetti";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
@@ -129,6 +130,17 @@ function QCMTab({ lesson, onAllCorrect, onSwitchToDictation }: { lesson: Lesson;
   const [score, setScore] = usePersistentState<number>(`${baseKey}:score`, 0);
   const [finished, setFinished] = usePersistentState<boolean>(`${baseKey}:finished`, false);
   const [wrongAnswers, setWrongAnswers] = usePersistentState<WrongAnswer[]>(`${baseKey}:wrong`, []);
+  const [shaking, setShaking] = useState(false);
+  const [praiseVisible, setPraiseVisible] = useState(false);
+  const [praiseWord, setPraiseWord] = useState("");
+
+  const PRAISES = ["أحسنت !", "ممتاز !", "ماشاء الله !", "رائع !"];
+  const triggerPraise = () => {
+    setPraiseWord(PRAISES[Math.floor(Math.random() * PRAISES.length)]);
+    setPraiseVisible(true);
+    setTimeout(() => setPraiseVisible(false), 1100);
+  };
+  const triggerShake = () => { setShaking(true); setTimeout(() => setShaking(false), 500); };
 
   const onAllCorrectRef = useRef(onAllCorrect);
   onAllCorrectRef.current = onAllCorrect;
@@ -136,7 +148,10 @@ function QCMTab({ lesson, onAllCorrect, onSwitchToDictation }: { lesson: Lesson;
   useEffect(() => {
     if (!finished || activeList.length === 0) return;
     const pct = Math.round((score / activeList.length) * 100);
-    if (pct >= 80) onAllCorrectRef.current();
+    if (pct >= 80) {
+      onAllCorrectRef.current();
+      setTimeout(() => confetti({ particleCount: 90, spread: 90, origin: { y: 0.6 }, colors: ["#059669","#10b981","#fbbf24","#f59e0b"] }), 250);
+    }
   }, [finished, score, activeList.length]);
 
   if (activeList.length === 0) return <p className="text-center text-muted-foreground p-4">Aucun exercice disponible.</p>;
@@ -155,9 +170,9 @@ function QCMTab({ lesson, onAllCorrect, onSwitchToDictation }: { lesson: Lesson;
       setMultiSelected(prev => prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]);
     } else {
       setSelected(idx);
-      if (idx === q.correctIndex) { setScore(s => s + 1); playCorrectSound(); }
+      if (idx === q.correctIndex) { setScore(s => s + 1); playCorrectSound(); triggerPraise(); }
       else {
-        playWrongSound();
+        playWrongSound(); triggerShake();
         const origIdx = retryIndices !== null ? retryIndices[current] : shuffledOrder[current];
         setWrongAnswers(prev => [...prev, { question: q.question, userAnswer: q.options[idx], correctAnswer: q.options[q.correctIndex], originalIdx: origIdx }]);
       }
@@ -169,9 +184,9 @@ function QCMTab({ lesson, onAllCorrect, onSwitchToDictation }: { lesson: Lesson;
     setSubmitted(true);
     const correct = correctIndexes!;
     const isCorrect = correct.length === multiSelected.length && correct.every(i => multiSelected.includes(i));
-    if (isCorrect) { setScore(s => s + 1); playCorrectSound(); }
+    if (isCorrect) { setScore(s => s + 1); playCorrectSound(); triggerPraise(); }
     else {
-      playWrongSound();
+      playWrongSound(); triggerShake();
       const origIdx = retryIndices !== null ? retryIndices[current] : shuffledOrder[current];
       setWrongAnswers(prev => [...prev, {
         question: q.question,
@@ -206,9 +221,11 @@ function QCMTab({ lesson, onAllCorrect, onSwitchToDictation }: { lesson: Lesson;
     const passed = pct >= 80;
     return (
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="p-8 rounded-xl border border-border bg-card text-center space-y-4">
-        <Trophy className="h-16 w-16 mx-auto text-secondary" />
-        <h3 className="text-2xl font-bold text-foreground">Exercices terminés !</h3>
-        <p className="text-lg text-muted-foreground">Score : <span className="font-bold text-primary">{score}</span> / {activeList.length} ({pct}%)</p>
+        <motion.div initial={{ scale: 0, rotate: -180 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: "spring", stiffness: 200, damping: 15 }}>
+          <Trophy className="h-16 w-16 mx-auto text-secondary" />
+        </motion.div>
+        <motion.h3 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="text-2xl font-bold text-foreground">Exercices terminés !</motion.h3>
+        <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className="text-lg text-muted-foreground">Score : <span className="font-bold text-primary">{score}</span> / {activeList.length} ({pct}%)</motion.p>
         <Progress value={pct} className="h-3 max-w-xs mx-auto" />
         <p className="text-sm text-muted-foreground">{passed ? (score === activeList.length ? "Parfait ! 🎉" : "Très bien ! 👏") : "Encore un petit effort ! Il faut 80% pour passer à la suite. 💪"}</p>
         {wrongAnswers.length > 0 && (
@@ -244,38 +261,63 @@ function QCMTab({ lesson, onAllCorrect, onSwitchToDictation }: { lesson: Lesson;
         <Progress value={Math.round((current / activeList.length) * 100)} className="h-2" />
       </div>
       <AnimatePresence mode="wait">
-        <motion.div key={current} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="p-6 rounded-xl border border-border bg-card">
+        <motion.div key={current} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="p-6 rounded-xl border border-border bg-card relative overflow-hidden">
           <p className="text-lg font-medium text-foreground mb-1">{q.question}</p>
           {isMulti && <p className="text-xs text-primary mb-3">Sélectionnez toutes les bonnes réponses</p>}
-          <div className="grid grid-cols-2 gap-3">
-            {q.options.map((opt, idx) => {
-              let cls = "border border-border bg-background hover:bg-muted";
-              if (isMulti) {
-                const isCorrect = correctIndexes!.includes(idx);
-                const isChosen = multiSelected.includes(idx);
-                if (submitted) {
-                  if (isCorrect) cls = "border-primary bg-primary/10 text-primary";
-                  else if (isChosen) cls = "border-destructive bg-destructive/10 text-destructive";
-                } else if (isChosen) cls = "border-primary bg-primary/10 text-primary";
-              } else {
-                if (selected !== null) { if (idx === q.correctIndex) cls = "border-primary bg-primary/10 text-primary"; else if (idx === selected) cls = "border-destructive bg-destructive/10 text-destructive"; }
-              }
-              return (
-                <button key={idx} onClick={() => handleSelect(idx)} disabled={isAnswered} className={`p-4 rounded-lg text-base font-medium transition-all ${cls}`}>
-                  {opt}
-                  {isMulti && submitted && correctIndexes!.includes(idx) && <CheckCircle className="h-4 w-4 inline ml-2" />}
-                  {isMulti && submitted && !correctIndexes!.includes(idx) && multiSelected.includes(idx) && <XCircle className="h-4 w-4 inline ml-2" />}
-                  {!isMulti && selected !== null && idx === q.correctIndex && <CheckCircle className="h-4 w-4 inline ml-2" />}
-                  {!isMulti && selected !== null && idx === selected && idx !== q.correctIndex && <XCircle className="h-4 w-4 inline ml-2" />}
-                </button>
-              );
-            })}
-          </div>
-          {isMulti && !submitted && (
-            <Button onClick={handleSubmitMulti} disabled={multiSelected.length === 0} className="w-full mt-3 gap-2">
-              <CheckCircle className="h-4 w-4" /> Valider mes réponses
-            </Button>
-          )}
+          <AnimatePresence>
+            {praiseVisible && (
+              <motion.div
+                initial={{ opacity: 1, y: 8, scale: 0.7 }}
+                animate={{ opacity: 0, y: -45, scale: 1.2 }}
+                transition={{ duration: 0.9, ease: "easeOut" }}
+                className="absolute inset-x-0 top-2 flex justify-center pointer-events-none z-20"
+              >
+                <span className="font-arabic text-3xl font-bold text-primary drop-shadow-md" dir="rtl">{praiseWord}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          <motion.div
+            animate={shaking ? { x: [-8, 8, -6, 6, -3, 3, 0] } : { x: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            <div className="grid grid-cols-2 gap-3">
+              {q.options.map((opt, idx) => {
+                let cls = "border border-border bg-background hover:bg-muted";
+                if (isMulti) {
+                  const isCorrect = correctIndexes!.includes(idx);
+                  const isChosen = multiSelected.includes(idx);
+                  if (submitted) {
+                    if (isCorrect) cls = "border-primary bg-primary/10 text-primary";
+                    else if (isChosen) cls = "border-destructive bg-destructive/10 text-destructive";
+                  } else if (isChosen) cls = "border-primary bg-primary/10 text-primary";
+                } else {
+                  if (selected !== null) { if (idx === q.correctIndex) cls = "border-primary bg-primary/10 text-primary"; else if (idx === selected) cls = "border-destructive bg-destructive/10 text-destructive"; }
+                }
+                return (
+                  <motion.button
+                    key={idx}
+                    onClick={() => handleSelect(idx)}
+                    disabled={isAnswered}
+                    whileTap={!isAnswered ? { scale: 0.96 } : {}}
+                    animate={selected === idx && idx === q.correctIndex ? { scale: [1, 1.07, 1] } : {}}
+                    transition={{ duration: 0.3 }}
+                    className={`p-4 rounded-lg text-base font-medium transition-all ${cls}`}
+                  >
+                    {opt}
+                    {isMulti && submitted && correctIndexes!.includes(idx) && <CheckCircle className="h-4 w-4 inline ml-2" />}
+                    {isMulti && submitted && !correctIndexes!.includes(idx) && multiSelected.includes(idx) && <XCircle className="h-4 w-4 inline ml-2" />}
+                    {!isMulti && selected !== null && idx === q.correctIndex && <CheckCircle className="h-4 w-4 inline ml-2" />}
+                    {!isMulti && selected !== null && idx === selected && idx !== q.correctIndex && <XCircle className="h-4 w-4 inline ml-2" />}
+                  </motion.button>
+                );
+              })}
+            </div>
+            {isMulti && !submitted && (
+              <Button onClick={handleSubmitMulti} disabled={multiSelected.length === 0} className="w-full mt-3 gap-2">
+                <CheckCircle className="h-4 w-4" /> Valider mes réponses
+              </Button>
+            )}
+          </motion.div>
           {isAnswered && <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-4 p-3 rounded-lg bg-muted text-sm text-muted-foreground">{q.explanation}</motion.div>}
         </motion.div>
       </AnimatePresence>
@@ -306,7 +348,18 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
   const [answerChecked, setAnswerChecked] = useState(false);
   const [answerCorrect, setAnswerCorrect] = useState(false);
   const [wrongAnswers, setWrongAnswers] = usePersistentState<WrongAnswer[]>(`${baseKey}:wrong`, []);
+  const [shakingD, setShakingD] = useState(false);
+  const [praiseVisibleD, setPraiseVisibleD] = useState(false);
+  const [praiseWordD, setPraiseWordD] = useState("");
   const { speak, stop: stopSpeech } = useArabicSpeech();
+
+  const PRAISES_D = ["أحسنت !", "ممتاز !", "ماشاء الله !", "رائع !"];
+  const triggerPraiseD = () => {
+    setPraiseWordD(PRAISES_D[Math.floor(Math.random() * PRAISES_D.length)]);
+    setPraiseVisibleD(true);
+    setTimeout(() => setPraiseVisibleD(false), 1100);
+  };
+  const triggerShakeD = () => { setShakingD(true); setTimeout(() => setShakingD(false), 500); };
 
   const onAllCorrectRef = useRef(onAllCorrect);
   onAllCorrectRef.current = onAllCorrect;
@@ -331,7 +384,10 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
   useEffect(() => {
     if (!finished || shuffledList.length === 0) return;
     const pct = Math.round((score / shuffledList.length) * 100);
-    if (pct >= 80) onAllCorrectRef.current();
+    if (pct >= 80) {
+      onAllCorrectRef.current();
+      setTimeout(() => confetti({ particleCount: 90, spread: 90, origin: { y: 0.6 }, colors: ["#059669","#10b981","#fbbf24","#f59e0b"] }), 250);
+    }
   }, [finished, score, shuffledList.length]);
 
   if (isEmpty || !d) return <p className="text-center text-muted-foreground p-4">Aucune dictée disponible.</p>;
@@ -344,15 +400,15 @@ function DictationTab({ lesson, onAllCorrect }: { lesson: Lesson; onAllCorrect: 
 
   const handleSelect = (idx: number) => {
     if (selected !== null) return; setSelected(idx);
-    if (idx === d.correctIndex) { setScore(s => s + 1); playCorrectSound(); }
-    else { playWrongSound(); setWrongAnswers(prev => [...prev, { question: `Mot ${current + 1}`, userAnswer: d.options[idx], correctAnswer: correctArabic }]); }
+    if (idx === d.correctIndex) { setScore(s => s + 1); playCorrectSound(); triggerPraiseD(); }
+    else { playWrongSound(); triggerShakeD(); setWrongAnswers(prev => [...prev, { question: `Mot ${current + 1}`, userAnswer: d.options[idx], correctAnswer: correctArabic }]); }
   };
   const handleCheckTyped = () => {
     if (answerChecked || !correctArabic) return;
     const isCorrect = typedAnswer.trim() === correctArabic.trim();
     setAnswerChecked(true); setAnswerCorrect(isCorrect);
-    if (isCorrect) { setScore(s => s + 1); playCorrectSound(); }
-    else { playWrongSound(); setWrongAnswers(prev => [...prev, { question: `Mot ${current + 1}`, userAnswer: typedAnswer.trim(), correctAnswer: correctArabic }]); }
+    if (isCorrect) { setScore(s => s + 1); playCorrectSound(); triggerPraiseD(); }
+    else { playWrongSound(); triggerShakeD(); setWrongAnswers(prev => [...prev, { question: `Mot ${current + 1}`, userAnswer: typedAnswer.trim(), correctAnswer: correctArabic }]); }
   };
   const next = () => {
     if (current + 1 >= shuffledList.length) setFinished(true);

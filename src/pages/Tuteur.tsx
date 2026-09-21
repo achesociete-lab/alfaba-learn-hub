@@ -119,6 +119,14 @@ const Tuteur = () => {
   const [busy, setBusy] = useState(false);
   const [questionCount, setQuestionCount] = useState(0);
   const [streakCount, setStreakCount] = useState(0);
+  const [praiseVisibleT, setPraiseVisibleT] = useState(false);
+  const [praiseWordT, setPraiseWordT] = useState("");
+  const PRAISES_T = ["أحسنت !", "ممتاز !", "ماشاء الله !", "رائع !"];
+  const triggerPraiseT = () => {
+    setPraiseWordT(PRAISES_T[Math.floor(Math.random() * PRAISES_T.length)]);
+    setPraiseVisibleT(true);
+    setTimeout(() => setPraiseVisibleT(false), 1100);
+  };
   const [activeHw, setActiveHw] = useState<Homework | null>(null);
   const [submission, setSubmission] = useState<Record<number, string>>({});
   const [sessionSummary, setSessionSummary] = useState<{
@@ -298,6 +306,7 @@ const Tuteur = () => {
     const isCorrect = idx === q.correct_index;
     if (isCorrect) {
       playCorrectSound();
+      triggerPraiseT();
       setStreakCount(s => {
         const next = s + 1;
         if (next > peakStreakRef.current) peakStreakRef.current = next;
@@ -868,6 +877,19 @@ const Tuteur = () => {
 
     return (
       <div className="min-h-screen bg-background flex flex-col">
+        {/* Praise word overlay */}
+        <AnimatePresence>
+          {praiseVisibleT && (
+            <motion.div
+              initial={{ opacity: 1, y: 0, scale: 0.7 }}
+              animate={{ opacity: 0, y: -60, scale: 1.3 }}
+              transition={{ duration: 1.0, ease: "easeOut" }}
+              className="fixed inset-x-0 top-1/3 flex justify-center pointer-events-none z-50"
+            >
+              <span className="font-arabic text-4xl font-bold text-primary drop-shadow-lg" dir="rtl">{praiseWordT}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
         <div className="container mx-auto pt-8 px-4 max-w-xl flex-1 flex flex-col pb-4">
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -875,7 +897,7 @@ const Tuteur = () => {
                 <Sparkles className="h-5 w-5 text-primary" />
                 <span dir="rtl" style={{ fontFamily:"Amiri, serif" }}>مساري</span>
                 {streakCount >= 3 && (
-                  <motion.span key={streakCount} initial={{ scale:1.4 }} animate={{ scale:1 }}
+                  <motion.span key={streakCount} initial={{ scale: 1.6 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300 }}
                     className="text-sm font-bold text-orange-500 flex items-center gap-0.5">
                     🔥 {streakCount}
                   </motion.span>
