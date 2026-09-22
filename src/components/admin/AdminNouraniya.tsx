@@ -69,7 +69,7 @@ const AdminNouraniya = () => {
     if (s.data) setStudents(s.data);
     if (e.data) setEnrollments(e.data);
     if (se.data) setSessions(se.data);
-    if (a.data) setAttendance(a.data);
+    if (a.data) setAttendance(a.data as unknown as Attendance[]);
     if (gr.data) setGrades(gr.data);
     if (pl.data) setParentLinks(pl.data);
     setLoading(false);
@@ -641,7 +641,7 @@ const ParentsTab = ({ students, parentLinks, onRefresh }: {
     setSaving(true);
     // Find parent user by email via profiles (fallback: they need an account first)
     const { data: profileData } = await supabase.from("profiles").select("user_id").ilike("email" as any, parentEmail.trim()).maybeSingle();
-    const { data: authData } = await supabase.rpc("get_user_id_by_email" as any, { email: parentEmail.trim() }).maybeSingle().catch(() => ({ data: null }));
+    const { data: authData } = await (supabase.rpc("get_user_id_by_email" as any, { email: parentEmail.trim() }) as any).maybeSingle().then((r: any) => r, () => ({ data: null }));
 
     const parentUserId = (profileData as any)?.user_id ?? (authData as any);
     if (!parentUserId) {
