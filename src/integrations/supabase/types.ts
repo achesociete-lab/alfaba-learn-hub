@@ -771,6 +771,54 @@ export type Database = {
           },
         ]
       }
+      nouraniya_exercise_results: {
+        Row: {
+          completed_at: string | null
+          dictation_answers: Json
+          dictation_score: number
+          id: string
+          mcq_answers: Json
+          mcq_score: number
+          session_id: string
+          student_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          dictation_answers?: Json
+          dictation_score?: number
+          id?: string
+          mcq_answers?: Json
+          mcq_score?: number
+          session_id: string
+          student_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          dictation_answers?: Json
+          dictation_score?: number
+          id?: string
+          mcq_answers?: Json
+          mcq_score?: number
+          session_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nouraniya_exercise_results_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "nouraniya_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nouraniya_exercise_results_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       nouraniya_grades: {
         Row: {
           category: string
@@ -890,6 +938,7 @@ export type Database = {
       nouraniya_sessions: {
         Row: {
           created_at: string | null
+          exercises: Json | null
           group_id: string
           id: string
           notes: string | null
@@ -898,6 +947,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          exercises?: Json | null
           group_id: string
           id?: string
           notes?: string | null
@@ -906,6 +956,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          exercises?: Json | null
           group_id?: string
           id?: string
           notes?: string | null
