@@ -56,7 +56,7 @@ const EspaceParents = () => {
       ]);
 
       if (profileRes.data) setChild(profileRes.data);
-      if (attRes.data) setAttendance(attRes.data);
+      if (attRes.data) setAttendance(attRes.data as unknown as AttendanceRecord[]);
       if (gradesRes.data) setGrades(gradesRes.data);
       if (messagesRes.data) setMessages(messagesRes.data);
 

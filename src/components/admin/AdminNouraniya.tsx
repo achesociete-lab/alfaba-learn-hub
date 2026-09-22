@@ -69,7 +69,7 @@ const AdminNouraniya = () => {
     if (s.data) setStudents(s.data);
     if (e.data) setEnrollments(e.data);
     if (se.data) setSessions(se.data);
-    if (a.data) setAttendance(a.data);
+    if (a.data) setAttendance(a.data as unknown as Attendance[]);
     if (gr.data) setGrades(gr.data);
     if (pl.data) setParentLinks(pl.data);
     setLoading(false);
@@ -629,7 +629,7 @@ const ParentsTab = ({ students, parentLinks, onRefresh }: {
     if (!parentEmail.trim() || !childId) { toast.error("Email parent et élève requis"); return; }
     setSaving(true);
     const { data: parentUserId, error: rpcErr } = await supabase
-      .rpc("get_user_id_by_email" as any, { p_email: parentEmail.trim().toLowerCase() });
+      .rpc("get_user_id_by_email" as any, { email: parentEmail.trim().toLowerCase() });
     if (rpcErr || !parentUserId) {
       toast.error("Aucun compte trouvé avec cet email. Le parent doit d'abord créer un compte sur alfasl.fr");
       setSaving(false); return;
