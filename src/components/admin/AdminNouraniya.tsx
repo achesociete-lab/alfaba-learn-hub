@@ -625,26 +625,12 @@ const ParentsTab = ({ students, parentLinks, onRefresh }: {
   const [message, setMessage] = useState("");
   const [messageChildId, setMessageChildId] = useState("");
   const [saving, setSaving] = useState(false);
-  const [allParents, setAllParents] = useState<{ id: string; email: string }[]>([]);
-
-  useEffect(() => {
-    supabase.from("profiles").select("user_id, first_name, last_name").then(({ data }) => {
-      if (data) {
-        supabase.auth.admin?.listUsers?.().catch(() => null);
-      }
-    });
-    // Load users who have parent links (show their IDs for now)
-  }, []);
-
   const linkParent = async () => {
     if (!parentEmail.trim() || !childId) { toast.error("Email parent et élève requis"); return; }
     setSaving(true);
-    // Find parent user by email via profiles (fallback: they need an account first)
-    const { data: profileData } = await supabase.from("profiles").select("user_id").ilike("email" as any, parentEmail.trim()).maybeSingle();
-    const { data: authData } = await supabase.rpc("get_user_id_by_email" as any, { email: parentEmail.trim() }).maybeSingle().catch(() => ({ data: null }));
-
-    const parentUserId = (profileData as any)?.user_id ?? (authData as any);
-    if (!parentUserId) {
+    const { data: parentUserId, error: rpcErr } = await supabase
+      .rpc("get_user_id_by_email" as any, { p_email: parentEmail.trim().toLowerCase() });
+    if (rpcErr || !parentUserId) {
       toast.error("Aucun compte trouvé avec cet email. Le parent doit d'abord créer un compte sur alfasl.fr");
       setSaving(false); return;
     }
