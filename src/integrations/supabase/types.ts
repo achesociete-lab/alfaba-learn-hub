@@ -690,6 +690,267 @@ export type Database = {
         }
         Relationships: []
       }
+      nouraniya_attendance: {
+        Row: {
+          created_at: string | null
+          delay_minutes: number | null
+          id: string
+          note: string | null
+          session_id: string
+          status: string
+          student_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          delay_minutes?: number | null
+          id?: string
+          note?: string | null
+          session_id: string
+          status?: string
+          student_id: string
+        }
+        Update: {
+          created_at?: string | null
+          delay_minutes?: number | null
+          id?: string
+          note?: string | null
+          session_id?: string
+          status?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nouraniya_attendance_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "nouraniya_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nouraniya_attendance_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      nouraniya_enrollments: {
+        Row: {
+          enrolled_at: string | null
+          group_id: string
+          id: string
+          student_id: string
+        }
+        Insert: {
+          enrolled_at?: string | null
+          group_id: string
+          id?: string
+          student_id: string
+        }
+        Update: {
+          enrolled_at?: string | null
+          group_id?: string
+          id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nouraniya_enrollments_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "nouraniya_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nouraniya_enrollments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      nouraniya_grades: {
+        Row: {
+          category: string
+          comment: string | null
+          created_at: string | null
+          evaluation_date: string
+          group_id: string
+          id: string
+          max_score: number
+          score: number
+          student_id: string
+        }
+        Insert: {
+          category?: string
+          comment?: string | null
+          created_at?: string | null
+          evaluation_date: string
+          group_id: string
+          id?: string
+          max_score?: number
+          score: number
+          student_id: string
+        }
+        Update: {
+          category?: string
+          comment?: string | null
+          created_at?: string | null
+          evaluation_date?: string
+          group_id?: string
+          id?: string
+          max_score?: number
+          score?: number
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nouraniya_grades_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "nouraniya_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nouraniya_grades_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      nouraniya_groups: {
+        Row: {
+          active: boolean
+          created_at: string | null
+          day_of_week: string | null
+          id: string
+          level: string
+          location: string | null
+          name: string
+          time_slot: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string | null
+          day_of_week?: string | null
+          id?: string
+          level?: string
+          location?: string | null
+          name: string
+          time_slot?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string | null
+          day_of_week?: string | null
+          id?: string
+          level?: string
+          location?: string | null
+          name?: string
+          time_slot?: string | null
+        }
+        Relationships: []
+      }
+      nouraniya_messages: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          read_at: string | null
+          student_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          read_at?: string | null
+          student_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          read_at?: string | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nouraniya_messages_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      nouraniya_sessions: {
+        Row: {
+          created_at: string | null
+          group_id: string
+          id: string
+          notes: string | null
+          session_date: string
+          title: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          group_id: string
+          id?: string
+          notes?: string | null
+          session_date: string
+          title?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          group_id?: string
+          id?: string
+          notes?: string | null
+          session_date?: string
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nouraniya_sessions_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "nouraniya_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parent_links: {
+        Row: {
+          child_profile_id: string
+          created_at: string | null
+          id: string
+          parent_user_id: string
+        }
+        Insert: {
+          child_profile_id: string
+          created_at?: string | null
+          id?: string
+          parent_user_id: string
+        }
+        Update: {
+          child_profile_id?: string
+          created_at?: string | null
+          id?: string
+          parent_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_links_child_profile_id_fkey"
+            columns: ["child_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       presentiel_course_assignments: {
         Row: {
           assigned_at: string
