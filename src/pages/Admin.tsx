@@ -17,10 +17,11 @@ import AdminRevenueTab from "@/components/admin/AdminRevenueTab";
 import AdminPromoTab from "@/components/admin/AdminPromoTab";
 import AdminHifz from "@/components/admin/AdminHifz";
 import AdminCartoons from "@/components/admin/AdminCartoons";
+import AdminNouraniya from "@/components/admin/AdminNouraniya";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
-import { Shield, Users, FileText, ClipboardList, BarChart3, BookOpen, Headphones, MapPin, Image as ImageIcon, TrendingUp, Tag, Tv } from "lucide-react";
+import { Shield, Users, FileText, ClipboardList, BarChart3, BookOpen, Headphones, MapPin, Image as ImageIcon, TrendingUp, Tag, Tv, GraduationCap } from "lucide-react";
 
 const Admin = () => {
   const { user, loading: authLoading } = useAuth();
@@ -116,6 +117,9 @@ const Admin = () => {
               <TabsTrigger value="cartoons" className="flex items-center gap-1.5 text-xs sm:text-sm">
                 <Tv className="h-4 w-4" /> Cartoons 📺
               </TabsTrigger>
+              <TabsTrigger value="nouraniya" className="flex items-center gap-1.5 text-xs sm:text-sm">
+                <GraduationCap className="h-4 w-4" /> Nouraniya
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview"><AdminOverview /></TabsContent>
@@ -130,6 +134,7 @@ const Admin = () => {
             <TabsContent value="recitations"><AdminRecitations /></TabsContent>
             <TabsContent value="hifz"><AdminHifz /></TabsContent>
             <TabsContent value="cartoons"><AdminCartoons /></TabsContent>
+            <TabsContent value="nouraniya"><AdminNouraniya /></TabsContent>
           </Tabs>
         </div>
       </main>

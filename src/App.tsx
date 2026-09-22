@@ -43,6 +43,7 @@ const AdminRevenueMetrics = lazy(() => import("./pages/AdminRevenueMetrics.tsx")
 const Hifz = lazy(() => import("./pages/Hifz.tsx"));
 const Famille = lazy(() => import("./pages/Famille.tsx"));
 const DessinAnimes = lazy(() => import("./pages/DessinAnimes.tsx"));
+const EspaceParents = lazy(() => import("./pages/EspaceParents.tsx"));
 
 const PageLoader = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
@@ -105,6 +106,7 @@ const App = () => (
                 <Route path="/hifz" element={<Hifz />} />
                 <Route path="/dessins-animes" element={<DessinAnimes />} />
                 <Route path="/famille" element={<Famille />} />
+                <Route path="/parents" element={<EspaceParents />} />
               </Route>
 
               <Route path="*" element={<NotFound />} />
