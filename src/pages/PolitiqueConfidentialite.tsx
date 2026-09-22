@@ -18,82 +18,119 @@ const PolitiqueConfidentialite = () => (
 
       <section className="mb-8">
         <h2 className="text-xl font-semibold text-foreground mb-3">2. Données collectées</h2>
-        <div className="space-y-4 text-muted-foreground leading-relaxed">
+        <div className="space-y-5 text-muted-foreground leading-relaxed">
+
           <div>
             <p className="font-medium text-foreground mb-1">Compte et profil</p>
-            <p>Prénom, nom, adresse e-mail, mot de passe chiffré, niveau d'apprentissage, type d'inscription (en ligne / présentiel).</p>
+            <p>Prénom, nom, adresse e-mail, mot de passe chiffré, niveau d'apprentissage (Niveau 1 / Niveau 2), type d'inscription (en ligne / présentiel).</p>
           </div>
+
           <div>
-            <p className="font-medium text-foreground mb-1">Progression pédagogique (cours en ligne)</p>
-            <p>Avancement dans les leçons, scores aux exercices et tests de placement, historique des sessions مساري, enregistrements audio (module Hifd uniquement, stockés de façon sécurisée).</p>
+            <p className="font-medium text-foreground mb-1">Module Niveau 1 & Niveau 2 (cours en ligne)</p>
+            <p>Progression dans les leçons, scores aux exercices et QCM, résultats du test de placement N1→N2, historique des sessions.</p>
           </div>
+
           <div>
-            <p className="font-medium text-foreground mb-1">Module Nouraniya — cours en présentiel</p>
-            <p>Les données suivantes sont collectées dans le cadre du suivi pédagogique des cours d'arabe en présentiel (méthode Nouraniya) :</p>
-            <ul className="list-disc list-inside mt-2 space-y-1">
-              <li>Groupe(s) d'appartenance et planning des séances</li>
-              <li>Présences, absences et retards par séance, avec éventuelle note du professeur</li>
-              <li>Notes et appréciations par évaluation (récitation, écriture, lecture, comportement, note globale)</li>
-              <li>Messages du professeur à destination des parents/tuteurs légaux</li>
-              <li>Lien entre le compte d'un parent/tuteur légal et le profil de l'élève</li>
-            </ul>
-            <p className="mt-2">Ces données sont accessibles exclusivement au professeur et, pour ce qui concerne leur enfant, aux parents/tuteurs légaux liés.</p>
+            <p className="font-medium text-foreground mb-1">Module مساري (tuteur IA)</p>
+            <p>Transcription des sessions de questions-réponses (lettres arabes), scores par session, lettres faibles et maîtrisées, historique des devoirs générés et leurs corrections, score moyen et streak quotidien.</p>
           </div>
+
+          <div>
+            <p className="font-medium text-foreground mb-1">Module Cours présentiel (en ligne)</p>
+            <p>Cours assignés par le professeur, progression dans les exercices (QCM, écriture, dictée), soumissions de travaux (photos), corrections et commentaires du professeur.</p>
+          </div>
+
+          <div>
+            <p className="font-medium text-foreground mb-1">Module Hifd al-Qur'ān</p>
+            <p>Formulaire de candidature (prénom, nom, contact, motivation), statut d'activation, enregistrements audio de récitations (stockés de façon sécurisée), notes et annotations du professeur sur chaque récitation, planning des séances, rappels automatiques par e-mail.</p>
+          </div>
+
+          <div>
+            <p className="font-medium text-foreground mb-1">Module Nouraniya (cours d'arabe en présentiel)</p>
+            <p>Groupe(s) d'appartenance et planning des séances, présences / absences / retards par séance avec note éventuelle du professeur, notes et appréciations par évaluation (récitation, écriture, lecture, comportement, note globale), messages du professeur à destination des parents/tuteurs légaux, lien entre le compte parent et le profil de l'élève.</p>
+            <p className="mt-1">Ces données sont accessibles uniquement au professeur et, pour les informations de leur enfant, aux parents/tuteurs légaux liés.</p>
+          </div>
+
+          <div>
+            <p className="font-medium text-foreground mb-1">Module Dessins animés</p>
+            <p>Historique de visionnage (séries et épisodes consultés) pour personnaliser les recommandations. Aucun profil comportemental transmis à des tiers.</p>
+          </div>
+
+          <div>
+            <p className="font-medium text-foreground mb-1">Module Famille</p>
+            <p>Profils des membres rattachés (prénom, niveau), partage de l'abonnement, progression individuelle de chaque profil famille.</p>
+          </div>
+
           <div>
             <p className="font-medium text-foreground mb-1">Données de paiement</p>
-            <p>Les paiements sont traités par un prestataire certifié PCI-DSS. Aucune donnée bancaire n'est stockée sur nos serveurs.</p>
+            <p>Les paiements sont traités par un prestataire certifié PCI-DSS (Stripe). Aucune donnée bancaire n'est stockée sur nos serveurs.</p>
           </div>
+
         </div>
       </section>
 
       <section className="mb-8">
         <h2 className="text-xl font-semibold text-foreground mb-3">3. Bases légales du traitement</h2>
         <div className="space-y-2 text-muted-foreground leading-relaxed">
-          <p><span className="font-medium text-foreground">Exécution du contrat :</span> gestion de votre compte, accès aux cours, suivi des paiements.</p>
-          <p><span className="font-medium text-foreground">Intérêt légitime pédagogique :</span> suivi des présences, notes et progression dans le module Nouraniya, communication professeur–parents dans le cadre du suivi de l'élève.</p>
-          <p><span className="font-medium text-foreground">Consentement :</span> enregistrements audio (module Hifd), cookies non essentiels si applicables.</p>
+          <p><span className="font-medium text-foreground">Exécution du contrat :</span> gestion du compte, accès aux cours, suivi de la progression, gestion des paiements et abonnements.</p>
+          <p><span className="font-medium text-foreground">Intérêt légitime pédagogique :</span> suivi des présences, notes, progression et communication professeur–parents dans le cadre du suivi de l'élève (module Nouraniya), personnalisation du parcours pédagogique (مساري, Niveau 2).</p>
+          <p><span className="font-medium text-foreground">Consentement :</span> enregistrements audio (module Hifd), rappels e-mail optionnels.</p>
+          <p><span className="font-medium text-foreground">Obligation légale :</span> conservation des données de facturation conformément aux obligations comptables.</p>
         </div>
       </section>
 
       <section className="mb-8">
         <h2 className="text-xl font-semibold text-foreground mb-3">4. Durée de conservation</h2>
         <div className="space-y-2 text-muted-foreground leading-relaxed">
-          <p><span className="font-medium text-foreground">Données de compte :</span> conservées pendant la durée de l'abonnement actif, puis 3 ans après la dernière activité ou à la demande de suppression.</p>
-          <p><span className="font-medium text-foreground">Données du module Nouraniya</span> (présences, notes, messages) : conservées pendant la durée de la scolarité de l'élève sur la plateforme, puis supprimées dans un délai de 12 mois après la fin de l'inscription, sauf demande de suppression anticipée.</p>
-          <p><span className="font-medium text-foreground">Enregistrements audio :</span> conservés le temps du suivi pédagogique, supprimables à la demande.</p>
+          <p><span className="font-medium text-foreground">Données de compte et de progression :</span> durée de l'abonnement actif, puis 3 ans après la dernière activité ou à la demande de suppression.</p>
+          <p><span className="font-medium text-foreground">Module Nouraniya</span> (présences, notes, messages) : durée de la scolarité sur la plateforme, puis supprimées sous 12 mois après la fin de l'inscription, sauf demande anticipée.</p>
+          <p><span className="font-medium text-foreground">Enregistrements audio (Hifd) :</span> durée du suivi pédagogique, supprimables à la demande.</p>
+          <p><span className="font-medium text-foreground">Données de facturation :</span> 10 ans conformément aux obligations légales françaises.</p>
         </div>
       </section>
 
       <section className="mb-8">
-        <h2 className="text-xl font-semibold text-foreground mb-3">5. Vos droits (RGPD)</h2>
+        <h2 className="text-xl font-semibold text-foreground mb-3">5. Partage des données</h2>
+        <p className="text-muted-foreground leading-relaxed">
+          Vos données ne sont pas vendues ni transmises à des tiers à des fins commerciales. Elles peuvent être partagées uniquement avec :
+        </p>
+        <ul className="list-disc list-inside text-muted-foreground space-y-1 mt-2">
+          <li>Nos sous-traitants techniques (hébergement Supabase/AWS EU, paiement Stripe) liés par des garanties de confidentialité</li>
+          <li>Le professeur ALFASL, dans le cadre du suivi pédagogique</li>
+          <li>Les parents/tuteurs légaux liés, pour les données de leur enfant (module Nouraniya)</li>
+        </ul>
+      </section>
+
+      <section className="mb-8">
+        <h2 className="text-xl font-semibold text-foreground mb-3">6. Vos droits (RGPD)</h2>
         <p className="text-muted-foreground leading-relaxed mb-3">
-          Conformément au Règlement Général sur la Protection des Données (RGPD), vous disposez des droits suivants sur vos données personnelles :
+          Conformément au RGPD (Règlement UE 2016/679), vous disposez des droits suivants :
         </p>
         <ul className="list-disc list-inside text-muted-foreground space-y-1 mb-3">
-          <li><span className="font-medium text-foreground">Droit d'accès :</span> obtenir une copie de vos données</li>
-          <li><span className="font-medium text-foreground">Droit de rectification :</span> corriger des données inexactes</li>
-          <li><span className="font-medium text-foreground">Droit à l'effacement :</span> demander la suppression de vos données</li>
-          <li><span className="font-medium text-foreground">Droit à la portabilité :</span> recevoir vos données dans un format structuré</li>
-          <li><span className="font-medium text-foreground">Droit d'opposition :</span> vous opposer à certains traitements fondés sur l'intérêt légitime</li>
-          <li><span className="font-medium text-foreground">Droit à la limitation :</span> demander la suspension temporaire d'un traitement</li>
+          <li><span className="font-medium text-foreground">Accès :</span> obtenir une copie de vos données</li>
+          <li><span className="font-medium text-foreground">Rectification :</span> corriger des informations inexactes</li>
+          <li><span className="font-medium text-foreground">Effacement :</span> demander la suppression de vos données</li>
+          <li><span className="font-medium text-foreground">Portabilité :</span> recevoir vos données dans un format structuré</li>
+          <li><span className="font-medium text-foreground">Opposition :</span> vous opposer aux traitements fondés sur l'intérêt légitime</li>
+          <li><span className="font-medium text-foreground">Limitation :</span> demander la suspension temporaire d'un traitement</li>
+          <li><span className="font-medium text-foreground">Retrait du consentement :</span> à tout moment pour les traitements basés sur le consentement</li>
         </ul>
         <p className="text-muted-foreground leading-relaxed">
-          Pour exercer ces droits, contactez-nous à{" "}
-          <a href="mailto:contact@alfasl.fr" className="text-primary hover:underline">contact@alfasl.fr</a>.
-          Nous répondrons dans un délai maximum de 30 jours. En cas de désaccord, vous pouvez introduire une réclamation auprès de la{" "}
+          Pour exercer ces droits : <a href="mailto:contact@alfasl.fr" className="text-primary hover:underline">contact@alfasl.fr</a> — réponse sous 30 jours.
+          Vous pouvez également introduire une réclamation auprès de la{" "}
           <a href="https://www.cnil.fr" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">CNIL</a>.
         </p>
       </section>
 
       <section className="mb-8">
-        <h2 className="text-xl font-semibold text-foreground mb-3">6. Sécurité des données</h2>
+        <h2 className="text-xl font-semibold text-foreground mb-3">7. Sécurité</h2>
         <p className="text-muted-foreground leading-relaxed">
-          Les données sont hébergées en Europe (Supabase / AWS eu-west). L'accès est protégé par authentification, chiffrement TLS en transit et des politiques de contrôle d'accès strictes (RLS). Seules les personnes autorisées ont accès aux données.
+          Les données sont hébergées en Europe (Supabase / AWS eu-west). Accès protégé par authentification, chiffrement TLS en transit, contrôles d'accès stricts (Row Level Security). Seules les personnes autorisées accèdent aux données qui les concernent.
         </p>
       </section>
 
       <section className="mb-8">
-        <h2 className="text-xl font-semibold text-foreground mb-3">7. Cookies</h2>
+        <h2 className="text-xl font-semibold text-foreground mb-3">8. Cookies</h2>
         <p className="text-muted-foreground leading-relaxed">
           Cookies techniques uniquement (session, préférences d'affichage). Aucun cookie publicitaire ou de traçage tiers.
         </p>
