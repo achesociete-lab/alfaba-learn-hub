@@ -16,7 +16,7 @@ interface McqQuestion { question: string; display: string; choices: string[]; co
 interface SessionExercises { letters: string; instructions: string; mcq: McqQuestion[]; dictation_words: string; audio_url: string; }
 interface Session { id: string; group_id: string; session_date: string; title: string | null; exercises: SessionExercises | null; }
 interface Group { id: string; name: string; }
-interface ExerciseResult { session_id: string; mcq_score: number; dictation_score: number; completed_at: string; }
+interface ExerciseResult { session_id: string; mcq_score: number; dictation_score: number; completed_at: string | null; }
 
 const speak = (text: string) => {
   if (!window.speechSynthesis) return;

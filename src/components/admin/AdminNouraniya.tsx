@@ -24,7 +24,7 @@ interface StudentProfile { user_id: string; first_name: string; last_name: strin
 interface Enrollment { id: string; student_id: string; group_id: string; }
 interface McqQuestion { question: string; display: string; choices: string[]; correct_index: number; explanation: string; }
 interface SessionExercises { letters: string; instructions: string; mcq: McqQuestion[]; dictation_words: string; audio_url: string; }
-interface Session { id: string; group_id: string; session_date: string; title: string | null; notes: string | null; exercises?: SessionExercises; }
+interface Session { id: string; group_id: string; session_date: string; title: string | null; notes: string | null; exercises?: SessionExercises | null; }
 interface Attendance { id: string; session_id: string; student_id: string; status: "present" | "absent" | "retard"; delay_minutes: number | null; note: string | null; }
 interface Grade { id: string; student_id: string; group_id: string; evaluation_date: string; category: string; score: number; max_score: number; comment: string | null; }
 interface ParentLink { id: string; parent_user_id: string; child_profile_id: string; }
@@ -70,7 +70,7 @@ const AdminNouraniya = () => {
     if (g.data) setGroups(g.data);
     if (s.data) setStudents(s.data);
     if (e.data) setEnrollments(e.data);
-    if (se.data) setSessions(se.data);
+    if (se.data) setSessions(se.data as unknown as Session[]);
     if (a.data) setAttendance(a.data as unknown as Attendance[]);
     if (gr.data) setGrades(gr.data);
     if (pl.data) setParentLinks(pl.data);
@@ -378,7 +378,7 @@ const SeancesTab = ({ groups, students, enrollments, sessions, attendance, onRef
   const saveExercises = async () => {
     if (!selectedSession) return;
     setSaving(true);
-    const { error } = await supabase.from("nouraniya_sessions").update({ exercises }).eq("id", selectedSession);
+    const { error } = await supabase.from("nouraniya_sessions").update({ exercises: exercises as any }).eq("id", selectedSession);
     if (error) toast.error("Erreur sauvegarde exercices");
     else { toast.success("Exercices sauvegardés ✓"); onRefresh(); }
     setSaving(false);

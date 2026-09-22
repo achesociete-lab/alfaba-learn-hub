@@ -13,7 +13,7 @@ interface Subscription {
   id: string;
   plan: string;
   status: string;
-  current_period_end: string;
+  current_period_end: string | null;
   stripe_customer_id: string | null;
 }
 
