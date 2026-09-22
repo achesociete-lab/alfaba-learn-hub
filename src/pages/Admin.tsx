@@ -7,8 +7,6 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AdminOverview from "@/components/admin/AdminOverview";
 import AdminStudents from "@/components/admin/AdminStudents";
-import AdminHomework from "@/components/admin/AdminHomework";
-import AdminAttendance from "@/components/admin/AdminAttendance";
 import AdminCourses from "@/components/admin/AdminCourses";
 import AdminRecitations from "@/components/admin/AdminRecitations";
 import AdminPresentielCourses from "@/components/admin/AdminPresentielCourses";
@@ -21,7 +19,7 @@ import AdminNouraniya from "@/components/admin/AdminNouraniya";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
-import { Shield, Users, FileText, ClipboardList, BarChart3, BookOpen, Headphones, MapPin, Image as ImageIcon, TrendingUp, Tag, Tv, GraduationCap } from "lucide-react";
+import { Shield, Users, BarChart3, BookOpen, Headphones, MapPin, Image as ImageIcon, TrendingUp, Tag, Tv, GraduationCap } from "lucide-react";
 
 const Admin = () => {
   const { user, loading: authLoading } = useAuth();
@@ -71,7 +69,7 @@ const Admin = () => {
               <Shield className="h-6 w-6 text-primary" />
               <h1 className="text-3xl font-bold text-foreground">Espace Professeur</h1>
             </div>
-            <p className="text-muted-foreground">Gérez vos cours, élèves, devoirs, émargement et revenus.</p>
+            <p className="text-muted-foreground">Gérez vos cours, élèves, Nouraniya et revenus.</p>
           </motion.div>
 
           <Tabs defaultValue="overview" className="space-y-6">
@@ -102,12 +100,6 @@ const Admin = () => {
               <TabsTrigger value="corrections" className="flex items-center gap-1.5 text-xs sm:text-sm">
                 <ImageIcon className="h-4 w-4" /> Corrections
               </TabsTrigger>
-              <TabsTrigger value="homework" className="flex items-center gap-1.5 text-xs sm:text-sm">
-                <FileText className="h-4 w-4" /> Devoirs
-              </TabsTrigger>
-              <TabsTrigger value="attendance" className="flex items-center gap-1.5 text-xs sm:text-sm">
-                <ClipboardList className="h-4 w-4" /> Émargement
-              </TabsTrigger>
               <TabsTrigger value="recitations" className="flex items-center gap-1.5 text-xs sm:text-sm">
                 <Headphones className="h-4 w-4" /> Récitations
               </TabsTrigger>
@@ -129,8 +121,6 @@ const Admin = () => {
             <TabsContent value="students"><AdminStudents /></TabsContent>
             <TabsContent value="presentiel"><AdminPresentielCourses /></TabsContent>
             <TabsContent value="corrections"><AdminPresentielSubmissions /></TabsContent>
-            <TabsContent value="homework"><AdminHomework /></TabsContent>
-            <TabsContent value="attendance"><AdminAttendance /></TabsContent>
             <TabsContent value="recitations"><AdminRecitations /></TabsContent>
             <TabsContent value="hifz"><AdminHifz /></TabsContent>
             <TabsContent value="cartoons"><AdminCartoons /></TabsContent>
