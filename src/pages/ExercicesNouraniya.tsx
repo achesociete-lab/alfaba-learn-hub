@@ -56,7 +56,7 @@ const ExercicesNouraniya = () => {
       ]);
 
       const sessionsWithEx = (sessRes.data ?? []).filter((s: any) => s.exercises && (s.exercises.mcq?.length > 0 || s.exercises.dictation_words));
-      setSessions(sessionsWithEx as Session[]);
+      setSessions(sessionsWithEx as unknown as Session[]);
       setGroups(grpRes.data ?? []);
       setResults(resRes.data ?? []);
       setLoading(false);
