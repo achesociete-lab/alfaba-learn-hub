@@ -625,6 +625,26 @@ const ParentsTab = ({ students, parentLinks, onRefresh }: {
   const [message, setMessage] = useState("");
   const [messageChildId, setMessageChildId] = useState("");
   const [saving, setSaving] = useState(false);
+  const [deleteStudentId, setDeleteStudentId] = useState("");
+
+  const deleteStudentData = async () => {
+    if (!deleteStudentId) { toast.error("Choisissez un élève"); return; }
+    const s = students.find(st => st.user_id === deleteStudentId);
+    if (!confirm(`Supprimer TOUTES les données Nouraniya de ${s?.first_name} ${s?.last_name} ? (présences, notes, messages, liens parents)\nCette action est irréversible.`)) return;
+    setSaving(true);
+    await Promise.all([
+      supabase.from("nouraniya_attendance").delete().eq("student_id", deleteStudentId),
+      supabase.from("nouraniya_grades").delete().eq("student_id", deleteStudentId),
+      supabase.from("nouraniya_messages").delete().eq("student_id", deleteStudentId),
+      supabase.from("nouraniya_enrollments").delete().eq("student_id", deleteStudentId),
+      supabase.from("parent_links").delete().eq("child_profile_id", deleteStudentId),
+    ]);
+    toast.success("Données supprimées ✓");
+    setDeleteStudentId("");
+    onRefresh();
+    setSaving(false);
+  };
+
   const linkParent = async () => {
     if (!parentEmail.trim() || !childId) { toast.error("Email parent et élève requis"); return; }
     setSaving(true);
@@ -696,6 +716,30 @@ const ParentsTab = ({ students, parentLinks, onRefresh }: {
           </CardContent>
         </Card>
       </div>
+
+      {/* Suppression données RGPD */}
+      <Card className="border-destructive/30">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2 text-destructive">
+            <Trash2 className="h-4 w-4" /> Suppression des données (RGPD)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-xs text-muted-foreground">Supprime toutes les données Nouraniya d'un élève : présences, notes, messages et liens parents. Irréversible.</p>
+          <div className="flex items-end gap-2">
+            <div className="flex-1 space-y-1">
+              <Label>Élève</Label>
+              <Select value={deleteStudentId} onValueChange={setDeleteStudentId}>
+                <SelectTrigger><SelectValue placeholder="Choisir l'élève…" /></SelectTrigger>
+                <SelectContent>{students.map(s => <SelectItem key={s.user_id} value={s.user_id}>{s.first_name} {s.last_name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <Button size="sm" variant="destructive" onClick={deleteStudentData} disabled={saving || !deleteStudentId}>
+              <Trash2 className="h-4 w-4 mr-1" /> Supprimer
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="space-y-2">
         <p className="text-sm font-medium">Liens parents actifs ({parentLinks.length})</p>

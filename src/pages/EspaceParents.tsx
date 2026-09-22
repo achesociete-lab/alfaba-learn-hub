@@ -253,6 +253,13 @@ const EspaceParents = () => {
               </Card>
             </div>
           </div>
+          {/* Notice RGPD */}
+          <p className="text-xs text-muted-foreground mt-8 border-t pt-4">
+            Les données affichées (présences, notes, messages) sont traitées par ALFASL dans le cadre du suivi pédagogique de votre enfant.
+            Conformément au RGPD, vous pouvez demander l'accès, la rectification ou la suppression de ces données à{" "}
+            <a href="mailto:contact@alfasl.fr" className="text-primary hover:underline">contact@alfasl.fr</a>.{" "}
+            <a href="/politique-de-confidentialite" className="text-primary hover:underline">Politique de confidentialité</a>
+          </p>
         </div>
       </main>
       <Footer />
