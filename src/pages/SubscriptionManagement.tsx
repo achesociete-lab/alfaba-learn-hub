@@ -88,7 +88,7 @@ export default function SubscriptionManagement() {
                   </div>
                   <p className="text-2xl font-bold capitalize text-primary mb-4">{subscription.plan}</p>
                   <p className="text-sm text-muted-foreground">
-                    Renouvellement: {new Date(subscription.current_period_end).toLocaleDateString('fr-FR')}
+                    Renouvellement: {subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString('fr-FR') : '—'}
                   </p>
                 </div>
 

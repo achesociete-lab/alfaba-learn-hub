@@ -243,7 +243,7 @@ const EspaceParents = () => {
                       <div key={m.id} className={`p-2.5 rounded-lg text-sm ${!m.read_at ? "bg-primary/8 border border-primary/20" : "bg-muted/40"}`}>
                         <p>{m.content}</p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {new Date(m.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}
+                          {m.created_at ? new Date(m.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }) : "—"}
                           {!m.read_at && <span className="ml-2 text-primary font-medium">Nouveau</span>}
                         </p>
                       </div>
