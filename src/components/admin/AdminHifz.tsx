@@ -289,6 +289,7 @@ function SlotsTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] }) {
     if (!selectedDay || !newTime) return;
     setLoading(true);
     const { data: u } = await supabase.auth.getUser();
+    if (!u.user) { setLoading(false); return; }
     const end = newTime.split(":");
     const endTime = `${String(+end[0] + 1).padStart(2, "0")}:${end[1]}`;
     const { error } = await supabase.from("admin_hifz_slots").insert({
@@ -296,7 +297,7 @@ function SlotsTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] }) {
       start_time: newTime,
       end_time: endTime,
       capacity: 1,
-      created_by: u.user?.id,
+      created_by: u.user.id,
     });
     setLoading(false);
     if (error) return toast({ title: "Erreur", description: error.message, variant: "destructive" });
@@ -534,6 +535,7 @@ function SessionsTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
     // Recrée le créneau pour le rendre à nouveau disponible
     if (s.session_date >= format(new Date(), "yyyy-MM-dd")) {
       const { data: u } = await supabase.auth.getUser();
+      if (!u.user) return;
       await supabase.from("admin_hifz_slots").insert({
         slot_date: s.session_date,
         start_time: s.session_time,
@@ -541,7 +543,7 @@ function SessionsTab({ toast }: { toast: ReturnType<typeof useToast>["toast"] })
           ? "00:00:00"
           : `${String(parseInt(s.session_time.slice(0, 2)) + 1).padStart(2, "0")}:00:00`,
         capacity: 1,
-        created_by: u.user?.id,
+        created_by: u.user.id,
       });
     }
 

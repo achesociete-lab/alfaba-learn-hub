@@ -15,7 +15,7 @@ const AdminOverview = () => {
     const fetch = async () => {
       const [profilesRes, recitRes, sessRes, enrollRes] = await Promise.all([
         supabase.from("profiles").select("level, type_eleve"),
-        supabase.from("quran_recitations").select("status").eq("status", "en attente"),
+        supabase.from("quran_recitations").select("status").eq("status", "en_attente"),
         supabase.from("nouraniya_sessions").select("id", { count: "exact", head: true }),
         supabase.from("nouraniya_enrollments").select("student_id"),
       ]);

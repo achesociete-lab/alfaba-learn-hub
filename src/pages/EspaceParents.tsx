@@ -14,7 +14,7 @@ interface AttendanceRecord { id: string; session_id: string; student_id: string;
 interface Session { id: string; group_id: string; session_date: string; title: string | null; }
 interface Group { id: string; name: string; level: string; day_of_week: string | null; time_slot: string | null; }
 interface Grade { id: string; evaluation_date: string; category: string; score: number; max_score: number; comment: string | null; }
-interface Message { id: string; content: string; read_at: string | null; created_at: string; }
+interface Message { id: string; content: string; read_at: string | null; created_at: string | null; }
 
 const CATEGORY_LABELS: Record<string, string> = {
   recitation: "Récitation", ecriture: "Écriture", lecture: "Lecture",
@@ -243,7 +243,7 @@ const EspaceParents = () => {
                       <div key={m.id} className={`p-2.5 rounded-lg text-sm ${!m.read_at ? "bg-primary/8 border border-primary/20" : "bg-muted/40"}`}>
                         <p>{m.content}</p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {new Date(m.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}
+                          {m.created_at ? new Date(m.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }) : "—"}
                           {!m.read_at && <span className="ml-2 text-primary font-medium">Nouveau</span>}
                         </p>
                       </div>
