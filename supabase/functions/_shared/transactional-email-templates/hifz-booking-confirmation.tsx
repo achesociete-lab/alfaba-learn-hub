@@ -26,7 +26,7 @@ const HifzBookingConfirmationEmail = ({ studentName, date, time, message, sessio
   return (
     <Html lang="fr" dir="ltr">
       <Head />
-      <Preview>Réservation Hifd confirmée — {date} {time}</Preview>
+      <Preview>{`Réservation Hifd confirmée — ${date || ''} ${time || ''}`}</Preview>
       <Body style={main}>
         <Container style={container}>
           <Section style={{ ...header, backgroundColor: meta.color }}>

@@ -16,7 +16,7 @@ interface Props {
 const HifzRescheduleProposalEmail = ({ studentName, sessionDate, sessionTime, proposedDate, proposedTime, message }: Props) => (
   <Html lang="fr" dir="ltr">
     <Head />
-    <Preview>📅 Votre professeur propose de reporter votre séance du {sessionDate}</Preview>
+    <Preview>{`📅 Votre professeur propose de reporter votre séance du ${sessionDate || ''}`}</Preview>
     <Body style={main}>
       <Container style={container}>
         <Section style={header}>

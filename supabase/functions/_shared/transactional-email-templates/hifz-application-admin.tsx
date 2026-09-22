@@ -13,7 +13,7 @@ interface Props {
 const HifzApplicationAdminEmail = ({ prenom, niveauArabe, disponibilites, emailOuTelephone, message }: Props) => (
   <Html lang="fr" dir="ltr">
     <Head />
-    <Preview>Nouvelle demande Hifd — {prenom}</Preview>
+    <Preview>{`Nouvelle demande Hifd — ${prenom || ''}`}</Preview>
     <Body style={{ fontFamily: 'Arial, sans-serif', backgroundColor: '#fdf8ef' }}>
       <Container style={{ padding: '24px', maxWidth: '560px', margin: '0 auto' }}>
         <Heading style={{ color: '#15803d', marginBottom: 4 }}>Nouvelle demande Hifd al-Qur'ān</Heading>

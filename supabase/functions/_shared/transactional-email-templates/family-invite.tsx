@@ -10,7 +10,7 @@ interface Props {
 const FamilyInviteEmail = ({ ownerName, inviteUrl }: Props) => (
   <Html lang="fr" dir="ltr">
     <Head />
-    <Preview>{ownerName} vous invite à rejoindre la famille ALFASL</Preview>
+    <Preview>{`${ownerName || ''} vous invite à rejoindre la famille ALFASL`}</Preview>
     <Body style={{ fontFamily: 'Arial, sans-serif', backgroundColor: '#fdf8ef' }}>
       <Container style={{ padding: '32px', maxWidth: '560px', margin: '0 auto' }}>
         <Heading style={{ color: '#15803d', marginBottom: 4 }}>

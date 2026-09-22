@@ -49,7 +49,7 @@ const HifzSessionEvaluatedEmail = ({ studentName, date, sessionType, sessionType
   return (
     <Html lang="fr" dir="ltr">
       <Head />
-      <Preview>Résultat de ta séance Hifd — {validated}/{total} validé(s)</Preview>
+      <Preview>{`Résultat de ta séance Hifd — ${validated}/${total} validé(s)`}</Preview>
       <Body style={main}>
         <Container style={container}>
           <Section style={{ ...header, backgroundColor: meta.color }}>

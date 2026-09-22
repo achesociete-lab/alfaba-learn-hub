@@ -17,7 +17,7 @@ interface Props {
 const AdminRelanceSummaryEmail = ({ students = [], successCount = 0, date = '' }: Props) => (
   <Html lang="fr" dir="ltr">
     <Head />
-    <Preview>{successCount} email(s) de relance envoyés — {date}</Preview>
+    <Preview>{`${successCount} email(s) de relance envoyés — ${date}`}</Preview>
     <Body style={{ fontFamily: 'Arial, sans-serif', backgroundColor: '#fdf8ef' }}>
       <Container style={{ padding: '24px', maxWidth: '560px', margin: '0 auto' }}>
         <Heading style={{ color: '#15803d', marginBottom: 4 }}>Récapitulatif des relances</Heading>
