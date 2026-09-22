@@ -15,7 +15,7 @@ const publicNavLinks = [
   { to: "/coran", label: "Coran" },
 ];
 
-const getAuthNavLinks = (level: string | null, typeEleve: string | null, hasHifzAccess = false, hasFamilleAccess = false, isAdmin = false, isParent = false) => {
+const getAuthNavLinks = (level: string | null, typeEleve: string | null, hasHifzAccess = false, hasFamilleAccess = false, isAdmin = false, isParent = false, isNouraniyaStudent = false) => {
   // Présentiel : accès limité
   if (typeEleve === "presentiel") {
     const links = [{ to: "/cours-presentiel", label: "Espace Élève" }];
@@ -43,6 +43,7 @@ const getAuthNavLinks = (level: string | null, typeEleve: string | null, hasHifz
   links.push({ to: "/tuteur", label: "🎓 مساري" });
   links.push({ to: "/dessins-animes", label: "📺 رسوم متحركة" });
   if (hasFamilleAccess) links.push({ to: "/famille", label: "👨‍👩‍👧‍👦 Ma famille" });
+  if (isNouraniyaStudent) links.push({ to: "/exercices-nouraniya", label: "✏️ Exercices" });
   if (isParent) links.push({ to: "/parents", label: "👨‍👧 Espace Parents" });
   links.push({ to: "/dashboard", label: "Espace Élève" });
 
@@ -58,21 +59,21 @@ const Navbar = () => {
   const [userLevel, setUserLevel] = useState<string | null>(null);
   const [userType, setUserType] = useState<string | null>(null);
   const [isParent, setIsParent] = useState(false);
+  const [isNouraniyaStudent, setIsNouraniyaStudent] = useState(false);
 
   useEffect(() => {
-    if (!user) { setUserLevel(null); setUserType(null); setIsParent(false); return; }
+    if (!user) { setUserLevel(null); setUserType(null); setIsParent(false); setIsNouraniyaStudent(false); return; }
     supabase.from("profiles").select("level,type_eleve").eq("user_id", user.id).single()
       .then(({ data }) => {
-        if (data) {
-          setUserLevel(data.level);
-          setUserType(data.type_eleve);
-        }
+        if (data) { setUserLevel(data.level); setUserType(data.type_eleve); }
       });
     supabase.from("parent_links").select("id", { count: "exact", head: true }).eq("parent_user_id", user.id)
       .then(({ count }) => setIsParent((count ?? 0) > 0));
+    supabase.from("nouraniya_enrollments").select("id", { count: "exact", head: true }).eq("student_id", user.id)
+      .then(({ count }) => setIsNouraniyaStudent((count ?? 0) > 0));
   }, [user]);
 
-  const navLinks = user ? getAuthNavLinks(userLevel, userType, isHifz, isFamille, isAdmin, isParent) : publicNavLinks;
+  const navLinks = user ? getAuthNavLinks(userLevel, userType, isHifz, isFamille, isAdmin, isParent, isNouraniyaStudent) : publicNavLinks;
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,8 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  Users, Plus, Trash2, Calendar, ClipboardList, Star, MessageSquare,
-  Check, X, Clock, Pencil, Save, ChevronDown, ChevronUp, UserPlus, Send,
+  Users, Plus, Trash2, ClipboardList, Star, MessageSquare,
+  Check, X, Clock, Save, ChevronDown, ChevronUp, UserPlus, Send, BookOpenCheck,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -22,7 +22,9 @@ interface Group {
 }
 interface StudentProfile { user_id: string; first_name: string; last_name: string; level: string; }
 interface Enrollment { id: string; student_id: string; group_id: string; }
-interface Session { id: string; group_id: string; session_date: string; title: string | null; notes: string | null; }
+interface McqQuestion { question: string; display: string; choices: string[]; correct_index: number; explanation: string; }
+interface SessionExercises { letters: string; instructions: string; mcq: McqQuestion[]; dictation_words: string; audio_url: string; }
+interface Session { id: string; group_id: string; session_date: string; title: string | null; notes: string | null; exercises?: SessionExercises; }
 interface Attendance { id: string; session_id: string; student_id: string; status: "present" | "absent" | "retard"; delay_minutes: number | null; note: string | null; }
 interface Grade { id: string; student_id: string; group_id: string; evaluation_date: string; category: string; score: number; max_score: number; comment: string | null; }
 interface ParentLink { id: string; parent_user_id: string; child_profile_id: string; }
@@ -288,6 +290,11 @@ const SeancesTab = ({ groups, students, enrollments, sessions, attendance, onRef
   const [newSession, setNewSession] = useState({ group_id: "", session_date: new Date().toISOString().slice(0, 10), title: "", notes: "" });
   const [saving, setSaving] = useState(false);
   const [localAttendance, setLocalAttendance] = useState<Record<string, { status: "present" | "absent" | "retard"; delay_minutes: number | null; note: string }>>({});
+  const [showExercises, setShowExercises] = useState(false);
+  const [exerciseResults, setExerciseResults] = useState<Record<string, number>>({}); // session_id -> nb completions
+  const [exercises, setExercises] = useState<SessionExercises>({ letters: "", instructions: "", mcq: [], dictation_words: "", audio_url: "" });
+
+  const emptyMcq = (): McqQuestion => ({ question: "", display: "", choices: ["", "", "", ""], correct_index: 0, explanation: "" });
 
   const filteredSessions = sessions.filter(s => selectedGroup === "all" || s.group_id === selectedGroup);
 
@@ -356,6 +363,27 @@ const SeancesTab = ({ groups, students, enrollments, sessions, attendance, onRef
 
   const groupName = (gid: string) => groups.find(g => g.id === gid)?.name ?? gid;
 
+  // Quand la séance sélectionnée change, charger ses exercices et résultats
+  const loadSessionExtras = useCallback(async (sid: string) => {
+    const s = sessions.find(s => s.id === sid);
+    if (s?.exercises && Object.keys(s.exercises).length > 0) {
+      setExercises({ letters: s.exercises.letters ?? "", instructions: s.exercises.instructions ?? "", mcq: s.exercises.mcq ?? [], dictation_words: s.exercises.dictation_words ?? "", audio_url: s.exercises.audio_url ?? "" });
+    } else {
+      setExercises({ letters: "", instructions: "", mcq: [], dictation_words: "", audio_url: "" });
+    }
+    const { data } = await supabase.from("nouraniya_exercise_results").select("student_id").eq("session_id", sid);
+    setExerciseResults(prev => ({ ...prev, [sid]: data?.length ?? 0 }));
+  }, [sessions]);
+
+  const saveExercises = async () => {
+    if (!selectedSession) return;
+    setSaving(true);
+    const { error } = await supabase.from("nouraniya_sessions").update({ exercises }).eq("id", selectedSession);
+    if (error) toast.error("Erreur sauvegarde exercices");
+    else { toast.success("Exercices sauvegardés ✓"); onRefresh(); }
+    setSaving(false);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2 justify-between">
@@ -414,7 +442,7 @@ const SeancesTab = ({ groups, students, enrollments, sessions, attendance, onRef
             const active = selectedSession === s.id;
             return (
               <Card key={s.id} className={`cursor-pointer transition-all ${active ? "border-primary" : "hover:border-primary/40"}`}
-                onClick={() => setSelectedSession(active ? null : s.id)}>
+                onClick={() => { const next = active ? null : s.id; setSelectedSession(next); setShowExercises(false); if (next) loadSessionExtras(next); }}>
                 <CardContent className="p-3">
                   <div className="flex items-center justify-between gap-2">
                     <div>
@@ -425,6 +453,7 @@ const SeancesTab = ({ groups, students, enrollments, sessions, attendance, onRef
                       <span className="text-xs text-green-600 font-medium">{st.present}✓</span>
                       {st.retard > 0 && <span className="text-xs text-amber-600 font-medium">{st.retard}⏱</span>}
                       {st.absent > 0 && <span className="text-xs text-red-500 font-medium">{st.absent}✗</span>}
+                      {(s.exercises?.mcq?.length ?? 0) > 0 && <span className="text-xs text-blue-500 font-medium" title="Exercices définis">{exerciseResults[s.id] ?? 0}📝</span>}
                       <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={e => { e.stopPropagation(); deleteSession(s.id); }}>
                         <Trash2 className="h-3 w-3" />
                       </Button>
@@ -479,6 +508,101 @@ const SeancesTab = ({ groups, students, enrollments, sessions, attendance, onRef
           </Card>
         )}
       </div>
+
+      {/* Panneau exercices e-learning */}
+      {selectedSession && (
+        <Card className="border-blue-500/30">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm flex items-center gap-2 text-blue-600">
+                <BookOpenCheck className="h-4 w-4" /> Exercices à la maison
+                {(exercises.mcq.length > 0 || exercises.dictation_words) && (
+                  <Badge className="bg-blue-500/15 text-blue-700 border-blue-400/30 text-xs">
+                    {exercises.mcq.length} QCM · {exercises.dictation_words ? exercises.dictation_words.split(",").filter(w => w.trim()).length : 0} dictée
+                  </Badge>
+                )}
+              </CardTitle>
+              <Button size="sm" variant="ghost" onClick={() => setShowExercises(!showExercises)}>
+                {showExercises ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </Button>
+            </div>
+          </CardHeader>
+          {showExercises && (
+            <CardContent className="space-y-4">
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label>Lettres cibles <span className="text-muted-foreground text-xs">(ex: ب ت ث)</span></Label>
+                  <Input dir="rtl" placeholder="ب ت ث ج" value={exercises.letters} onChange={e => setExercises(ex => ({ ...ex, letters: e.target.value }))} />
+                </div>
+                <div className="space-y-1">
+                  <Label>Consigne générale</Label>
+                  <Input placeholder="ex: Révisez les lettres vues en classe" value={exercises.instructions} onChange={e => setExercises(ex => ({ ...ex, instructions: e.target.value }))} />
+                </div>
+                <div className="space-y-1">
+                  <Label>Mots de dictée <span className="text-muted-foreground text-xs">(séparés par des virgules)</span></Label>
+                  <Input dir="rtl" placeholder="بَاب, كِتَاب, نُور" value={exercises.dictation_words} onChange={e => setExercises(ex => ({ ...ex, dictation_words: e.target.value }))} />
+                </div>
+                <div className="space-y-1">
+                  <Label>URL audio (optionnel)</Label>
+                  <Input placeholder="https://…/audio.mp3" value={exercises.audio_url} onChange={e => setExercises(ex => ({ ...ex, audio_url: e.target.value }))} />
+                </div>
+              </div>
+
+              {/* QCM */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Questions QCM ({exercises.mcq.length})</Label>
+                  <Button size="sm" variant="outline" onClick={() => setExercises(ex => ({ ...ex, mcq: [...ex.mcq, emptyMcq()] }))}>
+                    <Plus className="h-3 w-3 mr-1" /> Ajouter une question
+                  </Button>
+                </div>
+                {exercises.mcq.map((q, qi) => (
+                  <Card key={qi} className="bg-muted/30">
+                    <CardContent className="pt-3 pb-3 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-xs font-medium text-muted-foreground">Q{qi + 1}</p>
+                        <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive shrink-0"
+                          onClick={() => setExercises(ex => ({ ...ex, mcq: ex.mcq.filter((_, i) => i !== qi) }))}>
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <div className="grid sm:grid-cols-2 gap-2">
+                        <Input placeholder="Question (ex: Quelle lettre vois-tu ?)" value={q.question}
+                          onChange={e => setExercises(ex => { const m = [...ex.mcq]; m[qi] = { ...m[qi], question: e.target.value }; return { ...ex, mcq: m }; })} />
+                        <Input dir="rtl" placeholder="Affichage arabe (ex: بَ)" value={q.display}
+                          onChange={e => setExercises(ex => { const m = [...ex.mcq]; m[qi] = { ...m[qi], display: e.target.value }; return { ...ex, mcq: m }; })} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {q.choices.map((c, ci) => (
+                          <div key={ci} className="flex items-center gap-1.5">
+                            <button type="button"
+                              className={`w-5 h-5 rounded-full border-2 shrink-0 ${q.correct_index === ci ? "bg-green-500 border-green-500" : "border-muted-foreground"}`}
+                              onClick={() => setExercises(ex => { const m = [...ex.mcq]; m[qi] = { ...m[qi], correct_index: ci }; return { ...ex, mcq: m }; })} />
+                            <Input className="h-7 text-xs" dir="rtl" placeholder={`Choix ${ci + 1}`} value={c}
+                              onChange={e => setExercises(ex => { const m = [...ex.mcq]; const ch = [...m[qi].choices]; ch[ci] = e.target.value; m[qi] = { ...m[qi], choices: ch }; return { ...ex, mcq: m }; })} />
+                          </div>
+                        ))}
+                      </div>
+                      <Input className="text-xs" placeholder="Explication (optionnel)" value={q.explanation}
+                        onChange={e => setExercises(ex => { const m = [...ex.mcq]; m[qi] = { ...m[qi], explanation: e.target.value }; return { ...ex, mcq: m }; })} />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              <Button size="sm" onClick={saveExercises} disabled={saving}>
+                <Save className="h-4 w-4 mr-1" /> Sauvegarder les exercices
+              </Button>
+
+              {exerciseResults[selectedSession] !== undefined && (
+                <p className="text-xs text-muted-foreground">
+                  {exerciseResults[selectedSession]} élève{exerciseResults[selectedSession] > 1 ? "s" : ""} {exerciseResults[selectedSession] > 1 ? "ont" : "a"} complété ces exercices.
+                </p>
+              )}
+            </CardContent>
+          )}
+        </Card>
+      )}
     </div>
   );
 };

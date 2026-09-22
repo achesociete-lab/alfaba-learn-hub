@@ -44,6 +44,7 @@ const Hifz = lazy(() => import("./pages/Hifz.tsx"));
 const Famille = lazy(() => import("./pages/Famille.tsx"));
 const DessinAnimes = lazy(() => import("./pages/DessinAnimes.tsx"));
 const EspaceParents = lazy(() => import("./pages/EspaceParents.tsx"));
+const ExercicesNouraniya = lazy(() => import("./pages/ExercicesNouraniya.tsx"));
 
 const PageLoader = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
@@ -107,6 +108,7 @@ const App = () => (
                 <Route path="/dessins-animes" element={<DessinAnimes />} />
                 <Route path="/famille" element={<Famille />} />
                 <Route path="/parents" element={<EspaceParents />} />
+                <Route path="/exercices-nouraniya" element={<ExercicesNouraniya />} />
               </Route>
 
               <Route path="*" element={<NotFound />} />
