@@ -12,6 +12,7 @@ import type { Niveau2Lesson, Niveau2QCM, Niveau2Dictation, GrammarRule, Comprehe
 import { useArabicSpeech } from "@/hooks/use-arabic-speech";
 import { getIllustration } from "@/utils/vocabulary-illustrations";
 import { useNiveau1Lessons, useNiveau2Lessons, updateLessonContent } from "@/hooks/use-lessons";
+import { niveau1Lessons as staticN1Lessons } from "@/data/niveau1-lessons";
 import { useTeacherAudioClips } from "@/hooks/use-teacher-audio-clips";
 import { useAuth } from "@/contexts/AuthContext";
 import AudioClipRecorder from "@/components/admin/AudioClipRecorder";
@@ -208,6 +209,22 @@ function N1LessonEditor({ lesson: initialLesson, onBack, onSaved }: { lesson: Le
     setSaving(false);
   };
 
+  const resetToStatic = async () => {
+    const staticLesson = staticN1Lessons.find(l => l.id === initialLesson.id);
+    if (!staticLesson) return;
+    try {
+      await supabase.from("lessons" as any).delete()
+        .eq("level", "niveau_1")
+        .eq("lesson_number", initialLesson.id);
+      setLesson({ ...staticLesson });
+      setEditing(false);
+      onSaved();
+      toast.success("Leçon réinitialisée aux données statiques ✅");
+    } catch (err: any) {
+      toast.error("Erreur : " + err.message);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -219,7 +236,12 @@ function N1LessonEditor({ lesson: initialLesson, onBack, onSaved }: { lesson: Le
               <Button onClick={save} disabled={saving} className="gap-1"><Save className="h-4 w-4" /> {saving ? "..." : "Sauvegarder"}</Button>
             </>
           ) : (
-            <Button variant="outline" onClick={() => setEditing(true)} className="gap-1"><Edit className="h-4 w-4" /> Modifier</Button>
+            <>
+              <Button variant="outline" size="sm" onClick={resetToStatic} className="gap-1 text-xs text-muted-foreground border-dashed">
+                <RefreshCw className="h-3.5 w-3.5" /> Réinitialiser
+              </Button>
+              <Button variant="outline" onClick={() => setEditing(true)} className="gap-1"><Edit className="h-4 w-4" /> Modifier</Button>
+            </>
           )}
         </div>
       </div>
