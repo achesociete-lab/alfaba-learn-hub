@@ -221,13 +221,18 @@ serve(async (req) => {
       const sessionMessages = session.messages || [];
       const transcript = sessionMessages.map((m: any) => `${m.role}: ${m.content}`).join("\n\n");
 
-      // Deterministic score: count correct/incorrect from user messages
+      // Score: use frontend-tracked counts if provided (reliable), fallback to text parsing
       let correctCount = 0;
       let totalAnswered = 0;
-      for (const m of sessionMessages) {
-        if (m.role !== "user") continue;
-        if (m.content?.includes("Bonne réponse")) { correctCount++; totalAnswered++; }
-        else if (m.content?.includes("Mauvaise réponse")) { totalAnswered++; }
+      if (typeof body.correct_count === "number" && typeof body.total_answered === "number" && body.total_answered > 0) {
+        correctCount = body.correct_count;
+        totalAnswered = body.total_answered;
+      } else {
+        for (const m of sessionMessages) {
+          if (m.role !== "user") continue;
+          if (m.content?.includes("Bonne réponse")) { correctCount++; totalAnswered++; }
+          else if (m.content?.includes("Mauvaise réponse")) { totalAnswered++; }
+        }
       }
       const computedScore = totalAnswered > 0 ? Math.round((correctCount / totalAnswered) * 100) : 0;
       const scoreHint = `\n\nIMPORTANT: Le score calculé mathématiquement est ${computedScore}/100 (${correctCount} bonnes réponses sur ${totalAnswered}). Utilise EXACTEMENT ce chiffre pour le champ "score".`;

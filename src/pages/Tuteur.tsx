@@ -143,6 +143,8 @@ const Tuteur = () => {
   const seenDisplaysRef = useRef<Set<string>>(new Set());
   const questionCountRef = useRef(0);
   const peakStreakRef = useRef(0);
+  const correctCountRef = useRef(0);
+  const wrongCountRef = useRef(0);
 
   // Demo teaser state — flow linéaire contrôlé par l'utilisateur
   const [demoIdx, setDemoIdx] = useState(0);
@@ -224,6 +226,8 @@ const Tuteur = () => {
     prefetchedRef.current = null;
     questionCountRef.current = 0;
     peakStreakRef.current = 0;
+    correctCountRef.current = 0;
+    wrongCountRef.current = 0;
     setQuestionCount(0);
     setStreakCount(0);
     setSessionSummary(null);
@@ -303,8 +307,9 @@ const Tuteur = () => {
     setRevealed(true);
     const q = currentPayload?.question;
     if (!q?.choices) return;
-    const isCorrect = idx === q.correct_index;
+    const isCorrect = idx === Number(q.correct_index);
     if (isCorrect) {
+      correctCountRef.current++;
       playCorrectSound();
       triggerPraiseT();
       setStreakCount(s => {
@@ -313,6 +318,7 @@ const Tuteur = () => {
         return next;
       });
     } else {
+      wrongCountRef.current++;
       playWrongSound();
       setStreakCount(0);
     }
@@ -344,7 +350,11 @@ const Tuteur = () => {
     const answered = questionCountRef.current;
     const peak = peakStreakRef.current;
     try {
-      const data = await callTutor("end_session", { session_id: activeSessionId });
+      const data = await callTutor("end_session", {
+        session_id: activeSessionId,
+        correct_count: correctCountRef.current,
+        total_answered: correctCountRef.current + wrongCountRef.current,
+      });
       const sum = data.summary ?? {};
       const score: number = sum.score ?? 0;
       if (score >= 80) { playVictorySound(); fireFireworks(); }
