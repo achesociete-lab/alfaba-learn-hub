@@ -1,0 +1,1 @@
+DELETE FROM lessons WHERE level = 'niveau_1' AND lesson_number = 11;
