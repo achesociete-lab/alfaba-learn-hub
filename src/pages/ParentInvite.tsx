@@ -45,15 +45,11 @@ export default function ParentInvite() {
   }, [invite]);
 
   const loadInvite = async () => {
-    const { data, error } = await supabase
-      .from("parent_invites" as any)
-      .select("token, parent_email, child_name, used_at, expires_at")
-      .eq("token", token!)
-      .maybeSingle();
+    const { data, error } = await (supabase.rpc as any)("get_parent_invite", { _token: token! });
+    const row = Array.isArray(data) ? data[0] : data;
+    if (error || !row) { setStatus("invalid"); return; }
 
-    if (error || !data) { setStatus("invalid"); return; }
-
-    const inv = data as Invite;
+    const inv = row as Invite;
     if (inv.used_at) { setStatus("used"); return; }
     if (inv.expires_at && new Date(inv.expires_at) < new Date()) { setStatus("invalid"); return; }
 
@@ -62,29 +58,9 @@ export default function ParentInvite() {
     setStatus("valid");
   };
 
-  const completeLink = async (userId: string) => {
-    // Get child_profile_id from invite
-    const { data } = await supabase
-      .from("parent_invites" as any)
-      .select("child_profile_id, id")
-      .eq("token", token!)
-      .maybeSingle();
-
-    if (!data) return;
-
-    // Create parent_link
-    const { error: linkErr } = await supabase
-      .from("parent_links" as any)
-      .upsert({ parent_user_id: userId, child_profile_id: (data as any).child_profile_id }, { onConflict: "parent_user_id" });
-
-    if (linkErr) { toast.error("Erreur lors de la liaison du compte"); return; }
-
-    // Mark invite as used
-    await supabase
-      .from("parent_invites" as any)
-      .update({ used_at: new Date().toISOString() } as any)
-      .eq("token", token!);
-
+  const completeLink = async (_userId: string) => {
+    const { data, error } = await (supabase.rpc as any)("accept_parent_invite", { _token: token! });
+    if (error || !data) { toast.error("Erreur lors de la liaison du compte"); return; }
     setStatus("done");
     setTimeout(() => navigate("/parents"), 2000);
   };
