@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import {
   Users, Plus, Trash2, ClipboardList, Star, MessageSquare,
-  Check, X, Clock, Save, ChevronDown, ChevronUp, UserPlus, Send, BookOpenCheck,
+  Check, X, Clock, Save, ChevronDown, ChevronUp, UserPlus, Send, BookOpenCheck, Loader2,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -749,6 +749,10 @@ const ParentsTab = ({ students, parentLinks, onRefresh }: {
   const [message, setMessage] = useState("");
   const [messageChildId, setMessageChildId] = useState("");
   const [saving, setSaving] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteChildId, setInviteChildId] = useState("");
+  const [generatedLink, setGeneratedLink] = useState<string | null>(null);
+  const [generatingInvite, setGeneratingInvite] = useState(false);
   const [deleteStudentId, setDeleteStudentId] = useState("");
 
   const deleteStudentData = async () => {
@@ -767,6 +771,22 @@ const ParentsTab = ({ students, parentLinks, onRefresh }: {
     setDeleteStudentId("");
     onRefresh();
     setSaving(false);
+  };
+
+  const generateInvite = async () => {
+    if (!inviteEmail.trim() || !inviteChildId) { toast.error("Email et élève requis"); return; }
+    setGeneratingInvite(true);
+    const child = students.find(s => s.user_id === inviteChildId);
+    const childName = child ? `${child.first_name} ${child.last_name}` : "";
+    const { data, error } = await supabase
+      .from("parent_invites" as any)
+      .insert({ parent_email: inviteEmail.trim().toLowerCase(), child_profile_id: inviteChildId, child_name: childName })
+      .select("token")
+      .single();
+    if (error || !data) { toast.error("Erreur lors de la génération"); setGeneratingInvite(false); return; }
+    const link = `${window.location.origin}/parents/rejoindre?token=${(data as any).token}`;
+    setGeneratedLink(link);
+    setGeneratingInvite(false);
   };
 
   const linkParent = async () => {
@@ -802,11 +822,47 @@ const ParentsTab = ({ students, parentLinks, onRefresh }: {
 
   return (
     <div className="space-y-6">
+      {/* ── Inviter un parent par lien ── */}
+      <Card className="border-primary/30 bg-primary/3">
+        <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><UserPlus className="h-4 w-4 text-primary" /> Inviter un parent (nouveau compte)</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-xs text-muted-foreground">Entrez l'email du parent et l'élève concerné. Un lien unique sera généré — envoyez-le par WhatsApp ou email.</p>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Email du parent</Label>
+              <Input type="email" placeholder="parent@email.com" value={inviteEmail} onChange={e => { setInviteEmail(e.target.value); setGeneratedLink(null); }} />
+            </div>
+            <div className="space-y-1">
+              <Label>Élève</Label>
+              <Select value={inviteChildId} onValueChange={v => { setInviteChildId(v); setGeneratedLink(null); }}>
+                <SelectTrigger><SelectValue placeholder="Choisir l'élève…" /></SelectTrigger>
+                <SelectContent>{students.map(s => <SelectItem key={s.user_id} value={s.user_id}>{s.first_name} {s.last_name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+          </div>
+          <Button size="sm" onClick={generateInvite} disabled={generatingInvite} className="gradient-emerald border-0 text-primary-foreground gap-2">
+            {generatingInvite ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Génération…</> : "🔗 Générer le lien d'invitation"}
+          </Button>
+          {generatedLink && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-primary">✅ Lien généré — copiez-le et envoyez-le au parent :</p>
+              <div className="flex gap-2">
+                <Input value={generatedLink} readOnly className="text-xs font-mono" />
+                <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(generatedLink); toast.success("Lien copié !"); }}>
+                  Copier
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">Valable 30 jours · usage unique</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <div className="grid sm:grid-cols-2 gap-4">
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><UserPlus className="h-4 w-4" /> Lier un parent à un élève</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><UserPlus className="h-4 w-4" /> Lier un parent (déjà inscrit)</CardTitle></CardHeader>
           <CardContent className="space-y-3">
-            <p className="text-xs text-muted-foreground">Le parent doit avoir créé un compte sur alfasl.fr avec son email.</p>
+            <p className="text-xs text-muted-foreground">Si le parent a déjà un compte sur alfasl.fr.</p>
             <div className="space-y-1">
               <Label>Email du parent</Label>
               <Input type="email" placeholder="parent@email.com" value={parentEmail} onChange={e => setParentEmail(e.target.value)} />
