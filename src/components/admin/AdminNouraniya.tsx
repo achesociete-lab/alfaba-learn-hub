@@ -784,7 +784,12 @@ const ParentsTab = ({ students, parentLinks, onRefresh }: {
       headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
     });
     setSendingInvite(false);
-    if (res.error) { toast.error(res.error.message || "Erreur envoi"); return; }
+    if (res.error || res.data?.error) {
+      const msg = res.error?.message || res.data?.error || "Erreur envoi";
+      toast.error(`Invitation échouée : ${msg}`);
+      console.error("invite-parent error:", res.error, res.data);
+      return;
+    }
     setInviteSent(true);
     toast.success(`Invitation envoyée à ${inviteEmail} ✓`);
     setTimeout(() => { setInviteSent(false); setInviteEmail(""); setInviteChildId(""); }, 4000);
