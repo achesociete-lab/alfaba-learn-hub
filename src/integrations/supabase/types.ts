@@ -973,6 +973,42 @@ export type Database = {
           },
         ]
       }
+      parent_invites: {
+        Row: {
+          admin_note: string | null
+          child_name: string
+          child_profile_id: string
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          parent_email: string
+          token: string
+          used_at: string | null
+        }
+        Insert: {
+          admin_note?: string | null
+          child_name: string
+          child_profile_id: string
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          parent_email: string
+          token?: string
+          used_at?: string | null
+        }
+        Update: {
+          admin_note?: string | null
+          child_name?: string
+          child_profile_id?: string
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          parent_email?: string
+          token?: string
+          used_at?: string | null
+        }
+        Relationships: []
+      }
       parent_links: {
         Row: {
           child_profile_id: string
@@ -1742,6 +1778,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_parent_invite: { Args: { _token: string }; Returns: boolean }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -1750,6 +1787,16 @@ export type Database = {
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
+      }
+      get_parent_invite: {
+        Args: { _token: string }
+        Returns: {
+          child_name: string
+          expires_at: string
+          parent_email: string
+          token: string
+          used_at: string
+        }[]
       }
       get_user_id_by_email: { Args: { email: string }; Returns: string }
       has_role: {
