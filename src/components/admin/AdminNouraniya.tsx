@@ -751,8 +751,8 @@ const ParentsTab = ({ students, parentLinks, onRefresh }: {
   const [saving, setSaving] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteChildId, setInviteChildId] = useState("");
-  const [generatedLink, setGeneratedLink] = useState<string | null>(null);
-  const [generatingInvite, setGeneratingInvite] = useState(false);
+  const [inviteSent, setInviteSent] = useState(false);
+  const [sendingInvite, setSendingInvite] = useState(false);
   const [deleteStudentId, setDeleteStudentId] = useState("");
 
   const deleteStudentData = async () => {
@@ -773,20 +773,21 @@ const ParentsTab = ({ students, parentLinks, onRefresh }: {
     setSaving(false);
   };
 
-  const generateInvite = async () => {
+  const sendInvite = async () => {
     if (!inviteEmail.trim() || !inviteChildId) { toast.error("Email et élève requis"); return; }
-    setGeneratingInvite(true);
+    setSendingInvite(true);
     const child = students.find(s => s.user_id === inviteChildId);
     const childName = child ? `${child.first_name} ${child.last_name}` : "";
-    const { data, error } = await supabase
-      .from("parent_invites" as any)
-      .insert({ parent_email: inviteEmail.trim().toLowerCase(), child_profile_id: inviteChildId, child_name: childName })
-      .select("token")
-      .single();
-    if (error || !data) { toast.error("Erreur lors de la génération"); setGeneratingInvite(false); return; }
-    const link = `${window.location.origin}/parents/rejoindre?token=${(data as any).token}`;
-    setGeneratedLink(link);
-    setGeneratingInvite(false);
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await supabase.functions.invoke("invite-parent", {
+      body: { parentEmail: inviteEmail.trim(), childProfileId: inviteChildId, childName },
+      headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+    });
+    setSendingInvite(false);
+    if (res.error) { toast.error(res.error.message || "Erreur envoi"); return; }
+    setInviteSent(true);
+    toast.success(`Invitation envoyée à ${inviteEmail} ✓`);
+    setTimeout(() => { setInviteSent(false); setInviteEmail(""); setInviteChildId(""); }, 4000);
   };
 
   const linkParent = async () => {
@@ -822,38 +823,43 @@ const ParentsTab = ({ students, parentLinks, onRefresh }: {
 
   return (
     <div className="space-y-6">
-      {/* ── Inviter un parent par lien ── */}
-      <Card className="border-primary/30 bg-primary/3">
-        <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><UserPlus className="h-4 w-4 text-primary" /> Inviter un parent (nouveau compte)</CardTitle></CardHeader>
+      {/* ── Inviter un parent par magic link email ── */}
+      <Card className="border-primary/30">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <UserPlus className="h-4 w-4 text-primary" /> Inviter un parent
+          </CardTitle>
+        </CardHeader>
         <CardContent className="space-y-3">
-          <p className="text-xs text-muted-foreground">Entrez l'email du parent et l'élève concerné. Un lien unique sera généré — envoyez-le par WhatsApp ou email.</p>
+          <p className="text-xs text-muted-foreground">
+            Entrez l'email du parent et sélectionnez l'élève. Un email avec un lien magique lui sera envoyé automatiquement — il clique et accède directement, sans mot de passe.
+          </p>
           <div className="grid sm:grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label>Email du parent</Label>
-              <Input type="email" placeholder="parent@email.com" value={inviteEmail} onChange={e => { setInviteEmail(e.target.value); setGeneratedLink(null); }} />
+              <Input type="email" placeholder="parent@email.com" value={inviteEmail}
+                onChange={e => { setInviteEmail(e.target.value); setInviteSent(false); }} />
             </div>
             <div className="space-y-1">
-              <Label>Élève</Label>
-              <Select value={inviteChildId} onValueChange={v => { setInviteChildId(v); setGeneratedLink(null); }}>
+              <Label>Élève concerné</Label>
+              <Select value={inviteChildId} onValueChange={v => { setInviteChildId(v); setInviteSent(false); }}>
                 <SelectTrigger><SelectValue placeholder="Choisir l'élève…" /></SelectTrigger>
-                <SelectContent>{students.map(s => <SelectItem key={s.user_id} value={s.user_id}>{s.first_name} {s.last_name}</SelectItem>)}</SelectContent>
+                <SelectContent>
+                  {students.map(s => <SelectItem key={s.user_id} value={s.user_id}>{s.first_name} {s.last_name}</SelectItem>)}
+                </SelectContent>
               </Select>
             </div>
           </div>
-          <Button size="sm" onClick={generateInvite} disabled={generatingInvite} className="gradient-emerald border-0 text-primary-foreground gap-2">
-            {generatingInvite ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Génération…</> : "🔗 Générer le lien d'invitation"}
-          </Button>
-          {generatedLink && (
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-primary">✅ Lien généré — copiez-le et envoyez-le au parent :</p>
-              <div className="flex gap-2">
-                <Input value={generatedLink} readOnly className="text-xs font-mono" />
-                <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(generatedLink); toast.success("Lien copié !"); }}>
-                  Copier
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">Valable 30 jours · usage unique</p>
+          {inviteSent ? (
+            <div className="flex items-center gap-2 text-sm text-primary font-medium">
+              <Check className="h-4 w-4" /> Email envoyé à {inviteEmail}
             </div>
+          ) : (
+            <Button size="sm" onClick={sendInvite} disabled={sendingInvite} className="gradient-emerald border-0 text-primary-foreground gap-2">
+              {sendingInvite
+                ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Envoi en cours…</>
+                : "📧 Envoyer l'invitation"}
+            </Button>
           )}
         </CardContent>
       </Card>

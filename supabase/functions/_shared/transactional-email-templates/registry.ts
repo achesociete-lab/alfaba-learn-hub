@@ -28,6 +28,7 @@ import { template as presentielCorrection } from './presentiel-correction.tsx'
 import { template as hifzApplicationAdmin } from './hifz-application-admin.tsx'
 import { template as hifzAccepted } from './hifz-accepted.tsx'
 import { template as familyInvite } from './family-invite.tsx'
+import { template as parentInvite } from './parent-invite.tsx'
 import { template as adminNewStudentSignup } from './admin-new-student-signup.tsx'
 import { template as followupLevel1Online } from './followup-level1-online.tsx'
 import { template as followupLevel2Online } from './followup-level2-online.tsx'
@@ -63,4 +64,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'hifz-application-admin': hifzApplicationAdmin,
   'hifz-accepted': hifzAccepted,
   'family-invite': familyInvite,
+  'parent-invite': parentInvite,
 }
