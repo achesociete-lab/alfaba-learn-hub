@@ -973,6 +973,47 @@ export type Database = {
           },
         ]
       }
+      nouraniya_students: {
+        Row: {
+          created_at: string
+          date_of_birth: string | null
+          first_name: string
+          id: string
+          last_name: string
+          level: string | null
+          notes: string | null
+          profile_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          date_of_birth?: string | null
+          first_name: string
+          id?: string
+          last_name: string
+          level?: string | null
+          notes?: string | null
+          profile_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          date_of_birth?: string | null
+          first_name?: string
+          id?: string
+          last_name?: string
+          level?: string | null
+          notes?: string | null
+          profile_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nouraniya_students_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       parent_invites: {
         Row: {
           admin_note: string | null
