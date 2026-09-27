@@ -20,7 +20,7 @@ interface Group {
   id: string; name: string; level: string;
   day_of_week: string | null; time_slot: string | null; location: string | null; active: boolean;
 }
-interface StudentProfile { user_id: string; first_name: string; last_name: string; level: string; }
+interface StudentProfile { user_id: string; first_name: string; last_name: string; level: string; source?: 'platform' | 'direct'; }
 interface Enrollment { id: string; student_id: string; group_id: string; }
 interface McqQuestion { question: string; display: string; choices: string[]; correct_index: number; explanation: string; }
 interface SessionExercises { letters: string; instructions: string; mcq: McqQuestion[]; dictation_words: string; audio_url: string; }
@@ -58,9 +58,10 @@ const AdminNouraniya = () => {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const [g, s, e, se, a, gr, pl] = await Promise.all([
+    const [g, s, ns, e, se, a, gr, pl] = await Promise.all([
       supabase.from("nouraniya_groups").select("*").order("name"),
       supabase.from("profiles").select("user_id, first_name, last_name, level").order("last_name"),
+      supabase.from("nouraniya_students" as any).select("*").order("last_name"),
       supabase.from("nouraniya_enrollments").select("*"),
       supabase.from("nouraniya_sessions").select("*").order("session_date", { ascending: false }),
       supabase.from("nouraniya_attendance").select("*"),
@@ -68,7 +69,18 @@ const AdminNouraniya = () => {
       supabase.from("parent_links").select("*"),
     ]);
     if (g.data) setGroups(g.data);
-    if (s.data) setStudents(s.data);
+
+    // Fusionner élèves plateforme + élèves Nouraniya directs
+    const platformStudents: StudentProfile[] = (s.data || []).map((p: any) => ({ ...p, source: 'platform' as const }));
+    const directStudents: StudentProfile[] = (ns.data || []).map((n: any) => ({
+      user_id: n.id,
+      first_name: n.first_name,
+      last_name: n.last_name,
+      level: n.level || 'debutant',
+      source: 'direct' as const,
+    }));
+    setStudents([...directStudents, ...platformStudents]);
+
     if (e.data) setEnrollments(e.data);
     if (se.data) setSessions(se.data as unknown as Session[]);
     if (a.data) setAttendance(a.data as unknown as Attendance[]);
@@ -120,9 +132,31 @@ const GroupesTab = ({ groups, students, enrollments, onRefresh }: {
   groups: Group[]; students: StudentProfile[]; enrollments: Enrollment[]; onRefresh: () => void;
 }) => {
   const [showForm, setShowForm] = useState(false);
+  const [showStudentForm, setShowStudentForm] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", level: "debutant", day_of_week: "", time_slot: "", location: "" });
+  const [studentForm, setStudentForm] = useState({ first_name: "", last_name: "", level: "debutant", date_of_birth: "", notes: "" });
   const [saving, setSaving] = useState(false);
+
+  const createDirectStudent = async () => {
+    if (!studentForm.first_name.trim() || !studentForm.last_name.trim()) {
+      toast.error("Prénom et nom requis"); return;
+    }
+    setSaving(true);
+    const { error } = await supabase.from("nouraniya_students" as any).insert({
+      first_name: studentForm.first_name.trim(),
+      last_name: studentForm.last_name.trim(),
+      level: studentForm.level,
+      date_of_birth: studentForm.date_of_birth || null,
+      notes: studentForm.notes || null,
+    });
+    setSaving(false);
+    if (error) { toast.error("Erreur : " + error.message); return; }
+    toast.success(`${studentForm.first_name} ${studentForm.last_name} ajouté(e) ✓`);
+    setStudentForm({ first_name: "", last_name: "", level: "debutant", date_of_birth: "", notes: "" });
+    setShowStudentForm(false);
+    onRefresh();
+  };
 
   const createGroup = async () => {
     if (!form.name.trim()) return;
@@ -165,12 +199,55 @@ const GroupesTab = ({ groups, students, enrollments, onRefresh }: {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <h3 className="font-semibold text-lg">Groupes ({groups.length})</h3>
-        <Button size="sm" onClick={() => setShowForm(!showForm)}>
-          <Plus className="h-4 w-4 mr-1" /> Nouveau groupe
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => { setShowStudentForm(!showStudentForm); setShowForm(false); }}>
+            <UserPlus className="h-4 w-4 mr-1" /> Nouvel élève
+          </Button>
+          <Button size="sm" onClick={() => { setShowForm(!showForm); setShowStudentForm(false); }}>
+            <Plus className="h-4 w-4 mr-1" /> Nouveau groupe
+          </Button>
+        </div>
       </div>
+
+      {/* Formulaire création élève direct */}
+      {showStudentForm && (
+        <Card className="border-primary/30">
+          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><UserPlus className="h-4 w-4 text-primary" /> Ajouter un élève Nouraniya</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-xs text-muted-foreground">Pour les enfants sans compte sur la plateforme — ajoutez juste leur prénom et nom.</p>
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label>Prénom *</Label>
+                <Input placeholder="Ibrahim" value={studentForm.first_name} onChange={e => setStudentForm(f => ({ ...f, first_name: e.target.value }))} />
+              </div>
+              <div className="space-y-1">
+                <Label>Nom *</Label>
+                <Input placeholder="Dupont" value={studentForm.last_name} onChange={e => setStudentForm(f => ({ ...f, last_name: e.target.value }))} />
+              </div>
+              <div className="space-y-1">
+                <Label>Niveau</Label>
+                <Select value={studentForm.level} onValueChange={v => setStudentForm(f => ({ ...f, level: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{LEVELS.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>Date de naissance (optionnel)</Label>
+                <Input type="date" value={studentForm.date_of_birth} onChange={e => setStudentForm(f => ({ ...f, date_of_birth: e.target.value }))} />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={createDirectStudent} disabled={saving} className="gradient-emerald border-0 text-primary-foreground gap-1">
+                {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                Ajouter l'élève
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setShowStudentForm(false)}>Annuler</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {showForm && (
         <Card>
@@ -246,7 +323,10 @@ const GroupesTab = ({ groups, students, enrollments, onRefresh }: {
                     const enr = enrollments.find(e => e.group_id === g.id && e.student_id === s.user_id)!;
                     return (
                       <div key={s.user_id} className="flex items-center justify-between py-1 px-2 rounded hover:bg-muted/50">
-                        <span className="text-sm">{s.first_name} {s.last_name}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">{s.first_name} {s.last_name}</span>
+                          {s.source === 'direct' && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">Nouraniya</span>}
+                        </div>
                         <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => removeEnrollment(enr.id)}>
                           <X className="h-3 w-3" />
                         </Button>
