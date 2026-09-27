@@ -94,8 +94,11 @@ const AdminNouraniya = () => {
   if (loading) return <div className="flex justify-center py-12 text-muted-foreground">Chargement…</div>;
 
   return (
-    <Tabs defaultValue="groupes" className="space-y-4">
+    <Tabs defaultValue="eleves" className="space-y-4">
       <TabsList className="flex-wrap h-auto gap-1 p-1">
+        <TabsTrigger value="eleves" className="flex items-center gap-1.5 text-xs sm:text-sm">
+          <UserPlus className="h-4 w-4" /> Élèves
+        </TabsTrigger>
         <TabsTrigger value="groupes" className="flex items-center gap-1.5 text-xs sm:text-sm">
           <Users className="h-4 w-4" /> Groupes
         </TabsTrigger>
@@ -110,6 +113,9 @@ const AdminNouraniya = () => {
         </TabsTrigger>
       </TabsList>
 
+      <TabsContent value="eleves">
+        <ElevesTab students={students} onRefresh={load} />
+      </TabsContent>
       <TabsContent value="groupes">
         <GroupesTab groups={groups} students={students} enrollments={enrollments} onRefresh={load} />
       </TabsContent>
@@ -123,6 +129,146 @@ const AdminNouraniya = () => {
         <ParentsTab students={students} parentLinks={parentLinks} onRefresh={load} />
       </TabsContent>
     </Tabs>
+  );
+};
+
+// ─── Onglet Élèves ────────────────────────────────────────────────────────────
+
+const ElevesTab = ({ students, onRefresh }: { students: StudentProfile[]; onRefresh: () => void }) => {
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ first_name: "", last_name: "", level: "debutant", date_of_birth: "" });
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  const createStudent = async () => {
+    if (!form.first_name.trim() || !form.last_name.trim()) { toast.error("Prénom et nom requis"); return; }
+    setSaving(true);
+    const { error } = await supabase.from("nouraniya_students" as any).insert({
+      first_name: form.first_name.trim(),
+      last_name: form.last_name.trim(),
+      level: form.level,
+      date_of_birth: form.date_of_birth || null,
+    });
+    setSaving(false);
+    if (error) { toast.error("Erreur : " + error.message); return; }
+    toast.success(`${form.first_name} ${form.last_name} ajouté(e) ✓`);
+    setForm({ first_name: "", last_name: "", level: "debutant", date_of_birth: "" });
+    setShowForm(false);
+    onRefresh();
+  };
+
+  const deleteStudent = async (id: string, name: string) => {
+    if (!confirm(`Supprimer ${name} ? Ses présences et notes seront perdues.`)) return;
+    setDeleting(id);
+    await supabase.from("nouraniya_students" as any).delete().eq("id", id);
+    toast.success(`${name} supprimé(e)`);
+    setDeleting(null);
+    onRefresh();
+  };
+
+  const directStudents = students.filter(s => s.source === 'direct');
+  const platformStudents = students.filter(s => s.source === 'platform');
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold text-lg">Élèves ({students.length})</h3>
+        <Button size="sm" onClick={() => setShowForm(!showForm)} className="gradient-emerald border-0 text-primary-foreground">
+          <Plus className="h-4 w-4 mr-1" /> Ajouter un élève
+        </Button>
+      </div>
+
+      {showForm && (
+        <Card className="border-primary/30">
+          <CardHeader className="pb-2"><CardTitle className="text-sm">Nouvel élève Nouraniya</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-xs text-muted-foreground">Pour les enfants sans compte sur la plateforme — juste prénom et nom suffisent.</p>
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label>Prénom *</Label>
+                <Input placeholder="Ibrahim" value={form.first_name} onChange={e => setForm(f => ({ ...f, first_name: e.target.value }))} autoFocus />
+              </div>
+              <div className="space-y-1">
+                <Label>Nom *</Label>
+                <Input placeholder="Martin" value={form.last_name} onChange={e => setForm(f => ({ ...f, last_name: e.target.value }))} />
+              </div>
+              <div className="space-y-1">
+                <Label>Niveau</Label>
+                <Select value={form.level} onValueChange={v => setForm(f => ({ ...f, level: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{LEVELS.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>Date de naissance (optionnel)</Label>
+                <Input type="date" value={form.date_of_birth} onChange={e => setForm(f => ({ ...f, date_of_birth: e.target.value }))} />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={createStudent} disabled={saving} className="gap-1">
+                {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                Enregistrer
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setShowForm(false)}>Annuler</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Élèves directs Nouraniya */}
+      {directStudents.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Élèves Nouraniya ({directStudents.length})</p>
+          {directStudents.map(s => (
+            <div key={s.user_id} className="flex items-center justify-between p-3 rounded-xl border border-border bg-card">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold text-sm">
+                  {s.first_name[0]}{s.last_name[0]}
+                </div>
+                <div>
+                  <p className="text-sm font-medium">{s.first_name} {s.last_name}</p>
+                  <p className="text-xs text-muted-foreground">{s.level}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">Nouraniya</span>
+                <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive"
+                  disabled={deleting === s.user_id}
+                  onClick={() => deleteStudent(s.user_id, `${s.first_name} ${s.last_name}`)}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {directStudents.length === 0 && !showForm && (
+        <div className="p-8 text-center border border-dashed rounded-xl text-muted-foreground space-y-2">
+          <UserPlus className="h-8 w-8 mx-auto opacity-30" />
+          <p className="text-sm">Aucun élève Nouraniya ajouté.</p>
+          <p className="text-xs">Cliquez sur "Ajouter un élève" pour commencer.</p>
+        </div>
+      )}
+
+      {/* Élèves inscrits sur la plateforme */}
+      {platformStudents.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Élèves plateforme ({platformStudents.length})</p>
+          {platformStudents.map(s => (
+            <div key={s.user_id} className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card/50">
+              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                {s.first_name[0]}{s.last_name[0]}
+              </div>
+              <div>
+                <p className="text-sm font-medium">{s.first_name} {s.last_name}</p>
+                <p className="text-xs text-muted-foreground">{s.level}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 };
 
