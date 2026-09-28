@@ -221,29 +221,31 @@ serve(async (req) => {
       const sessionMessages = session.messages || [];
       const transcript = sessionMessages.map((m: any) => `${m.role}: ${m.content}`).join("\n\n");
 
-      // Score: use frontend-tracked counts if provided (reliable), fallback to text parsing
+      // Score: 100% deterministic — frontend counts take priority, text parsing as fallback
       let correctCount = 0;
       let totalAnswered = 0;
       if (typeof body.correct_count === "number" && typeof body.total_answered === "number" && body.total_answered > 0) {
         correctCount = body.correct_count;
         totalAnswered = body.total_answered;
       } else {
+        // fallback: scan messages (less reliable, kept only if frontend counts missing)
         for (const m of sessionMessages) {
           if (m.role !== "user") continue;
           if (m.content?.includes("Bonne réponse")) { correctCount++; totalAnswered++; }
           else if (m.content?.includes("Mauvaise réponse")) { totalAnswered++; }
         }
       }
+      // Score is NEVER delegated to the AI — it is always this exact value
       const computedScore = totalAnswered > 0 ? Math.round((correctCount / totalAnswered) * 100) : 0;
-      const scoreHint = `\n\nIMPORTANT: Le score calculé mathématiquement est ${computedScore}/100 (${correctCount} bonnes réponses sur ${totalAnswered}). Utilise EXACTEMENT ce chiffre pour le champ "score".`;
 
+      // AI generates ONLY the textual summary (weak/strong points, homework) — NOT the score
       const summaryJson = await callAI([
         { role: "system", content: `${SYSTEM_PROMPT}\n\nأنتَ تُلخِّصُ جلسةَ تعليمٍ. أَجِبْ بصيغةِ JSON صالحةٍ فقط.` },
-        { role: "user", content: `لخِّصْ هذِهِ الجلسةَ. أَعِدْ JSON: { "summary": "string بالعربيةِ والفرنسيةِ مختصراً", "weak_points": ["string"], "strong_points": ["string"], "score": number 0-100, "homework_suggestion": { "title": "string", "content": { "instructions": "string", "exercises": [{ "question": "string", "expected_answer": "string" }] }, "due_date_days": number } }\n\nالجلسة:\n${transcript}${scoreHint}` },
+        { role: "user", content: `لخِّصْ هذِهِ الجلسةَ. أَعِدْ JSON: { "summary": "string بالعربيةِ والفرنسيةِ مختصراً", "weak_points": ["string"], "strong_points": ["string"], "homework_suggestion": { "title": "string", "content": { "instructions": "string", "exercises": [{ "question": "string", "expected_answer": "string" }] }, "due_date_days": number } }\n\nالجلسة:\n${transcript}` },
       ], true);
 
       const sum = JSON.parse(summaryJson);
-      // Always enforce the deterministic score regardless of what the AI returned
+      // Score is set here — the AI never had a say in it
       sum.score = computedScore;
       await supabase.from("tutor_sessions").update({
         ended_at: new Date().toISOString(),

@@ -143,8 +143,13 @@ const Tuteur = () => {
   const seenDisplaysRef = useRef<Set<string>>(new Set());
   const questionCountRef = useRef(0);
   const peakStreakRef = useRef(0);
-  const correctCountRef = useRef(0);
-  const wrongCountRef = useRef(0);
+  const [correctCount, setCorrectCount] = usePersistentState<number>(userScopedKey(user?.id, "tutor:correctCount"), 0);
+  const [wrongCount, setWrongCount] = usePersistentState<number>(userScopedKey(user?.id, "tutor:wrongCount"), 0);
+  // refs for synchronous read inside callbacks
+  const correctCountRef = useRef(correctCount);
+  const wrongCountRef = useRef(wrongCount);
+  useEffect(() => { correctCountRef.current = correctCount; }, [correctCount]);
+  useEffect(() => { wrongCountRef.current = wrongCount; }, [wrongCount]);
 
   // Demo teaser state — flow linéaire contrôlé par l'utilisateur
   const [demoIdx, setDemoIdx] = useState(0);
@@ -228,6 +233,8 @@ const Tuteur = () => {
     peakStreakRef.current = 0;
     correctCountRef.current = 0;
     wrongCountRef.current = 0;
+    setCorrectCount(0);
+    setWrongCount(0);
     setQuestionCount(0);
     setStreakCount(0);
     setSessionSummary(null);
@@ -310,6 +317,7 @@ const Tuteur = () => {
     const isCorrect = idx === Number(q.correct_index);
     if (isCorrect) {
       correctCountRef.current++;
+      setCorrectCount(c => c + 1);
       playCorrectSound();
       triggerPraiseT();
       setStreakCount(s => {
@@ -319,6 +327,7 @@ const Tuteur = () => {
       });
     } else {
       wrongCountRef.current++;
+      setWrongCount(c => c + 1);
       playWrongSound();
       setStreakCount(0);
     }
