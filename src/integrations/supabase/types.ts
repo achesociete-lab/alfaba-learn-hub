@@ -1839,6 +1839,7 @@ export type Database = {
           used_at: string
         }[]
       }
+      get_public_stats: { Args: never; Returns: Json }
       get_user_id_by_email: { Args: { email: string }; Returns: string }
       has_role: {
         Args: {
