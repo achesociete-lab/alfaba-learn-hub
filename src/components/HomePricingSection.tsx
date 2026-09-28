@@ -114,15 +114,42 @@ const HomePricingSection = () => {
             const displayPrice = isAnnual ? plan.annualPrice : plan.price;
 
             return (
-              <motion.div key={plan.name} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }}>
-                <Card className={`h-full relative ${plan.popular ? "border-primary shadow-lg" : ""}`}>
-                  {plan.popular && <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground">Populaire</Badge>}
+              <motion.div key={plan.name}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.08 }}
+                whileHover={{ y: plan.popular ? -6 : -3, transition: { duration: 0.2 } }}
+              >
+                <Card className={`h-full relative overflow-hidden transition-shadow ${
+                  plan.popular
+                    ? "border-primary shadow-2xl shadow-primary/20 ring-2 ring-primary/30"
+                    : "border-border hover:border-primary/30 hover:shadow-md"
+                }`}>
+                  {plan.popular && (
+                    <>
+                      <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
+                      <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground shadow-lg">
+                        ⭐ Le plus choisi
+                      </Badge>
+                    </>
+                  )}
                   {isAnnual && plan.planKey && (
                     <Badge className="absolute -top-3 right-3 bg-emerald-600 text-white text-xs">2 mois offerts</Badge>
                   )}
                   <CardHeader className="text-center pb-2">
-                    <CardTitle className="text-lg">{isAnnual && plan.annualName ? plan.annualName : plan.name}</CardTitle>
-                    <p className="text-2xl font-bold text-foreground mt-2">{displayPrice}</p>
+                    <CardTitle className={`text-lg ${plan.popular ? "text-primary" : ""}`}>
+                      {isAnnual && plan.annualName ? plan.annualName : plan.name}
+                    </CardTitle>
+                    <motion.p
+                      className={`text-3xl font-black mt-2 ${plan.popular ? "text-primary" : "text-foreground"}`}
+                      initial={{ scale: 0.9 }}
+                      whileInView={{ scale: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.3 + i * 0.08, type: "spring" }}
+                    >
+                      {displayPrice}
+                    </motion.p>
                     {isAnnual && plan.planKey && (
                       <p className="text-xs text-muted-foreground line-through">
                         {STRIPE_PLANS[plan.planKey].price * 12}€/an
@@ -131,23 +158,31 @@ const HomePricingSection = () => {
                   </CardHeader>
                   <CardContent className="text-center space-y-4">
                     <ul className="space-y-2 text-sm text-muted-foreground">
-                      {plan.lines.map((l, j) => <li key={j}>{l}</li>)}
+                      {plan.lines.map((l, j) => (
+                        <li key={j} className="flex items-start gap-1.5 text-left">
+                          <span className="text-primary mt-0.5 shrink-0">✓</span> {l}
+                        </li>
+                      ))}
                     </ul>
                     {plan.planKey ? (
-                      <Button
-                        onClick={() => handleCheckout(plan.planKey!)}
-                        disabled={loadingPlan === plan.planKey}
-                        className={plan.filled ? "w-full gradient-emerald border-0 text-primary-foreground" : "w-full border-primary text-primary hover:bg-primary/5"}
-                        variant={plan.filled ? "default" : "outline"}
-                      >
-                        {loadingPlan === plan.planKey
-                          ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Redirection...</>
-                          : (isAnnual && plan.annualButtonLabel ? plan.annualButtonLabel : plan.buttonLabel)}
-                      </Button>
+                      <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+                        <Button
+                          onClick={() => handleCheckout(plan.planKey!)}
+                          disabled={loadingPlan === plan.planKey}
+                          className={plan.filled ? "w-full gradient-emerald border-0 text-primary-foreground shadow-lg shadow-primary/25" : "w-full border-primary text-primary hover:bg-primary/5"}
+                          variant={plan.filled ? "default" : "outline"}
+                        >
+                          {loadingPlan === plan.planKey
+                            ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Redirection...</>
+                            : (isAnnual && plan.annualButtonLabel ? plan.annualButtonLabel : plan.buttonLabel)}
+                        </Button>
+                      </motion.div>
                     ) : (
-                      <Button asChild className="w-full border-primary text-primary hover:bg-primary/5" variant="outline">
-                        <Link to="/auth">{plan.buttonLabel}</Link>
-                      </Button>
+                      <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+                        <Button asChild className="w-full border-primary text-primary hover:bg-primary/5" variant="outline">
+                          <Link to="/auth">{plan.buttonLabel}</Link>
+                        </Button>
+                      </motion.div>
                     )}
                   </CardContent>
                 </Card>
