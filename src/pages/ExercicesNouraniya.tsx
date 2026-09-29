@@ -9,26 +9,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import {
-  Loader2, BookOpenCheck, Check, X, Volume2, ChevronRight, Trophy, RotateCcw,
-  CheckCircle2, XCircle, Clock, Star, BarChart2, CalendarDays,
-} from "lucide-react";
+import { Loader2, BookOpenCheck, Check, X, Volume2, ChevronRight, Trophy, RotateCcw } from "lucide-react";
 
 interface McqQuestion { question: string; display: string; choices: string[]; correct_index: number; explanation: string; }
 interface SessionExercises { letters: string; instructions: string; mcq: McqQuestion[]; dictation_words: string; audio_url: string; }
 interface Session { id: string; group_id: string; session_date: string; title: string | null; exercises: SessionExercises | null; }
-interface AllSession { id: string; group_id: string; session_date: string; title: string | null; }
 interface Group { id: string; name: string; }
 interface ExerciseResult { session_id: string; mcq_score: number; dictation_score: number; completed_at: string | null; }
-interface AttendanceRecord { id: string; session_id: string; status: "present" | "absent" | "retard"; delay_minutes: number | null; note: string | null; }
-interface Grade { id: string; evaluation_date: string; category: string; score: number; max_score: number; comment: string | null; }
-
-const CATEGORY_LABELS: Record<string, string> = {
-  recitation: "Récitation", ecriture: "Écriture", lecture: "Lecture",
-  comportement: "Comportement", global: "Global",
-};
 
 const speak = (text: string) => {
   if (!window.speechSynthesis) return;
@@ -42,11 +30,8 @@ const ExercicesNouraniya = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [sessions, setSessions] = useState<Session[]>([]);
-  const [allSessions, setAllSessions] = useState<AllSession[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [results, setResults] = useState<ExerciseResult[]>([]);
-  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
-  const [grades, setGrades] = useState<Grade[]>([]);
   const [loading, setLoading] = useState(true);
   const [notEnrolled, setNotEnrolled] = useState(false);
   const [activeSession, setActiveSession] = useState<Session | null>(null);
@@ -63,36 +48,21 @@ const ExercicesNouraniya = () => {
       if (!enrollments?.length) { setNotEnrolled(true); setLoading(false); return; }
 
       const groupIds = enrollments.map((e: any) => e.group_id);
-      const [sessRes, allSessRes, grpRes, resRes, attRes, gradeRes] = await Promise.all([
+      const [sessRes, grpRes, resRes] = await Promise.all([
         supabase.from("nouraniya_sessions").select("id, group_id, session_date, title, exercises")
           .in("group_id", groupIds).not("exercises", "is", null).order("session_date", { ascending: false }),
-        supabase.from("nouraniya_sessions").select("id, group_id, session_date, title")
-          .in("group_id", groupIds).order("session_date", { ascending: false }),
         supabase.from("nouraniya_groups").select("id, name").in("id", groupIds),
         supabase.from("nouraniya_exercise_results").select("session_id, mcq_score, dictation_score, completed_at").eq("student_id", user.id),
-        supabase.from("nouraniya_attendance").select("id, session_id, status, delay_minutes, note").eq("student_id", user.id),
-        supabase.from("nouraniya_grades").select("id, evaluation_date, category, score, max_score, comment")
-          .eq("student_id", user.id).order("evaluation_date", { ascending: false }),
       ]);
 
       const sessionsWithEx = (sessRes.data ?? []).filter((s: any) => s.exercises && (s.exercises.mcq?.length > 0 || s.exercises.dictation_words));
       setSessions(sessionsWithEx as unknown as Session[]);
-      setAllSessions(allSessRes.data ?? []);
       setGroups(grpRes.data ?? []);
       setResults(resRes.data ?? []);
-      setAttendance(attRes.data as unknown as AttendanceRecord[] ?? []);
-      setGrades(gradeRes.data ?? []);
       setLoading(false);
     };
     load();
   }, [user]);
-
-  const refreshResults = async () => {
-    if (!user) return;
-    const { data } = await supabase.from("nouraniya_exercise_results")
-      .select("session_id, mcq_score, dictation_score, completed_at").eq("student_id", user.id);
-    setResults(data ?? []);
-  };
 
   const getResult = (sid: string) => results.find(r => r.session_id === sid);
   const groupName = (gid: string) => groups.find(g => g.id === gid)?.name ?? "";
@@ -127,260 +97,73 @@ const ExercicesNouraniya = () => {
               session={activeSession}
               userId={user!.id}
               existingResult={getResult(activeSession.id)}
-              onBack={() => { setActiveSession(null); refreshResults(); }}
+              onBack={() => {
+                setActiveSession(null);
+                supabase.from("nouraniya_exercise_results").select("session_id, mcq_score, dictation_score, completed_at").eq("student_id", user!.id)
+                  .then(({ data }) => setResults(data ?? []));
+              }}
             />
           ) : (
             <>
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
-                <div className="flex items-center gap-3 mb-1">
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+                <div className="flex items-center gap-3 mb-2">
                   <BookOpenCheck className="h-6 w-6 text-primary" />
-                  <h1 className="text-3xl font-bold">Nouraniya</h1>
+                  <h1 className="text-3xl font-bold">Exercices Nouraniya</h1>
                 </div>
-                <p className="text-muted-foreground">Exercices et suivi de ta progression.</p>
+                <p className="text-muted-foreground">Exercices à faire après chaque séance en classe.</p>
               </motion.div>
 
-              <Tabs defaultValue="exercices">
-                <TabsList className="mb-4">
-                  <TabsTrigger value="exercices" className="flex items-center gap-1.5">
-                    <BookOpenCheck className="h-4 w-4" /> Exercices
-                  </TabsTrigger>
-                  <TabsTrigger value="suivi" className="flex items-center gap-1.5">
-                    <BarChart2 className="h-4 w-4" /> Mon suivi
-                  </TabsTrigger>
-                </TabsList>
+              {sessions.length === 0 && (
+                <Card className="border-dashed">
+                  <CardContent className="py-12 text-center text-muted-foreground">
+                    Aucun exercice disponible pour le moment. Votre professeur en ajoutera après chaque séance.
+                  </CardContent>
+                </Card>
+              )}
 
-                <TabsContent value="exercices">
-                  {sessions.length === 0 && (
-                    <Card className="border-dashed">
-                      <CardContent className="py-12 text-center text-muted-foreground">
-                        Aucun exercice disponible pour le moment. Votre professeur en ajoutera après chaque séance.
-                      </CardContent>
-                    </Card>
-                  )}
-                  <div className="space-y-3">
-                    {sessions.map((s, i) => {
-                      const result = getResult(s.id);
-                      const ex = s.exercises!;
-                      const mcqCount = ex.mcq?.length ?? 0;
-                      const dictCount = ex.dictation_words ? ex.dictation_words.split(",").filter(w => w.trim()).length : 0;
-                      return (
-                        <motion.div key={s.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                          <Card className={`transition-all ${result ? "opacity-80" : "hover:border-primary/50 hover:shadow-md"}`}>
-                            <CardContent className="p-4">
-                              <div className="flex items-center justify-between gap-3 flex-wrap">
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                                    <p className="font-semibold text-foreground">{s.title || "Séance"}</p>
-                                    {result && <Badge className="bg-green-500/15 text-green-700 border-green-400/30 text-xs">Complété ✓</Badge>}
-                                  </div>
-                                  <p className="text-xs text-muted-foreground mb-1">{groupName(s.group_id)} · {new Date(s.session_date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</p>
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    {ex.letters && <span className="text-sm font-arabic text-primary dir-rtl">{ex.letters}</span>}
-                                    {mcqCount > 0 && <Badge variant="outline" className="text-xs">{mcqCount} QCM</Badge>}
-                                    {dictCount > 0 && <Badge variant="outline" className="text-xs">{dictCount} mots dictée</Badge>}
-                                  </div>
-                                  {result && (
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                      QCM : {result.mcq_score}%{dictCount > 0 ? ` · Dictée : ${result.dictation_score}%` : ""}
-                                    </p>
-                                  )}
-                                </div>
-                                <Button size="sm" variant={result ? "outline" : "default"} onClick={() => setActiveSession(s)}>
-                                  {result ? <><RotateCcw className="h-3 w-3 mr-1" /> Refaire</> : <>Commencer <ChevronRight className="h-4 w-4 ml-1" /></>}
-                                </Button>
+              <div className="space-y-3">
+                {sessions.map((s, i) => {
+                  const result = getResult(s.id);
+                  const ex = s.exercises!;
+                  const mcqCount = ex.mcq?.length ?? 0;
+                  const dictCount = ex.dictation_words ? ex.dictation_words.split(",").filter(w => w.trim()).length : 0;
+                  return (
+                    <motion.div key={s.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+                      <Card className={`transition-all ${result ? "opacity-80" : "hover:border-primary/50 hover:shadow-md"}`}>
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between gap-3 flex-wrap">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap mb-1">
+                                <p className="font-semibold text-foreground">{s.title || "Séance"}</p>
+                                {result && <Badge className="bg-green-500/15 text-green-700 border-green-400/30 text-xs">Complété ✓</Badge>}
                               </div>
-                            </CardContent>
-                          </Card>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="suivi">
-                  <MonSuivi
-                    allSessions={allSessions}
-                    attendance={attendance}
-                    results={results}
-                    grades={grades}
-                    groups={groups}
-                  />
-                </TabsContent>
-              </Tabs>
+                              <p className="text-xs text-muted-foreground mb-1">{groupName(s.group_id)} · {new Date(s.session_date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</p>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {ex.letters && <span className="text-sm font-arabic text-primary dir-rtl">{ex.letters}</span>}
+                                {mcqCount > 0 && <Badge variant="outline" className="text-xs">{mcqCount} QCM</Badge>}
+                                {dictCount > 0 && <Badge variant="outline" className="text-xs">{dictCount} mots dictée</Badge>}
+                              </div>
+                              {result && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  QCM : {result.mcq_score}%{dictCount > 0 ? ` · Dictée : ${result.dictation_score}%` : ""}
+                                </p>
+                              )}
+                            </div>
+                            <Button size="sm" variant={result ? "outline" : "default"} onClick={() => setActiveSession(s)}>
+                              {result ? <><RotateCcw className="h-3 w-3 mr-1" /> Refaire</> : <>Commencer <ChevronRight className="h-4 w-4 ml-1" /></>}
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  );
+                })}
+              </div>
             </>
           )}
         </div>
       </main>
       <Footer />
-    </div>
-  );
-};
-
-// ─── Onglet Mon Suivi ─────────────────────────────────────────────────────────
-
-const MonSuivi = ({ allSessions, attendance, results, grades, groups }: {
-  allSessions: AllSession[];
-  attendance: AttendanceRecord[];
-  results: ExerciseResult[];
-  grades: Grade[];
-  groups: Group[];
-}) => {
-  const presentCount = attendance.filter(a => a.status === "present").length;
-  const absentCount = attendance.filter(a => a.status === "absent").length;
-  const retardCount = attendance.filter(a => a.status === "retard").length;
-  const totalAttended = attendance.length;
-  const attendanceRate = totalAttended > 0 ? Math.round(((presentCount + retardCount) / totalAttended) * 100) : null;
-
-  const completedResults = results.filter(r => r.completed_at);
-  const avgExScore = completedResults.length > 0
-    ? Math.round(completedResults.reduce((sum, r) => sum + r.mcq_score, 0) / completedResults.length)
-    : null;
-
-  const avgGrade = grades.length > 0
-    ? Math.round(grades.reduce((sum, g) => sum + (g.score / g.max_score) * 100, 0) / grades.length)
-    : null;
-
-  const groupName = (gid: string) => groups.find(g => g.id === gid)?.name ?? "";
-
-  const attMap = Object.fromEntries(attendance.map(a => [a.session_id, a]));
-  const resultMap = Object.fromEntries(results.map(r => [r.session_id, r]));
-
-  return (
-    <div className="space-y-6">
-      {/* KPIs */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Card>
-          <CardContent className="p-4 flex flex-col items-center text-center">
-            <CheckCircle2 className="h-5 w-5 text-green-500 mb-1" />
-            <span className="text-2xl font-bold text-green-600">{presentCount}</span>
-            <span className="text-xs text-muted-foreground">Présences</span>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 flex flex-col items-center text-center">
-            <XCircle className="h-5 w-5 text-red-500 mb-1" />
-            <span className="text-2xl font-bold text-red-500">{absentCount}</span>
-            <span className="text-xs text-muted-foreground">Absences</span>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 flex flex-col items-center text-center">
-            <BookOpenCheck className="h-5 w-5 text-blue-500 mb-1" />
-            <span className={`text-2xl font-bold ${avgExScore === null ? "text-muted-foreground" : avgExScore >= 70 ? "text-green-600" : avgExScore >= 50 ? "text-amber-600" : "text-red-500"}`}>
-              {avgExScore !== null ? `${avgExScore}%` : "–"}
-            </span>
-            <span className="text-xs text-muted-foreground">Moy. exercices</span>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 flex flex-col items-center text-center">
-            <Star className="h-5 w-5 text-amber-500 mb-1" />
-            <span className={`text-2xl font-bold ${avgGrade === null ? "text-muted-foreground" : avgGrade >= 70 ? "text-green-600" : avgGrade >= 50 ? "text-amber-600" : "text-red-500"}`}>
-              {avgGrade !== null ? `${avgGrade}%` : "–"}
-            </span>
-            <span className="text-xs text-muted-foreground">Moy. notes</span>
-          </CardContent>
-        </Card>
-      </div>
-
-      {attendanceRate !== null && (
-        <div className="flex items-center gap-3 px-1">
-          <span className="text-sm text-muted-foreground shrink-0">Assiduité</span>
-          <div className="flex-1 bg-muted rounded-full h-2 overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all ${attendanceRate >= 80 ? "bg-green-500" : attendanceRate >= 60 ? "bg-amber-500" : "bg-red-500"}`}
-              style={{ width: `${attendanceRate}%` }}
-            />
-          </div>
-          <span className={`text-sm font-semibold shrink-0 ${attendanceRate >= 80 ? "text-green-600" : attendanceRate >= 60 ? "text-amber-600" : "text-red-500"}`}>
-            {attendanceRate}%
-          </span>
-        </div>
-      )}
-
-      {/* Historique séances */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <CalendarDays className="h-4 w-4" /> Historique des séances ({allSessions.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {allSessions.length === 0 && <p className="text-sm text-muted-foreground">Aucune séance enregistrée.</p>}
-          <div className="space-y-0 divide-y">
-            {allSessions.map(s => {
-              const att = attMap[s.id];
-              const result = resultMap[s.id];
-              return (
-                <div key={s.id} className="flex items-center justify-between py-2.5 gap-3 flex-wrap">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium leading-tight">{s.title || "Séance"}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {groupName(s.group_id)} · {new Date(s.session_date).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-                    {att ? (
-                      <>
-                        {att.status === "present" && <Badge className="bg-green-500/15 text-green-700 border-green-500/30 text-xs">Présent</Badge>}
-                        {att.status === "retard" && (
-                          <Badge className="bg-amber-500/15 text-amber-700 border-amber-500/30 text-xs">
-                            Retard{att.delay_minutes ? ` (${att.delay_minutes}min)` : ""}
-                          </Badge>
-                        )}
-                        {att.status === "absent" && <Badge variant="outline" className="text-red-500 border-red-300 text-xs">Absent</Badge>}
-                      </>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">–</span>
-                    )}
-                    {result && (
-                      <Badge className={`text-xs ${result.mcq_score >= 70 ? "bg-blue-500/15 text-blue-700 border-blue-400/30" : "bg-amber-500/15 text-amber-700 border-amber-400/30"}`}>
-                        {result.mcq_score}%
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Notes */}
-      {grades.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Star className="h-4 w-4" /> Notes ({grades.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-0 divide-y">
-              {grades.map(g => (
-                <div key={g.id} className="flex items-center justify-between py-2.5 gap-3">
-                  <div>
-                    <p className="text-sm font-medium">{CATEGORY_LABELS[g.category] ?? g.category}</p>
-                    <p className="text-xs text-muted-foreground">{new Date(g.evaluation_date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</p>
-                    {g.comment && <p className="text-xs text-muted-foreground italic mt-0.5">{g.comment}</p>}
-                  </div>
-                  <span className={`text-xl font-bold shrink-0 ${(g.score / g.max_score) >= 0.7 ? "text-green-600" : (g.score / g.max_score) >= 0.5 ? "text-amber-600" : "text-red-500"}`}>
-                    {g.score}<span className="text-sm text-muted-foreground font-normal">/{g.max_score}</span>
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {totalAttended === 0 && grades.length === 0 && (
-        <Card className="border-dashed">
-          <CardContent className="py-10 text-center text-muted-foreground">
-            <Clock className="h-8 w-8 mx-auto mb-2 opacity-30" />
-            <p className="text-sm">Ton suivi apparaîtra ici au fil des séances.</p>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };
