@@ -11,7 +11,6 @@ import ProfileGuard from "@/components/ProfileGuard";
 import RouteTracker from "./components/RouteTracker";
 import PendingPresentielHandler from "./components/PendingPresentielHandler";
 import PagePersistenceTracker from "./components/PagePersistenceTracker";
-import WhatsAppButton from "./components/WhatsAppButton";
 
 // Eager-loaded (small, critical path)
 import Index from "./pages/Index.tsx";
@@ -118,7 +117,6 @@ const App = () => (
           </Suspense>
           </FamilyProfileProvider>
         </AuthProvider>
-        <WhatsAppButton />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
