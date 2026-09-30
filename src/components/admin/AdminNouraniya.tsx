@@ -1008,16 +1008,33 @@ const ParentsTab = ({ students, parentLinks, onRefresh }: {
     setSendingInvite(true);
     const child = students.find(s => s.user_id === inviteChildId);
     const childName = child ? `${child.first_name} ${child.last_name}` : "";
-    const { data: { session } } = await supabase.auth.getSession();
-    const res = await supabase.functions.invoke("invite-parent", {
-      body: { parentEmail: inviteEmail.trim(), childProfileId: inviteChildId, childName },
-      headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+    const email = inviteEmail.trim().toLowerCase();
+
+    // 1. Insert invite record directly (RLS allows authenticated inserts)
+    const { data: invite, error: inviteErr } = await supabase
+      .from("parent_invites" as any)
+      .insert({ parent_email: email, child_profile_id: inviteChildId, child_name: childName })
+      .select("id").single();
+
+    if (inviteErr) {
+      setSendingInvite(false);
+      toast.error(`Erreur création invitation : ${inviteErr.message}`);
+      return;
+    }
+
+    // 2. Send email directly via send-transactional-email (bypasses invite-parent function)
+    const emailRes = await supabase.functions.invoke("send-transactional-email", {
+      body: {
+        templateName: "parent-invite",
+        recipientEmail: email,
+        idempotencyKey: `parent-invite-${(invite as any).id}`,
+        templateData: { childName, siteUrl: "https://alfasl.fr" },
+      },
     });
+
     setSendingInvite(false);
-    if (res.error || res.data?.error) {
-      const msg = res.data?.error || res.error?.message || "Erreur envoi";
-      toast.error(`Invitation échouée : ${msg}`);
-      console.error("invite-parent error:", res.error, res.data);
+    if (emailRes.error) {
+      toast.error(`Invitation créée mais email échoué : ${emailRes.error.message}`);
       return;
     }
     setInviteSent(true);
