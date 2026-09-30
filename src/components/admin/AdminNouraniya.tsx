@@ -71,7 +71,11 @@ const AdminNouraniya = () => {
     if (g.data) setGroups(g.data);
 
     // Fusionner élèves plateforme + élèves Nouraniya directs
-    const platformStudents: StudentProfile[] = (s.data || []).map((p: any) => ({ ...p, source: 'platform' as const }));
+    // Exclure les parents (parent_user_id dans parent_links) de la liste élèves
+    const parentUserIds = new Set((pl.data || []).map((p: any) => p.parent_user_id));
+    const platformStudents: StudentProfile[] = (s.data || [])
+      .filter((p: any) => !parentUserIds.has(p.user_id))
+      .map((p: any) => ({ ...p, source: 'platform' as const }));
     const directStudents: StudentProfile[] = (ns.data || []).map((n: any) => ({
       user_id: n.id,
       first_name: n.first_name,
