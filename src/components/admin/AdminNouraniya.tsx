@@ -1022,20 +1022,10 @@ const ParentsTab = ({ students, parentLinks, onRefresh }: {
       return;
     }
 
-    // 2. Send magic link via Supabase Auth native OTP — no edge function needed
-    const { error: otpError } = await supabase.auth.signInWithOtp({
-      email,
-      options: { shouldCreateUser: true },
-    });
-
     setSendingInvite(false);
-    if (otpError) {
-      toast.error(`Invitation créée mais email échoué : ${otpError.message}`);
-      return;
-    }
     setInviteSent(true);
-    toast.success(`Invitation envoyée à ${inviteEmail} ✓`);
-    setTimeout(() => { setInviteSent(false); setInviteEmail(""); setInviteChildId(""); }, 4000);
+    toast.success(`Invitation créée ✓ — envoyez le lien alfasl.fr à ${inviteEmail}`);
+    setTimeout(() => { setInviteSent(false); setInviteEmail(""); setInviteChildId(""); }, 6000);
   };
 
   const linkParent = async () => {
@@ -1071,7 +1061,7 @@ const ParentsTab = ({ students, parentLinks, onRefresh }: {
 
   return (
     <div className="space-y-6">
-      {/* ── Inviter un parent par magic link email ── */}
+      {/* ── Inviter un parent ── */}
       <Card className="border-primary/30">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-2">
@@ -1080,7 +1070,7 @@ const ParentsTab = ({ students, parentLinks, onRefresh }: {
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-xs text-muted-foreground">
-            Entrez l'email du parent et sélectionnez l'élève. Un email avec un lien magique lui sera envoyé automatiquement — il clique et accède directement, sans mot de passe.
+            Entrez l'email du parent et sélectionnez l'élève. Ensuite envoyez-lui le lien <strong>alfasl.fr</strong> par WhatsApp ou SMS — il crée un compte avec cet email et son espace parent s'active automatiquement.
           </p>
           <div className="grid sm:grid-cols-2 gap-3">
             <div className="space-y-1">
@@ -1099,14 +1089,19 @@ const ParentsTab = ({ students, parentLinks, onRefresh }: {
             </div>
           </div>
           {inviteSent ? (
-            <div className="flex items-center gap-2 text-sm text-primary font-medium">
-              <Check className="h-4 w-4" /> Email envoyé à {inviteEmail}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm text-primary font-medium">
+                <Check className="h-4 w-4" /> Invitation enregistrée pour {inviteEmail}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Envoyez-lui ce message : <em>"Créez un compte sur alfasl.fr avec cette adresse email, votre espace parent s'activera automatiquement."</em>
+              </p>
             </div>
           ) : (
             <Button size="sm" onClick={sendInvite} disabled={sendingInvite} className="gradient-emerald border-0 text-primary-foreground gap-2">
               {sendingInvite
-                ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Envoi en cours…</>
-                : "📧 Envoyer l'invitation"}
+                ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Enregistrement…</>
+                : "Créer l'invitation"}
             </Button>
           )}
         </CardContent>
