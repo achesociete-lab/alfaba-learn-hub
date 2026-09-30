@@ -1011,7 +1011,7 @@ const ParentsTab = ({ students, parentLinks, onRefresh }: {
     });
     setSendingInvite(false);
     if (res.error || res.data?.error) {
-      const msg = res.error?.message || res.data?.error || "Erreur envoi";
+      const msg = res.data?.error || res.error?.message || "Erreur envoi";
       toast.error(`Invitation échouée : ${msg}`);
       console.error("invite-parent error:", res.error, res.data);
       return;
