@@ -5,6 +5,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const jsonHeaders = { ...corsHeaders, 'Content-Type': 'application/json' }
+
+const errRes = (message: string, status = 500) =>
+  new Response(JSON.stringify({ message }), { status, headers: jsonHeaders })
+
 const SITE_URL = 'https://alfasl.fr'
 
 Deno.serve(async (req) => {
@@ -15,23 +20,16 @@ Deno.serve(async (req) => {
     const serviceKey  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const anonKey     = Deno.env.get('SUPABASE_ANON_KEY')!
 
-    // Verify caller is an authenticated admin
     const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Non authentifié' }), { status: 401, headers: corsHeaders })
-    }
+    if (!authHeader) return errRes('Non authentifié', 401)
+
     const userClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } })
     const { data: { user }, error: userErr } = await userClient.auth.getUser()
-    if (userErr || !user) {
-      return new Response(JSON.stringify({ error: 'Utilisateur introuvable' }), { status: 401, headers: corsHeaders })
-    }
+    if (userErr || !user) return errRes('Utilisateur introuvable', 401)
 
     const { parentEmail, childProfileId, childName } = await req.json()
-    if (!parentEmail || !childProfileId || !childName) {
-      return new Response(JSON.stringify({ error: 'parentEmail, childProfileId et childName sont requis' }), {
-        status: 400, headers: corsHeaders,
-      })
-    }
+    if (!parentEmail || !childProfileId || !childName)
+      return errRes('parentEmail, childProfileId et childName sont requis', 400)
 
     const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
 
@@ -44,12 +42,13 @@ Deno.serve(async (req) => {
 
     if (inviteErr || !invite) {
       console.error('invite insert error', inviteErr)
-      return new Response(JSON.stringify({ error: 'Erreur création invitation' }), { status: 500, headers: corsHeaders })
+      return errRes(`Erreur création invitation: ${inviteErr?.message ?? 'unknown'}`)
     }
 
-    // 2. Generate magic link via Supabase admin API
-    // redirectTo must be the Site URL (always allowed) — invite activation
-    // is handled automatically on login via ParentInviteActivator component.
+    const inviteId = (invite as any).id
+
+    // 2. Generate magic link — no custom redirectTo to avoid allowlist issues.
+    //    ParentInviteActivator activates the invite automatically on login.
     const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
       type: 'magiclink',
       email: parentEmail.trim().toLowerCase(),
@@ -58,19 +57,15 @@ Deno.serve(async (req) => {
 
     if (linkErr || !linkData?.properties?.action_link) {
       console.error('generateLink error', linkErr)
-      return new Response(JSON.stringify({ error: 'Erreur génération du lien' }), { status: 500, headers: corsHeaders })
+      return errRes(`Erreur génération du lien: ${linkErr?.message ?? 'action_link absent'}`)
     }
 
     const magicLink = linkData.properties.action_link
 
-    // 3. Send custom email
+    // 3. Send email
     const emailRes = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${serviceKey}`,
-        apikey: serviceKey,
-      },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${serviceKey}`, apikey: serviceKey },
       body: JSON.stringify({
         templateName: 'parent-invite',
         recipientEmail: parentEmail.trim().toLowerCase(),
@@ -82,15 +77,13 @@ Deno.serve(async (req) => {
     if (!emailRes.ok) {
       const errBody = await emailRes.text()
       console.error('send-transactional-email failed', emailRes.status, errBody)
-      return new Response(JSON.stringify({ error: 'Erreur envoi email' }), { status: 500, headers: corsHeaders })
+      return errRes(`Erreur envoi email (${emailRes.status}): ${errBody}`)
     }
 
-    return new Response(JSON.stringify({ ok: true, inviteId }), {
-      status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return new Response(JSON.stringify({ ok: true, inviteId }), { status: 200, headers: jsonHeaders })
 
   } catch (err) {
     console.error('invite-parent error', err)
-    return new Response(JSON.stringify({ error: String(err) }), { status: 500, headers: corsHeaders })
+    return new Response(JSON.stringify({ message: String(err) }), { status: 500, headers: jsonHeaders })
   }
 })
