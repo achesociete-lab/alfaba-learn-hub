@@ -47,14 +47,13 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Erreur création invitation' }), { status: 500, headers: corsHeaders })
     }
 
-    const inviteId = invite.id
-    const redirectTo = `${SITE_URL}/parents/activer?invite_id=${inviteId}`
-
     // 2. Generate magic link via Supabase admin API
+    // redirectTo must be the Site URL (always allowed) — invite activation
+    // is handled automatically on login via ParentInviteActivator component.
     const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
       type: 'magiclink',
       email: parentEmail.trim().toLowerCase(),
-      options: { redirectTo },
+      options: { redirectTo: SITE_URL },
     })
 
     if (linkErr || !linkData?.properties?.action_link) {

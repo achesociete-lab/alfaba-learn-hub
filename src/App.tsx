@@ -11,6 +11,7 @@ import ProfileGuard from "@/components/ProfileGuard";
 import RouteTracker from "./components/RouteTracker";
 import PendingPresentielHandler from "./components/PendingPresentielHandler";
 import PagePersistenceTracker from "./components/PagePersistenceTracker";
+import ParentInviteActivator from "./components/ParentInviteActivator";
 
 // Eager-loaded (small, critical path)
 import Index from "./pages/Index.tsx";
@@ -73,6 +74,7 @@ const App = () => (
           <RouteTracker />
           <PagePersistenceTracker />
           <PendingPresentielHandler />
+          <ParentInviteActivator />
           <Suspense fallback={<PageLoader />}>
             <Routes>
               {/* Public routes */}
