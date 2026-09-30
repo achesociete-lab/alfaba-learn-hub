@@ -30,10 +30,11 @@ const publicNavLinks = [
 ];
 
 const getAuthNavLinks = (level: string | null, typeEleve: string | null, hasHifzAccess = false, hasFamilleAccess = false, isAdmin = false, isParent = false, isNouraniyaStudent = false) => {
-  // Présentiel : accès limité
+  // Présentiel : accès limité — mais garde l'espace parent si lié
   if (typeEleve === "presentiel") {
     const links = [{ to: "/cours-presentiel", label: "Espace Élève" }];
     if (hasHifzAccess) links.push({ to: "/hifz", label: "📖 Hifd" });
+    if (isParent) links.push({ to: "/parents", label: "👨‍👧 Espace Parents" });
     return links;
   }
 

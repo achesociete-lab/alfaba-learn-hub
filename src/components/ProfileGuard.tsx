@@ -9,6 +9,8 @@ const PRESENTIEL_ALLOWED = new Set<string>([
   "/cours-presentiel",
   "/complete-profile",
   "/compte-en-attente",
+  "/parents",
+  "/parents/rejoindre",
 ]);
 
 const ProfileGuard = () => {
