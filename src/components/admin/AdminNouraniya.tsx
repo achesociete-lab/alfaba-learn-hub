@@ -1048,15 +1048,28 @@ const ParentsTab = ({ students, parentLinks, onRefresh }: {
   const linkParent = async () => {
     if (!parentEmail.trim() || !childId) { toast.error("Email parent et élève requis"); return; }
     setSaving(true);
-    const { data: parentUserId, error: rpcErr } = await supabase
-      .rpc("get_user_id_by_email" as any, { email: parentEmail.trim().toLowerCase() });
-    if (rpcErr || !parentUserId) {
-      toast.error("Aucun compte trouvé avec cet email. Le parent doit d'abord créer un compte sur alfasl.fr");
-      setSaving(false); return;
+    const email = parentEmail.trim().toLowerCase();
+    const child = students.find(s => s.user_id === childId);
+    const childName = child ? `${child.first_name} ${child.last_name}` : "";
+
+    // Try to find existing account
+    const { data: parentUserId } = await supabase
+      .rpc("get_user_id_by_email" as any, { email });
+
+    if (parentUserId) {
+      // Account exists → link directly
+      const { error } = await supabase.from("parent_links")
+        .insert({ parent_user_id: parentUserId, child_profile_id: childId });
+      if (error) toast.error(error.message.includes("unique") ? "Lien déjà existant" : "Erreur");
+      else { toast.success("Parent lié ✓"); setParentEmail(""); setChildId(""); onRefresh(); }
+    } else {
+      // No account yet → create invite so activation happens automatically on signup
+      const { error: invErr } = await supabase.from("parent_invites" as any)
+        .insert({ parent_email: email, child_profile_id: childId, child_name: childName });
+      if (invErr) { toast.error("Erreur création invitation"); setSaving(false); return; }
+      toast.success(`Invitation créée ✓ — ${email} sera lié automatiquement à la connexion`);
+      setParentEmail(""); setChildId("");
     }
-    const { error } = await supabase.from("parent_links").insert({ parent_user_id: parentUserId, child_profile_id: childId });
-    if (error) toast.error(error.message.includes("unique") ? "Lien déjà existant" : "Erreur");
-    else { toast.success("Parent lié à l'élève ✓"); setParentEmail(""); setChildId(""); onRefresh(); }
     setSaving(false);
   };
 
