@@ -4,9 +4,7 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
-
 const jsonHeaders = { ...corsHeaders, 'Content-Type': 'application/json' }
-
 const errRes = (message: string, status = 500) =>
   new Response(JSON.stringify({ message }), { status, headers: jsonHeaders })
 
@@ -36,7 +34,11 @@ Deno.serve(async (req) => {
     // 1. Create invite record
     const { data: invite, error: inviteErr } = await admin
       .from('parent_invites')
-      .insert({ parent_email: parentEmail.trim().toLowerCase(), child_profile_id: childProfileId, child_name: childName })
+      .insert({
+        parent_email: parentEmail.trim().toLowerCase(),
+        child_profile_id: childProfileId,
+        child_name: childName,
+      })
       .select('id')
       .single()
 
@@ -47,30 +49,20 @@ Deno.serve(async (req) => {
 
     const inviteId = (invite as any).id
 
-    // 2. Generate magic link — no custom redirectTo to avoid allowlist issues.
+    // 2. Send email — simple link to site, no magic link needed.
     //    ParentInviteActivator activates the invite automatically on login.
-    const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
-      type: 'magiclink',
-      email: parentEmail.trim().toLowerCase(),
-      options: { redirectTo: SITE_URL },
-    })
-
-    if (linkErr || !linkData?.properties?.action_link) {
-      console.error('generateLink error', linkErr)
-      return errRes(`Erreur génération du lien: ${linkErr?.message ?? 'action_link absent'}`)
-    }
-
-    const magicLink = linkData.properties.action_link
-
-    // 3. Send email
     const emailRes = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${serviceKey}`, apikey: serviceKey },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${serviceKey}`,
+        apikey: serviceKey,
+      },
       body: JSON.stringify({
         templateName: 'parent-invite',
         recipientEmail: parentEmail.trim().toLowerCase(),
         idempotencyKey: `parent-invite-${inviteId}`,
-        templateData: { childName, magicLink },
+        templateData: { childName, siteUrl: SITE_URL },
       }),
     })
 
