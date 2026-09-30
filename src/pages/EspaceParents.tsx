@@ -45,8 +45,31 @@ const EspaceParents = () => {
   useEffect(() => {
     if (!user) return;
     const loadChildren = async () => {
-      const { data: links } = await supabase.from("parent_links")
+      let { data: links } = await supabase.from("parent_links")
         .select("child_profile_id").eq("parent_user_id", user.id);
+
+      // If no links yet, check for pending invites matching this email and activate them
+      if (!links?.length && user.email) {
+        const { data: invites } = await supabase
+          .from("parent_invites" as any)
+          .select("id, child_profile_id, child_name")
+          .eq("parent_email", user.email.toLowerCase())
+          .is("used_at", null);
+
+        if (invites?.length) {
+          for (const invite of invites as any[]) {
+            await supabase.from("parent_links")
+              .insert({ parent_user_id: user.id, child_profile_id: invite.child_profile_id })
+              .select();
+            await supabase.from("parent_invites" as any)
+              .update({ used_at: new Date().toISOString() }).eq("id", invite.id);
+          }
+          // Reload links after activation
+          const { data: newLinks } = await supabase.from("parent_links")
+            .select("child_profile_id").eq("parent_user_id", user.id);
+          links = newLinks;
+        }
+      }
 
       if (!links?.length) { setNotLinked(true); setLoading(false); return; }
 

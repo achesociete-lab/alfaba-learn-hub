@@ -1,15 +1,15 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
-// Checks for pending parent invites matching the logged-in user's email.
-// Activates them automatically (creates parent_links, marks invite used)
-// and redirects to /parents. Runs on every login — harmless if no pending invites.
+// Runs on login AND on every navigation — activates any pending parent invite
+// matching the logged-in user's email. Harmless if no pending invites.
 const ParentInviteActivator = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     if (!user?.email) return;
@@ -47,12 +47,12 @@ const ParentInviteActivator = () => {
 
       if (activated > 0) {
         toast.success(`Votre espace parent pour ${(invites[0] as any).child_name} est prêt ✓`);
-        navigate("/parents");
+        if (location.pathname !== "/parents") navigate("/parents");
       }
     };
 
     activate();
-  }, [user?.id]);
+  }, [user?.id, location.pathname]);
 
   return null;
 };
