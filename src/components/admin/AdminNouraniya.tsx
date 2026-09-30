@@ -1022,19 +1022,15 @@ const ParentsTab = ({ students, parentLinks, onRefresh }: {
       return;
     }
 
-    // 2. Send email directly via send-transactional-email (bypasses invite-parent function)
-    const emailRes = await supabase.functions.invoke("send-transactional-email", {
-      body: {
-        templateName: "parent-invite",
-        recipientEmail: email,
-        idempotencyKey: `parent-invite-${(invite as any).id}`,
-        templateData: { childName, siteUrl: "https://alfasl.fr" },
-      },
+    // 2. Send magic link via Supabase Auth native OTP — no edge function needed
+    const { error: otpError } = await supabase.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: true },
     });
 
     setSendingInvite(false);
-    if (emailRes.error) {
-      toast.error(`Invitation créée mais email échoué : ${emailRes.error.message}`);
+    if (otpError) {
+      toast.error(`Invitation créée mais email échoué : ${otpError.message}`);
       return;
     }
     setInviteSent(true);
