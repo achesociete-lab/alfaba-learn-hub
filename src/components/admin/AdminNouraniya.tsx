@@ -1022,20 +1022,24 @@ const ParentsTab = ({ students, parentLinks, onRefresh }: {
       return;
     }
 
-    // Send magic link via Supabase Auth native OTP
-    // Requires: Supabase Dashboard → Auth → Hooks → delete the "Send Email" hook
-    const { error: otpError } = await supabase.auth.signInWithOtp({
-      email,
-      options: { shouldCreateUser: true },
+    // Send invitation email via transactional email with link to /parents/rejoindre
+    const emailRes = await supabase.functions.invoke("send-transactional-email", {
+      body: {
+        templateName: "parent-invite",
+        recipientEmail: email,
+        idempotencyKey: `parent-invite-${(invite as any).id}`,
+        templateData: {
+          childName,
+          siteUrl: `${window.location.origin}/parents/rejoindre`,
+        },
+      },
     });
 
     setSendingInvite(false);
-    if (otpError) {
-      // Fallback: invite created, ask admin to share link manually
-      setInviteSent(true);
-      toast.warning(`Invitation créée ✓ mais email non envoyé — partagez alfasl.fr à ${inviteEmail} par WhatsApp`);
+    setInviteSent(true);
+    if (emailRes.error) {
+      toast.warning(`Invitation créée ✓ — email non envoyé, partagez ce lien : ${window.location.origin}/parents/rejoindre`);
     } else {
-      setInviteSent(true);
       toast.success(`Invitation envoyée à ${inviteEmail} ✓`);
     }
     setTimeout(() => { setInviteSent(false); setInviteEmail(""); setInviteChildId(""); }, 5000);

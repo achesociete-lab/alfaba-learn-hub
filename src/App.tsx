@@ -45,6 +45,7 @@ const Famille = lazy(() => import("./pages/Famille.tsx"));
 const DessinAnimes = lazy(() => import("./pages/DessinAnimes.tsx"));
 const EspaceParents = lazy(() => import("./pages/EspaceParents.tsx"));
 const ParentActiver = lazy(() => import("./pages/ParentActiver.tsx"));
+const ParentsRejoindre = lazy(() => import("./pages/ParentsRejoindre.tsx"));
 const ExercicesNouraniya = lazy(() => import("./pages/ExercicesNouraniya.tsx"));
 
 const PageLoader = () => (
@@ -94,6 +95,7 @@ const App = () => (
               <Route path="/niveau-2" element={<Niveau2 />} />
               <Route path="/exercices" element={<Exercises />} />
               <Route path="/parents/activer" element={<ParentActiver />} />
+              <Route path="/parents/rejoindre" element={<ParentsRejoindre />} />
 
               {/* Protected routes requiring complete profile */}
               <Route element={<ProfileGuard />}>

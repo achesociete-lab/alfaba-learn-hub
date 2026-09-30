@@ -1,5 +1,6 @@
 import * as React from 'npm:react@18.3.1'
 import { renderAsync } from 'npm:@react-email/components@0.0.22'
+import { sendLovableEmail } from 'npm:@lovable.dev/email-js'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { TEMPLATES } from '../_shared/transactional-email-templates/registry.ts'
 
@@ -297,63 +298,44 @@ Deno.serve(async (req) => {
       ? template.subject(templateData)
       : template.subject
 
-  // 5. Enqueue the pre-rendered email for async processing by the dispatcher.
-  // The dispatcher (process-email-queue) handles sending, retries, and rate-limit backoff.
-
-  // Log pending BEFORE enqueue so we have a record even if enqueue crashes
-  await supabase.from('email_send_log').insert({
-    message_id: messageId,
-    template_name: templateName,
-    recipient_email: effectiveRecipient,
-    status: 'pending',
-  })
-
-  const { error: enqueueError } = await supabase.rpc('enqueue_email', {
-    queue_name: 'transactional_emails',
-    payload: {
-      message_id: messageId,
-      to: effectiveRecipient,
-      from: `${SITE_NAME} <contact@${FROM_DOMAIN}>`,
-      sender_domain: SENDER_DOMAIN,
-      subject: resolvedSubject,
-      html,
-      text: plainText,
-      purpose: 'transactional',
-      label: templateName,
-      idempotency_key: idempotencyKey,
-      unsubscribe_token: unsubscribeToken,
-      queued_at: new Date().toISOString(),
-    },
-  })
-
-  if (enqueueError) {
-    console.error('Failed to enqueue email', {
-      error: enqueueError,
-      templateName,
-      effectiveRecipient,
-    })
-
-    await supabase.from('email_send_log').insert({
-      message_id: messageId,
-      template_name: templateName,
-      recipient_email: effectiveRecipient,
-      status: 'failed',
-      error_message: 'Failed to enqueue email',
-    })
-
-    return new Response(JSON.stringify({ error: 'Failed to enqueue email' }), {
+  // 5. Send directly via Lovable email API — bypasses queue/cron system
+  const apiKey = Deno.env.get('LOVABLE_API_KEY')
+  if (!apiKey) {
+    console.error('LOVABLE_API_KEY not configured')
+    return new Response(JSON.stringify({ message: 'Email service not configured' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }
 
-  console.log('Transactional email enqueued', { templateName, effectiveRecipient })
+  try {
+    await sendLovableEmail(
+      {
+        message_id: messageId,
+        to: effectiveRecipient,
+        from: `${SITE_NAME} <contact@${FROM_DOMAIN}>`,
+        sender_domain: SENDER_DOMAIN,
+        subject: resolvedSubject,
+        html,
+        text: plainText,
+        purpose: 'transactional',
+        label: templateName,
+        idempotency_key: idempotencyKey,
+      },
+      { apiKey, sendUrl: Deno.env.get('LOVABLE_SEND_URL') }
+    )
+  } catch (sendErr) {
+    console.error('sendLovableEmail failed', { error: sendErr, templateName, effectiveRecipient })
+    return new Response(JSON.stringify({ message: `Email send failed: ${sendErr}` }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+
+  console.log('Transactional email sent', { templateName, effectiveRecipient })
 
   return new Response(
-    JSON.stringify({ success: true, queued: true }),
-    {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    }
+    JSON.stringify({ success: true }),
+    { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   )
 })
