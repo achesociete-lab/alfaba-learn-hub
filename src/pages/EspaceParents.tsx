@@ -58,11 +58,12 @@ const EspaceParents = () => {
 
         if (invites?.length) {
           for (const invite of invites as any[]) {
-            await supabase.from("parent_links")
-              .insert({ parent_user_id: user.id, child_profile_id: invite.child_profile_id })
-              .select();
-            await supabase.from("parent_invites" as any)
-              .update({ used_at: new Date().toISOString() }).eq("id", invite.id);
+            const { error: linkErr } = await supabase.from("parent_links")
+              .insert({ parent_user_id: user.id, child_profile_id: invite.child_profile_id });
+            if (!linkErr) {
+              await supabase.from("parent_invites" as any)
+                .update({ used_at: new Date().toISOString() }).eq("id", invite.id);
+            }
           }
           // Reload links after activation
           const { data: newLinks } = await supabase.from("parent_links")

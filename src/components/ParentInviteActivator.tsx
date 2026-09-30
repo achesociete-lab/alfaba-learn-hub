@@ -36,13 +36,20 @@ const ParentInviteActivator = () => {
           const { error } = await supabase
             .from("parent_links")
             .insert({ parent_user_id: user.id, child_profile_id: invite.child_profile_id });
-          if (!error) activated++;
+          if (!error) {
+            activated++;
+            await supabase
+              .from("parent_invites" as any)
+              .update({ used_at: new Date().toISOString() })
+              .eq("id", invite.id);
+          }
+        } else {
+          // Already linked — just mark invite used
+          await supabase
+            .from("parent_invites" as any)
+            .update({ used_at: new Date().toISOString() })
+            .eq("id", invite.id);
         }
-
-        await supabase
-          .from("parent_invites" as any)
-          .update({ used_at: new Date().toISOString() })
-          .eq("id", invite.id);
       }
 
       if (activated > 0) {
